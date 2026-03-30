@@ -1,0 +1,34 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "mediashield/video",
+	"version": "1.0.0",
+	"title": "MediaShield Video",
+	"category": "media",
+	"icon": "video-alt3",
+	"description": "Embed a protected video with watermarking, session tracking, and access control.",
+	"keywords": [ "video", "protect", "mediashield", "watermark" ],
+	"textdomain": "mediashield",
+	"attributes": {
+		"videoId": {
+			"type": "number",
+			"default": 0
+		},
+		"url": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"html": false
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"render": "file:./render.php",
+	"viewScriptModule": "file:./view.js"
+}

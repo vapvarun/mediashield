@@ -13,6 +13,8 @@ use MediaShield\CPT\Thumbnail;
 use MediaShield\REST\TagController;
 use MediaShield\REST\SessionController;
 use MediaShield\Player\PlayerWrapper;
+use MediaShield\Block\VideoBlock;
+use MediaShield\Block\Shortcode;
 use MediaShield\Core\Assets;
 
 class Plugin {
@@ -41,6 +43,10 @@ class Plugin {
 
 		// REST API.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+
+		// Gutenberg blocks + shortcode.
+		VideoBlock::register();
+		Shortcode::register();
 
 		// Player wrapper (output buffer for video detection + wrapping).
 		PlayerWrapper::register();

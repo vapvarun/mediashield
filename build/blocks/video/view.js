@@ -1,0 +1,1 @@
+(()=>{if(window.wp&&window.wp.interactivity){const{store:i}=window.wp.interactivity;i("mediashield/video",{state:{get isReady(){return!0}},actions:{}})}})();
