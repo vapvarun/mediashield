@@ -18,8 +18,19 @@ class Assets {
 	/**
 	 * Register hooks.
 	 */
+	/** @var bool Whether Shaka Player is needed on this page. */
+	private static bool $needs_shaka = false;
+
+	/**
+	 * Register hooks.
+	 */
 	public static function register(): void {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend' ) );
+
+		// Listen for Shaka Player requests from Renderer/PlayerWrapper.
+		add_action( 'mediashield_needs_shaka', function () {
+			self::$needs_shaka = true;
+		} );
 	}
 
 	/**

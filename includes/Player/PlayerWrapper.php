@@ -1,10 +1,10 @@
 <?php
 /**
- * Detect and wrap video embeds with the MediaShield protection layer.
+ * Detect and wrap video embeds with MediaShield protection.
  *
- * Hooks into template_redirect to buffer output and wrap detected embeds
- * with .ms-protected-player containers. Supports YouTube, Vimeo, Bunny,
- * Wistia, self-hosted <video>, and generic iframes.
+ * Hooks into template_redirect to buffer output. Replaces detected iframes
+ * with .ms-player-target divs for JS adapter initialization — no more raw
+ * iframes. Extracts platform video IDs from embed URLs.
  *
  * @package MediaShield\Player
  */
@@ -46,41 +46,40 @@ class PlayerWrapper {
 			return $html;
 		}
 
-		// Skip if no potential video content.
 		if ( ! preg_match( '/<(iframe|video|div[^>]*wistia)/i', $html ) ) {
 			return $html;
 		}
 
-		// YouTube iframes (including nocookie variant).
-		$html = self::wrap_pattern(
+		// YouTube iframes (including nocookie).
+		$html = self::wrap_platform(
 			$html,
-			'/<iframe[^>]*\ssrc=["\'][^"\']*(?:youtube\.com\/embed|youtube-nocookie\.com\/embed)[^"\']*["\'][^>]*><\/iframe>/i',
+			'/<iframe[^>]*\ssrc=["\']([^"\']*(?:youtube\.com\/embed|youtube-nocookie\.com\/embed)[^"\']*)["\'][^>]*><\/iframe>/i',
 			'youtube'
 		);
 
 		// Vimeo iframes.
-		$html = self::wrap_pattern(
+		$html = self::wrap_platform(
 			$html,
-			'/<iframe[^>]*\ssrc=["\'][^"\']*player\.vimeo\.com\/video[^"\']*["\'][^>]*><\/iframe>/i',
+			'/<iframe[^>]*\ssrc=["\']([^"\']*player\.vimeo\.com\/video[^"\']*)["\'][^>]*><\/iframe>/i',
 			'vimeo'
 		);
 
 		// Bunny Stream iframes.
-		$html = self::wrap_pattern(
+		$html = self::wrap_platform(
 			$html,
-			'/<iframe[^>]*\ssrc=["\'][^"\']*iframe\.mediadelivery\.net[^"\']*["\'][^>]*><\/iframe>/i',
+			'/<iframe[^>]*\ssrc=["\']([^"\']*iframe\.mediadelivery\.net[^"\']*)["\'][^>]*><\/iframe>/i',
 			'bunny'
 		);
 
 		// Wistia embeds.
-		$html = self::wrap_pattern(
+		$html = self::wrap_platform(
 			$html,
-			'/<div[^>]*class=["\'][^"\']*wistia_embed[^"\']*["\'][^>]*>.*?<\/div>/is',
+			'/<div[^>]*class=["\'][^"\']*wistia_embed\s+wistia_async_([a-z0-9]+)[^"\']*["\'][^>]*>.*?<\/div>/is',
 			'wistia'
 		);
 
 		// Self-hosted <video> tags.
-		$html = self::wrap_pattern(
+		$html = self::wrap_platform(
 			$html,
 			'/<video[^>]*>.*?<\/video>/is',
 			'self'
@@ -91,11 +90,10 @@ class PlayerWrapper {
 		if ( ! empty( $custom_patterns ) ) {
 			$patterns = array_filter( array_map( 'trim', explode( "\n", $custom_patterns ) ) );
 			foreach ( $patterns as $pattern ) {
-				// Validate regex before use.
 				if ( @preg_match( '/' . $pattern . '/', '' ) !== false ) {
-					$html = self::wrap_pattern(
+					$html = self::wrap_platform(
 						$html,
-						'/<iframe[^>]*\ssrc=["\'][^"\']*' . $pattern . '[^"\']*["\'][^>]*><\/iframe>/i',
+						'/<iframe[^>]*\ssrc=["\']([^"\']*' . $pattern . '[^"\']*)["\'][^>]*><\/iframe>/i',
 						'iframe'
 					);
 				}
@@ -106,25 +104,23 @@ class PlayerWrapper {
 	}
 
 	/**
-	 * Find matches and wrap them in .ms-protected-player containers.
-	 *
-	 * Double-wrap prevention: skip elements already inside .ms-protected-player.
+	 * Find matches, extract platform video ID, and replace with player target div.
 	 *
 	 * @param string $html     HTML content.
-	 * @param string $pattern  Regex pattern to match.
+	 * @param string $pattern  Regex pattern (must capture src URL in group 1 for iframes).
 	 * @param string $platform Platform identifier.
 	 * @return string Processed HTML.
 	 */
-	private static function wrap_pattern( string $html, string $pattern, string $platform ): string {
+	private static function wrap_platform( string $html, string $pattern, string $platform ): string {
 		return preg_replace_callback( $pattern, function ( $matches ) use ( $platform, $html ) {
 			$embed = $matches[0];
 
-			// Double-wrap prevention: skip if already inside .ms-protected-player.
-			if ( str_contains( $embed, 'ms-protected-player' ) ) {
+			// Double-wrap prevention.
+			if ( str_contains( $embed, 'ms-protected-player' ) || str_contains( $embed, 'ms-player-target' ) ) {
 				return $embed;
 			}
 
-			// Check if this match is inside a wrapper div (look at surrounding context).
+			// Check surrounding context for existing wrapper.
 			$pos = strpos( $html, $embed );
 			if ( false !== $pos ) {
 				$before = substr( $html, max( 0, $pos - 200 ), min( 200, $pos ) );
@@ -133,33 +129,69 @@ class PlayerWrapper {
 				}
 			}
 
-			$video_id      = 0; // Will be resolved by JS or Gutenberg block.
-			$protection    = get_option( 'ms_default_protection', 'standard' );
+			// Extract platform video ID from the URL.
+			$src_url          = $matches[1] ?? '';
+			$platform_video_id = self::extract_video_id( $src_url, $platform );
+			$protection        = get_option( 'ms_default_protection', 'standard' );
+			$player_type       = apply_filters( 'mediashield_player_type', 'standard', 0 );
 
-			/**
-			 * Filter the player type for this video.
-			 *
-			 * Pro overrides to 'drm' for DRM-protected videos.
-			 *
-			 * @since 1.0.0
-			 *
-			 * @param string $player_type Player type: 'standard' or 'drm'.
-			 * @param int    $video_id    Video CPT post ID (0 if unresolved).
-			 */
-			$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_id );
+			// Flag Shaka Player needed for self/bunny.
+			if ( in_array( $platform, array( 'self', 'bunny' ), true ) ) {
+				do_action( 'mediashield_needs_shaka' );
+			}
 
 			return sprintf(
-				'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s">'
-				. '<div class="ms-player-inner">%s</div>'
+				'<div class="ms-protected-player" data-video-id="0" data-platform="%s" data-protection-level="%s" data-player-type="%s">'
+				. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""></div>'
 				. '<canvas class="ms-watermark-canvas"></canvas>'
 				. '<div class="ms-protection-overlay"></div>'
+				. '<button class="ms-fullscreen-btn" aria-label="Fullscreen"><span class="dashicons dashicons-fullscreen-alt"></span></button>'
 				. '</div>',
-				$video_id,
 				esc_attr( $platform ),
 				esc_attr( $protection ),
 				esc_attr( $player_type ),
-				$embed
+				esc_attr( $platform_video_id ),
+				esc_url( $src_url )
 			);
 		}, $html );
+	}
+
+	/**
+	 * Extract platform video ID from an embed URL.
+	 *
+	 * @param string $url      Embed URL.
+	 * @param string $platform Platform identifier.
+	 * @return string Video ID or empty string.
+	 */
+	private static function extract_video_id( string $url, string $platform ): string {
+		switch ( $platform ) {
+			case 'youtube':
+				if ( preg_match( '/embed\/([a-zA-Z0-9_-]{11})/', $url, $m ) ) {
+					return $m[1];
+				}
+				return '';
+
+			case 'vimeo':
+				if ( preg_match( '/video\/(\d+)/', $url, $m ) ) {
+					return $m[1];
+				}
+				return '';
+
+			case 'bunny':
+				if ( preg_match( '/embed\/(\d+)\/([a-f0-9-]+)/', $url, $m ) ) {
+					return $m[1] . '/' . $m[2];
+				}
+				return '';
+
+			case 'wistia':
+				// For Wistia, the video ID is in the class name (captured by regex group 1).
+				return $url; // Already the hashed_id from regex capture.
+
+			case 'self':
+				return ''; // Self-hosted uses source URL directly.
+
+			default:
+				return '';
+		}
 	}
 }

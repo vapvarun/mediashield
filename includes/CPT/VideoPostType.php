@@ -84,6 +84,10 @@ class VideoPostType {
 				'type'    => 'integer',
 				'default' => 0,
 			),
+			'_ms_stream_url'        => array(
+				'type'    => 'string',
+				'default' => '',
+			),
 		);
 
 		foreach ( $meta_fields as $key => $args ) {
