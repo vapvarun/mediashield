@@ -47,12 +47,13 @@ class SessionManager {
 			$now
 		) );
 
-		// Check for existing session on same video (dedup).
+		// Check for existing session on same video (dedup, locked).
 		$existing = $wpdb->get_row( $wpdb->prepare(
 			"SELECT * FROM {$table}
 			 WHERE video_id = %d AND user_id = %d AND is_active = 1
 			 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
-			 ORDER BY last_heartbeat DESC LIMIT 1",
+			 ORDER BY last_heartbeat DESC LIMIT 1
+			 FOR UPDATE",
 			$video_id,
 			$user_id,
 			$now
@@ -104,7 +105,7 @@ class SessionManager {
 		// Create session token parts.
 		$session_token_raw = wp_generate_password( 32, false );
 
-		$wpdb->insert( $table, array(
+		$inserted = $wpdb->insert( $table, array(
 			'video_id'       => $video_id,
 			'user_id'        => $user_id,
 			'session_token'  => $session_token_raw,
@@ -119,6 +120,11 @@ class SessionManager {
 			'completion_pct' => 0,
 			'is_active'      => 1,
 		), array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%f', '%f', '%d' ) );
+
+		if ( ! $inserted ) {
+			$wpdb->query( 'ROLLBACK' );
+			return false;
+		}
 
 		$session_id = (int) $wpdb->insert_id;
 
@@ -169,21 +175,8 @@ class SessionManager {
 
 		$completion_pct = $duration > 0 ? min( 100, ( $position / $duration ) * 100 ) : 0;
 
-		$wpdb->update(
-			$table,
-			array(
-				'last_heartbeat' => $now,
-				'total_seconds'  => $wpdb->prepare( 'total_seconds + %d', $playing ? 30 : 0 ),
-				'max_position'   => max( $position, 0 ),
-				'completion_pct' => $completion_pct,
-			),
-			array( 'id' => $parsed['session_id'] ),
-			null,
-			array( '%d' )
-		);
-
-		// Use raw query for atomic increment.
-		$wpdb->query( $wpdb->prepare(
+		// Single atomic update with GREATEST for max_position.
+		$rows = $wpdb->query( $wpdb->prepare(
 			"UPDATE {$table} SET
 				last_heartbeat = %s,
 				total_seconds = total_seconds + %d,
@@ -197,7 +190,7 @@ class SessionManager {
 			$parsed['session_id']
 		) );
 
-		return true;
+		return $rows > 0;
 	}
 
 	/**
@@ -297,10 +290,11 @@ class SessionManager {
 	/**
 	 * Validate an HMAC session token without DB lookup.
 	 *
-	 * @param string $token Token string.
-	 * @return array|false Parsed parts or false if invalid.
+	 * @param string $token           Token string.
+	 * @param int    $max_age_seconds Max token age in seconds (default 24 hours).
+	 * @return array|false Parsed parts or false if invalid/expired.
 	 */
-	public static function validate_token( string $token ) {
+	public static function validate_token( string $token, int $max_age_seconds = 86400 ) {
 		$parts = explode( '|', $token );
 
 		if ( count( $parts ) !== 5 ) {
@@ -308,6 +302,12 @@ class SessionManager {
 		}
 
 		list( $session_id, $video_id, $user_id, $ts, $hmac ) = $parts;
+
+		// Check token expiration.
+		$ts = (int) $ts;
+		if ( ( time() - $ts ) > $max_age_seconds ) {
+			return false;
+		}
 
 		$payload       = "{$session_id}|{$video_id}|{$user_id}|{$ts}";
 		$expected_hmac = hash_hmac( 'sha256', $payload, AUTH_SALT );
@@ -320,7 +320,7 @@ class SessionManager {
 			'session_id' => (int) $session_id,
 			'video_id'   => (int) $video_id,
 			'user_id'    => (int) $user_id,
-			'created_ts' => gmdate( 'Y-m-d H:i:s', (int) $ts ),
+			'created_ts' => gmdate( 'Y-m-d H:i:s', $ts ),
 		);
 	}
 

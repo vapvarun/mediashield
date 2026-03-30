@@ -126,10 +126,18 @@ class SessionController extends WP_REST_Controller {
 		$video_id = (int) $request->get_param( 'video_id' );
 		$user_id  = get_current_user_id();
 
-		// Verify video exists.
+		// Verify video exists and is published.
+		if ( $video_id <= 0 ) {
+			return new WP_Error( 'invalid_video_id', __( 'Invalid video ID.', 'mediashield' ), array( 'status' => 400 ) );
+		}
+
 		$video = get_post( $video_id );
 		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
 			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
+		}
+
+		if ( 'publish' !== $video->post_status ) {
+			return new WP_Error( 'unpublished', __( 'Video is not available.', 'mediashield' ), array( 'status' => 403 ) );
 		}
 
 		// Access control check.
@@ -181,10 +189,10 @@ class SessionController extends WP_REST_Controller {
 			'watermark_config' => $watermark_config,
 			'video'            => array(
 				'id'               => $video_id,
-				'title'            => $video->post_title,
-				'platform'         => get_post_meta( $video_id, '_ms_platform', true ),
-				'source_url'       => get_post_meta( $video_id, '_ms_source_url', true ),
-				'protection_level' => get_post_meta( $video_id, '_ms_protection_level', true ),
+				'title'            => sanitize_text_field( $video->post_title ),
+				'platform'         => sanitize_text_field( get_post_meta( $video_id, '_ms_platform', true ) ),
+				'source_url'       => esc_url( get_post_meta( $video_id, '_ms_source_url', true ) ),
+				'protection_level' => sanitize_text_field( get_post_meta( $video_id, '_ms_protection_level', true ) ),
 				'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
 			),
 		) );
@@ -195,18 +203,19 @@ class SessionController extends WP_REST_Controller {
 	 */
 	public function heartbeat( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		// Rate limiting: max 4 heartbeats per minute per user.
+		// Increment first to close TOCTOU race window.
 		$rate_key = 'ms_rate_' . get_current_user_id();
 		$count    = (int) get_transient( $rate_key );
+		$count++;
+		set_transient( $rate_key, $count, 60 );
 
-		if ( $count >= 4 ) {
+		if ( $count > 4 ) {
 			return new WP_Error(
 				'rate_limited',
 				__( 'Too many requests.', 'mediashield' ),
 				array( 'status' => 429 )
 			);
 		}
-
-		set_transient( $rate_key, $count + 1, 60 );
 
 		$success = SessionManager::heartbeat(
 			$request->get_param( 'token' ),
@@ -253,15 +262,23 @@ class SessionController extends WP_REST_Controller {
 	/**
 	 * Get client IP address.
 	 *
+	 * Only trusts REMOTE_ADDR by default. Sites behind a reverse proxy
+	 * can add trusted headers via the mediashield_trusted_ip_headers filter.
+	 *
 	 * @return string IP address.
 	 */
 	private static function get_client_ip(): string {
-		$headers = array(
-			'HTTP_CF_CONNECTING_IP', // Cloudflare
-			'HTTP_X_FORWARDED_FOR',
-			'HTTP_X_REAL_IP',
-			'REMOTE_ADDR',
-		);
+		/**
+		 * Filter the trusted IP headers for client IP detection.
+		 *
+		 * Only add proxy headers if your server is actually behind that proxy.
+		 * Example: add 'HTTP_CF_CONNECTING_IP' if behind Cloudflare.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $headers Server variable names to check, in priority order.
+		 */
+		$headers = apply_filters( 'mediashield_trusted_ip_headers', array( 'REMOTE_ADDR' ) );
 
 		foreach ( $headers as $header ) {
 			if ( ! empty( $_SERVER[ $header ] ) ) {
