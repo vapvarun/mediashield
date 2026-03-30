@@ -21,6 +21,7 @@ use MediaShield\REST\UploadController;
 use MediaShield\REST\SettingsController;
 use MediaShield\REST\AnalyticsController;
 use MediaShield\Admin\Menu;
+use MediaShield\Admin\SetupWizard;
 use MediaShield\Core\Assets;
 
 class Plugin {
@@ -63,6 +64,9 @@ class Plugin {
 
 		// Admin menu + SPA assets.
 		Menu::register();
+
+		// Setup wizard (first activation redirect).
+		SetupWizard::register();
 
 		// Single video template.
 		add_filter( 'single_template', array( $this, 'video_template' ) );
