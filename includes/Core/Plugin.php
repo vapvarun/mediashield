@@ -17,6 +17,7 @@ use MediaShield\Block\VideoBlock;
 use MediaShield\Block\PlaylistBlock;
 use MediaShield\Block\Shortcode;
 use MediaShield\REST\PlaylistController;
+use MediaShield\REST\UploadController;
 use MediaShield\Core\Assets;
 
 class Plugin {
@@ -81,6 +82,7 @@ class Plugin {
 		( new TagController() )->register_routes();
 		( new SessionController() )->register_routes();
 		( new PlaylistController() )->register_routes();
+		( new UploadController() )->register_routes();
 	}
 
 	/**
