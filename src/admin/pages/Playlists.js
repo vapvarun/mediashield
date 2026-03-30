@@ -23,8 +23,7 @@ const Playlists = () => {
 		setError( '' );
 
 		apiFetch( {
-			url: `${ config.wpRestUrl }wp/v2/mediashield-playlists`,
-			headers: { 'X-WP-Nonce': config.nonce },
+			path: '/wp/v2/mediashield-playlists?_locale=user',
 		} )
 			.then( ( res ) => {
 				if ( ! cancelled ) {
@@ -94,7 +93,7 @@ const Playlists = () => {
 								</td>
 								<td className="mediashield-table__actions">
 									<a
-										href={ `${ config.wpRestUrl.replace( '/wp-json/', '' ) }/wp-admin/post.php?post=${ playlist.id }&action=edit` }
+										href={ `${ config.adminUrl }post.php?post=${ playlist.id }&action=edit` }
 										className="mediashield-link"
 									>
 										{ __( 'Edit', 'mediashield' ) }

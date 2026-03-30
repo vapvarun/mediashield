@@ -50,8 +50,7 @@ const Videos = () => {
 		setError( '' );
 
 		apiFetch( {
-			url: `${ config.wpRestUrl }wp/v2/mediashield-videos?per_page=${ PER_PAGE }&page=${ page }`,
-			headers: { 'X-WP-Nonce': config.nonce },
+			path: `/wp/v2/mediashield-videos?per_page=${ PER_PAGE }&page=${ page }&_locale=user`,
 			parse: false,
 		} )
 			.then( async ( res ) => {
@@ -133,7 +132,7 @@ const Videos = () => {
 									</td>
 									<td className="mediashield-table__actions">
 										<a
-											href={ `${ config.wpRestUrl.replace( '/wp-json/', '' ) }/wp-admin/post.php?post=${ video.id }&action=edit` }
+											href={ `${ config.adminUrl }post.php?post=${ video.id }&action=edit` }
 											className="mediashield-link"
 										>
 											{ __( 'Edit', 'mediashield' ) }
