@@ -96,18 +96,32 @@ class TagManager {
 			$args[] = '%' . $wpdb->esc_like( $search ) . '%';
 		}
 
-		$total = (int) $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wpdb->prefix}ms_tags {$where}",
-			...$args
-		) );
+		if ( ! empty( $args ) ) {
+			$total = (int) $wpdb->get_var( $wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}ms_tags {$where}",
+				...$args
+			) );
+		} else {
+			$total = (int) $wpdb->get_var(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}ms_tags"
+			);
+		}
 
-		$offset    = ( $page - 1 ) * $per_page;
-		$limit_args = array_merge( $args, array( $per_page, $offset ) );
+		$offset = ( $page - 1 ) * $per_page;
 
-		$items = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM {$wpdb->prefix}ms_tags {$where} ORDER BY name ASC LIMIT %d OFFSET %d",
-			...$limit_args
-		) );
+		if ( ! empty( $args ) ) {
+			$limit_args = array_merge( $args, array( $per_page, $offset ) );
+			$items = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}ms_tags {$where} ORDER BY name ASC LIMIT %d OFFSET %d",
+				...$limit_args
+			) );
+		} else {
+			$items = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}ms_tags ORDER BY name ASC LIMIT %d OFFSET %d",
+				$per_page,
+				$offset
+			) );
+		}
 
 		return array( 'items' => $items ?: array(), 'total' => $total );
 	}
