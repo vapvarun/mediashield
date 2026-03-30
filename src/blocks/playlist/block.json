@@ -1,0 +1,26 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "mediashield/playlist",
+	"version": "1.0.0",
+	"title": "MediaShield Playlist",
+	"category": "media",
+	"icon": "playlist-video",
+	"description": "Embed a video playlist with auto-play, countdown timer, loop, and shuffle.",
+	"keywords": [ "playlist", "video", "mediashield", "course" ],
+	"textdomain": "mediashield",
+	"attributes": {
+		"playlistId": {
+			"type": "number",
+			"default": 0
+		}
+	},
+	"supports": {
+		"align": [ "wide", "full" ],
+		"html": false
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"render": "file:./render.php",
+	"viewScriptModule": "file:./view.js"
+}

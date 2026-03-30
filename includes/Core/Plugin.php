@@ -14,7 +14,9 @@ use MediaShield\REST\TagController;
 use MediaShield\REST\SessionController;
 use MediaShield\Player\PlayerWrapper;
 use MediaShield\Block\VideoBlock;
+use MediaShield\Block\PlaylistBlock;
 use MediaShield\Block\Shortcode;
+use MediaShield\REST\PlaylistController;
 use MediaShield\Core\Assets;
 
 class Plugin {
@@ -46,6 +48,7 @@ class Plugin {
 
 		// Gutenberg blocks + shortcode.
 		VideoBlock::register();
+		PlaylistBlock::register();
 		Shortcode::register();
 
 		// Player wrapper (output buffer for video detection + wrapping).
@@ -77,6 +80,7 @@ class Plugin {
 	public function register_rest_routes(): void {
 		( new TagController() )->register_routes();
 		( new SessionController() )->register_routes();
+		( new PlaylistController() )->register_routes();
 	}
 
 	/**
