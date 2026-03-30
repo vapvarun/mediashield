@@ -166,7 +166,7 @@ class PlayerWrapper {
 	private static function extract_video_id( string $url, string $platform ): string {
 		switch ( $platform ) {
 			case 'youtube':
-				if ( preg_match( '/embed\/([a-zA-Z0-9_-]{11})/', $url, $m ) ) {
+				if ( preg_match( '/embed\/([a-zA-Z0-9_-]+)/', $url, $m ) ) {
 					return $m[1];
 				}
 				return '';
