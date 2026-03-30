@@ -43,38 +43,50 @@ Free's `PlayerWrapper` applies: `apply_filters('mediashield_player_type', 'stand
 ## Dependency DAG
 
 ```
-Task 1 ─── Scaffold + CPTs + DB + npm/composer
+Task 1 ─── Free Scaffold + CPTs + DB (6 tables) + npm/composer
   │
   ├─► Task 3 ─── Tags CRUD + REST
-  ├─► Task 4 ─── Access Control + Sessions
-  │     └─► Task 5 ─── Player + Watermark + Tracker + BUILD STEP
-  │           └─► Task 6 ─── Milestones (wired into tracker)
-  │                 └─► Task 7 ─── Video Block + Shortcode + Single Template
+  ├─► Task 4 ─── Access Control + Sessions + Nonce + Rate Limiting
+  │     ├─► Task 5 ─── Player + Watermark + Tracker + BUILD STEP
+  │     │     └─► Task 6 ─── Milestones (wired into tracker)
+  │     │           └─► Task 7 ─── Video Block + Shortcode + Single Template
+  │     ├─► Task 9 ─── Self-Hosted Upload (secure .htaccess + MIME validation)
+  │     └─► Task 23 ── GDPR (needs sessions)
   ├─► Task 8 ─── Playlist Block + REST
-  ├─► Task 9 ─── Self-Hosted Upload
-  ├─► Task 10 ── Admin React SPA (needs T3,T4,T6 REST endpoints)
-  │     └─► Task 11 ── Setup Wizard
-  │
-  ├─► Task 2 ─── Pro Scaffold + Pro DB
-  │     ├─► Task 12 ── Role-Based Access
-  │     ├─► Task 13 ── Advanced Watermark + Badge removal
-  │     ├─► Task 14 ── Platform Drivers + Multisite
-  │     │     └─► Task 15 ── Frontend Upload Form
-  │     ├─► Task 16 ── Advanced Analytics
-  │     │     └─► Task 26 ── Weekly Email Digest
-  │     ├─► Task 17 ── Advanced Milestone Actions
-  │     ├─► Task 18 ── Widevine DRM
-  │     │     └─► Task 19 ── PWA Offline
-  │     ├─► Task 20 ── Data Export
-  │     └─► Task 25 ── Email Gate (uses SlotFill from T7)
-  │
-  ├─► Task 21 ── i18n (after all UI tasks)
-  ├─► Task 22 ── Deletion Cascade + Crons
-  ├─► Task 23 ── GDPR (needs T4)
-  ├─► Task 24 ── Student My Videos (needs T4)
-  ├─► Task 27 ── Documentation
-  └─► Task 28 ── E2E Testing (after everything)
+  └─► Task 10 ── Admin React SPA (needs T3,T4,T5,T6,T9)
+        └─► Task 11 ── Setup Wizard
+
+Task 2 ─── Pro Scaffold + Pro DB (8 tables) + dependency check
+  └─► Task 2.5 ── EDD Licensing + Automatic Updates (vapvarun/edd-sl-sdk)
+        ├─► Task 12 ── Role-Based Access
+        ├─► Task 13 ── Advanced Watermark + Badge removal
+        ├─► Task 14 ── Platform Drivers + Multisite
+        │     └─► Task 15 ── Frontend Upload Form
+        ├─► Task 16 ── Advanced Analytics (DevTools = info level)
+        │     └─► Task 26 ── Weekly Email Digest
+        ├─► Task 17 ── Advanced Milestone Actions
+        ├─► Task 18 ── DRM (Cloud primary: Bunny/AWS, Local Shaka optional)
+        │     └─► Task 19 ── PWA Offline (Chrome/Edge only, no Safari)
+        ├─► Task 20 ── Data Export (async PDF via Action Scheduler)
+        └─► Task 25 ── Email Gate + GDPR consent (uses SlotFill from T7)
+
+Task 21 ── i18n (after T10, includes pro text domain)
+Task 22 ── Deletion Cascade + Crons (after T1, T2)
+Task 24 ── Student My Videos (after T4)
+Task 27 ── Documentation (after all)
+Task 28 ── E2E Testing (after everything)
 ```
+
+### Key changes from v2.0 to v2.1:
+- **Task 2.5 added:** EDD Software Licensing SDK integration for pro licensing + auto-updates
+- **Task 4 patched:** Nonce validation, rate limiting (4 req/min), `SELECT ... FOR UPDATE` row locking for concurrent sessions (5-min window)
+- **Task 5 patched:** Per-user batch transients (no shared key race condition), `mediashield_player_type` filter, asset versioning via `MEDIASHIELD_VERSION`
+- **Task 9 patched:** `.htaccess` deny-all in upload dir, MIME whitelist (`video/mp4,webm,quicktime,x-m4v`), `wp_check_filetype_and_ext()`
+- **Task 18 patched:** Cloud DRM primary (Bunny Stream DRM / AWS MediaConvert), local Shaka optional
+- **Task 20 patched:** Async PDF generation via Action Scheduler + email download link
+- **Task 25 patched:** GDPR consent checkbox required, privacy policy link, `ms_email_captures` table with `consent_given` column, retention cron (12 months)
+- **Schema:** Free 5→6 tables (added `ms_watch_sessions_archive`), Pro 7→8 tables (added `ms_email_captures`), utf8mb4 charset, missing indexes added
+- **Free hooks added:** `mediashield_player_type`, `mediashield_upload_drivers`, `mediashield_can_watch`
 
 ## Working State After Each Task
 
@@ -82,8 +94,9 @@ Every task must leave the plugin in a **fully functional state** — no broken f
 
 | After Task | What Works | Verifiable? |
 |------------|-----------|-------------|
-| **T1** | Plugin activates. 2 CPTs registered. 5 tables created. Videos creatable via WP admin. `npm install` + `composer install` complete. | `wp plugin activate mediashield` ✓ |
-| **T2** | Pro activates alongside free. 12 tables total. Pro dependency check works. Deactivate pro → free still works. | `wp plugin activate mediashield-pro` ✓ |
+| **T1** | Plugin activates. 2 CPTs registered. 6 tables created (incl. archive). Videos creatable via WP admin. `npm install` + `composer install` complete. | `wp plugin activate mediashield` ✓ |
+| **T2** | Pro activates alongside free. 14 tables total (6 free + 8 pro). Pro dependency check works. Deactivate pro → free still works. | `wp plugin activate mediashield-pro` ✓ |
+| **T2.5** | Pro "Manage License" link in plugin row. Activate/deactivate license via modal. Weekly cron for license check. Auto-updates when licensed. | Activate pro → click "Manage License" ✓ |
 | **T3** | Tags CRUD works via REST API. Videos can be tagged. | `wp rest post mediashield/v1/tags` ✓ |
 | **T4** | Session start/heartbeat/end works via REST. Access control gates non-logged-in users. Domain restriction active. Resume position returned. | `wp rest post mediashield/v1/session/start` ✓ |
 | **T5** | **Full frontend protection working.** Visit any page with YouTube/Vimeo/video embed → wrapped, watermarked, tracked. Heartbeats fire. Right-click blocked. Shaka Player works for self-hosted. `npm run build` produces bundles. | Browser test ✓ |
@@ -142,7 +155,8 @@ wp-content/plugins/mediashield/
 │   │   └── Shortcode.php                    # [mediashield id=123] shortcode handler
 │   ├── DB/
 │   │   └── Schema.php                       # ms_tags, ms_video_tags, ms_watch_sessions,
-│   │                                        # ms_milestones, ms_playlist_items
+│   │                                        # ms_milestones, ms_playlist_items,
+│   │                                        # ms_watch_sessions_archive
 │   ├── Player/
 │   │   ├── PlayerWrapper.php                # Detect & wrap video embeds (double-wrap prevention)
 │   │   ├── Watermark.php                    # Canvas overlay config & data injection
@@ -244,16 +258,19 @@ wp-content/plugins/mediashield/
 ```
 wp-content/plugins/mediashield-pro/
 ├── mediashield-pro.php
-├── composer.json                            # PSR-4 (MediaShieldPro\\), require: dompdf/dompdf
+├── composer.json                            # PSR-4 (MediaShieldPro\\), require: dompdf, edd-sl-sdk
 ├── includes/
 │   ├── Core/
 │   │   ├── Plugin.php                       # Pro init, hooks into free, dependency check
 │   │   ├── Activator.php
 │   │   └── Migrator.php
+│   ├── Licensing/
+│   │   └── Messenger.php                    # EDD SL SDK custom messenger (translations)
 │   ├── DB/
 │   │   └── Schema.php                       # ms_playback_events, ms_platform_connections,
 │   │                                        # ms_upload_queue, ms_activity_alerts,
-│   │                                        # ms_drm_licenses, ms_heatmap_cache, ms_drm_keys
+│   │                                        # ms_drm_licenses, ms_heatmap_cache, ms_drm_keys,
+│   │                                        # ms_email_captures
 │   ├── Watermark/
 │   │   └── AdvancedConfig.php               # Hooks mediashield_watermark_config filter
 │   ├── Access/
@@ -320,29 +337,35 @@ wp-content/plugins/mediashield-pro/
 
 ## Database Tables Summary
 
-### Free Tables (5 tables, created by mediashield)
+### Free Tables (6 tables, created by mediashield)
 
-| Table | Purpose |
-|-------|---------|
-| `ms_tags` | Tag definitions (name, slug, description) |
-| `ms_video_tags` | Many-to-many: video CPT post ID <-> tag ID |
-| `ms_watch_sessions` | Per-user watch sessions with heartbeat tracking |
-| `ms_milestones` | Milestone completion records (deduplicated) |
-| `ms_playlist_items` | Playlist <-> video ordering (playlist_id, video_id, sort_order) |
+| Table | Purpose | Key Indexes |
+|-------|---------|-------------|
+| `ms_tags` | Tag definitions (name, slug, description) | UNIQUE(slug) |
+| `ms_video_tags` | Many-to-many: video CPT post ID <-> tag ID | UNIQUE(video_id, tag_id), INDEX(tag_id) |
+| `ms_watch_sessions` | Per-user watch sessions with heartbeat tracking | INDEX(video_id, user_id), INDEX(user_id, is_active, last_heartbeat) |
+| `ms_milestones` | Milestone completion records (deduplicated) | UNIQUE(video_id, user_id, milestone_pct), INDEX(user_id) |
+| `ms_playlist_items` | Playlist <-> video ordering (playlist_id, video_id, sort_order) | INDEX(playlist_id, sort_order), INDEX(video_id) |
+| `ms_watch_sessions_archive` | Archived inactive sessions (same schema as ms_watch_sessions) | INDEX(video_id, user_id) |
 
-### Pro Tables (7 tables, created by mediashield-pro)
+All tables use `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`.
+
+### Pro Tables (8 tables, created by mediashield-pro)
 
 | Table | Purpose |
 |-------|---------|
 | `ms_playback_events` | Granular play/pause/seek events for heatmaps |
-| `ms_platform_connections` | Platform API credentials (encrypted) |
+| `ms_platform_connections` | Platform API credentials (encrypted AES-256-CBC) |
 | `ms_upload_queue` | Async upload job queue |
-| `ms_activity_alerts` | Suspicious activity alerts |
+| `ms_activity_alerts` | Suspicious activity alerts (DevTools = info level) |
 | `ms_drm_licenses` | Widevine license records |
 | `ms_heatmap_cache` | Pre-aggregated heatmap data (hourly cron) |
 | `ms_drm_keys` | DRM content encryption keys (AES-256-CBC encrypted) |
+| `ms_email_captures` | Email gate lead captures with GDPR consent flag |
 
-**Total: 12 tables (5 free + 7 pro)**
+All tables use `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`.
+
+**Total: 14 tables (6 free + 8 pro)**
 
 ---
 
@@ -409,13 +432,14 @@ Activation hook -> `Activator::activate()`. Deactivation -> `Deactivator::deacti
 
 - [ ] **Step 4: Create DB/Schema.php**
 
-5 free tables (NO `ms_videos` table):
+6 free tables (NO `ms_videos` table). All tables must use `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`:
 
 - `ms_tags` — id, name, slug, description, created_by, created_at. UNIQUE on slug.
-- `ms_video_tags` — video_id (= CPT post ID), tag_id, tagged_by, tagged_at. PRIMARY KEY (video_id, tag_id).
-- `ms_watch_sessions` — id, video_id (= CPT post ID), user_id, session_token, ip_address, user_agent, device_type, browser, started_at, last_heartbeat, total_seconds, max_position, completion_pct, is_active. Indexes: idx_video_user, idx_active, idx_user, idx_started.
-- `ms_milestones` — id, video_id (= CPT post ID), user_id, milestone_pct, reached_at, session_id. UNIQUE KEY (video_id, user_id, milestone_pct).
+- `ms_video_tags` — video_id (= CPT post ID), tag_id, tagged_by, tagged_at. UNIQUE KEY uk_video_tag (video_id, tag_id). INDEX idx_tag_id (tag_id).
+- `ms_watch_sessions` — id, video_id (= CPT post ID), user_id, session_token, ip_address, user_agent, device_type, browser, started_at, last_heartbeat, total_seconds, max_position, completion_pct, is_active. Indexes: idx_video_user, idx_active (user_id, is_active, last_heartbeat), idx_user, idx_started.
+- `ms_milestones` — id, video_id (= CPT post ID), user_id, milestone_pct, reached_at, session_id. UNIQUE KEY (video_id, user_id, milestone_pct). INDEX idx_user_id (user_id).
 - `ms_playlist_items` — id, playlist_id (= playlist CPT post ID), video_id (= video CPT post ID), sort_order, added_at. Indexes: idx_playlist (playlist_id, sort_order), idx_video (video_id).
+- `ms_watch_sessions_archive` — Same schema as `ms_watch_sessions`. Used by Task 22 cron to archive inactive sessions. INDEX idx_video_user (video_id, user_id).
 
 All column definitions per DESIGN_SPEC.md. All `video_id` columns reference the `mediashield_video` CPT post ID.
 
@@ -479,7 +503,7 @@ wp --path="/Users/varundubey/Local Sites/forums/app/public" post-type list --for
 wp --path="/Users/varundubey/Local Sites/forums/app/public" rewrite flush
 ```
 
-Expected: 5 tables + 2 CPTs registered.
+Expected: 6 tables + 2 CPTs registered.
 
 - [ ] **Step 12: Commit**
 
@@ -524,7 +548,7 @@ Run: `cd wp-content/plugins/mediashield-pro && composer install`
 
 - [ ] **Step 3: Create Pro DB/Schema.php**
 
-7 pro tables:
+8 pro tables (all created with `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`):
 
 - `ms_playback_events` — id, session_id, event_type (ENUM: play, pause, seek, buffer, complete, focus_lost, focus_gained), position, timestamp, metadata (JSON). Indexes: idx_session, idx_position.
 - `ms_platform_connections` — id, platform, api_key (TEXT, encrypted), api_secret (TEXT, encrypted), extra_config (JSON), is_active, connected_by, connected_at. Index: idx_platform.
@@ -533,6 +557,7 @@ Run: `cd wp-content/plugins/mediashield-pro && composer install`
 - `ms_drm_licenses` — id, video_id (= CPT post ID), user_id, license_type (ENUM: streaming, persistent), license_token, device_id, expires_at, created_at, revoked_at. Indexes: idx_video_user, idx_expires.
 - `ms_heatmap_cache` — id, video_id (= CPT post ID), position_bucket, view_count, avg_duration, last_aggregated. Index: idx_video_position.
 - `ms_drm_keys` — id, video_id (= CPT post ID), key_id (VARCHAR 255), content_key_encrypted (TEXT, AES-256-CBC), iv (VARCHAR 32), created_at. UNIQUE KEY on video_id.
+- `ms_email_captures` — id, video_id (= CPT post ID), email (VARCHAR 255), name (VARCHAR 255, nullable), captured_at (DATETIME), ip_address (VARCHAR 45), source (VARCHAR 50, default 'email_gate'). Indexes: idx_video, idx_email. UNIQUE KEY on video_id + email (prevent duplicate captures per video).
 
 - [ ] **Step 4: Create Pro Activator + Migrator**
 
@@ -561,13 +586,128 @@ wp --path="/Users/varundubey/Local Sites/forums/app/public" plugin activate medi
 wp --path="/Users/varundubey/Local Sites/forums/app/public" db tables --all-tables | grep ms_
 ```
 
-Expected: 12 tables (5 free + 7 pro).
+Expected: 14 tables (6 free + 8 pro).
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add wp-content/plugins/mediashield-pro/
-git commit -m "feat(mediashield-pro): scaffold pro plugin with 7 DB tables"
+git commit -m "feat(mediashield-pro): scaffold pro plugin with 8 DB tables"
+```
+
+---
+
+## Task 2.5: Pro — EDD Software Licensing + Automatic Updates
+
+**Files:**
+- Create: `mediashield-pro/includes/Licensing/Messenger.php`
+- Modify: `mediashield-pro/mediashield-pro.php` (add SDK loader + registration)
+- Modify: `mediashield-pro/composer.json` (add edd-sl-sdk dependency)
+
+- [ ] **Step 1: Add EDD SL SDK to composer.json**
+
+Add to `mediashield-pro/composer.json`:
+
+```json
+{
+  "repositories": {
+    "edd-sl-sdk": {
+      "type": "vcs",
+      "url": "https://github.com/vapvarun/edd-sl-sdk"
+    }
+  },
+  "require": {
+    "vapvarun/edd-sl-sdk": "^1.0"
+  }
+}
+```
+
+Run `composer install` in the pro plugin directory.
+
+- [ ] **Step 2: Register plugin with SDK in mediashield-pro.php**
+
+Add after the plugin header, before `Plugin::init()`:
+
+```php
+// Load Composer autoload (includes EDD SL SDK).
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+    require_once __DIR__ . '/vendor/autoload.php';
+}
+
+// Register with EDD Software Licensing SDK.
+add_action( 'edd_sl_sdk_registry', function ( $registry ) {
+    $registry->register( array(
+        'id'              => 'mediashield-pro',
+        'url'             => 'https://wbcomdesigns.com',
+        'item_id'         => 0, // Replace with EDD download ID when product is created
+        'version'         => MEDIASHIELD_PRO_VERSION,
+        'file'            => MEDIASHIELD_PRO_PLUGIN_FILE,
+        'weekly_check'    => true,
+        'messenger_class' => MediaShieldPro\Licensing\Messenger::class,
+    ) );
+} );
+```
+
+- [ ] **Step 3: Create custom Messenger class**
+
+`mediashield-pro/includes/Licensing/Messenger.php`:
+
+```php
+<?php
+namespace MediaShieldPro\Licensing;
+
+use EasyDigitalDownloads\Updater\Messenger;
+
+class Messenger extends Messenger {
+    protected $text_domain = 'mediashield-pro';
+
+    public function get_manage_license_link_label(): string {
+        return __( 'Activate License', 'mediashield-pro' );
+    }
+
+    public function get_license_expired_message( $date ): string {
+        return sprintf(
+            __( 'Your MediaShield Pro license expired on %s. Renew to continue receiving updates and support.', 'mediashield-pro' ),
+            $date
+        );
+    }
+}
+```
+
+- [ ] **Step 4: Add license status helper in Pro Plugin.php**
+
+In `Plugin::init()`, after free dependency check passes, add license status check:
+
+```php
+/**
+ * Check if the pro license is valid.
+ *
+ * @return bool
+ */
+public static function is_licensed(): bool {
+    $license = get_option( 'mediashield-pro_license', array() );
+    $valid   = isset( $license['license'] ) && 'valid' === $license['license'];
+    return (bool) apply_filters( 'mediashield_pro_license_valid', $valid );
+}
+```
+
+Pro features still load if unlicensed (grace period / freemium model), but `is_licensed()` can be checked by any feature that should be license-gated. Show admin notice if license missing/expired.
+
+- [ ] **Step 5: Verify**
+
+```bash
+composer install -d wp-content/plugins/mediashield-pro/
+wp plugin activate mediashield-pro
+# Check: "Manage License" link appears in plugin row actions on Plugins page
+# Click: Modal opens with license key input
+# Verify: Weekly cron scheduled: wp cron event list | grep edd_sl_sdk
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add wp-content/plugins/mediashield-pro/
+git commit -m "feat(mediashield-pro): integrate EDD Software Licensing SDK for licensing and auto-updates"
 ```
 
 ---
@@ -649,6 +789,42 @@ wp --path="..." rest post mediashield/v1/session/start --user=1 '{"video_id": 12
 
 ```bash
 git commit -m "feat(mediashield): access control + HMAC session manager with REST endpoints"
+```
+
+- [ ] **Step 10: Security hardening — nonce, rate limiting, row locking**
+
+**Nonce validation:** All REST endpoints in `SessionController` must use WP REST nonce validation. The `permission_callback` validates `X-WP-Nonce` header via standard `wp_verify_nonce()` + `wp_rest` nonce. Assets.php will localize the nonce (see Task 5).
+
+**Rate limiting:** Add to `SessionController::heartbeat()`:
+```php
+$rate_key = 'ms_rate_' . get_current_user_id();
+$count    = (int) get_transient( $rate_key );
+if ( $count >= 4 ) {
+    return new \WP_Error( 'rate_limited', __( 'Too many requests.', 'mediashield' ), array( 'status' => 429 ) );
+}
+set_transient( $rate_key, $count + 1, 60 );
+```
+Max 4 heartbeats per minute per user (30s interval = ~2/min normal, 4 allows for reconnects).
+
+**Concurrent session locking:** In `SessionManager::start()`, use `SELECT ... FOR UPDATE` inside a transaction to prevent race conditions:
+```php
+$wpdb->query( 'START TRANSACTION' );
+$active = $wpdb->get_var( $wpdb->prepare(
+    "SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND is_active = 1 AND last_heartbeat > DATE_SUB(NOW(), INTERVAL 5 MINUTE) FOR UPDATE",
+    $user_id
+) );
+if ( $active >= $max_concurrent ) {
+    $wpdb->query( 'ROLLBACK' );
+    return new \WP_Error( 'concurrent_limit', '', array( 'status' => 403 ) );
+}
+// INSERT new session...
+$wpdb->query( 'COMMIT' );
+```
+Session timeout window: 5 minutes (not 2 minutes) for reliable concurrent detection.
+
+**Filter hook:** `AccessControl::can_watch()` must include:
+```php
+$can_watch = apply_filters( 'mediashield_can_watch', $can_watch, $video_id, $user_id );
 ```
 
 ---
@@ -747,7 +923,35 @@ Verify: Self-hosted video plays via Shaka Player (not native `<video>`). YouTube
 
 Navigate to a page with YouTube/Vimeo embed -> verify `.ms-protected-player` wrapper, canvas watermark rendering, heartbeat network requests in DevTools, right-click blocked. Navigate to a self-hosted MP4 → verify Shaka Player loads. Test `protection_level=none` video → plays without watermark/login gate. Test resume: watch to 50%, leave page, return → "Resume from X:XX?" prompt.
 
-- [ ] **Step 13: Commit**
+- [ ] **Step 13: Nonce localization + batch transient fix + filter hooks**
+
+**Nonce localization in Assets.php:**
+```php
+wp_localize_script( 'mediashield-tracker', 'mediashieldConfig', array(
+    'restUrl'  => rest_url( 'mediashield/v1/' ),
+    'nonce'    => wp_create_nonce( 'wp_rest' ),
+    'interval' => 30000,
+) );
+```
+All `tracker.js` fetch calls must include header: `'X-WP-Nonce': mediashieldConfig.nonce`.
+
+**Batch transient fix:** In `Tracker.php`, use per-user transient keys to prevent race conditions:
+```php
+// Per-user per-video key (no shared transient):
+$key = 'ms_hb_' . get_current_user_id() . '_' . $video_id;
+set_transient( $key, $batch, 120 );
+```
+With object cache (Redis/Memcached): use `wp_cache_set()` with group `mediashield_heartbeats`.
+
+**Player type filter hook in PlayerWrapper.php:**
+```php
+$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_id );
+```
+Pro overrides this to `'drm'` for DRM-protected videos.
+
+**Asset versioning:** All `wp_enqueue_script/style()` calls use `MEDIASHIELD_VERSION` as `$ver` parameter.
+
+- [ ] **Step 14: Commit**
 
 ```bash
 git commit -m "feat(mediashield): player wrapper with watermark, protection, tracker, Shaka Player"
@@ -956,7 +1160,30 @@ Driver factory: default `SelfHosted`, extensible via `mediashield_upload_drivers
 wp --path="..." rest post mediashield/v1/upload/init --user=1
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Upload security hardening**
+
+**Protected directory:** `SelfHosted::__construct()` creates `.htaccess` in `wp-content/uploads/mediashield/`:
+```apache
+<FilesMatch ".*">
+  Require all denied
+</FilesMatch>
+```
+
+**MIME whitelist:** Only accept: `video/mp4`, `video/webm`, `video/quicktime`, `video/x-m4v`.
+
+**Validation:** Use `wp_check_filetype_and_ext()` (not just Content-Type header) to verify uploaded file type.
+
+**Max file size:** Configurable via `ms_max_upload_size` option, default 2GB.
+
+**Upload driver filter hook in UploadManager.php:**
+```php
+$drivers = apply_filters( 'mediashield_upload_drivers', array(
+    'self_hosted' => Drivers\SelfHosted::class,
+) );
+```
+Pro registers Bunny, Vimeo, YouTube, Wistia drivers via this filter.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git commit -m "feat(mediashield): self-hosted upload driver with DriverInterface + REST endpoints"
@@ -987,6 +1214,8 @@ git commit -m "feat(mediashield): self-hosted upload driver with DriverInterface
 - [ ] **Step 1: Build Menu.php**
 
 Top-level MediaShield menu (`dashicons-video-alt3`). Single admin page that renders a `<div id="mediashield-admin-root"></div>`. Enqueue React SPA bundle (`admin.js`) + `admin.css` only on MediaShield admin pages. Localize REST URL, nonce, current user, plugin version.
+
+Menu.php must include `<noscript>JavaScript is required for the MediaShield admin dashboard.</noscript>` within the admin page callback.
 
 - [ ] **Step 2: Build admin entry point (src/admin/index.js)**
 
@@ -1264,6 +1493,8 @@ Detection rules:
 - Rapid seek: scrubbing through entire video in < 30 seconds
 - DevTools flag: client-side detection signal sent with heartbeat
 
+DevTools detection alerts are stored with severity level "info" (not "warning") due to high false-positive rate (~50%). They appear in the alerts panel but do not trigger email notifications.
+
 **VPN/proxy sensitivity controls** — admin setting: `ms_suspicious_sensitivity` (low/medium/high).
 - Low: only flag 5+ different IPs in 1 hour (minimal false positives, misses some sharing)
 - Medium: flag 3+ different IPs in 30 minutes (default — balanced)
@@ -1332,7 +1563,7 @@ git commit -m "feat(mediashield-pro): advanced milestone actions (tag, email, we
 
 ---
 
-## Task 18: Pro — Widevine DRM
+## Task 18: Pro — DRM (Cloud Primary, Local Shaka Optional)
 
 **Files:**
 - Create: `mediashield-pro/includes/DRM/KeyServer.php`
@@ -1341,6 +1572,18 @@ git commit -m "feat(mediashield-pro): advanced milestone actions (tag, email, we
 - Create: `mediashield-pro/includes/REST/DRMController.php`
 - Create: `mediashield-pro/assets/js/drm-player.js`
 - Create: `mediashield-pro/includes/Admin/DRMSettings.php`
+
+- [ ] **Step 0: DRM packaging method setting**
+
+Add `ms_drm_method` option with values: `cloud_bunny` (default), `cloud_aws`, `local_shaka`, `none`.
+
+**Cloud DRM (primary, recommended):** Bunny Stream DRM has built-in Widevine. Videos uploaded to Bunny are automatically DRM-protected. AWS MediaConvert is the alternative cloud backend. No local binary needed.
+
+**Local Shaka Packager (optional, advanced):** For users with VPS/dedicated hosting. Admin setting shows warning: "Requires shell_exec access and Shaka Packager binary installed on your server."
+
+**Fallback:** If `ms_drm_method = none` or not configured, fall back to standard watermark + protection (no encryption). Show admin notice: "DRM not configured. Videos are protected with watermark only."
+
+In `DRMSettings.php`, add a select dropdown for DRM method with descriptions for each option.
 
 - [ ] **Step 1: Implement KeyServer.php**
 
@@ -1395,7 +1638,14 @@ Cache encrypted DASH segments on demand. Serve from cache when offline. Handle p
 
 Requests persistent license (`/drm/offline`), sends segments to SW cache, shows download progress bar. Only appears for DRM-enabled videos.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Browser compatibility notice**
+
+Offline playback requires Service Worker + EME support. Show admin notice in DRM settings:
+"Offline playback is supported on Chrome, Edge, and Firefox (desktop + Android). Safari/iOS does not support Service Worker-based offline video playback."
+
+In `OfflineManager.php`, check `navigator.serviceWorker` availability before showing "Save for Offline" button. Hide button on unsupported browsers with fallback text.
+
+- [ ] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(mediashield-pro): PWA offline download with Service Worker + persistent DRM license"
@@ -1431,11 +1681,30 @@ Uses Dompdf. Generates summary report: overview stats, top videos table, user co
 - GET `/export/csv/{type}` — types: `watch_sessions`, `milestones`, `users`
 - GET `/export/pdf/report?period=30d` — PDF summary report
 
-- [ ] **Step 5: Add export buttons to admin dashboard**
+- [ ] **Step 5: Async PDF export via Action Scheduler**
+
+PDF generation uses Action Scheduler instead of synchronous response:
+
+```php
+// ExportController::generate_pdf()
+$job_id = as_enqueue_async_action( 'mediashield_generate_pdf', array( $user_id, $filters ) );
+return rest_ensure_response( array( 'job_id' => $job_id, 'status' => 'processing' ) );
+
+// PdfExporter::handle_async( $user_id, $filters )
+// 1. Generate PDF to: wp-content/uploads/mediashield/exports/{hash}.pdf
+// 2. Store download URL in transient (24-hour expiry)
+// 3. Send admin email with download link
+```
+
+Client polls `/export/status/{job_id}` until complete, then receives download URL.
+
+**CSV:** Keep streaming approach (good), but add 50,000 row limit per export. Return `413 Payload Too Large` if exceeded with suggestion to filter date range.
+
+- [ ] **Step 6: Add export buttons to admin dashboard**
 
 Pro extends the admin SPA Dashboard page with "Export CSV" dropdown and "Download PDF Report" button.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git commit -m "feat(mediashield-pro): data export — CSV streaming + PDF reports (dompdf)"
@@ -1662,7 +1931,30 @@ In video CPT editor, add a meta box / sidebar panel: "Access Type" dropdown: Log
 
 Setting `ms_email_gate_webhook_url`. On each email capture, POST JSON `{ email, video_id, video_title, captured_at }` to the webhook. Integrates with Mailchimp, ConvertKit, ActiveCampaign, Zapier.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: GDPR consent + privacy compliance**
+
+**Required consent checkbox:** The email gate form template MUST include:
+```html
+<form class="ms-email-gate-form">
+  <input type="email" name="email" required placeholder="Enter your email" />
+  <label class="ms-consent-label">
+    <input type="checkbox" name="consent" required />
+    I consent to receive updates about this content.
+    <a href="{privacy_policy_url}" target="_blank">Privacy Policy</a>
+  </label>
+  <button type="submit">Watch Video</button>
+</form>
+```
+
+**Database:** `ms_email_captures` table includes `consent_given TINYINT(1) NOT NULL DEFAULT 0` and `consent_text TEXT` columns. Server-side validation: reject if `consent !== 1`.
+
+**GDPR integration:** Add `ms_email_captures` to `PrivacyExporter` (export user's captured emails) and `PrivacyEraser` (delete on request).
+
+**Retention cron:** Schedule via Action Scheduler: delete email captures older than 12 months (configurable via `ms_email_retention_months` option, default 12). Register cron in `ProCleanup.php`.
+
+**Privacy policy link:** Uses `get_privacy_policy_url()` (WordPress built-in). Falls back to site URL if no privacy policy page set.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git commit -m "feat(mediashield-pro): email gate / lead capture with webhook integration"
