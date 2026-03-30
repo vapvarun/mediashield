@@ -12,6 +12,8 @@ use MediaShield\CPT\PlaylistPostType;
 use MediaShield\CPT\Thumbnail;
 use MediaShield\REST\TagController;
 use MediaShield\REST\SessionController;
+use MediaShield\Player\PlayerWrapper;
+use MediaShield\Core\Assets;
 
 class Plugin {
 
@@ -40,11 +42,14 @@ class Plugin {
 		// REST API.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 
+		// Player wrapper (output buffer for video detection + wrapping).
+		PlayerWrapper::register();
+
+		// Frontend assets (JS/CSS for player, watermark, tracker, protection).
+		Assets::register();
+
 		// Admin menu.
 		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
-
-		// Frontend assets.
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
 
 		// Admin assets.
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
@@ -92,14 +97,7 @@ class Plugin {
 	}
 
 	/**
-	 * Enqueue frontend assets (stub for later tasks).
-	 */
-	public function enqueue_frontend_assets(): void {
-		// Player, watermark, tracker, protection scripts will be enqueued in Task 5.
-	}
-
-	/**
-	 * Enqueue admin assets (stub for later tasks).
+	 * Enqueue admin assets (stub for Task 10).
 	 */
 	public function enqueue_admin_assets( string $hook_suffix ): void {
 		// Admin SPA bundle will be enqueued in Task 10.
