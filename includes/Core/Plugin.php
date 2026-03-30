@@ -18,6 +18,9 @@ use MediaShield\Block\PlaylistBlock;
 use MediaShield\Block\Shortcode;
 use MediaShield\REST\PlaylistController;
 use MediaShield\REST\UploadController;
+use MediaShield\REST\SettingsController;
+use MediaShield\REST\AnalyticsController;
+use MediaShield\Admin\Menu;
 use MediaShield\Core\Assets;
 
 class Plugin {
@@ -58,11 +61,8 @@ class Plugin {
 		// Frontend assets (JS/CSS for player, watermark, tracker, protection).
 		Assets::register();
 
-		// Admin menu.
-		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
-
-		// Admin assets.
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		// Admin menu + SPA assets.
+		Menu::register();
 
 		// Single video template.
 		add_filter( 'single_template', array( $this, 'video_template' ) );
@@ -83,36 +83,8 @@ class Plugin {
 		( new SessionController() )->register_routes();
 		( new PlaylistController() )->register_routes();
 		( new UploadController() )->register_routes();
-	}
-
-	/**
-	 * Register the top-level admin menu for the SPA.
-	 */
-	public function register_admin_menu(): void {
-		add_menu_page(
-			__( 'MediaShield', 'mediashield' ),
-			__( 'MediaShield', 'mediashield' ),
-			'manage_options',
-			'mediashield',
-			array( $this, 'render_admin_page' ),
-			'dashicons-video-alt3',
-			30
-		);
-	}
-
-	/**
-	 * Render the admin SPA root element.
-	 */
-	public function render_admin_page(): void {
-		echo '<div id="mediashield-admin-root"></div>';
-		echo '<noscript>' . esc_html__( 'JavaScript is required for the MediaShield admin dashboard.', 'mediashield' ) . '</noscript>';
-	}
-
-	/**
-	 * Enqueue admin assets (stub for Task 10).
-	 */
-	public function enqueue_admin_assets( string $hook_suffix ): void {
-		// Admin SPA bundle will be enqueued in Task 10.
+		( new SettingsController() )->register_routes();
+		( new AnalyticsController() )->register_routes();
 	}
 
 	/**

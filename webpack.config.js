@@ -15,6 +15,8 @@ module.exports = {
 		// Gutenberg playlist block.
 		'blocks/playlist/index': path.resolve( __dirname, 'src/blocks/playlist/index.js' ),
 		'blocks/playlist/view': path.resolve( __dirname, 'src/blocks/playlist/view.js' ),
+		// Admin SPA.
+		'admin/index': path.resolve( __dirname, 'src/admin/index.js' ),
 	},
 	output: {
 		...defaultConfig.output,

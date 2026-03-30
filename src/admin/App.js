@@ -1,0 +1,114 @@
+/**
+ * MediaShield Admin SPA – App (hash-based router)
+ *
+ * @package MediaShield
+ */
+
+import { useState, useEffect, useCallback } from '@wordpress/element';
+import { applyFilters } from '@wordpress/hooks';
+import { SlotFillProvider } from '@wordpress/components';
+
+import Sidebar from './components/Sidebar';
+import Toast from './components/Toast';
+import Dashboard from './pages/Dashboard';
+import Videos from './pages/Videos';
+import Playlists from './pages/Playlists';
+import Students from './pages/Students';
+import Tags from './pages/Tags';
+import Milestones from './pages/Milestones';
+import Settings from './pages/Settings';
+
+/**
+ * Default route definitions.
+ *
+ * Pro add-ons can extend via:
+ *   wp.hooks.addFilter( 'mediashield_admin_routes', 'mediashield-pro', fn );
+ */
+const defaultRoutes = [
+	{
+		hash: '#/dashboard',
+		label: 'Dashboard',
+		icon: 'dashboard',
+		component: Dashboard,
+	},
+	{
+		hash: '#/videos',
+		label: 'Videos',
+		icon: 'format-video',
+		component: Videos,
+	},
+	{
+		hash: '#/playlists',
+		label: 'Playlists',
+		icon: 'playlist-audio',
+		component: Playlists,
+	},
+	{
+		hash: '#/students',
+		label: 'Students',
+		icon: 'groups',
+		component: Students,
+	},
+	{
+		hash: '#/tags',
+		label: 'Tags',
+		icon: 'tag',
+		component: Tags,
+	},
+	{
+		hash: '#/milestones',
+		label: 'Milestones',
+		icon: 'flag',
+		component: Milestones,
+	},
+	{
+		hash: '#/settings',
+		label: 'Settings',
+		icon: 'admin-generic',
+		component: Settings,
+	},
+];
+
+/**
+ * Return the current hash or the default route hash.
+ *
+ * @return {string} Current location hash.
+ */
+function getCurrentHash() {
+	return window.location.hash || '#/dashboard';
+}
+
+const App = () => {
+	const [ currentHash, setCurrentHash ] = useState( getCurrentHash );
+
+	const handleHashChange = useCallback( () => {
+		setCurrentHash( getCurrentHash() );
+	}, [] );
+
+	useEffect( () => {
+		window.addEventListener( 'hashchange', handleHashChange );
+		return () => {
+			window.removeEventListener( 'hashchange', handleHashChange );
+		};
+	}, [ handleHashChange ] );
+
+	// Allow pro extensions to add / reorder routes.
+	const routes = applyFilters( 'mediashield_admin_routes', defaultRoutes );
+
+	const activeRoute = routes.find( ( r ) => r.hash === currentHash );
+	const ActiveComponent = activeRoute ? activeRoute.component : Dashboard;
+
+	return (
+		<SlotFillProvider>
+			<div className="mediashield-admin">
+				<Sidebar routes={ routes } currentHash={ currentHash } />
+				<main className="mediashield-admin__content">
+					<Toast />
+					<ActiveComponent />
+				</main>
+			</div>
+		</SlotFillProvider>
+	);
+};
+
+export default App;
