@@ -23,6 +23,10 @@ use MediaShield\REST\AnalyticsController;
 use MediaShield\Admin\Menu;
 use MediaShield\Admin\SetupWizard;
 use MediaShield\Core\Assets;
+use MediaShield\Cron\Cleanup;
+use MediaShield\Privacy\PrivacyExporter;
+use MediaShield\Privacy\PrivacyEraser;
+use MediaShield\Block\MyVideosBlock;
 
 class Plugin {
 
@@ -67,6 +71,16 @@ class Plugin {
 
 		// Setup wizard (first activation redirect).
 		SetupWizard::register();
+
+		// Cron cleanup + video/playlist deletion cascade (Task 22).
+		Cleanup::register();
+
+		// GDPR privacy exporters/erasers (Task 23).
+		PrivacyExporter::register();
+		PrivacyEraser::register();
+
+		// My Videos block + shortcode (Task 24).
+		MyVideosBlock::register();
 
 		// Single video template.
 		add_filter( 'single_template', array( $this, 'video_template' ) );

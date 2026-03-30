@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "mediashield/my-videos",
+	"version": "1.0.0",
+	"title": "My Videos",
+	"category": "media",
+	"icon": "playlist-video",
+	"description": "Display the current user's watched videos with progress tracking and resume links.",
+	"keywords": [ "video", "progress", "mediashield", "watch", "history" ],
+	"textdomain": "mediashield",
+	"attributes": {},
+	"supports": {
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"margin": true,
+			"padding": true
+		},
+		"html": false
+	},
+	"render": "file:./render.php"
+}

@@ -1,0 +1,1219 @@
+# Copyright (C) 2026 Wbcom Designs
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: MediaShield 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/mediashield\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-03-30T11:49:41+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: mediashield\n"
+
+#. Plugin Name of the plugin
+#: mediashield.php
+#: includes/Admin/Menu.php:28
+#: includes/Admin/Menu.php:29
+#: build/admin/index.js:1
+#: src/admin/components/Sidebar.js:22
+msgid "MediaShield"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: mediashield.php
+msgid "https://wbcomdesigns.com/mediashield"
+msgstr ""
+
+#. Description of the plugin
+#: mediashield.php
+msgid "Video protection for WordPress — dynamic watermarking, multi-platform support, engagement analytics, and milestone automation."
+msgstr ""
+
+#. Author of the plugin
+#: mediashield.php
+msgid "Wbcom Designs"
+msgstr ""
+
+#. Author URI of the plugin
+#: mediashield.php
+msgid "https://wbcomdesigns.com"
+msgstr ""
+
+#: build/blocks/playlist/render.php:101
+#: src/blocks/playlist/render.php:101
+msgid "Next video in"
+msgstr ""
+
+#: includes/Access/AccessControl.php:27
+#: templates/login-overlay.php:17
+msgid "Please log in to watch this video."
+msgstr ""
+
+#: includes/Access/AccessControl.php:90
+msgid "Playback is not allowed from this domain."
+msgstr ""
+
+#: includes/Admin/Menu.php:44
+msgid "JavaScript is required for the MediaShield admin dashboard."
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:69
+msgid "MediaShield Setup"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:70
+msgid "Setup"
+msgstr ""
+
+#: includes/Admin/SetupWizard.php:83
+msgid "JavaScript is required for the setup wizard."
+msgstr ""
+
+#: includes/Core/Activator.php:22
+msgid "MediaShield requires PHP 8.1 or higher."
+msgstr ""
+
+#: includes/Core/Activator.php:32
+msgid "MediaShield requires WordPress 6.5 or higher."
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:25
+msgctxt "Post type general name"
+msgid "Playlists"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:26
+msgctxt "Post type singular name"
+msgid "Playlist"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:27
+msgctxt "Admin Menu text"
+msgid "Playlists"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:28
+#: includes/CPT/PlaylistPostType.php:29
+msgid "Add New Playlist"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:30
+msgid "Edit Playlist"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:31
+msgid "New Playlist"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:32
+msgid "View Playlist"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:33
+msgid "Search Playlists"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:34
+#: build/admin/index.js:1
+#: src/admin/pages/Playlists.js:81
+msgid "No playlists found."
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:35
+msgid "No playlists found in Trash."
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:36
+msgid "All Playlists"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:37
+msgid "Playlist Archives"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:38
+msgid "Filter playlists list"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:39
+msgid "Playlists list navigation"
+msgstr ""
+
+#: includes/CPT/PlaylistPostType.php:40
+msgid "Playlists list"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:25
+msgctxt "Post type general name"
+msgid "Videos"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:26
+msgctxt "Post type singular name"
+msgid "Video"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:27
+msgctxt "Admin Menu text"
+msgid "Videos"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:28
+#: includes/CPT/VideoPostType.php:29
+msgid "Add New Video"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:30
+msgid "Edit Video"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:31
+msgid "New Video"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:32
+msgid "View Video"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:33
+msgid "Search Videos"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:34
+#: build/admin/index.js:1
+#: build/blocks/video/index.js:1
+#: src/admin/components/VideoPickerModal.js:66
+#: src/admin/pages/Videos.js:116
+msgid "No videos found."
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:35
+msgid "No videos found in Trash."
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:36
+msgid "All Videos"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:37
+msgid "Video Archives"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:38
+msgid "Filter videos list"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:39
+msgid "Videos list navigation"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:40
+msgid "Videos list"
+msgstr ""
+
+#: includes/Player/Watermark.php:25
+msgid "Guest"
+msgstr ""
+
+#: includes/Privacy/PrivacyEraser.php:30
+#: includes/Privacy/PrivacyExporter.php:30
+msgid "MediaShield Video Data"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:79
+msgid "MediaShield Watch Sessions"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:83
+#: includes/Privacy/PrivacyExporter.php:131
+#: build/admin/index.js:1
+#: build/blocks/video/index.js:1
+#: src/admin/pages/Milestones.js:83
+#: src/admin/pages/Students.js:85
+#: src/blocks/video/edit.js:244
+msgid "Video"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:87
+msgid "Started At"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:91
+msgid "Completion"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:95
+msgid "Total Seconds"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:99
+msgid "IP Address"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:103
+msgid "User Agent"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:127
+msgid "MediaShield Video Milestones"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:135
+msgid "Milestone"
+msgstr ""
+
+#: includes/Privacy/PrivacyExporter.php:139
+#: build/admin/index.js:1
+#: src/admin/pages/Milestones.js:85
+msgid "Reached At"
+msgstr ""
+
+#: includes/REST/PlaylistController.php:112
+msgid "Playlist not found."
+msgstr ""
+
+#: includes/REST/PlaylistController.php:181
+#: includes/REST/SessionController.php:136
+#: includes/REST/TagController.php:265
+#: includes/REST/TagController.php:279
+msgid "Video not found."
+msgstr ""
+
+#: includes/REST/PlaylistController.php:207
+msgid "Could not add video to playlist."
+msgstr ""
+
+#: includes/REST/PlaylistController.php:240
+msgid "Playlist item not found."
+msgstr ""
+
+#: includes/REST/PlaylistController.php:259
+msgid "Order must be an array."
+msgstr ""
+
+#: includes/REST/SessionController.php:131
+msgid "Invalid video ID."
+msgstr ""
+
+#: includes/REST/SessionController.php:140
+msgid "Video is not available."
+msgstr ""
+
+#: includes/REST/SessionController.php:157
+msgid "Too many active streams. Please close another video first."
+msgstr ""
+
+#: includes/REST/SessionController.php:215
+msgid "Too many requests."
+msgstr ""
+
+#: includes/REST/SessionController.php:229
+#: includes/REST/SessionController.php:242
+msgid "Invalid session token."
+msgstr ""
+
+#: includes/REST/SettingsController.php:107
+msgid "No settings provided."
+msgstr ""
+
+#: includes/REST/TagController.php:187
+msgid "A tag with this name already exists."
+msgstr ""
+
+#: includes/REST/TagController.php:204
+#: includes/REST/TagController.php:218
+#: includes/REST/TagController.php:250
+#: includes/REST/TagController.php:283
+msgid "Tag not found."
+msgstr ""
+
+#: includes/REST/TagController.php:234
+msgid "Could not update tag. The slug may already be in use."
+msgstr ""
+
+#: includes/REST/TagController.php:291
+msgid "This tag is already assigned to this video."
+msgstr ""
+
+#: includes/REST/UploadController.php:73
+msgid "No file provided. Send a file in the \"file\" field."
+msgstr ""
+
+#: includes/REST/UploadController.php:138
+msgid "Upload driver not found."
+msgstr ""
+
+#: includes/REST/UploadController.php:154
+msgid "File exceeds the server upload size limit."
+msgstr ""
+
+#: includes/REST/UploadController.php:155
+msgid "File exceeds the form upload size limit."
+msgstr ""
+
+#: includes/REST/UploadController.php:156
+msgid "File was only partially uploaded."
+msgstr ""
+
+#: includes/REST/UploadController.php:157
+msgid "No file was uploaded."
+msgstr ""
+
+#: includes/REST/UploadController.php:158
+msgid "Server missing temporary folder."
+msgstr ""
+
+#: includes/REST/UploadController.php:159
+msgid "Server failed to write file to disk."
+msgstr ""
+
+#: includes/REST/UploadController.php:160
+msgid "A server extension blocked the upload."
+msgstr ""
+
+#: includes/REST/UploadController.php:163
+msgid "Unknown upload error."
+msgstr ""
+
+#: includes/Upload/Drivers/SelfHosted.php:42
+#: includes/Upload/Drivers/SelfHosted.php:113
+msgid "File not found."
+msgstr ""
+
+#. translators: %s: max file size
+#: includes/Upload/Drivers/SelfHosted.php:57
+#, php-format
+msgid "File exceeds maximum upload size of %s."
+msgstr ""
+
+#: includes/Upload/Drivers/SelfHosted.php:70
+msgid "Failed to move uploaded file."
+msgstr ""
+
+#. translators: %s: allowed formats
+#: includes/Upload/Drivers/SelfHosted.php:157
+#, php-format
+msgid "Invalid file type. Allowed formats: %s."
+msgstr ""
+
+#. translators: %s: driver name
+#: includes/Upload/UploadManager.php:84
+#, php-format
+msgid "Upload driver \"%s\" not available."
+msgstr ""
+
+#: src/blocks/my-videos/render.php:19
+msgid "Please log in to see your video history."
+msgstr ""
+
+#: src/blocks/my-videos/render.php:47
+msgid "You have not watched any videos yet."
+msgstr ""
+
+#. translators: %s: completion percentage
+#: src/blocks/my-videos/render.php:87
+#, php-format
+msgid "%s%% complete"
+msgstr ""
+
+#: src/blocks/my-videos/render.php:94
+msgid "Completed"
+msgstr ""
+
+#: src/blocks/my-videos/render.php:98
+msgid "Resume"
+msgstr ""
+
+#: templates/login-overlay.php:19
+msgid "Log In"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/components/Sidebar.js:20
+msgid "Admin navigation"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:17
+msgid "Today"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:18
+msgid "Last 7 days"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:19
+msgid "Last 30 days"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:44
+msgid "Failed to load analytics."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:61
+msgid "Total Videos"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:66
+msgid "Total Sessions"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:71
+#: src/admin/pages/Students.js:191
+msgid "Avg Completion"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:76
+msgid "Active Viewers"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:84
+msgid "Dashboard"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:86
+msgid "Period"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:126
+msgid "Activity Chart"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:131
+msgid "Chart visualisation will appear here (Chart.js integration pending)."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:31
+#: src/admin/pages/Videos.js:27
+msgid "None"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:32
+#: src/admin/pages/Videos.js:28
+msgid "Basic"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:33
+#: src/admin/pages/Videos.js:29
+msgid "Standard"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:34
+#: src/admin/pages/Videos.js:30
+msgid "Strict"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:45
+msgid "Failed to load student details."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:62
+msgid "Back to list"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:79
+msgid "Unknown User"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:86
+msgid "Progress"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:87
+msgid "Last Watched"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:94
+msgid "No watch history."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Videos.js:68
+msgid "Failed to load videos."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:140
+#: src/admin/pages/Videos.js:85
+msgid "Videos"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Playlists.js:72
+#: src/admin/pages/Videos.js:105
+msgid "Title"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Videos.js:106
+#: src/admin/wizard/Wizard.js:22
+msgid "Platform"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Videos.js:107
+msgid "Protection"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Playlists.js:73
+#: src/admin/pages/Videos.js:108
+msgid "Date"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Playlists.js:74
+#: src/admin/pages/Tags.js:141
+#: src/admin/pages/Videos.js:109
+msgid "Actions"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Playlists.js:100
+#: src/admin/pages/Videos.js:139
+msgid "Edit"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Playlists.js:109
+#: src/admin/pages/Videos.js:148
+msgid "View"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Milestones.js:117
+#: src/admin/pages/Videos.js:163
+msgid "Previous"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Milestones.js:127
+#: src/admin/pages/Videos.js:173
+#: src/admin/wizard/Wizard.js:126
+msgid "Next"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Playlists.js:36
+msgid "Failed to load playlists."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Playlists.js:53
+msgid "Playlists"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:136
+msgid "Failed to load students."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:160
+msgid "Students"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:165
+msgid "Search by name or email"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:188
+#: src/admin/pages/Tags.js:139
+msgid "Name"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:189
+msgid "Email"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:190
+msgid "Videos Watched"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:192
+msgid "Last Active"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:199
+msgid "No students found."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Students.js:210
+msgid "Unknown"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:38
+msgid "Failed to load tags."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:64
+msgid "Tag created."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:69
+msgid "Could not create tag."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:86
+msgid "Tag deleted."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:91
+msgid "Could not delete tag."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:103
+msgid "Tags"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:108
+msgid "New tag name"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:119
+msgid "Add Tag"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:148
+msgid "No tags yet."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Tags.js:164
+msgid "Delete"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Milestones.js:45
+msgid "Failed to load milestones."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Milestones.js:62
+msgid "Milestones"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Milestones.js:82
+msgid "User"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Milestones.js:84
+msgid "Milestone %"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Milestones.js:92
+msgid "No milestones recorded yet."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:60
+msgid "Failed to load settings."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:97
+msgid "Settings saved."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:103
+msgid "Failed to save settings."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:149
+msgid "Settings"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:156
+#: src/admin/wizard/Wizard.js:20
+msgid "General"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:161
+msgid "Enabled"
+msgstr ""
+
+#: build/admin/index.js:1
+#: build/blocks/video/index.js:1
+#: src/admin/pages/Settings.js:167
+#: src/blocks/video/edit.js:191
+msgid "Protection Level"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:174
+msgid "Require Login"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:186
+#: src/admin/wizard/Wizard.js:21
+msgid "Watermark"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:191
+#: src/admin/wizard/steps/WatermarkStep.js:19
+msgid "Opacity"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:201
+msgid "Watermark Color"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:210
+msgid "Swap Interval (seconds)"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:226
+msgid "Allowed Domains"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:231
+msgid "One domain per line"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:244
+msgid "Concurrent Streams"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:249
+msgid "Max Concurrent Streams"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:264
+msgid "Upload"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:269
+msgid "Max Upload Size (MB)"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:285
+msgid "Detection"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Settings.js:290
+msgid "Custom URL Patterns (one per line)"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/GeneralStep.js:19
+msgid "General Settings"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/GeneralStep.js:20
+msgid "Configure the basic protection settings for your videos."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/GeneralStep.js:23
+msgid "Enable video protection"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/GeneralStep.js:29
+msgid "Require login to watch"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/GeneralStep.js:30
+msgid "Visitors must be logged in to view protected videos."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/GeneralStep.js:36
+msgid "Default protection level"
+msgstr ""
+
+#: build/admin/index.js:1
+#: build/blocks/video/index.js:1
+#: src/admin/wizard/steps/GeneralStep.js:39
+#: src/blocks/video/edit.js:194
+msgid "Standard (Watermark + Tracking)"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/GeneralStep.js:40
+msgid "None (No protection)"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/WatermarkStep.js:15
+msgid "Watermark Settings"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/WatermarkStep.js:16
+msgid "Configure how the watermark appears on your videos. It shows the viewer's username and IP address."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/WatermarkStep.js:29
+msgid "Text Color"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/WatermarkStep.js:39
+msgid "Position swap interval (seconds)"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/WatermarkStep.js:40
+msgid "How often the watermark moves to a new position."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/WatermarkStep.js:62
+msgid "John Doe"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/PlatformStep.js:21
+msgid "Connect a Platform"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/PlatformStep.js:22
+msgid "MediaShield works with all major video platforms. You can always set this up later in Settings."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/PlatformStep.js:41
+msgid "Direct platform uploads (Bunny, Vimeo, YouTube, Wistia) are available with MediaShield Pro."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/PlatformStep.js:46
+msgid "You can skip this step. Videos from all platforms are automatically protected when embedded on your site."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/Wizard.js:23
+msgid "First Video"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/FirstVideoStep.js:57
+msgid "Protect Your First Video"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/FirstVideoStep.js:58
+msgid "Paste a video URL to see protection in action. You can skip this and add videos later."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/FirstVideoStep.js:86
+msgid "Video protected!"
+msgstr ""
+
+#: build/admin/index.js:1
+#: build/blocks/video/index.js:1
+#: src/admin/wizard/steps/FirstVideoStep.js:89
+#: src/blocks/video/edit.js:182
+msgid "Platform:"
+msgstr ""
+
+#: build/admin/index.js:1
+#: build/blocks/playlist/index.js:1
+#: build/blocks/video/index.js:1
+#: src/admin/wizard/steps/FirstVideoStep.js:90
+#: src/blocks/playlist/edit.js:95
+#: src/blocks/video/edit.js:186
+msgid "ID:"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/FirstVideoStep.js:63
+msgid "Video URL"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/steps/FirstVideoStep.js:74
+msgid "Protect"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/Wizard.js:92
+msgid "Welcome to MediaShield"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/Wizard.js:93
+msgid "Let's set up video protection for your site."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/Wizard.js:119
+msgid "Back"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/Wizard.js:123
+msgid "Skip"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/wizard/Wizard.js:126
+msgid "Finish"
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:53
+msgid "-- Select a Playlist --"
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:64
+msgid "MediaShield Playlist"
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:65
+msgid "Select a playlist to embed."
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:87
+msgid "Playlist"
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:93
+msgid "Playlist Settings"
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:98
+msgid "Videos:"
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:109
+msgid "Change Playlist"
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:119
+msgid "videos"
+msgstr ""
+
+#: build/blocks/playlist/index.js:1
+#: src/blocks/playlist/edit.js:137
+msgid "more videos"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/admin/components/VideoPickerModal.js:47
+msgid "Choose a Video"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/admin/components/VideoPickerModal.js:52
+msgid "Search videos"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/admin/components/VideoPickerModal.js:55
+msgid "Type to search..."
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/admin/components/VideoPickerModal.js:74
+msgid "Untitled"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/admin/components/VideoPickerModal.js:104
+msgid "Select"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/blocks/video/edit.js:129
+msgid "MediaShield Video"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/blocks/video/edit.js:130
+msgid "Choose a video from your library or paste a URL."
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/blocks/video/edit.js:137
+msgid "Choose from Library"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/blocks/video/edit.js:142
+msgid "Or paste a video URL"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/blocks/video/edit.js:153
+msgid "Embed"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/blocks/video/edit.js:180
+msgid "Video Settings"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/blocks/video/edit.js:195
+msgid "None (Free Preview)"
+msgstr ""
+
+#: build/blocks/video/index.js:1
+#: src/blocks/video/edit.js:218
+msgid "Remove Video"
+msgstr ""
+
+#: build/blocks/playlist/block.json
+#: src/blocks/playlist/block.json
+msgctxt "block title"
+msgid "MediaShield Playlist"
+msgstr ""
+
+#: build/blocks/playlist/block.json
+#: src/blocks/playlist/block.json
+msgctxt "block description"
+msgid "Embed a video playlist with auto-play, countdown timer, loop, and shuffle."
+msgstr ""
+
+#: build/blocks/playlist/block.json
+#: src/blocks/playlist/block.json
+msgctxt "block keyword"
+msgid "playlist"
+msgstr ""
+
+#: build/blocks/playlist/block.json
+#: build/blocks/video/block.json
+#: src/blocks/my-videos/block.json
+#: src/blocks/playlist/block.json
+#: src/blocks/video/block.json
+msgctxt "block keyword"
+msgid "video"
+msgstr ""
+
+#: build/blocks/playlist/block.json
+#: build/blocks/video/block.json
+#: src/blocks/my-videos/block.json
+#: src/blocks/playlist/block.json
+#: src/blocks/video/block.json
+msgctxt "block keyword"
+msgid "mediashield"
+msgstr ""
+
+#: build/blocks/playlist/block.json
+#: src/blocks/playlist/block.json
+msgctxt "block keyword"
+msgid "course"
+msgstr ""
+
+#: build/blocks/video/block.json
+#: src/blocks/video/block.json
+msgctxt "block title"
+msgid "MediaShield Video"
+msgstr ""
+
+#: build/blocks/video/block.json
+#: src/blocks/video/block.json
+msgctxt "block description"
+msgid "Embed a protected video with watermarking, session tracking, and access control."
+msgstr ""
+
+#: build/blocks/video/block.json
+#: src/blocks/video/block.json
+msgctxt "block keyword"
+msgid "protect"
+msgstr ""
+
+#: build/blocks/video/block.json
+#: src/blocks/video/block.json
+msgctxt "block keyword"
+msgid "watermark"
+msgstr ""
+
+#: src/blocks/my-videos/block.json
+msgctxt "block title"
+msgid "My Videos"
+msgstr ""
+
+#: src/blocks/my-videos/block.json
+msgctxt "block description"
+msgid "Display the current user's watched videos with progress tracking and resume links."
+msgstr ""
+
+#: src/blocks/my-videos/block.json
+msgctxt "block keyword"
+msgid "progress"
+msgstr ""
+
+#: src/blocks/my-videos/block.json
+msgctxt "block keyword"
+msgid "watch"
+msgstr ""
+
+#: src/blocks/my-videos/block.json
+msgctxt "block keyword"
+msgid "history"
+msgstr ""

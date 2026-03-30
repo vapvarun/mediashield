@@ -75,6 +75,12 @@ class AnalyticsController extends WP_REST_Controller {
 			'callback'            => array( $this, 'get_user_detail' ),
 			'permission_callback' => array( $this, 'admin_check' ),
 		) );
+
+		register_rest_route( $this->namespace, '/analytics/my-videos', array(
+			'methods'             => WP_REST_Server::READABLE,
+			'callback'            => array( $this, 'get_my_videos' ),
+			'permission_callback' => array( $this, 'logged_in_check' ),
+		) );
 	}
 
 	public function admin_check( WP_REST_Request $request ): bool {
@@ -340,6 +346,55 @@ class AnalyticsController extends WP_REST_Controller {
 				);
 			}, $sessions ?: array() ),
 		) );
+	}
+
+	/**
+	 * Permission check: user must be logged in.
+	 */
+	public function logged_in_check( WP_REST_Request $request ): bool {
+		return is_user_logged_in();
+	}
+
+	/**
+	 * GET /analytics/my-videos — current user's watch history.
+	 */
+	public function get_my_videos( WP_REST_Request $request ): WP_REST_Response {
+		global $wpdb;
+
+		$user_id  = get_current_user_id();
+		$sessions = "{$wpdb->prefix}ms_watch_sessions";
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT s.video_id, p.post_title,
+						MAX( s.completion_pct ) AS completion_pct,
+						MAX( s.max_position ) AS max_position,
+						SUM( s.total_seconds ) AS total_seconds,
+						MAX( s.last_heartbeat ) AS last_watched
+				 FROM {$sessions} s
+				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_status = 'publish'
+				 WHERE s.user_id = %d
+				 GROUP BY s.video_id
+				 ORDER BY last_watched DESC",
+				$user_id
+			)
+		);
+
+		$items = array_map( function ( $row ) {
+			$thumbnail_url = get_the_post_thumbnail_url( (int) $row->video_id, 'medium' );
+
+			return array(
+				'video_id'       => (int) $row->video_id,
+				'title'          => sanitize_text_field( $row->post_title ?: '' ),
+				'thumbnail_url'  => $thumbnail_url ? esc_url( $thumbnail_url ) : '',
+				'completion_pct' => round( (float) $row->completion_pct, 1 ),
+				'max_position'   => (float) $row->max_position,
+				'total_seconds'  => (int) $row->total_seconds,
+				'last_watched'   => $row->last_watched,
+			);
+		}, $rows ?: array() );
+
+		return rest_ensure_response( $items );
 	}
 
 	/**
