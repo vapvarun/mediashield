@@ -215,22 +215,22 @@ class AnalyticsController extends WP_REST_Controller {
 			$args[] = $video_id;
 		}
 
-		$total = (int) $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wpdb->prefix}ms_milestones m WHERE 1=1 {$where}",
-			...$args
-		) );
+		$count_query = "SELECT COUNT(*) FROM {$wpdb->prefix}ms_milestones m WHERE 1=1 {$where}";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var(
+			empty( $args ) ? $count_query : $wpdb->prepare( $count_query, ...$args )
+		);
 
-		$query_args = array_merge( $args, array( $per_page, $offset ) );
-		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT m.*, p.post_title AS video_title, u.display_name AS user_name
+		$list_query = "SELECT m.*, p.post_title AS video_title, u.display_name AS user_name
 			 FROM {$wpdb->prefix}ms_milestones m
 			 LEFT JOIN {$wpdb->posts} p ON m.video_id = p.ID
 			 LEFT JOIN {$wpdb->users} u ON m.user_id = u.ID
 			 WHERE 1=1 {$where}
 			 ORDER BY m.reached_at DESC
-			 LIMIT %d OFFSET %d",
-			...$query_args
-		) );
+			 LIMIT %d OFFSET %d";
+		$query_args = array_merge( $args, array( $per_page, $offset ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( $list_query, ...$query_args ) );
 
 		$items = array_map( function ( $row ) {
 			return array(
@@ -271,17 +271,16 @@ class AnalyticsController extends WP_REST_Controller {
 			$args[] = $like;
 		}
 
-		$total = (int) $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(DISTINCT s.user_id)
+		$count_query = "SELECT COUNT(DISTINCT s.user_id)
 			 FROM {$wpdb->prefix}ms_watch_sessions s
 			 INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
-			 WHERE s.user_id > 0 {$where}",
-			...$args
-		) );
+			 WHERE s.user_id > 0 {$where}";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total = (int) $wpdb->get_var(
+			empty( $args ) ? $count_query : $wpdb->prepare( $count_query, ...$args )
+		);
 
-		$query_args = array_merge( $args, array( $per_page, $offset ) );
-		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT s.user_id, u.display_name, u.user_email,
+		$list_query = "SELECT s.user_id, u.display_name, u.user_email,
 					COUNT(DISTINCT s.video_id) AS videos_watched,
 					AVG(s.completion_pct) AS avg_completion,
 					MAX(s.last_heartbeat) AS last_active
@@ -290,9 +289,10 @@ class AnalyticsController extends WP_REST_Controller {
 			 WHERE s.user_id > 0 {$where}
 			 GROUP BY s.user_id
 			 ORDER BY last_active DESC
-			 LIMIT %d OFFSET %d",
-			...$query_args
-		) );
+			 LIMIT %d OFFSET %d";
+		$query_args = array_merge( $args, array( $per_page, $offset ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( $list_query, ...$query_args ) );
 
 		$items = array_map( function ( $row ) {
 			return array(
