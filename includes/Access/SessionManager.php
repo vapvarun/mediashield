@@ -190,6 +190,16 @@ class SessionManager {
 			$parsed['session_id']
 		) );
 
+		// Check milestones after updating completion percentage.
+		if ( $rows > 0 && $completion_pct > 0 ) {
+			\MediaShield\Milestones\MilestoneTracker::check(
+				$parsed['video_id'],
+				$parsed['user_id'],
+				$completion_pct,
+				$parsed['session_id']
+			);
+		}
+
 		return $rows > 0;
 	}
 
