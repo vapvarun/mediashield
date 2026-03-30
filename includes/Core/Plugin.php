@@ -10,6 +10,7 @@ namespace MediaShield\Core;
 use MediaShield\CPT\VideoPostType;
 use MediaShield\CPT\PlaylistPostType;
 use MediaShield\CPT\Thumbnail;
+use MediaShield\REST\TagController;
 
 class Plugin {
 
@@ -62,7 +63,7 @@ class Plugin {
 	 * Register REST API routes.
 	 */
 	public function register_rest_routes(): void {
-		// Controllers will be registered in later tasks.
+		( new TagController() )->register_routes();
 	}
 
 	/**
