@@ -1,0 +1,20 @@
+{
+    "name": "mediashield/mediashield",
+    "description": "Video protection for WordPress",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "MediaShield\\": "includes/"
+        }
+    },
+    "require": {
+        "php": ">=8.1",
+        "woocommerce/action-scheduler": "^3.7"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/*": true
+        }
+    }
+}
