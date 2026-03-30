@@ -100,32 +100,37 @@ class AnalyticsController extends WP_REST_Controller {
 		// Total videos.
 		$total_videos = (int) wp_count_posts( 'mediashield_video' )->publish;
 
-		// Sessions in period.
-		$total_sessions = (int) $wpdb->get_var( $wpdb->prepare(
+		// Sessions in period. $interval is from a hardcoded allowlist — safe to interpolate.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$total_sessions = (int) $wpdb->get_var(
 			"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(NOW(), INTERVAL {$interval})"
-		) );
+		);
 
 		// Avg completion in period.
-		$avg_completion = (float) $wpdb->get_var( $wpdb->prepare(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$avg_completion = (float) $wpdb->get_var(
 			"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(NOW(), INTERVAL {$interval}) AND completion_pct > 0"
-		) );
+		);
 
 		// Active viewers (heartbeat in last 5 minutes).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$active_viewers = (int) $wpdb->get_var(
 			"SELECT COUNT(DISTINCT user_id) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)"
 		);
 
 		// Sessions per day for chart.
-		$sessions_per_day = $wpdb->get_results( $wpdb->prepare(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sessions_per_day = $wpdb->get_results(
 			"SELECT DATE(started_at) AS date, COUNT(*) AS count
 			 FROM {$sessions}
 			 WHERE started_at >= DATE_SUB(NOW(), INTERVAL {$interval})
 			 GROUP BY DATE(started_at)
 			 ORDER BY date ASC"
-		) );
+		);
 
 		// Top 5 videos by sessions.
-		$top_videos = $wpdb->get_results( $wpdb->prepare(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$top_videos = $wpdb->get_results(
 			"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
 			 FROM {$sessions} s
 			 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID
@@ -133,7 +138,7 @@ class AnalyticsController extends WP_REST_Controller {
 			 GROUP BY s.video_id
 			 ORDER BY session_count DESC
 			 LIMIT 5"
-		) );
+		);
 
 		return rest_ensure_response( array(
 			'total_videos'    => $total_videos,

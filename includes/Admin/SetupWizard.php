@@ -65,7 +65,7 @@ class SetupWizard {
 	 */
 	public static function register_page(): void {
 		add_submenu_page(
-			null, // Hidden — no parent menu.
+			'', // Hidden — no parent menu (empty string avoids null deprecation).
 			__( 'MediaShield Setup', 'mediashield' ),
 			__( 'Setup', 'mediashield' ),
 			'manage_options',
