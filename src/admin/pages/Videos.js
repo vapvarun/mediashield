@@ -1,7 +1,8 @@
 /**
- * MediaShield Admin – Videos Page
+ * MediaShield Admin -- Videos Page
  *
- * List table of mediashield_video CPT posts with pagination.
+ * Premium list table with platform indicators, protection badges,
+ * and action buttons.
  *
  * @package MediaShield
  */
@@ -15,13 +16,15 @@ import { decodeEntities } from '@wordpress/html-entities';
 const config = window.mediashieldAdmin || {};
 const PER_PAGE = 20;
 
-/**
- * Badge for protection level.
- *
- * @param {Object} props       Component props.
- * @param {string} props.level Protection level slug.
- * @return {JSX.Element} Badge element.
- */
+const PLATFORM_LABELS = {
+	youtube: 'YouTube',
+	vimeo: 'Vimeo',
+	bunny: 'Bunny Stream',
+	wistia: 'Wistia',
+	self: 'Self-hosted',
+	iframe: 'Custom',
+};
+
 const ProtectionBadge = ( { level } ) => {
 	const map = {
 		none: __( 'None', 'mediashield' ),
@@ -37,8 +40,19 @@ const ProtectionBadge = ( { level } ) => {
 	);
 };
 
+const PlatformLabel = ( { platform } ) => {
+	const p = platform || 'self';
+	return (
+		<span className={ `mediashield-platform mediashield-platform--${ p }` }>
+			<span className="mediashield-platform__dot" />
+			{ PLATFORM_LABELS[ p ] || p }
+		</span>
+	);
+};
+
 const Videos = () => {
 	const [ videos, setVideos ] = useState( [] );
+	const [ total, setTotal ] = useState( 0 );
 	const [ page, setPage ] = useState( 1 );
 	const [ totalPages, setTotalPages ] = useState( 1 );
 	const [ loading, setLoading ] = useState( true );
@@ -57,9 +71,10 @@ const Videos = () => {
 				const json = await res.json();
 				if ( ! cancelled ) {
 					setVideos( json );
-					setTotalPages(
-						parseInt( res.headers.get( 'X-WP-TotalPages' ), 10 ) || 1
-					);
+					const tp = parseInt( res.headers.get( 'X-WP-TotalPages' ), 10 ) || 1;
+					const tt = parseInt( res.headers.get( 'X-WP-Total' ), 10 ) || 0;
+					setTotalPages( tp );
+					setTotal( tt );
 				}
 			} )
 			.catch( ( err ) => {
@@ -81,12 +96,28 @@ const Videos = () => {
 	return (
 		<div className="mediashield-page mediashield-videos">
 			<header className="mediashield-page__header">
-				<h1>{ __( 'Videos', 'mediashield' ) }</h1>
+				<h1>
+					{ __( 'Videos', 'mediashield' ) }
+					{ ! loading && (
+						<span className="mediashield-page__header-subtitle">
+							{ total } { total === 1 ? __( 'video', 'mediashield' ) : __( 'videos', 'mediashield' ) }
+						</span>
+					) }
+				</h1>
+				<a
+					href={ `${ config.adminUrl }post-new.php?post_type=mediashield_video` }
+					className="components-button is-primary"
+				>
+					{ __( 'Add New Video', 'mediashield' ) }
+				</a>
 			</header>
 
 			{ loading && (
 				<div className="mediashield-loader">
 					<Spinner />
+					<span className="mediashield-loader__text">
+						{ __( 'Loading videos...', 'mediashield' ) }
+					</span>
 				</div>
 			) }
 
@@ -97,7 +128,7 @@ const Videos = () => {
 			) }
 
 			{ ! loading && ! error && (
-				<>
+				<div className="mediashield-table-card">
 					<table className="mediashield-table">
 						<thead>
 							<tr>
@@ -111,36 +142,45 @@ const Videos = () => {
 						<tbody>
 							{ videos.length === 0 && (
 								<tr>
-									<td colSpan="5">
-										{ __( 'No videos found.', 'mediashield' ) }
+									<td colSpan="5" className="mediashield-table__empty">
+										<span className="mediashield-table__empty-icon dashicons dashicons-format-video" />
+										{ __( 'No videos yet. Create your first protected video.', 'mediashield' ) }
 									</td>
 								</tr>
 							) }
 							{ videos.map( ( video ) => (
 								<tr key={ video.id }>
 									<td>
-										{ decodeEntities( video.title?.rendered || '' ) }
-									</td>
-									<td>{ video.meta?.platform || '—' }</td>
-									<td>
-										<ProtectionBadge level={ video.meta?.protection_level } />
+										<strong>
+											{ decodeEntities( video.title?.rendered || '' ) }
+										</strong>
 									</td>
 									<td>
+										<PlatformLabel platform={ video.meta?._ms_platform } />
+									</td>
+									<td>
+										<ProtectionBadge level={ video.meta?._ms_protection_level } />
+									</td>
+									<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 										{ video.date
-											? new Date( video.date ).toLocaleDateString()
-											: '—' }
+											? new Date( video.date ).toLocaleDateString( undefined, {
+												year: 'numeric',
+												month: 'short',
+												day: 'numeric',
+											} )
+											: '\u2014' }
 									</td>
 									<td className="mediashield-table__actions">
 										<a
 											href={ `${ config.adminUrl }post.php?post=${ video.id }&action=edit` }
-											className="mediashield-link"
+											className="mediashield-action-btn mediashield-action-btn--edit"
 										>
 											{ __( 'Edit', 'mediashield' ) }
 										</a>
 										{ video.link && (
 											<a
 												href={ video.link }
-												className="mediashield-link"
+												className="mediashield-action-btn mediashield-action-btn--view"
 												target="_blank"
 												rel="noopener noreferrer"
 											>
@@ -153,26 +193,32 @@ const Videos = () => {
 						</tbody>
 					</table>
 
-					<div className="mediashield-pagination">
-						<Button
-							variant="secondary"
-							disabled={ page <= 1 }
-							onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
-						>
-							{ __( 'Previous', 'mediashield' ) }
-						</Button>
-						<span className="mediashield-pagination__info">
-							{ `${ page } / ${ totalPages }` }
-						</span>
-						<Button
-							variant="secondary"
-							disabled={ page >= totalPages }
-							onClick={ () => setPage( ( p ) => p + 1 ) }
-						>
-							{ __( 'Next', 'mediashield' ) }
-						</Button>
-					</div>
-				</>
+					{ totalPages > 1 && (
+						<div className="mediashield-pagination">
+							<span className="mediashield-pagination__info">
+								{ `${ __( 'Page', 'mediashield' ) } ${ page } ${ __( 'of', 'mediashield' ) } ${ totalPages }` }
+							</span>
+							<div className="mediashield-pagination__buttons">
+								<Button
+									variant="secondary"
+									size="small"
+									disabled={ page <= 1 }
+									onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
+								>
+									{ __( 'Previous', 'mediashield' ) }
+								</Button>
+								<Button
+									variant="secondary"
+									size="small"
+									disabled={ page >= totalPages }
+									onClick={ () => setPage( ( p ) => p + 1 ) }
+								>
+									{ __( 'Next', 'mediashield' ) }
+								</Button>
+							</div>
+						</div>
+					) }
+				</div>
 			) }
 		</div>
 	);

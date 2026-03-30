@@ -1,11 +1,13 @@
 /**
- * MediaShield Admin – Playlists Page
+ * MediaShield Admin -- Playlists Page
+ *
+ * Premium playlist management with table card, empty state, and action buttons.
  *
  * @package MediaShield
  */
 
 import { useState, useEffect } from '@wordpress/element';
-import { Button, Spinner } from '@wordpress/components';
+import { Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { decodeEntities } from '@wordpress/html-entities';
@@ -26,19 +28,13 @@ const Playlists = () => {
 			path: '/wp/v2/mediashield-playlists?_locale=user',
 		} )
 			.then( ( res ) => {
-				if ( ! cancelled ) {
-					setPlaylists( res );
-				}
+				if ( ! cancelled ) setPlaylists( res );
 			} )
 			.catch( ( err ) => {
-				if ( ! cancelled ) {
-					setError( err.message || __( 'Failed to load playlists.', 'mediashield' ) );
-				}
+				if ( ! cancelled ) setError( err.message || __( 'Failed to load playlists.', 'mediashield' ) );
 			} )
 			.finally( () => {
-				if ( ! cancelled ) {
-					setLoading( false );
-				}
+				if ( ! cancelled ) setLoading( false );
 			} );
 
 		return () => {
@@ -49,12 +45,28 @@ const Playlists = () => {
 	return (
 		<div className="mediashield-page mediashield-playlists">
 			<header className="mediashield-page__header">
-				<h1>{ __( 'Playlists', 'mediashield' ) }</h1>
+				<h1>
+					{ __( 'Playlists', 'mediashield' ) }
+					{ ! loading && (
+						<span className="mediashield-page__header-subtitle">
+							{ playlists.length } { playlists.length === 1 ? __( 'playlist', 'mediashield' ) : __( 'playlists', 'mediashield' ) }
+						</span>
+					) }
+				</h1>
+				<a
+					href={ `${ config.adminUrl }post-new.php?post_type=mediashield_playlist` }
+					className="components-button is-primary"
+				>
+					{ __( 'Add New Playlist', 'mediashield' ) }
+				</a>
 			</header>
 
 			{ loading && (
 				<div className="mediashield-loader">
 					<Spinner />
+					<span className="mediashield-loader__text">
+						{ __( 'Loading playlists...', 'mediashield' ) }
+					</span>
 				</div>
 			) }
 
@@ -65,54 +77,89 @@ const Playlists = () => {
 			) }
 
 			{ ! loading && ! error && (
-				<table className="mediashield-table">
-					<thead>
-						<tr>
-							<th>{ __( 'Title', 'mediashield' ) }</th>
-							<th>{ __( 'Date', 'mediashield' ) }</th>
-							<th>{ __( 'Actions', 'mediashield' ) }</th>
-						</tr>
-					</thead>
-					<tbody>
-						{ playlists.length === 0 && (
+				<div className="mediashield-table-card">
+					<table className="mediashield-table">
+						<thead>
 							<tr>
-								<td colSpan="3">
-									{ __( 'No playlists found.', 'mediashield' ) }
-								</td>
+								<th>{ __( 'Title', 'mediashield' ) }</th>
+								<th>{ __( 'Settings', 'mediashield' ) }</th>
+								<th>{ __( 'Date', 'mediashield' ) }</th>
+								<th>{ __( 'Actions', 'mediashield' ) }</th>
 							</tr>
-						) }
-						{ playlists.map( ( playlist ) => (
-							<tr key={ playlist.id }>
-								<td>
-									{ decodeEntities( playlist.title?.rendered || '' ) }
-								</td>
-								<td>
-									{ playlist.date
-										? new Date( playlist.date ).toLocaleDateString()
-										: '—' }
-								</td>
-								<td className="mediashield-table__actions">
-									<a
-										href={ `${ config.adminUrl }post.php?post=${ playlist.id }&action=edit` }
-										className="mediashield-link"
-									>
-										{ __( 'Edit', 'mediashield' ) }
-									</a>
-									{ playlist.link && (
-										<a
-											href={ playlist.link }
-											className="mediashield-link"
-											target="_blank"
-											rel="noopener noreferrer"
-										>
-											{ __( 'View', 'mediashield' ) }
-										</a>
-									) }
-								</td>
-							</tr>
-						) ) }
-					</tbody>
-				</table>
+						</thead>
+						<tbody>
+							{ playlists.length === 0 && (
+								<tr>
+									<td colSpan="4" className="mediashield-table__empty">
+										<span className="mediashield-table__empty-icon dashicons dashicons-playlist-audio" />
+										{ __( 'No playlists yet. Create one to group your videos.', 'mediashield' ) }
+									</td>
+								</tr>
+							) }
+							{ playlists.map( ( playlist ) => {
+								const meta = playlist.meta || {};
+								const flags = [];
+								if ( meta._ms_autoplay ) flags.push( __( 'Autoplay', 'mediashield' ) );
+								if ( meta._ms_loop ) flags.push( __( 'Loop', 'mediashield' ) );
+								if ( meta._ms_shuffle ) flags.push( __( 'Shuffle', 'mediashield' ) );
+
+								return (
+									<tr key={ playlist.id }>
+										<td>
+											<strong>
+												{ decodeEntities( playlist.title?.rendered || '' ) }
+											</strong>
+										</td>
+										<td>
+											{ flags.length > 0 ? (
+												flags.map( ( f ) => (
+													<span
+														key={ f }
+														className="mediashield-badge mediashield-badge--standard"
+														style={ { marginRight: 4 } }
+													>
+														{ f }
+													</span>
+												) )
+											) : (
+												<span style={ { color: 'var(--ms-color-text-tertiary)', fontSize: '12px' } }>
+													{ __( 'Default', 'mediashield' ) }
+												</span>
+											) }
+										</td>
+										<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
+											{ playlist.date
+												? new Date( playlist.date ).toLocaleDateString( undefined, {
+													year: 'numeric',
+													month: 'short',
+													day: 'numeric',
+												} )
+												: '\u2014' }
+										</td>
+										<td className="mediashield-table__actions">
+											<a
+												href={ `${ config.adminUrl }post.php?post=${ playlist.id }&action=edit` }
+												className="mediashield-action-btn mediashield-action-btn--edit"
+											>
+												{ __( 'Edit', 'mediashield' ) }
+											</a>
+											{ playlist.link && (
+												<a
+													href={ playlist.link }
+													className="mediashield-action-btn mediashield-action-btn--view"
+													target="_blank"
+													rel="noopener noreferrer"
+												>
+													{ __( 'View', 'mediashield' ) }
+												</a>
+											) }
+										</td>
+									</tr>
+								);
+							} ) }
+						</tbody>
+					</table>
+				</div>
 			) }
 		</div>
 	);

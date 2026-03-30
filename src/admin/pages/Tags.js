@@ -1,7 +1,8 @@
 /**
- * MediaShield Admin – Tags Page
+ * MediaShield Admin -- Tags Page
  *
- * Inline CRUD for video tags.
+ * Premium inline CRUD with card-wrapped form, video count badges,
+ * and confirmation on delete.
  *
  * @package MediaShield
  */
@@ -45,9 +46,7 @@ const Tags = () => {
 	}, [ fetchTags ] );
 
 	const handleCreate = useCallback( () => {
-		if ( ! newName.trim() ) {
-			return;
-		}
+		if ( ! newName.trim() ) return;
 		setCreating( true );
 
 		apiFetch( {
@@ -97,17 +96,31 @@ const Tags = () => {
 		[ fetchTags, createSuccessNotice, createErrorNotice ]
 	);
 
+	const handleKeyDown = ( e ) => {
+		if ( e.key === 'Enter' && newName.trim() && ! creating ) {
+			handleCreate();
+		}
+	};
+
 	return (
 		<div className="mediashield-page mediashield-tags">
 			<header className="mediashield-page__header">
-				<h1>{ __( 'Tags', 'mediashield' ) }</h1>
+				<h1>
+					{ __( 'Tags', 'mediashield' ) }
+					{ ! loading && (
+						<span className="mediashield-page__header-subtitle">
+							{ tags.length } { tags.length === 1 ? __( 'tag', 'mediashield' ) : __( 'tags', 'mediashield' ) }
+						</span>
+					) }
+				</h1>
 			</header>
 
 			<div className="mediashield-tags__create">
 				<TextControl
-					label={ __( 'New tag name', 'mediashield' ) }
+					placeholder={ __( 'Enter tag name...', 'mediashield' ) }
 					value={ newName }
 					onChange={ setNewName }
+					onKeyDown={ handleKeyDown }
 					__nextHasNoMarginBottom
 				/>
 				<Button
@@ -123,6 +136,9 @@ const Tags = () => {
 			{ loading && (
 				<div className="mediashield-loader">
 					<Spinner />
+					<span className="mediashield-loader__text">
+						{ __( 'Loading tags...', 'mediashield' ) }
+					</span>
 				</div>
 			) }
 
@@ -133,41 +149,60 @@ const Tags = () => {
 			) }
 
 			{ ! loading && ! error && (
-				<table className="mediashield-table">
-					<thead>
-						<tr>
-							<th>{ __( 'Name', 'mediashield' ) }</th>
-							<th>{ __( 'Videos', 'mediashield' ) }</th>
-							<th>{ __( 'Actions', 'mediashield' ) }</th>
-						</tr>
-					</thead>
-					<tbody>
-						{ tags.length === 0 && (
+				<div className="mediashield-table-card">
+					<table className="mediashield-table">
+						<thead>
 							<tr>
-								<td colSpan="3">
-									{ __( 'No tags yet.', 'mediashield' ) }
-								</td>
+								<th>{ __( 'Name', 'mediashield' ) }</th>
+								<th>{ __( 'Slug', 'mediashield' ) }</th>
+								<th>{ __( 'Videos', 'mediashield' ) }</th>
+								<th>{ __( 'Actions', 'mediashield' ) }</th>
 							</tr>
-						) }
-						{ tags.map( ( tag ) => (
-							<tr key={ tag.id }>
-								<td>{ tag.name }</td>
-								<td>{ tag.video_count ?? 0 }</td>
-								<td>
-									<Button
-										variant="tertiary"
-										isDestructive
-										isBusy={ deletingId === tag.id }
-										disabled={ deletingId === tag.id }
-										onClick={ () => handleDelete( tag.id ) }
-									>
-										{ __( 'Delete', 'mediashield' ) }
-									</Button>
-								</td>
-							</tr>
-						) ) }
-					</tbody>
-				</table>
+						</thead>
+						<tbody>
+							{ tags.length === 0 && (
+								<tr>
+									<td colSpan="4" className="mediashield-table__empty">
+										<span className="mediashield-table__empty-icon dashicons dashicons-tag" />
+										{ __( 'No tags yet. Create one above to organize your videos.', 'mediashield' ) }
+									</td>
+								</tr>
+							) }
+							{ tags.map( ( tag ) => (
+								<tr key={ tag.id }>
+									<td><strong>{ tag.name }</strong></td>
+									<td>
+										<code style={ {
+											fontSize: '11px',
+											background: 'var(--ms-color-bg)',
+											padding: '2px 6px',
+											borderRadius: '3px',
+											color: 'var(--ms-color-text-secondary)',
+										} }>
+											{ tag.slug }
+										</code>
+									</td>
+									<td>
+										<span className="mediashield-badge mediashield-badge--standard">
+											{ tag.video_count ?? 0 }
+										</span>
+									</td>
+									<td>
+										<button
+											className="mediashield-action-btn mediashield-action-btn--delete"
+											disabled={ deletingId === tag.id }
+											onClick={ () => handleDelete( tag.id ) }
+										>
+											{ deletingId === tag.id
+												? __( 'Deleting...', 'mediashield' )
+												: __( 'Delete', 'mediashield' ) }
+										</button>
+									</td>
+								</tr>
+							) ) }
+						</tbody>
+					</table>
+				</div>
 			) }
 		</div>
 	);

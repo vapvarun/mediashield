@@ -1,47 +1,47 @@
 /**
- * MediaShield Admin – Sidebar Navigation
+ * MediaShield Admin -- Sidebar Navigation
  *
  * @package MediaShield
  */
 
-import { NavigableMenu } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-/**
- * Sidebar component.
- *
- * @param {Object}   props             Component props.
- * @param {Array}    props.routes      Route definitions.
- * @param {string}   props.currentHash Current location hash.
- * @return {JSX.Element} Sidebar element.
- */
+const config = window.mediashieldAdmin || {};
+
 const Sidebar = ( { routes, currentHash } ) => {
 	return (
 		<nav className="mediashield-sidebar" aria-label={ __( 'Admin navigation', 'mediashield' ) }>
 			<div className="mediashield-sidebar__brand">
+				<span className="ms-brand-icon">
+					<span className="dashicons dashicons-shield" aria-hidden="true" />
+				</span>
 				<strong>{ __( 'MediaShield', 'mediashield' ) }</strong>
+				<span className="mediashield-sidebar__version">
+					{ config.version || 'v1.0' }
+				</span>
 			</div>
-			<NavigableMenu orientation="vertical" className="mediashield-sidebar__menu">
+			<ul className="mediashield-sidebar__menu">
 				{ routes.map( ( route ) => {
 					const isActive = currentHash === route.hash;
 					return (
-						<a
-							key={ route.hash }
-							href={ route.hash }
-							className={
-								'mediashield-sidebar__item' +
-								( isActive ? ' is-active' : '' )
-							}
-							aria-current={ isActive ? 'page' : undefined }
-						>
-							<span className={ `dashicons dashicons-${ route.icon }` } aria-hidden="true" />
-							<span className="mediashield-sidebar__label">
-								{ route.label }
-							</span>
-						</a>
+						<li key={ route.hash } style={ { listStyle: 'none', margin: 0, padding: 0 } }>
+							<a
+								href={ route.hash }
+								className={
+									'mediashield-sidebar__item' +
+									( isActive ? ' is-active' : '' )
+								}
+								aria-current={ isActive ? 'page' : undefined }
+							>
+								<span className={ `dashicons dashicons-${ route.icon }` } aria-hidden="true" />
+								<span className="mediashield-sidebar__label">
+									{ route.label }
+								</span>
+							</a>
+						</li>
 					);
 				} ) }
-			</NavigableMenu>
+			</ul>
 		</nav>
 	);
 };
