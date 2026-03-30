@@ -47,6 +47,8 @@ class Activator {
 			'ms_watermark_opacity'       => 0.3,
 			'ms_watermark_color'         => '#ffffff',
 			'ms_watermark_swap_interval' => 20,
+			'ms_allowed_domains'         => '',
+			'ms_max_concurrent_streams'  => 2,
 		);
 
 		foreach ( $defaults as $key => $value ) {

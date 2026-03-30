@@ -11,6 +11,7 @@ use MediaShield\CPT\VideoPostType;
 use MediaShield\CPT\PlaylistPostType;
 use MediaShield\CPT\Thumbnail;
 use MediaShield\REST\TagController;
+use MediaShield\REST\SessionController;
 
 class Plugin {
 
@@ -64,6 +65,7 @@ class Plugin {
 	 */
 	public function register_rest_routes(): void {
 		( new TagController() )->register_routes();
+		( new SessionController() )->register_routes();
 	}
 
 	/**
