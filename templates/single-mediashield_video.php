@@ -5,6 +5,8 @@
  * Uses Player\Renderer for API-compatible player output.
  * Includes JSON-LD VideoObject schema for SEO.
  *
+ * Compatible with both classic and block themes.
+ *
  * @package MediaShield
  */
 
@@ -12,7 +14,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-get_header();
+// Block theme support: use block_template_part if available.
+$is_block_theme = function_exists( 'wp_is_block_theme' ) && wp_is_block_theme();
+
+if ( $is_block_theme ) {
+	?><!doctype html>
+<html <?php language_attributes(); ?>>
+<head>
+	<meta charset="<?php bloginfo( 'charset' ); ?>">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<?php wp_head(); ?>
+</head>
+<body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
+
+<div class="wp-site-blocks">
+<?php block_template_part( 'header' ); ?>
+
+<main class="wp-block-group is-layout-constrained" style="padding-top: var(--wp--preset--spacing--50); padding-bottom: var(--wp--preset--spacing--50);">
+	<?php
+} else {
+	get_header();
+}
 
 while ( have_posts() ) :
 	the_post();
@@ -22,11 +45,11 @@ while ( have_posts() ) :
 	?>
 
 	<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-		<header class="entry-header">
-			<?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
+		<header class="entry-header<?php echo $is_block_theme ? ' alignwide' : ''; ?>">
+			<?php the_title( '<h1 class="entry-title wp-block-post-title">', '</h1>' ); ?>
 		</header>
 
-		<div class="entry-content">
+		<div class="entry-content<?php echo $is_block_theme ? ' alignwide' : ''; ?>">
 			<?php
 			// Render the protected player via adapter system.
 			echo \MediaShield\Player\Renderer::render( $video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -59,4 +82,17 @@ while ( have_posts() ) :
 
 <?php endwhile;
 
-get_footer();
+if ( $is_block_theme ) {
+	?>
+</main>
+
+<?php block_template_part( 'footer' ); ?>
+</div>
+
+<?php wp_footer(); ?>
+</body>
+</html>
+	<?php
+} else {
+	get_footer();
+}
