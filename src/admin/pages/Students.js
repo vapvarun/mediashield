@@ -83,7 +83,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
 			.then( ( res ) => {
-				if ( ! cancelled ) setDetail( res );
+				if ( ! cancelled ) setDetail( { ...res, name: res.display_name || res.name || '' } );
 			} )
 			.catch( ( err ) => {
 				if ( ! cancelled ) setError( err.message || __( 'Failed to load details.', 'mediashield' ) );
@@ -195,7 +195,7 @@ const Students = () => {
 			url: `${ config.restUrl }analytics/users${ qs }`,
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
-			.then( ( res ) => setUsers( res ) )
+			.then( ( res ) => setUsers( res.map( ( u ) => ( { ...u, name: u.display_name || u.name || '', id: u.user_id || u.id } ) ) ) )
 			.catch( ( err ) =>
 				setError( err.message || __( 'Failed to load viewers.', 'mediashield' ) )
 			)
