@@ -7,6 +7,17 @@
 
 namespace MediaShield\Access;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class AccessControl
+ *
+ * Video access control — login gate, domain restriction, filterable access.
+ *
+ * @since 1.0.0
+ */
 class AccessControl {
 
 	/**
@@ -94,13 +105,22 @@ class AccessControl {
 	 * Build an "allowed" result.
 	 */
 	private static function allow(): array {
-		return array( 'allowed' => true, 'reason' => '' );
+		return array(
+			'allowed' => true,
+			'reason'  => '',
+		);
 	}
 
 	/**
 	 * Build a "denied" result.
+	 *
+	 * @param string $reason Denial reason message.
+	 * @return array
 	 */
 	private static function deny( string $reason ): array {
-		return array( 'allowed' => false, 'reason' => $reason );
+		return array(
+			'allowed' => false,
+			'reason'  => $reason,
+		);
 	}
 }

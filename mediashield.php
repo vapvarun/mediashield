@@ -12,6 +12,8 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: mediashield
  * Domain Path: /languages
+ *
+ * @package MediaShield
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -35,7 +37,10 @@ register_activation_hook( __FILE__, array( 'MediaShield\\Core\\Activator', 'acti
 register_deactivation_hook( __FILE__, array( 'MediaShield\\Core\\Deactivator', 'deactivate' ) );
 
 // Bootstrap the plugin on plugins_loaded.
-add_action( 'plugins_loaded', function () {
-	\MediaShield\Core\Migrator::run();
-	\MediaShield\Core\Plugin::instance();
-} );
+add_action(
+	'plugins_loaded',
+	function () {
+		\MediaShield\Core\Migrator::run();
+		\MediaShield\Core\Plugin::instance();
+	}
+);

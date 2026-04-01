@@ -7,6 +7,17 @@
 
 namespace MediaShield\Block;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class MyVideosBlock
+ *
+ * Registers the mediashield/my-videos Gutenberg block and shortcode.
+ *
+ * @since 1.0.0
+ */
 class MyVideosBlock {
 
 	/**

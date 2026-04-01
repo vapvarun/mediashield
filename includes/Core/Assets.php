@@ -10,15 +10,27 @@
 
 namespace MediaShield\Core;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\Player\Watermark;
 use MediaShield\Player\Protection;
 
+/**
+ * Class Assets
+ *
+ * Frontend and admin asset registration and enqueuing.
+ *
+ * @since 1.0.0
+ */
 class Assets {
 
 	/**
-	 * Register hooks.
+	 * Whether Shaka Player is needed on this page.
+	 *
+	 * @var bool
 	 */
-	/** @var bool Whether Shaka Player is needed on this page. */
 	private static bool $needs_shaka = false;
 
 	/**
@@ -28,9 +40,12 @@ class Assets {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend' ) );
 
 		// Listen for Shaka Player requests from Renderer/PlayerWrapper.
-		add_action( 'mediashield_needs_shaka', function () {
-			self::$needs_shaka = true;
-		} );
+		add_action(
+			'mediashield_needs_shaka',
+			function () {
+				self::$needs_shaka = true;
+			}
+		);
 	}
 
 	/**
@@ -96,14 +111,14 @@ class Assets {
 		$user = wp_get_current_user();
 
 		$config = array(
-			'restUrl'       => rest_url( 'mediashield/v1/' ),
-			'nonce'         => wp_create_nonce( 'wp_rest' ),
-			'isLoggedIn'    => is_user_logged_in(),
-			'userId'        => $user->ID,
-			'loginUrl'      => wp_login_url( get_permalink() ),
-			'interval'      => 30000, // Heartbeat interval in ms.
-			'watermark'     => Watermark::get_config(),
-			'protection'    => Protection::get_config(),
+			'restUrl'    => rest_url( 'mediashield/v1/' ),
+			'nonce'      => wp_create_nonce( 'wp_rest' ),
+			'isLoggedIn' => is_user_logged_in(),
+			'userId'     => $user->ID,
+			'loginUrl'   => wp_login_url( get_permalink() ),
+			'interval'   => 30000, // Heartbeat interval in ms.
+			'watermark'  => Watermark::get_config(),
+			'protection' => Protection::get_config(),
 		);
 
 		wp_localize_script( 'mediashield-player-wrapper', 'mediashieldConfig', $config );

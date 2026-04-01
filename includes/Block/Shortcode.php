@@ -10,8 +10,19 @@
 
 namespace MediaShield\Block;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\Player\Renderer;
 
+/**
+ * Class Shortcode
+ *
+ * Handles the [mediashield] shortcode rendering.
+ *
+ * @since 1.0.0
+ */
 class Shortcode {
 
 	/**
@@ -28,9 +39,13 @@ class Shortcode {
 	 * @return string HTML output.
 	 */
 	public static function render( $atts ): string {
-		$atts = shortcode_atts( array(
-			'id' => 0,
-		), $atts, 'mediashield' );
+		$atts = shortcode_atts(
+			array(
+				'id' => 0,
+			),
+			$atts,
+			'mediashield'
+		);
 
 		return Renderer::render( (int) $atts['id'] );
 	}

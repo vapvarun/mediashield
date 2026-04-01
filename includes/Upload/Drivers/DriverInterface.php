@@ -10,6 +10,10 @@
 
 namespace MediaShield\Upload\Drivers;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 interface DriverInterface {
 
 	/**

@@ -7,6 +7,17 @@
 
 namespace MediaShield\Block;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class VideoBlock
+ *
+ * Registers the mediashield/video Gutenberg block.
+ *
+ * @since 1.0.0
+ */
 class VideoBlock {
 
 	/**

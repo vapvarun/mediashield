@@ -11,6 +11,17 @@
 
 namespace MediaShield\Player;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class PlayerWrapper
+ *
+ * Detects and wraps video embeds with MediaShield protection.
+ *
+ * @since 1.0.0
+ */
 class PlayerWrapper {
 
 	/**
@@ -112,48 +123,81 @@ class PlayerWrapper {
 	 * @return string Processed HTML.
 	 */
 	private static function wrap_platform( string $html, string $pattern, string $platform ): string {
-		return preg_replace_callback( $pattern, function ( $matches ) use ( $platform, $html ) {
-			$embed = $matches[0];
+		return preg_replace_callback(
+			$pattern,
+			function ( $matches ) use ( $platform, $html ) {
+				$embed = $matches[0];
 
-			// Double-wrap prevention.
-			if ( str_contains( $embed, 'ms-protected-player' ) || str_contains( $embed, 'ms-player-target' ) ) {
-				return $embed;
-			}
-
-			// Check surrounding context for existing wrapper.
-			$pos = strpos( $html, $embed );
-			if ( false !== $pos ) {
-				$before = substr( $html, max( 0, $pos - 200 ), min( 200, $pos ) );
-				if ( str_contains( $before, 'ms-protected-player' ) && ! str_contains( $before, '</div>' ) ) {
+				// Double-wrap prevention.
+				if ( str_contains( $embed, 'ms-protected-player' ) || str_contains( $embed, 'ms-player-target' ) ) {
 					return $embed;
 				}
-			}
 
-			// Extract platform video ID from the URL.
-			$src_url          = $matches[1] ?? '';
-			$platform_video_id = self::extract_video_id( $src_url, $platform );
-			$protection        = get_option( 'ms_default_protection', 'standard' );
-			$player_type       = apply_filters( 'mediashield_player_type', 'standard', 0 );
+				// Check surrounding context for existing wrapper.
+				$pos = strpos( $html, $embed );
+				if ( false !== $pos ) {
+					$before = substr( $html, max( 0, $pos - 200 ), min( 200, $pos ) );
+					if ( str_contains( $before, 'ms-protected-player' ) && ! str_contains( $before, '</div>' ) ) {
+						return $embed;
+					}
+				}
 
-			// Flag Shaka Player needed for self/bunny.
-			if ( in_array( $platform, array( 'self', 'bunny' ), true ) ) {
-				do_action( 'mediashield_needs_shaka' );
-			}
+				// Extract platform video ID from the URL.
+				$src_url           = $matches[1] ?? '';
+				$platform_video_id = self::extract_video_id( $src_url, $platform );
+				$protection        = get_option( 'ms_default_protection', 'standard' );
 
-			return sprintf(
-				'<div class="ms-protected-player" data-video-id="0" data-platform="%s" data-protection-level="%s" data-player-type="%s">'
-				. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""></div>'
-				. '<canvas class="ms-watermark-canvas"></canvas>'
-				. '<div class="ms-protection-overlay"></div>'
-				. '<button class="ms-fullscreen-btn" aria-label="Fullscreen"><span class="dashicons dashicons-fullscreen-alt"></span></button>'
-				. '</div>',
-				esc_attr( $platform ),
-				esc_attr( $protection ),
-				esc_attr( $player_type ),
-				esc_attr( $platform_video_id ),
-				esc_url( $src_url )
-			);
-		}, $html );
+				// Look up mediashield_video CPT by platform video ID.
+				$video_post_id = 0;
+				$untracked_attr = '';
+				if ( ! empty( $platform_video_id ) ) {
+					$found_posts = get_posts(
+						array(
+							'post_type'      => 'mediashield_video',
+							'posts_per_page' => 1,
+							'fields'         => 'ids',
+							'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+								array(
+									'key'   => '_ms_platform_video_id',
+									'value' => $platform_video_id,
+								),
+							),
+						)
+					);
+					if ( ! empty( $found_posts ) ) {
+						$video_post_id = (int) $found_posts[0];
+					}
+				}
+
+				if ( 0 === $video_post_id ) {
+					$untracked_attr = ' data-ms-untracked="1"';
+				}
+
+				$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_post_id );
+
+				// Flag Shaka Player needed for self/bunny.
+				if ( in_array( $platform, array( 'self', 'bunny' ), true ) ) {
+					do_action( 'mediashield_needs_shaka' );
+				}
+
+				return sprintf(
+					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s"%s>'
+					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""></div>'
+					. '<canvas class="ms-watermark-canvas"></canvas>'
+					. '<div class="ms-protection-overlay"></div>'
+					. '<button class="ms-fullscreen-btn" aria-label="Fullscreen"><span class="dashicons dashicons-fullscreen-alt"></span></button>'
+					. '</div>',
+					$video_post_id,
+					esc_attr( $platform ),
+					esc_attr( $protection ),
+					esc_attr( $player_type ),
+					$untracked_attr,
+					esc_attr( $platform_video_id ),
+					esc_url( $src_url )
+				);
+			},
+			$html
+		);
 	}
 
 	/**

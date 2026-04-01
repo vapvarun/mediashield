@@ -91,9 +91,17 @@ const Dashboard = () => {
 		};
 	}, [ period ] );
 
-	// Render Chart.js when data loads.
+	// Check whether we have real chart data.
+	const chartData = data?.sessions_chart || [];
+	const hasChartData = chartData.length > 0 && chartData.some( ( d ) => parseInt( d.count, 10 ) > 0 );
+
+	// Render Chart.js when data loads (only if there is real data).
 	useEffect( () => {
-		if ( ! data || ! chartRef.current ) {
+		if ( ! data || ! chartRef.current || ! hasChartData ) {
+			if ( chartInstance.current ) {
+				chartInstance.current.destroy();
+				chartInstance.current = null;
+			}
 			return;
 		}
 
@@ -101,31 +109,17 @@ const Dashboard = () => {
 			chartInstance.current.destroy();
 		}
 
-		let labels, sessions, completions;
-		const chartData = data.sessions_chart || [];
-
-		if ( chartData.length > 0 ) {
-			labels = chartData.map( ( d ) => {
-				const dt = new Date( d.date );
-				return dt.toLocaleDateString( undefined, { month: 'short', day: 'numeric' } );
-			} );
-			sessions = chartData.map( ( d ) => parseInt( d.count, 10 ) || 0 );
-			completions = generateDemoData( labels.length, 30, 90 ); // Completion trend not in API yet.
-		} else {
-			labels = generateLabels( period );
-			sessions = generateDemoData( labels.length, 2, 15 );
-			completions = generateDemoData( labels.length, 30, 90 );
-		}
+		const labels = chartData.map( ( d ) => {
+			const dt = new Date( d.date );
+			return dt.toLocaleDateString( undefined, { month: 'short', day: 'numeric' } );
+		} );
+		const sessions = chartData.map( ( d ) => parseInt( d.count, 10 ) || 0 );
 
 		const ctx = chartRef.current.getContext( '2d' );
 
 		const gradient1 = ctx.createLinearGradient( 0, 0, 0, 260 );
 		gradient1.addColorStop( 0, 'rgba(56, 88, 233, 0.15)' );
 		gradient1.addColorStop( 1, 'rgba(56, 88, 233, 0)' );
-
-		const gradient2 = ctx.createLinearGradient( 0, 0, 0, 260 );
-		gradient2.addColorStop( 0, 'rgba(124, 58, 237, 0.1)' );
-		gradient2.addColorStop( 1, 'rgba(124, 58, 237, 0)' );
 
 		chartInstance.current = new Chart( ctx, {
 			type: 'line',
@@ -145,21 +139,6 @@ const Dashboard = () => {
 						pointHoverBackgroundColor: '#3858e9',
 						pointHoverBorderColor: '#fff',
 						pointHoverBorderWidth: 2,
-					},
-					{
-						label: __( 'Avg Completion %', 'mediashield' ),
-						data: completions,
-						borderColor: '#7c3aed',
-						backgroundColor: gradient2,
-						borderWidth: 2,
-						fill: true,
-						tension: 0.4,
-						pointRadius: 0,
-						pointHoverRadius: 5,
-						pointHoverBackgroundColor: '#7c3aed',
-						pointHoverBorderColor: '#fff',
-						pointHoverBorderWidth: 2,
-						borderDash: [ 5, 5 ],
 					},
 				],
 			},
@@ -227,7 +206,7 @@ const Dashboard = () => {
 				chartInstance.current = null;
 			}
 		};
-	}, [ data, period ] );
+	}, [ data, period, hasChartData ] );
 
 	const topVideos = data?.top_videos || [];
 	const recentMilestones = data?.recent_milestones || [];
@@ -286,7 +265,14 @@ const Dashboard = () => {
 							</span>
 						</div>
 						<div className="mediashield-chart-card__body">
-							<canvas ref={ chartRef } height="260" />
+							{ hasChartData ? (
+								<canvas ref={ chartRef } height="260" />
+							) : (
+								<div className="ms-empty-state">
+									<p>{ __( 'No analytics data yet.', 'mediashield' ) }</p>
+									<p>{ __( 'Data will appear here once viewers start watching your videos.', 'mediashield' ) }</p>
+								</div>
+							) }
 						</div>
 					</div>
 
@@ -333,41 +319,5 @@ const Dashboard = () => {
 		</div>
 	);
 };
-
-/**
- * Generate date labels for a period when API doesn't provide them.
- */
-function generateLabels( period ) {
-	const days = period === 'today' ? 24 : period === '7d' ? 7 : period === '30d' ? 30 : 90;
-	const labels = [];
-	const now = new Date();
-
-	if ( period === 'today' ) {
-		for ( let i = 0; i < 24; i++ ) {
-			labels.push( `${ i }:00` );
-		}
-	} else {
-		for ( let i = days - 1; i >= 0; i-- ) {
-			const d = new Date( now );
-			d.setDate( d.getDate() - i );
-			labels.push( d.toLocaleDateString( undefined, { month: 'short', day: 'numeric' } ) );
-		}
-	}
-	return labels;
-}
-
-/**
- * Generate demo data when API doesn't provide chart data.
- */
-function generateDemoData( length, min, max ) {
-	const data = [];
-	let prev = Math.floor( ( min + max ) / 2 );
-	for ( let i = 0; i < length; i++ ) {
-		const delta = Math.floor( Math.random() * 10 ) - 4;
-		prev = Math.max( min, Math.min( max, prev + delta ) );
-		data.push( prev );
-	}
-	return data;
-}
 
 export default Dashboard;

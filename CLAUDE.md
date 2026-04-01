@@ -340,8 +340,23 @@ Key option names used by `SettingsController`:
 
 ---
 
+## Documentation
+
+| Document | Path | Description |
+|----------|------|-------------|
+| Feature Audit | `docs/audit/FEATURE_AUDIT.md` | Complete feature inventory: CPTs, DB tables, REST endpoints, hooks, settings, blocks, shortcodes, cron jobs, capabilities, templates, GDPR |
+| Code Flows | `docs/audit/CODE_FLOWS.md` | 16 detailed code flow maps covering bootstrap, session lifecycle, upload, output buffer, cascade delete, milestone tracking, access control, HMAC tokens |
+| Architecture | `docs/architecture/PLUGIN_ARCHITECTURE.md` | High-level architecture, module dependency graph, data architecture, JS adapter pattern, security model, extension architecture, build system, file inventory |
+| Design Spec | `docs/DESIGN_SPEC.md` | Original design specification |
+| Design Spec v2 | `docs/DESIGN_SPEC_v2.md` | Updated design specification |
+| Implementation Plan | `docs/IMPLEMENTATION_PLAN.md` | Original implementation plan |
+| Implementation Plan v2 | `docs/IMPLEMENTATION_PLAN_v2.md` | Updated implementation plan |
+
+---
+
 ## Recent Changes
 
 | Date | Files | Summary |
 |------|-------|---------|
+| 2026-04-01 | docs/audit/, docs/architecture/ | Full onboard: feature audit, code flow maps, architecture docs |
 | 2026-03-30 | Initial | v1.0.0 -- Full plugin implementation |

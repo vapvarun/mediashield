@@ -7,6 +7,17 @@
 
 namespace MediaShield\Core;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class Deactivator
+ *
+ * Handles plugin deactivation tasks.
+ *
+ * @since 1.0.0
+ */
 class Deactivator {
 
 	/**

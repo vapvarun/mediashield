@@ -10,6 +10,17 @@
 
 namespace MediaShield\Privacy;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class PrivacyEraser
+ *
+ * GDPR Personal Data Eraser for anonymizing watch session PII.
+ *
+ * @since 1.0.0
+ */
 class PrivacyEraser {
 
 	/**
@@ -59,7 +70,8 @@ class PrivacyEraser {
 		$items_retained = 0;
 
 		// Anonymize watch sessions (keep aggregate data, remove PII).
-		$sessions_table  = "{$wpdb->prefix}ms_watch_sessions";
+		$sessions_table = "{$wpdb->prefix}ms_watch_sessions";
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table queries for GDPR erasure.
 		$sessions_updated = (int) $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$sessions_table} SET ip_address = '', user_agent = '' WHERE user_id = %d AND ( ip_address != '' OR user_agent != '' )",
@@ -76,12 +88,14 @@ class PrivacyEraser {
 				$user->ID
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$items_retained += $total_sessions;
 
 		// Remove activity alerts for this user (pro table, only if it exists).
 		if ( defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			$alerts_table = "{$wpdb->prefix}ms_activity_alerts";
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema check.
 			$table_exists = $wpdb->get_var(
 				$wpdb->prepare(
 					'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s',
@@ -91,12 +105,14 @@ class PrivacyEraser {
 			);
 
 			if ( $table_exists ) {
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Pro table delete for GDPR erasure.
 				$alerts_deleted = (int) $wpdb->query(
 					$wpdb->prepare(
 						"DELETE FROM {$alerts_table} WHERE user_id = %d",
 						$user->ID
 					)
 				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 				$items_removed += $alerts_deleted;
 			}

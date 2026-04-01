@@ -7,6 +7,17 @@
 
 namespace MediaShield\Block;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class PlaylistBlock
+ *
+ * Registers the mediashield/playlist Gutenberg block.
+ *
+ * @since 1.0.0
+ */
 class PlaylistBlock {
 
 	/**

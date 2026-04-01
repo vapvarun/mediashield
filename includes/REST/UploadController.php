@@ -11,6 +11,10 @@
 
 namespace MediaShield\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\Upload\UploadManager;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -18,44 +22,66 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WP_Error;
 
+/**
+ * Class UploadController
+ *
+ * REST API controller for video uploads.
+ *
+ * @since 1.0.0
+ */
 class UploadController extends WP_REST_Controller {
 
-	/** @var string */
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'mediashield/v1';
 
 	/**
 	 * Register routes.
 	 */
 	public function register_routes(): void {
-		// POST /upload/init
-		register_rest_route( $this->namespace, '/upload/init', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'init_upload' ),
-			'permission_callback' => array( $this, 'upload_permissions_check' ),
-			'args'                => array(
-				'title'    => array(
-					'type'              => 'string',
-					'default'           => '',
-					'sanitize_callback' => 'sanitize_text_field',
+		// POST /upload/init.
+		register_rest_route(
+			$this->namespace,
+			'/upload/init',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'init_upload' ),
+				'permission_callback' => array( $this, 'upload_permissions_check' ),
+				'args'                => array(
+					'title'  => array(
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'driver' => array(
+						'type'              => 'string',
+						'default'           => 'self_hosted',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
 				),
-				'driver'   => array(
-					'type'              => 'string',
-					'default'           => 'self_hosted',
-					'sanitize_callback' => 'sanitize_text_field',
-				),
-			),
-		) );
+			)
+		);
 
-		// GET /upload/status/<id>
-		register_rest_route( $this->namespace, '/upload/status/(?P<upload_id>[a-zA-Z0-9._-]+)', array(
-			'methods'             => WP_REST_Server::READABLE,
-			'callback'            => array( $this, 'get_status' ),
-			'permission_callback' => array( $this, 'upload_permissions_check' ),
-		) );
+		// GET /upload/status/<id>.
+		register_rest_route(
+			$this->namespace,
+			'/upload/status/(?P<upload_id>[a-zA-Z0-9._-]+)',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_status' ),
+				'permission_callback' => array( $this, 'upload_permissions_check' ),
+			)
+		);
 	}
 
 	/**
 	 * Permissions: must have upload_mediashield capability.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
 	 */
 	public function upload_permissions_check( WP_REST_Request $request ): bool {
 		return current_user_can( 'upload_mediashield' );
@@ -63,6 +89,9 @@ class UploadController extends WP_REST_Controller {
 
 	/**
 	 * POST /upload/init — handle file upload.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function init_upload( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$files = $request->get_file_params();
@@ -78,7 +107,7 @@ class UploadController extends WP_REST_Controller {
 		$file = $files['file'];
 
 		// Check for upload errors.
-		if ( $file['error'] !== UPLOAD_ERR_OK ) {
+		if ( UPLOAD_ERR_OK !== $file['error'] ) {
 			return new WP_Error(
 				'upload_error',
 				self::get_upload_error_message( $file['error'] ),
@@ -87,7 +116,8 @@ class UploadController extends WP_REST_Controller {
 		}
 
 		$driver_name = $request->get_param( 'driver' );
-		$title       = $request->get_param( 'title' ) ?: pathinfo( $file['name'], PATHINFO_FILENAME );
+		$title       = $request->get_param( 'title' );
+		$title       = ! empty( $title ) ? $title : pathinfo( $file['name'], PATHINFO_FILENAME );
 
 		$result = UploadManager::upload(
 			$file['tmp_name'],
@@ -117,20 +147,27 @@ class UploadController extends WP_REST_Controller {
 		 */
 		do_action( 'mediashield_upload_complete', $result['video_id'], $driver_name, $result );
 
-		return new WP_REST_Response( array(
-			'video_id'          => $result['video_id'],
-			'platform_video_id' => $result['platform_video_id'],
-			'embed_url'         => esc_url( $result['embed_url'] ),
-			'status'            => 'complete',
-		), 201 );
+		return new WP_REST_Response(
+			array(
+				'video_id'          => $result['video_id'],
+				'platform_video_id' => $result['platform_video_id'],
+				'embed_url'         => esc_url( $result['embed_url'] ),
+				'status'            => 'complete',
+			),
+			201
+		);
 	}
 
 	/**
 	 * GET /upload/status/<id> — get upload progress.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_status( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$upload_id   = sanitize_file_name( $request['upload_id'] );
-		$driver_name = $request->get_param( 'driver' ) ?: 'self_hosted';
+		$upload_id    = sanitize_file_name( $request['upload_id'] );
+		$driver_param = $request->get_param( 'driver' );
+		$driver_name  = ! empty( $driver_param ) ? $driver_param : 'self_hosted';
 
 		$driver = UploadManager::get_driver( $driver_name );
 

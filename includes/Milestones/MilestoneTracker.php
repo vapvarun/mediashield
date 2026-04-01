@@ -10,6 +10,17 @@
 
 namespace MediaShield\Milestones;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class MilestoneTracker
+ *
+ * Milestone tracking — fires actions at configurable completion thresholds.
+ *
+ * @since 1.0.0
+ */
 class MilestoneTracker {
 
 	/**
@@ -40,6 +51,16 @@ class MilestoneTracker {
 		 */
 		$thresholds = apply_filters( 'mediashield_milestone_thresholds', array( 25, 50, 75, 100 ), $video_id );
 
+		// Merge per-video milestone thresholds from _ms_milestone_tags meta.
+		$video_milestones = get_post_meta( $video_id, '_ms_milestone_tags', true );
+		if ( is_array( $video_milestones ) ) {
+			foreach ( array_keys( $video_milestones ) as $pct ) {
+				if ( ! in_array( (int) $pct, $thresholds, true ) ) {
+					$thresholds[] = (int) $pct;
+				}
+			}
+		}
+
 		// Sort ascending and ensure integers.
 		$thresholds = array_map( 'intval', $thresholds );
 		sort( $thresholds );
@@ -55,15 +76,19 @@ class MilestoneTracker {
 			}
 
 			// INSERT IGNORE — dedup via UNIQUE KEY (video_id, user_id, milestone_pct).
-			$result = $wpdb->query( $wpdb->prepare(
-				"INSERT IGNORE INTO {$table} (video_id, user_id, milestone_pct, reached_at, session_id)
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table insert with IGNORE.
+			$result = $wpdb->query(
+				$wpdb->prepare(
+					"INSERT IGNORE INTO {$table} (video_id, user_id, milestone_pct, reached_at, session_id)
 				 VALUES (%d, %d, %d, %s, %d)",
-				$video_id,
-				$user_id,
-				$pct,
-				$now,
-				$session_id
-			) );
+					$video_id,
+					$user_id,
+					$pct,
+					$now,
+					$session_id
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 			// $result > 0 means a new row was inserted (not a duplicate).
 			if ( $result > 0 ) {
@@ -81,6 +106,23 @@ class MilestoneTracker {
 				 * @param int $pct        Milestone percentage reached.
 				 * @param int $session_id Session row ID.
 				 */
+				// Assign per-video milestone tag to user.
+				if ( is_array( $video_milestones ) && ! empty( $video_milestones[ $pct ]['enabled'] ) && ! empty( $video_milestones[ $pct ]['tag'] ) ) {
+					$tag = sanitize_text_field( $video_milestones[ $pct ]['tag'] );
+					// Store as serialized user meta: video_id + tag.
+					$user_tags = get_user_meta( $user_id, '_ms_video_tags', true );
+					if ( ! is_array( $user_tags ) ) {
+						$user_tags = array();
+					}
+					$user_tags[ $video_id . '_' . $pct ] = array(
+						'video_id'  => $video_id,
+						'pct'       => $pct,
+						'tag'       => $tag,
+						'earned_at' => current_time( 'mysql', true ),
+					);
+					update_user_meta( $user_id, '_ms_video_tags', $user_tags );
+				}
+
 				do_action( 'mediashield_milestone_reached', $user_id, $video_id, $pct, $session_id );
 
 				/**
@@ -110,15 +152,18 @@ class MilestoneTracker {
 	public static function get_for_video( int $video_id, int $user_id ): array {
 		global $wpdb;
 
-		$results = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM {$wpdb->prefix}ms_milestones
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}ms_milestones
 			 WHERE video_id = %d AND user_id = %d
 			 ORDER BY milestone_pct ASC",
-			$video_id,
-			$user_id
-		) );
+				$video_id,
+				$user_id
+			)
+		);
 
-		return $results ?: array();
+		return ! empty( $results ) ? $results : array();
 	}
 
 	/**
@@ -130,15 +175,18 @@ class MilestoneTracker {
 	public static function get_summary( int $video_id ): array {
 		global $wpdb;
 
-		$results = $wpdb->get_results( $wpdb->prepare(
-			"SELECT milestone_pct, COUNT(DISTINCT user_id) AS user_count
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT milestone_pct, COUNT(DISTINCT user_id) AS user_count
 			 FROM {$wpdb->prefix}ms_milestones
 			 WHERE video_id = %d
 			 GROUP BY milestone_pct
 			 ORDER BY milestone_pct ASC",
-			$video_id
-		) );
+				$video_id
+			)
+		);
 
-		return $results ?: array();
+		return ! empty( $results ) ? $results : array();
 	}
 }

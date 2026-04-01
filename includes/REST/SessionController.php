@@ -13,6 +13,10 @@
 
 namespace MediaShield\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
 use WP_REST_Controller;
@@ -21,92 +25,124 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WP_Error;
 
+/**
+ * Class SessionController
+ *
+ * REST API controller for video watch sessions.
+ *
+ * @since 1.0.0
+ */
 class SessionController extends WP_REST_Controller {
 
-	/** @var string */
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'mediashield/v1';
 
 	/**
 	 * Register routes.
 	 */
 	public function register_routes(): void {
-		// POST /session/start
-		register_rest_route( $this->namespace, '/session/start', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'start_session' ),
-			'permission_callback' => array( $this, 'session_permissions_check' ),
-			'args'                => array(
-				'video_id' => array(
-					'type'              => 'integer',
-					'required'          => true,
-					'sanitize_callback' => 'absint',
+		// POST /session/start.
+		register_rest_route(
+			$this->namespace,
+			'/session/start',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'start_session' ),
+				'permission_callback' => array( $this, 'session_permissions_check' ),
+				'args'                => array(
+					'video_id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
 				),
-			),
-		) );
+			)
+		);
 
-		// POST /session/heartbeat
-		register_rest_route( $this->namespace, '/session/heartbeat', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'heartbeat' ),
-			'permission_callback' => array( $this, 'session_permissions_check' ),
-			'args'                => array(
-				'token'    => array(
-					'type'              => 'string',
-					'required'          => true,
-					'sanitize_callback' => 'sanitize_text_field',
+		// POST /session/heartbeat.
+		register_rest_route(
+			$this->namespace,
+			'/session/heartbeat',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'heartbeat' ),
+				'permission_callback' => array( $this, 'session_permissions_check' ),
+				'args'                => array(
+					'token'    => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'position' => array(
+						'type'              => 'number',
+						'required'          => true,
+						'sanitize_callback' => function ( $value ) {
+							return (float) $value; },
+					),
+					'duration' => array(
+						'type'              => 'number',
+						'required'          => true,
+						'sanitize_callback' => function ( $value ) {
+							return (float) $value; },
+					),
+					'playing'  => array(
+						'type'    => 'boolean',
+						'default' => true,
+					),
+					'focused'  => array(
+						'type'    => 'boolean',
+						'default' => true,
+					),
 				),
-				'position' => array(
-					'type'              => 'number',
-					'required'          => true,
-					'sanitize_callback' => function ( $value ) { return (float) $value; },
-				),
-				'duration' => array(
-					'type'              => 'number',
-					'required'          => true,
-					'sanitize_callback' => function ( $value ) { return (float) $value; },
-				),
-				'playing'  => array(
-					'type'    => 'boolean',
-					'default' => true,
-				),
-				'focused'  => array(
-					'type'    => 'boolean',
-					'default' => true,
-				),
-			),
-		) );
+			)
+		);
 
-		// POST /session/end
-		register_rest_route( $this->namespace, '/session/end', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'end_session' ),
-			'permission_callback' => array( $this, 'session_permissions_check' ),
-			'args'                => array(
-				'token' => array(
-					'type'              => 'string',
-					'required'          => true,
-					'sanitize_callback' => 'sanitize_text_field',
+		// POST /session/end.
+		register_rest_route(
+			$this->namespace,
+			'/session/end',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'end_session' ),
+				'permission_callback' => array( $this, 'session_permissions_check' ),
+				'args'                => array(
+					'token' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
 				),
-			),
-		) );
+			)
+		);
 
-		// POST /session/revoke-user (admin only)
-		register_rest_route( $this->namespace, '/session/revoke-user', array(
-			'methods'             => WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'revoke_user' ),
-			'permission_callback' => array( $this, 'admin_permissions_check' ),
-			'args'                => array(
-				'user_id' => array(
-					'type'              => 'integer',
-					'required'          => true,
-					'sanitize_callback' => 'absint',
+		// POST /session/revoke-user (admin only).
+		register_rest_route(
+			$this->namespace,
+			'/session/revoke-user',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'revoke_user' ),
+				'permission_callback' => array( $this, 'admin_permissions_check' ),
+				'args'                => array(
+					'user_id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
 				),
-			),
-		) );
+			)
+		);
 	}
 
 	/**
 	 * Permissions: any logged-in user can manage their own sessions.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
 	 */
 	public function session_permissions_check( WP_REST_Request $request ): bool {
 		return is_user_logged_in();
@@ -114,6 +150,9 @@ class SessionController extends WP_REST_Controller {
 
 	/**
 	 * Permissions: admin-only for revoking user sessions.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
 	 */
 	public function admin_permissions_check( WP_REST_Request $request ): bool {
 		return current_user_can( 'manage_options' );
@@ -121,6 +160,9 @@ class SessionController extends WP_REST_Controller {
 
 	/**
 	 * POST /session/start — start or resume a watch session.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function start_session( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$video_id = (int) $request->get_param( 'video_id' );
@@ -182,31 +224,36 @@ class SessionController extends WP_REST_Controller {
 		 */
 		$watermark_config = apply_filters( 'mediashield_watermark_config', $watermark_config, $video_id, $user_id );
 
-		return rest_ensure_response( array(
-			'session_token'    => $result['session_token'],
-			'resume_position'  => $result['resume_position'],
-			'is_resumed'       => $result['is_resumed'],
-			'watermark_config' => $watermark_config,
-			'video'            => array(
-				'id'               => $video_id,
-				'title'            => sanitize_text_field( $video->post_title ),
-				'platform'         => sanitize_text_field( get_post_meta( $video_id, '_ms_platform', true ) ),
-				'source_url'       => esc_url( get_post_meta( $video_id, '_ms_source_url', true ) ),
-				'protection_level' => sanitize_text_field( get_post_meta( $video_id, '_ms_protection_level', true ) ),
-				'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
-			),
-		) );
+		return rest_ensure_response(
+			array(
+				'session_token'    => $result['session_token'],
+				'resume_position'  => $result['resume_position'],
+				'is_resumed'       => $result['is_resumed'],
+				'watermark_config' => $watermark_config,
+				'video'            => array(
+					'id'               => $video_id,
+					'title'            => sanitize_text_field( $video->post_title ),
+					'platform'         => sanitize_text_field( get_post_meta( $video_id, '_ms_platform', true ) ),
+					'source_url'       => esc_url( get_post_meta( $video_id, '_ms_source_url', true ) ),
+					'protection_level' => sanitize_text_field( get_post_meta( $video_id, '_ms_protection_level', true ) ),
+					'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
+				),
+			)
+		);
 	}
 
 	/**
 	 * POST /session/heartbeat — track playback progress.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function heartbeat( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		// Rate limiting: max 4 heartbeats per minute per user.
 		// Increment first to close TOCTOU race window.
 		$rate_key = 'ms_rate_' . get_current_user_id();
 		$count    = (int) get_transient( $rate_key );
-		$count++;
+		++$count;
 		set_transient( $rate_key, $count, 60 );
 
 		if ( $count > 4 ) {
@@ -229,11 +276,19 @@ class SessionController extends WP_REST_Controller {
 			return new WP_Error( 'invalid_token', __( 'Invalid session token.', 'mediashield' ), array( 'status' => 401 ) );
 		}
 
-		return rest_ensure_response( array( 'success' => true, 'status' => 'recorded' ) );
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'status'  => 'recorded',
+			)
+		);
 	}
 
 	/**
 	 * POST /session/end — end a watch session.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function end_session( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$success = SessionManager::end( $request->get_param( 'token' ) );
@@ -247,16 +302,21 @@ class SessionController extends WP_REST_Controller {
 
 	/**
 	 * POST /session/revoke-user — revoke all sessions for a user (admin only).
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
 	 */
 	public function revoke_user( WP_REST_Request $request ): WP_REST_Response {
 		$user_id = (int) $request->get_param( 'user_id' );
 		$count   = SessionManager::revoke_user( $user_id );
 
-		return rest_ensure_response( array(
-			'success'  => true,
-			'revoked'  => $count,
-			'user_id'  => $user_id,
-		) );
+		return rest_ensure_response(
+			array(
+				'success' => true,
+				'revoked' => $count,
+				'user_id' => $user_id,
+			)
+		);
 	}
 
 	/**

@@ -327,8 +327,32 @@
 			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
 			body: JSON.stringify( { video_id: videoId } ),
 		} )
-			.then( function ( res ) { return res.json(); } )
-			.then( function ( data ) {
+			.then( function ( res ) {
+				return res.json().then( function ( data ) {
+					return { status: res.status, data: data };
+				} );
+			} )
+			.then( function ( result ) {
+				var status = result.status;
+				var data = result.data;
+
+				// Handle access-denied responses (403 or error codes).
+				if ( status === 403 || data.code === 'access_denied' || data.code === 'email_gate_required' || data.code === 'login_required' ) {
+					var reason = data.code || 'access_denied';
+
+					// Show login overlay for login_required when user is not logged in.
+					if ( reason === 'login_required' && ! config.isLoggedIn ) {
+						showLoginOverlay( el );
+						return;
+					}
+
+					window.dispatchEvent( new CustomEvent( 'mediashield:access-denied', {
+						bubbles: true,
+						detail: { el: el, videoId: videoId, reason: reason },
+					} ) );
+					return;
+				}
+
 				if ( data.session_token ) {
 					el.dataset.sessionToken = data.session_token;
 

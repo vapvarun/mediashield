@@ -7,6 +7,10 @@
 
 namespace MediaShield\Core;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\CPT\VideoPostType;
 use MediaShield\CPT\PlaylistPostType;
 use MediaShield\CPT\Thumbnail;
@@ -20,6 +24,7 @@ use MediaShield\REST\PlaylistController;
 use MediaShield\REST\UploadController;
 use MediaShield\REST\SettingsController;
 use MediaShield\REST\AnalyticsController;
+use MediaShield\REST\StreamController;
 use MediaShield\Admin\Menu;
 use MediaShield\Admin\SetupWizard;
 use MediaShield\Core\Assets;
@@ -28,9 +33,20 @@ use MediaShield\Privacy\PrivacyExporter;
 use MediaShield\Privacy\PrivacyEraser;
 use MediaShield\Block\MyVideosBlock;
 
+/**
+ * Class Plugin
+ *
+ * Main plugin singleton that registers all hooks.
+ *
+ * @since 1.0.0
+ */
 class Plugin {
 
-	/** @var self|null */
+	/**
+	 * Singleton instance.
+	 *
+	 * @var self|null
+	 */
 	private static ?self $instance = null;
 
 	/**
@@ -103,6 +119,7 @@ class Plugin {
 		( new UploadController() )->register_routes();
 		( new SettingsController() )->register_routes();
 		( new AnalyticsController() )->register_routes();
+		( new StreamController() )->register_routes();
 	}
 
 	/**
@@ -124,7 +141,11 @@ class Plugin {
 	/** Prevent cloning. */
 	private function __clone() {}
 
-	/** Prevent unserialization. */
+	/**
+	 * Prevent unserialization.
+	 *
+	 * @throws \Exception Always.
+	 */
 	public function __wakeup() {
 		throw new \Exception( 'Cannot unserialize singleton.' );
 	}

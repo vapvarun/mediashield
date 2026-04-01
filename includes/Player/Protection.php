@@ -10,6 +10,17 @@
 
 namespace MediaShield\Player;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class Protection
+ *
+ * Anti-download protection measures for video players.
+ *
+ * @since 1.0.0
+ */
 class Protection {
 
 	/**
@@ -20,8 +31,8 @@ class Protection {
 	public static function get_config(): array {
 		return array(
 			'block_right_click' => true,
-			'block_keyboard'    => true, // Ctrl+S / Cmd+S
-			'hide_source'       => true, // Move src to data-ms-src
+			'block_keyboard'    => true, // Ctrl+S / Cmd+S.
+			'hide_source'       => true, // Move src to data-ms-src.
 		);
 	}
 }

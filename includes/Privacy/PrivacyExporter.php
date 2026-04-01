@@ -10,6 +10,17 @@
 
 namespace MediaShield\Privacy;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class PrivacyExporter
+ *
+ * GDPR Personal Data Exporter for watch sessions and milestones.
+ *
+ * @since 1.0.0
+ */
 class PrivacyExporter {
 
 	/**
@@ -59,7 +70,8 @@ class PrivacyExporter {
 
 		// Export watch sessions.
 		$sessions_table = "{$wpdb->prefix}ms_watch_sessions";
-		$sessions       = $wpdb->get_results(
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query for GDPR export.
+		$sessions = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT s.*, p.post_title
 				 FROM {$sessions_table} s
@@ -72,6 +84,7 @@ class PrivacyExporter {
 				$offset
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		foreach ( $sessions as $session ) {
 			$items[] = array(
@@ -81,7 +94,7 @@ class PrivacyExporter {
 				'data'        => array(
 					array(
 						'name'  => __( 'Video', 'mediashield' ),
-						'value' => sanitize_text_field( $session->post_title ?: '' ),
+						'value' => sanitize_text_field( ! empty( $session->post_title ) ? $session->post_title : '' ),
 					),
 					array(
 						'name'  => __( 'Started At', 'mediashield' ),
@@ -110,7 +123,8 @@ class PrivacyExporter {
 		// Export milestones (only on first page to avoid duplicating).
 		if ( 1 === $page ) {
 			$milestones_table = "{$wpdb->prefix}ms_milestones";
-			$milestones       = $wpdb->get_results(
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query for GDPR export.
+			$milestones = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT m.*, p.post_title
 					 FROM {$milestones_table} m
@@ -120,6 +134,7 @@ class PrivacyExporter {
 					$user->ID
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 			foreach ( $milestones as $milestone ) {
 				$items[] = array(
@@ -129,7 +144,7 @@ class PrivacyExporter {
 					'data'        => array(
 						array(
 							'name'  => __( 'Video', 'mediashield' ),
-							'value' => sanitize_text_field( $milestone->post_title ?: '' ),
+							'value' => sanitize_text_field( ! empty( $milestone->post_title ) ? $milestone->post_title : '' ),
 						),
 						array(
 							'name'  => __( 'Milestone', 'mediashield' ),

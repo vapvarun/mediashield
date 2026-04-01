@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from '@wordpress/element';
 import { applyFilters } from '@wordpress/hooks';
 import { SlotFillProvider } from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
 
 import Sidebar from './components/Sidebar';
 import Toast from './components/Toast';
@@ -27,43 +28,43 @@ import Settings from './pages/Settings';
 const defaultRoutes = [
 	{
 		hash: '#/dashboard',
-		label: 'Dashboard',
+		label: __( 'Dashboard', 'mediashield' ),
 		icon: 'dashboard',
 		component: Dashboard,
 	},
 	{
 		hash: '#/videos',
-		label: 'Videos',
+		label: __( 'Videos', 'mediashield' ),
 		icon: 'format-video',
 		component: Videos,
 	},
 	{
 		hash: '#/playlists',
-		label: 'Playlists',
+		label: __( 'Playlists', 'mediashield' ),
 		icon: 'playlist-audio',
 		component: Playlists,
 	},
 	{
-		hash: '#/students',
-		label: 'Students',
+		hash: '#/viewers',
+		label: __( 'Viewers', 'mediashield' ),
 		icon: 'groups',
 		component: Students,
 	},
 	{
 		hash: '#/tags',
-		label: 'Tags',
+		label: __( 'Tags', 'mediashield' ),
 		icon: 'tag',
 		component: Tags,
 	},
 	{
 		hash: '#/milestones',
-		label: 'Milestones',
+		label: __( 'Milestones', 'mediashield' ),
 		icon: 'flag',
 		component: Milestones,
 	},
 	{
 		hash: '#/settings',
-		label: 'Settings',
+		label: __( 'Settings', 'mediashield' ),
 		icon: 'admin-generic',
 		component: Settings,
 	},

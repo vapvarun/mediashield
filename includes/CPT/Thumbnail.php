@@ -7,6 +7,17 @@
 
 namespace MediaShield\CPT;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class Thumbnail
+ *
+ * Auto-fetches video thumbnails from platform APIs on save.
+ *
+ * @since 1.0.0
+ */
 class Thumbnail {
 
 	/**
@@ -84,7 +95,11 @@ class Thumbnail {
 				return '';
 
 			case 'bunny':
-				// Bunny Stream thumbnail requires API key — handled in pro platform driver.
+				// Delegate to pro BunnyStream driver if available.
+				if ( class_exists( '\MediaShieldPro\Upload\Drivers\BunnyStream' ) ) {
+					$driver = new \MediaShieldPro\Upload\Drivers\BunnyStream();
+					return $driver->get_thumbnail_url( $video_id );
+				}
 				return '';
 
 			case 'wistia':

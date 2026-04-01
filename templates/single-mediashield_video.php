@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:ignore WordPress.Files.FileName.NotHyphenatedLowercase -- Template filename must match CPT slug (mediashield_video).
 /**
  * Single video page template for mediashield_video CPT.
  *
@@ -26,10 +26,10 @@ if ( $is_block_theme ) {
 	<?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
-<?php wp_body_open(); ?>
+	<?php wp_body_open(); ?>
 
 <div class="wp-site-blocks">
-<?php block_template_part( 'header' ); ?>
+	<?php block_template_part( 'header' ); ?>
 
 <main class="wp-block-group is-layout-constrained" style="padding-top: var(--wp--preset--spacing--50); padding-bottom: var(--wp--preset--spacing--50);">
 	<?php
@@ -65,7 +65,7 @@ while ( have_posts() ) :
 		'@context'    => 'https://schema.org',
 		'@type'       => 'VideoObject',
 		'name'        => get_the_title(),
-		'description' => get_the_excerpt() ?: get_the_title(),
+		'description' => get_the_excerpt() ? get_the_excerpt() : get_the_title(),
 		'uploadDate'  => get_the_date( 'c' ),
 	);
 
@@ -80,16 +80,17 @@ while ( have_posts() ) :
 
 	<script type="application/ld+json"><?php echo wp_json_encode( $schema, JSON_UNESCAPED_SLASHES ); ?></script>
 
-<?php endwhile;
+	<?php
+endwhile;
 
 if ( $is_block_theme ) {
 	?>
 </main>
 
-<?php block_template_part( 'footer' ); ?>
+	<?php block_template_part( 'footer' ); ?>
 </div>
 
-<?php wp_footer(); ?>
+	<?php wp_footer(); ?>
 </body>
 </html>
 	<?php

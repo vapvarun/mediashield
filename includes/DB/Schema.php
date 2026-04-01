@@ -7,6 +7,17 @@
 
 namespace MediaShield\DB;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class Schema
+ *
+ * Creates and manages the database schema for all free plugin tables.
+ *
+ * @since 1.0.0
+ */
 class Schema {
 
 	/**
@@ -19,8 +30,9 @@ class Schema {
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-		// ms_tags
-		dbDelta( "CREATE TABLE {$wpdb->prefix}ms_tags (
+		// Table: ms_tags.
+		dbDelta(
+			"CREATE TABLE {$wpdb->prefix}ms_tags (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			name VARCHAR(200) NOT NULL,
 			slug VARCHAR(200) NOT NULL,
@@ -29,19 +41,22 @@ class Schema {
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			UNIQUE KEY uk_slug (slug)
-		) {$charset_collate};" );
+		) {$charset_collate};"
+		);
 
-		// ms_video_tags
-		dbDelta( "CREATE TABLE {$wpdb->prefix}ms_video_tags (
+		// Table: ms_video_tags.
+		dbDelta(
+			"CREATE TABLE {$wpdb->prefix}ms_video_tags (
 			video_id BIGINT UNSIGNED NOT NULL,
 			tag_id BIGINT UNSIGNED NOT NULL,
 			tagged_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			tagged_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE KEY uk_video_tag (video_id, tag_id),
 			KEY idx_tag_id (tag_id)
-		) {$charset_collate};" );
+		) {$charset_collate};"
+		);
 
-		// ms_watch_sessions
+		// Table: ms_watch_sessions.
 		$sessions_sql = "CREATE TABLE {$wpdb->prefix}ms_watch_sessions (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			video_id BIGINT UNSIGNED NOT NULL,
@@ -66,15 +81,18 @@ class Schema {
 
 		dbDelta( $sessions_sql );
 
-		// ms_watch_sessions_archive (same schema)
-		dbDelta( str_replace(
-			"{$wpdb->prefix}ms_watch_sessions",
-			"{$wpdb->prefix}ms_watch_sessions_archive",
-			$sessions_sql
-		) );
+		// Table: ms_watch_sessions_archive (same schema).
+		dbDelta(
+			str_replace(
+				"{$wpdb->prefix}ms_watch_sessions",
+				"{$wpdb->prefix}ms_watch_sessions_archive",
+				$sessions_sql
+			)
+		);
 
-		// ms_milestones
-		dbDelta( "CREATE TABLE {$wpdb->prefix}ms_milestones (
+		// Table: ms_milestones.
+		dbDelta(
+			"CREATE TABLE {$wpdb->prefix}ms_milestones (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			video_id BIGINT UNSIGNED NOT NULL,
 			user_id BIGINT UNSIGNED NOT NULL,
@@ -84,10 +102,12 @@ class Schema {
 			PRIMARY KEY (id),
 			UNIQUE KEY uk_video_user_pct (video_id, user_id, milestone_pct),
 			KEY idx_user_id (user_id)
-		) {$charset_collate};" );
+		) {$charset_collate};"
+		);
 
-		// ms_playlist_items
-		dbDelta( "CREATE TABLE {$wpdb->prefix}ms_playlist_items (
+		// Table: ms_playlist_items.
+		dbDelta(
+			"CREATE TABLE {$wpdb->prefix}ms_playlist_items (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			playlist_id BIGINT UNSIGNED NOT NULL,
 			video_id BIGINT UNSIGNED NOT NULL,
@@ -96,7 +116,8 @@ class Schema {
 			PRIMARY KEY (id),
 			KEY idx_playlist (playlist_id, sort_order),
 			KEY idx_video (video_id)
-		) {$charset_collate};" );
+		) {$charset_collate};"
+		);
 	}
 
 	/**
@@ -115,7 +136,7 @@ class Schema {
 		);
 
 		foreach ( $tables as $table ) {
-			$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Drop custom tables.
 		}
 	}
 }

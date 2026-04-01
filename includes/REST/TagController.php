@@ -17,6 +17,10 @@
 
 namespace MediaShield\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\Tags\TagManager;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -24,9 +28,20 @@ use WP_REST_Response;
 use WP_REST_Server;
 use WP_Error;
 
+/**
+ * Class TagController
+ *
+ * REST API controller for tags and video-tag assignments.
+ *
+ * @since 1.0.0
+ */
 class TagController extends WP_REST_Controller {
 
-	/** @var string */
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'mediashield/v1';
 
 	/**
@@ -35,113 +50,132 @@ class TagController extends WP_REST_Controller {
 	public function register_routes(): void {
 
 		// /tags collection.
-		register_rest_route( $this->namespace, '/tags', array(
+		register_rest_route(
+			$this->namespace,
+			'/tags',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_items' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
-				'args'                => array(
-					'per_page' => array(
-						'type'              => 'integer',
-						'default'           => 50,
-						'minimum'           => 1,
-						'maximum'           => 100,
-						'sanitize_callback' => 'absint',
-					),
-					'page'     => array(
-						'type'              => 'integer',
-						'default'           => 1,
-						'minimum'           => 1,
-						'sanitize_callback' => 'absint',
-					),
-					'search'   => array(
-						'type'              => 'string',
-						'default'           => '',
-						'sanitize_callback' => 'sanitize_text_field',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_items' ),
+					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+					'args'                => array(
+						'per_page' => array(
+							'type'              => 'integer',
+							'default'           => 50,
+							'minimum'           => 1,
+							'maximum'           => 100,
+							'sanitize_callback' => 'absint',
+						),
+						'page'     => array(
+							'type'              => 'integer',
+							'default'           => 1,
+							'minimum'           => 1,
+							'sanitize_callback' => 'absint',
+						),
+						'search'   => array(
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
 					),
 				),
-			),
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'create_item' ),
-				'permission_callback' => array( $this, 'create_item_permissions_check' ),
-				'args'                => array(
-					'name'        => array(
-						'type'              => 'string',
-						'required'          => true,
-						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'description' => array(
-						'type'              => 'string',
-						'default'           => '',
-						'sanitize_callback' => 'sanitize_textarea_field',
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'create_item' ),
+					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'args'                => array(
+						'name'        => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'description' => array(
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_textarea_field',
+						),
 					),
 				),
-			),
-		) );
+			)
+		);
 
 		// /tags/<id> single.
-		register_rest_route( $this->namespace, '/tags/(?P<id>\d+)', array(
+		register_rest_route(
+			$this->namespace,
+			'/tags/(?P<id>\d+)',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_item' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
-			),
-			array(
-				'methods'             => 'PATCH',
-				'callback'            => array( $this, 'update_item' ),
-				'permission_callback' => array( $this, 'create_item_permissions_check' ),
-				'args'                => array(
-					'name'        => array(
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_text_field',
-					),
-					'description' => array(
-						'type'              => 'string',
-						'sanitize_callback' => 'sanitize_textarea_field',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_item' ),
+					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				),
+				array(
+					'methods'             => 'PATCH',
+					'callback'            => array( $this, 'update_item' ),
+					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'args'                => array(
+						'name'        => array(
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'description' => array(
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_textarea_field',
+						),
 					),
 				),
-			),
-			array(
-				'methods'             => WP_REST_Server::DELETABLE,
-				'callback'            => array( $this, 'delete_item' ),
-				'permission_callback' => array( $this, 'create_item_permissions_check' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'delete_item' ),
+					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+				),
+			)
+		);
 
 		// /videos/<id>/tags — tags for a specific video.
-		register_rest_route( $this->namespace, '/videos/(?P<video_id>\d+)/tags', array(
+		register_rest_route(
+			$this->namespace,
+			'/videos/(?P<video_id>\d+)/tags',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_video_tags' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
-			),
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'assign_video_tag' ),
-				'permission_callback' => array( $this, 'create_item_permissions_check' ),
-				'args'                => array(
-					'tag_id' => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_video_tags' ),
+					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'assign_video_tag' ),
+					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'args'                => array(
+						'tag_id' => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
 					),
 				),
-			),
-		) );
+			)
+		);
 
 		// /videos/<id>/tags/<tid> — remove tag from video.
-		register_rest_route( $this->namespace, '/videos/(?P<video_id>\d+)/tags/(?P<tag_id>\d+)', array(
+		register_rest_route(
+			$this->namespace,
+			'/videos/(?P<video_id>\d+)/tags/(?P<tag_id>\d+)',
 			array(
-				'methods'             => WP_REST_Server::DELETABLE,
-				'callback'            => array( $this, 'unassign_video_tag' ),
-				'permission_callback' => array( $this, 'create_item_permissions_check' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'unassign_video_tag' ),
+					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+				),
+			)
+		);
 	}
 
 	/**
 	 * Permissions: any logged-in user can read tags.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
 	 */
 	public function get_items_permissions_check( $request ): bool {
 		return is_user_logged_in();
@@ -149,6 +183,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * Permissions: only editors+ can create/modify/delete tags.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
 	 */
 	public function create_item_permissions_check( $request ): bool {
 		return current_user_can( 'edit_posts' );
@@ -156,6 +193,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * GET /tags — list tags.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
 	 */
 	public function get_items( $request ): WP_REST_Response {
 		$result = TagManager::list(
@@ -173,6 +213,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * POST /tags — create tag.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function create_item( $request ): WP_REST_Response|WP_Error {
 		$tag_id = TagManager::create(
@@ -196,6 +239,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * GET /tags/<id> — get single tag.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_item( $request ): WP_REST_Response|WP_Error {
 		$tag = TagManager::get( (int) $request['id'] );
@@ -209,6 +255,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * PATCH /tags/<id> — update tag.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_item( $request ): WP_REST_Response|WP_Error {
 		$tag_id = (int) $request['id'];
@@ -241,6 +290,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * DELETE /tags/<id> — delete tag.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function delete_item( $request ): WP_REST_Response|WP_Error {
 		$tag_id = (int) $request['id'];
@@ -257,6 +309,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * GET /videos/<id>/tags — get tags for a video.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_video_tags( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$video_id = (int) $request['video_id'];
@@ -270,6 +325,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * POST /videos/<id>/tags — assign tag to video.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function assign_video_tag( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$video_id = (int) $request['video_id'];
@@ -298,6 +356,9 @@ class TagController extends WP_REST_Controller {
 
 	/**
 	 * DELETE /videos/<id>/tags/<tid> — remove tag from video.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function unassign_video_tag( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$video_id = (int) $request['video_id'];

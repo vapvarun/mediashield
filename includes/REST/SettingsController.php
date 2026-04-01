@@ -11,18 +11,37 @@
 
 namespace MediaShield\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WP_Error;
 
+/**
+ * Class SettingsController
+ *
+ * REST API controller for plugin settings.
+ *
+ * @since 1.0.0
+ */
 class SettingsController extends WP_REST_Controller {
 
-	/** @var string */
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'mediashield/v1';
 
-	/** @var array Default settings with their types. */
+	/**
+	 * Default settings with their types.
+	 *
+	 * @var array
+	 */
 	private const SETTINGS = array(
 		'ms_enabled'                 => 'boolean',
 		'ms_default_protection'      => 'string',
@@ -44,22 +63,29 @@ class SettingsController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
-		register_rest_route( $this->namespace, '/settings', array(
+		register_rest_route(
+			$this->namespace,
+			'/settings',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_settings' ),
-				'permission_callback' => array( $this, 'admin_permissions_check' ),
-			),
-			array(
-				'methods'             => 'PUT',
-				'callback'            => array( $this, 'update_settings' ),
-				'permission_callback' => array( $this, 'admin_permissions_check' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_settings' ),
+					'permission_callback' => array( $this, 'admin_permissions_check' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( $this, 'update_settings' ),
+					'permission_callback' => array( $this, 'admin_permissions_check' ),
+				),
+			)
+		);
 	}
 
 	/**
 	 * Admin only.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
 	 */
 	public function admin_permissions_check( WP_REST_Request $request ): bool {
 		return current_user_can( 'manage_options' );
@@ -67,6 +93,9 @@ class SettingsController extends WP_REST_Controller {
 
 	/**
 	 * GET /settings — return all settings.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
 	 */
 	public function get_settings( WP_REST_Request $request ): WP_REST_Response {
 		$settings = array();
@@ -99,6 +128,9 @@ class SettingsController extends WP_REST_Controller {
 
 	/**
 	 * PUT /settings — update settings (supports partial updates for auto-save).
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_settings( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$data = $request->get_json_params();

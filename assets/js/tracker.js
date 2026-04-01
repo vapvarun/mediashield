@@ -64,9 +64,32 @@
 				playing: playing,
 				focused: focused,
 			} ),
-		} ).catch( function ( err ) {
-			console.warn( 'MediaShield: heartbeat failed', err );
-		} );
+		} )
+			.then( function ( res ) {
+				if ( res.ok ) {
+					session.failCount = 0;
+				} else {
+					session.failCount = ( session.failCount || 0 ) + 1;
+					if ( session.failCount >= 3 ) {
+						console.warn( 'MediaShield: heartbeat failed 3 times, stopping for token ' + session.token );
+						if ( session.intervalId ) {
+							clearInterval( session.intervalId );
+							session.intervalId = null;
+						}
+					}
+				}
+			} )
+			.catch( function ( err ) {
+				session.failCount = ( session.failCount || 0 ) + 1;
+				console.warn( 'MediaShield: heartbeat failed', err );
+				if ( session.failCount >= 3 ) {
+					console.warn( 'MediaShield: heartbeat failed 3 times, stopping for token ' + session.token );
+					if ( session.intervalId ) {
+						clearInterval( session.intervalId );
+						session.intervalId = null;
+					}
+				}
+			} );
 	}
 
 	/**
@@ -120,10 +143,42 @@
 		activeSessions = [];
 	}
 
+	/**
+	 * Pause all heartbeat intervals without ending sessions.
+	 */
+	function pauseAllHeartbeats() {
+		activeSessions.forEach( function ( session ) {
+			if ( session.intervalId ) {
+				clearInterval( session.intervalId );
+				session.intervalId = null;
+			}
+		} );
+	}
+
+	/**
+	 * Resume heartbeat intervals for all active sessions.
+	 */
+	function resumeAllHeartbeats() {
+		var intervalMs = config.interval || 30000;
+
+		activeSessions.forEach( function ( session ) {
+			if ( ! session.intervalId ) {
+				session.intervalId = setInterval( function () {
+					sendHeartbeat( session );
+				}, intervalMs );
+			}
+		} );
+	}
+
 	window.addEventListener( 'beforeunload', endAllSessions );
+
+	window.addEventListener( 'pagehide', endAllSessions );
+
 	document.addEventListener( 'visibilitychange', function () {
 		if ( document.visibilityState === 'hidden' ) {
-			endAllSessions();
+			pauseAllHeartbeats();
+		} else {
+			resumeAllHeartbeats();
 		}
 	} );
 })();

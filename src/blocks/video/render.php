@@ -22,8 +22,11 @@ if ( $video_id <= 0 ) {
 }
 
 // Pass block wrapper attributes for alignment/spacing support.
-$extra = get_block_wrapper_attributes( array(
-	'data-wp-interactive' => 'mediashield/video',
-) );
+$extra = get_block_wrapper_attributes(
+	array(
+		'data-wp-interactive' => 'mediashield/video',
+	)
+);
 
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Renderer::render() returns pre-escaped HTML.
 echo \MediaShield\Player\Renderer::render( $video_id, $extra );

@@ -14,6 +14,19 @@
 
 namespace MediaShield\Cron;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+use MediaShield\Upload\UploadManager;
+
+/**
+ * Class Cleanup
+ *
+ * Video/Playlist deletion cascade and scheduled cleanup crons.
+ *
+ * @since 1.0.0
+ */
 class Cleanup {
 
 	/**
@@ -73,17 +86,42 @@ class Cleanup {
 			return;
 		}
 
+		// Delete the video file/resource from the hosting platform.
+		$platform         = get_post_meta( $post_id, '_ms_platform', true );
+		$platform_video_id = get_post_meta( $post_id, '_ms_platform_video_id', true );
+
+		if ( ! empty( $platform ) && ! empty( $platform_video_id ) ) {
+			if ( 'self' === $platform ) {
+				// Self-hosted: delete the physical file directly.
+				$wp_upload = wp_upload_dir();
+				$file_path = trailingslashit( $wp_upload['basedir'] ) . 'mediashield/' . sanitize_file_name( $platform_video_id );
+				if ( file_exists( $file_path ) ) {
+					wp_delete_file( $file_path );
+				}
+			} else {
+				// External platform: use the driver's delete method.
+				$driver_name = str_replace( '-', '_', $platform );
+				$driver      = UploadManager::get_driver( $driver_name );
+				if ( $driver ) {
+					$driver->delete( $platform_video_id );
+				}
+			}
+		}
+
 		global $wpdb;
 
-		$video_tags      = "{$wpdb->prefix}ms_video_tags";
-		$watch_sessions  = "{$wpdb->prefix}ms_watch_sessions";
-		$milestones      = "{$wpdb->prefix}ms_milestones";
-		$playlist_items  = "{$wpdb->prefix}ms_playlist_items";
+		$video_tags             = "{$wpdb->prefix}ms_video_tags";
+		$watch_sessions         = "{$wpdb->prefix}ms_watch_sessions";
+		$watch_sessions_archive = "{$wpdb->prefix}ms_watch_sessions_archive";
+		$milestones             = "{$wpdb->prefix}ms_milestones";
+		$playlist_items         = "{$wpdb->prefix}ms_playlist_items";
 
 		// Delete video tags.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$wpdb->delete( $video_tags, array( 'video_id' => $post_id ), array( '%d' ) );
 
 		// Collect session IDs before deleting (needed for pro tables).
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
 		$session_ids = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT id FROM {$watch_sessions} WHERE video_id = %d",
@@ -91,45 +129,62 @@ class Cleanup {
 			)
 		);
 
+		// Also collect session IDs from the archive table.
+		$archived_session_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT id FROM {$watch_sessions_archive} WHERE video_id = %d",
+				$post_id
+			)
+		);
+
+		$session_ids = array_merge( $session_ids, $archived_session_ids );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
 		// Delete watch sessions.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$wpdb->delete( $watch_sessions, array( 'video_id' => $post_id ), array( '%d' ) );
 
+		// Delete archived watch sessions.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
+		$wpdb->delete( $watch_sessions_archive, array( 'video_id' => $post_id ), array( '%d' ) );
+
 		// Delete milestones.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$wpdb->delete( $milestones, array( 'video_id' => $post_id ), array( '%d' ) );
 
 		// Delete playlist items referencing this video.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$wpdb->delete( $playlist_items, array( 'video_id' => $post_id ), array( '%d' ) );
 
 		// Pro tables cascade (only if pro is active).
-		if ( defined( 'MEDIASHIELD_PRO_VERSION' ) && ! empty( $session_ids ) ) {
-			$playback_events = "{$wpdb->prefix}ms_playback_events";
-			$activity_alerts = "{$wpdb->prefix}ms_activity_alerts";
-			$drm_licenses    = "{$wpdb->prefix}ms_drm_licenses";
-			$heatmap_cache   = "{$wpdb->prefix}ms_heatmap_cache";
-			$drm_keys        = "{$wpdb->prefix}ms_drm_keys";
+		if ( defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+			// Delete video_id-based pro data (no session dependency).
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Pro table delete.
+			$wpdb->delete( "{$wpdb->prefix}ms_activity_alerts", array( 'video_id' => $post_id ), array( '%d' ) );
 
-			// Delete playback events for those sessions.
-			$placeholders = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Pro table delete.
+			$wpdb->delete( "{$wpdb->prefix}ms_drm_licenses", array( 'video_id' => $post_id ), array( '%d' ) );
 
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM {$playback_events} WHERE session_id IN ({$placeholders})",
-					...$session_ids
-				)
-			);
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Pro table delete.
+			$wpdb->delete( "{$wpdb->prefix}ms_heatmap_cache", array( 'video_id' => $post_id ), array( '%d' ) );
 
-			// Delete activity alerts for this video.
-			$wpdb->delete( $activity_alerts, array( 'video_id' => $post_id ), array( '%d' ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Pro table delete.
+			$wpdb->delete( "{$wpdb->prefix}ms_drm_keys", array( 'video_id' => $post_id ), array( '%d' ) );
 
-			// Delete DRM licenses for this video.
-			$wpdb->delete( $drm_licenses, array( 'video_id' => $post_id ), array( '%d' ) );
+			// Delete playback events for those sessions (session-dependent).
+			if ( ! empty( $session_ids ) ) {
+				$playback_events = "{$wpdb->prefix}ms_playback_events";
+				$placeholders    = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
 
-			// Delete heatmap cache for this video.
-			$wpdb->delete( $heatmap_cache, array( 'video_id' => $post_id ), array( '%d' ) );
-
-			// Delete DRM keys for this video.
-			$wpdb->delete( $drm_keys, array( 'video_id' => $post_id ), array( '%d' ) );
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Custom table with dynamic IN clause.
+				$wpdb->query(
+					$wpdb->prepare(
+						"DELETE FROM {$playback_events} WHERE session_id IN ({$placeholders})",
+						...$session_ids
+					)
+				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			}
 		}
 	}
 
@@ -146,6 +201,7 @@ class Cleanup {
 		global $wpdb;
 
 		$playlist_items = "{$wpdb->prefix}ms_playlist_items";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$wpdb->delete( $playlist_items, array( 'playlist_id' => $post_id ), array( '%d' ) );
 	}
 
@@ -153,54 +209,86 @@ class Cleanup {
 	 * Hourly: Mark sessions inactive when heartbeat is stale (>10 minutes).
 	 */
 	public static function cleanup_inactive_sessions(): void {
-		global $wpdb;
+		try {
+			global $wpdb;
 
-		$table = "{$wpdb->prefix}ms_watch_sessions";
+			$table = "{$wpdb->prefix}ms_watch_sessions";
 
-		$wpdb->query(
-			$wpdb->prepare(
-				"UPDATE {$table} SET is_active = 0 WHERE is_active = 1 AND last_heartbeat < DATE_SUB( NOW(), INTERVAL %d MINUTE )",
-				10
-			)
-		);
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table bulk update.
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$table} SET is_active = 0 WHERE is_active = 1 AND last_heartbeat < DATE_SUB( NOW(), INTERVAL %d MINUTE )",
+					10
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		} catch ( \Throwable $e ) {
+			error_log( 'MediaShield cron cleanup_inactive_sessions failed: ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
 	}
 
 	/**
 	 * Monthly: Archive sessions older than 24 months and delete originals.
 	 */
 	public static function archive_old_sessions(): void {
-		global $wpdb;
+		try {
+			global $wpdb;
 
-		$sessions = "{$wpdb->prefix}ms_watch_sessions";
-		$archive  = "{$wpdb->prefix}ms_watch_sessions_archive";
+			$sessions = "{$wpdb->prefix}ms_watch_sessions";
+			$archive  = "{$wpdb->prefix}ms_watch_sessions_archive";
 
-		// Check if archive table exists; skip if it doesn't.
-		$archive_exists = $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s',
-				DB_NAME,
-				$archive
-			)
-		);
+			// Check if archive table exists; skip if it doesn't.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema check.
+			$archive_exists = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s',
+					DB_NAME,
+					$archive
+				)
+			);
 
-		if ( ! $archive_exists ) {
-			return;
+			if ( ! $archive_exists ) {
+				return;
+			}
+
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table archive + cleanup.
+
+			// Use a transaction so INSERT + DELETE are atomic.
+			$wpdb->query( 'START TRANSACTION' );
+
+			// Insert old sessions into archive.
+			$inserted = $wpdb->query(
+				$wpdb->prepare(
+					"INSERT INTO {$archive} SELECT * FROM {$sessions} WHERE started_at < DATE_SUB( NOW(), INTERVAL %d MONTH )",
+					24
+				)
+			);
+
+			if ( false === $inserted ) {
+				$wpdb->query( 'ROLLBACK' );
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				return;
+			}
+
+			// Delete archived sessions from main table.
+			$deleted = $wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$sessions} WHERE started_at < DATE_SUB( NOW(), INTERVAL %d MONTH )",
+					24
+				)
+			);
+
+			if ( false === $deleted ) {
+				$wpdb->query( 'ROLLBACK' );
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				return;
+			}
+
+			$wpdb->query( 'COMMIT' );
+
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		} catch ( \Throwable $e ) {
+			error_log( 'MediaShield cron archive_old_sessions failed: ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
-
-		// Insert old sessions into archive.
-		$wpdb->query(
-			$wpdb->prepare(
-				"INSERT INTO {$archive} SELECT * FROM {$sessions} WHERE started_at < DATE_SUB( NOW(), INTERVAL %d MONTH )",
-				24
-			)
-		);
-
-		// Delete archived sessions from main table.
-		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM {$sessions} WHERE started_at < DATE_SUB( NOW(), INTERVAL %d MONTH )",
-				24
-			)
-		);
 	}
 }

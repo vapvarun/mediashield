@@ -25,7 +25,7 @@ global $wpdb;
 
 $sessions_table = "{$wpdb->prefix}ms_watch_sessions";
 
-// Get aggregated watch data per video for the current user.
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query for block render.
 $videos = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT s.video_id,
@@ -41,6 +41,7 @@ $videos = $wpdb->get_results(
 		$current_user_id
 	)
 );
+// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 if ( empty( $videos ) ) {
 	echo '<p class="ms-my-videos__empty">';
@@ -58,27 +59,27 @@ if ( empty( $videos ) ) {
 	<div class="ms-my-videos__grid">
 		<?php foreach ( $videos as $video ) : ?>
 			<?php
-			$post           = get_post( (int) $video->video_id );
-			if ( ! $post || 'publish' !== $post->post_status ) {
+			$video_post = get_post( (int) $video->video_id );
+			if ( ! $video_post || 'publish' !== $video_post->post_status ) {
 				continue;
 			}
-			$completion     = round( (float) $video->completion_pct, 1 );
-			$is_complete    = $completion >= 100;
-			$thumbnail      = get_the_post_thumbnail_url( $post->ID, 'medium' );
-			$permalink      = get_permalink( $post->ID );
-			$resume_url     = add_query_arg( 'resume', '1', $permalink );
+			$completion  = round( (float) $video->completion_pct, 1 );
+			$is_complete = $completion >= 100;
+			$thumbnail   = get_the_post_thumbnail_url( $video_post->ID, 'medium' );
+			$permalink   = get_permalink( $video_post->ID );
+			$resume_url  = add_query_arg( 'resume', '1', $permalink );
 			?>
 			<div class="ms-my-videos-item ms-my-videos__card" data-completion-pct="<?php echo esc_attr( $completion ); ?>">
 				<?php if ( $thumbnail ) : ?>
 					<div class="ms-my-videos__thumbnail">
-						<img src="<?php echo esc_url( $thumbnail ); ?>" alt="<?php echo esc_attr( get_the_title( $post ) ); ?>" loading="lazy" />
+						<img src="<?php echo esc_url( $thumbnail ); ?>" alt="<?php echo esc_attr( get_the_title( $video_post ) ); ?>" loading="lazy" />
 					</div>
 				<?php endif; ?>
 
 				<div class="ms-my-videos__info">
 					<h3 class="ms-my-videos__title">
 						<a href="<?php echo esc_url( $permalink ); ?>">
-							<?php echo esc_html( get_the_title( $post ) ); ?>
+							<?php echo esc_html( get_the_title( $video_post ) ); ?>
 						</a>
 					</h3>
 

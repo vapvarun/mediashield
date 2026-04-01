@@ -8,7 +8,7 @@ import { TextControl, Button, Spinner } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 
-export default function FirstVideoStep() {
+export default function FirstVideoStep( { initialData } ) { // eslint-disable-line no-unused-vars
 	const [ url, setUrl ] = useState( '' );
 	const [ creating, setCreating ] = useState( false );
 	const [ created, setCreated ] = useState( null );

@@ -5,8 +5,11 @@
  */
 
 /* ── Design Tokens ────────────────────────────────── */
-:root {
+/* Scoped to .mediashield-admin per wbcom-modern-admin standard */
+.mediashield-admin {
 	--ms-sidebar-width: 260px;
+
+	/* Palette */
 	--ms-color-primary: var( --wp-admin-theme-color, #3858e9 );
 	--ms-color-primary-hover: var( --wp-admin-theme-color-darker-10, #2145c9 );
 	--ms-color-primary-light: #eef1fd;
@@ -23,22 +26,88 @@
 	--ms-color-warning-light: #fef8e7;
 	--ms-color-error: #d63638;
 	--ms-color-error-light: #fcf0f1;
+
+	/* wbcom-standard aliases */
+	--ms-bg: var( --ms-color-surface );
+	--ms-bg-secondary: #f7f7f5;
+	--ms-bg-tertiary: var( --ms-color-bg );
+	--ms-text: var( --ms-color-text );
+	--ms-text-secondary: var( --ms-color-text-secondary );
+	--ms-text-tertiary: var( --ms-color-text-tertiary );
+	--ms-accent: var( --ms-color-primary );
+	--ms-accent-hover: var( --ms-color-primary-hover );
+	--ms-success: #2ea44f;
+	--ms-warn: var( --ms-color-warning );
+	--ms-danger: var( --ms-color-error );
+	--ms-border: var( --ms-color-border );
+	--ms-border-heavy: rgba( 0, 0, 0, 0.12 );
+
+	/* Radii */
 	--ms-radius: 8px;
 	--ms-radius-sm: 6px;
+	--ms-radius-md: 6px;
 	--ms-radius-lg: 12px;
 	--ms-radius-xl: 16px;
 	--ms-radius-full: 9999px;
+
+	/* Shadows */
 	--ms-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
 	--ms-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 	--ms-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
 	--ms-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+
+	/* Transition */
 	--ms-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* Typography */
+	--ms-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 	--ms-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 }
 
+/* ── Suppress ALL Admin Notices ───────────────────── */
+.toplevel_page_mediashield #wpbody-content > .notice,
+.toplevel_page_mediashield #wpbody-content > .update-nag,
+.toplevel_page_mediashield #wpbody-content > div.error,
+.toplevel_page_mediashield #wpbody-content > div.updated,
+.toplevel_page_mediashield #wpbody-content > .wrap > .notice,
+.toplevel_page_mediashield #wpbody-content > .wrap > div.error,
+.toplevel_page_mediashield #wpbody-content > .wrap > div.updated,
+.toplevel_page_mediashield .notice:not(.ms-notice):not(.mediashield-notice),
+.toplevel_page_mediashield .update-nag {
+	display: none !important;
+}
+
+/* ── Full-Width Layout (remove WP chrome margins) ─── */
+.toplevel_page_mediashield #wpcontent {
+	padding-left: 0;
+}
+.toplevel_page_mediashield #wpbody-content {
+	padding-bottom: 0;
+}
+.toplevel_page_mediashield .wrap {
+	margin: 0;
+	padding: 0;
+}
+.toplevel_page_mediashield #wpfooter {
+	display: none;
+}
+
 /* ── Layout ────────────────────────────────────────── */
-.mediashield-admin {
+#mediashield-admin-root {
 	display: flex;
+	min-height: calc( 100vh - 32px );
+	background: var( --ms-color-bg );
+	margin: 0 !important;
+}
+
+#mediashield-admin-root > .mediashield-admin {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	width: 100%;
+}
+
+.mediashield-admin {
 	min-height: calc( 100vh - 32px );
 	background: var( --ms-color-bg );
 }
@@ -149,6 +218,35 @@
 .mediashield-sidebar__item:hover .dashicons,
 .mediashield-sidebar__item.is-active .dashicons {
 	opacity: 1;
+}
+
+/* ── Sidebar Locked Pro Items ─────────────────────── */
+.mediashield-sidebar__item--locked {
+	opacity: 0.5;
+	cursor: default;
+	pointer-events: auto;
+}
+
+.mediashield-sidebar__item--locked:hover,
+.mediashield-sidebar__item--locked:focus {
+	opacity: 0.65;
+	background: var( --ms-color-bg );
+	color: var( --ms-color-text-secondary );
+}
+
+.mediashield-sidebar__pro-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 1px 6px;
+	border-radius: var( --ms-radius-full );
+	font-size: 9px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	background: linear-gradient( 135deg, #7c3aed, #a855f7 );
+	color: #fff;
+	margin-left: auto;
+	line-height: 1.6;
 }
 
 /* ── Page Header ───────────────────────────────────── */
@@ -448,6 +546,45 @@
 .mediashield-badge--strict {
 	background: #fef2f2;
 	color: #991b1b;
+}
+
+/* wbcom-standard semantic badge variants */
+.mediashield-badge--success {
+	background: rgba( 46, 164, 79, 0.1 );
+	color: #1a7c3b;
+}
+
+.mediashield-badge--warn {
+	background: rgba( 217, 119, 6, 0.1 );
+	color: #92400e;
+}
+
+.mediashield-badge--danger {
+	background: rgba( 224, 62, 62, 0.1 );
+	color: #991b1b;
+}
+
+.mediashield-badge--default {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.mediashield-badge--muted {
+	background: #f0f0f1;
+	color: #9ca3af;
+}
+
+.mediashield-badge--pro,
+.ms-pro-badge {
+	background: linear-gradient( 135deg, #6366f1, #8b5cf6 );
+	color: #fff;
+	font-size: 9px;
+	font-weight: 700;
+	padding: 1px 6px;
+	border-radius: 3px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	margin-left: auto;
 }
 
 /* Platform badges */
@@ -816,6 +953,16 @@
 }
 
 /* ── Settings Sections ─────────────────────────────── */
+.mediashield-admin__content .mediashield-page {
+	width: 100%;
+	max-width: 100%;
+}
+
+.mediashield-admin__content .components-base-control,
+.mediashield-admin__content .components-base-control__field {
+	max-width: 100%;
+}
+
 .mediashield-settings__section {
 	background: var( --ms-color-surface );
 	border: 1px solid var( --ms-color-border );
@@ -823,6 +970,7 @@
 	box-shadow: var( --ms-shadow-sm );
 	margin-bottom: 16px;
 	overflow: hidden;
+	width: 100%;
 }
 
 .mediashield-settings__section-header {
@@ -931,6 +1079,187 @@
 	border-top: 1px solid var( --ms-color-border-light );
 }
 
+/* ── Generic Card (wbcom-standard) ────────────────── */
+.ms-card {
+	background: var( --ms-color-surface );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-lg );
+	box-shadow: var( --ms-shadow-sm );
+	margin-bottom: 16px;
+	overflow: hidden;
+}
+
+.ms-card__head {
+	padding: 14px 20px 12px;
+	border-bottom: 1px solid var( --ms-color-border );
+	background: #fafafa;
+}
+
+.ms-card__title {
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var( --ms-color-text );
+	margin: 0 0 2px;
+}
+
+.ms-card__desc {
+	font-size: 13px;
+	color: var( --ms-color-text-secondary );
+	margin: 0;
+}
+
+.ms-card__body {
+	padding: 20px;
+}
+
+/* ── Buttons (wbcom-standard) ─────────────────────── */
+.ms-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 32px;
+	padding: 0 14px;
+	font-size: 13px;
+	font-weight: 500;
+	border-radius: 6px;
+	border: 1px solid var( --ms-color-border );
+	background: var( --ms-color-surface );
+	color: var( --ms-color-text );
+	cursor: pointer;
+	text-decoration: none;
+	transition: all 0.12s ease;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.ms-btn:hover {
+	background: #f6f7f7;
+	color: var( --ms-color-text );
+	text-decoration: none;
+}
+
+.ms-btn:active {
+	transform: scale( 0.97 );
+}
+
+.ms-btn--primary {
+	background: var( --ms-color-primary );
+	color: #fff;
+	border-color: var( --ms-color-primary );
+}
+
+.ms-btn--primary:hover {
+	background: var( --ms-color-primary-hover );
+	color: #fff;
+}
+
+.ms-btn--danger {
+	color: var( --ms-color-error );
+	border-color: var( --ms-color-error );
+}
+
+.ms-btn--danger:hover {
+	background: var( --ms-color-error );
+	color: #fff;
+}
+
+.ms-btn--sm {
+	height: 28px;
+	font-size: 12px;
+	padding: 0 10px;
+}
+
+.ms-btn--full {
+	width: 100%;
+	justify-content: center;
+}
+
+/* ── Page Header Alias (wbcom-standard) ──────────── */
+.ms-page-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.ms-page-header__left {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.ms-page-header__title {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 700;
+	color: var( --ms-color-text );
+	letter-spacing: -0.02em;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.ms-page-header__desc {
+	font-size: 13px;
+	color: var( --ms-color-text-secondary );
+	margin: 0;
+}
+
+.ms-page-header__actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* ── Empty State (wbcom-standard) ─────────────────── */
+.ms-empty-state {
+	text-align: center;
+	padding: 48px 24px;
+	color: var( --ms-color-text-tertiary );
+}
+
+.ms-empty-state__icon {
+	font-size: 40px;
+	margin-bottom: 12px;
+	opacity: 0.4;
+	display: block;
+}
+
+.ms-empty-state__icon .dashicons {
+	font-size: 40px;
+	width: 40px;
+	height: 40px;
+}
+
+.ms-empty-state__title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var( --ms-color-text );
+	margin: 0 0 8px;
+}
+
+.ms-empty-state__text,
+.ms-empty-state__desc {
+	font-size: 14px;
+	color: var( --ms-color-text-secondary );
+	margin: 0 0 16px;
+}
+
+/* ── Reduced Motion ───────────────────────────────── */
+@media ( prefers-reduced-motion: reduce ) {
+	.mediashield-admin *,
+	.mediashield-admin *::before,
+	.mediashield-admin *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+
 /* ── Animation ─────────────────────────────────────── */
 @keyframes ms-slideIn {
 	from {
@@ -970,6 +1299,10 @@
 		border-bottom: 1px solid var( --ms-color-border );
 	}
 
+	.mediashield-sidebar__brand {
+		padding: 16px 12px;
+	}
+
 	.mediashield-sidebar__menu {
 		flex-direction: row;
 		flex-wrap: wrap;
@@ -986,8 +1319,24 @@
 		display: none;
 	}
 
+	.mediashield-sidebar__pro-badge {
+		display: none;
+	}
+
 	.mediashield-admin__content {
 		padding: 16px;
+	}
+
+	.mediashield-page__header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.ms-page-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
 	}
 
 	.mediashield-stats {
@@ -998,12 +1347,55 @@
 		grid-template-columns: 1fr;
 	}
 
+	.mediashield-stat-card {
+		padding: 16px;
+	}
+
+	.mediashield-stat-card__value {
+		font-size: 22px;
+	}
+
+	.mediashield-chart-card__body {
+		padding: 12px;
+		min-height: 200px;
+	}
+
 	.mediashield-table-card {
 		overflow-x: auto;
 	}
 
 	.mediashield-table {
 		min-width: 600px;
+	}
+
+	.mediashield-table th,
+	.mediashield-table td {
+		padding: 10px 14px;
+	}
+
+	.mediashield-settings__section-header {
+		padding: 12px 16px;
+	}
+
+	.mediashield-settings__section-body {
+		padding: 16px;
+	}
+
+	.mediashield-student-detail__header {
+		flex-direction: column;
+		text-align: center;
+	}
+
+	.mediashield-search-bar {
+		max-width: none;
+	}
+
+	.ms-card__head {
+		padding: 12px 16px;
+	}
+
+	.ms-card__body {
+		padding: 16px;
 	}
 }
 
@@ -1022,4 +1414,39 @@
 		gap: 8px;
 		align-items: center;
 	}
+}
+
+/* ── Preview Modal ────────────────────────────────── */
+.ms-preview-modal .components-modal__content {
+	padding: 0;
+	margin-top: 0;
+}
+.ms-preview-modal .components-modal__header {
+	padding: 12px 20px;
+	border-bottom: 1px solid var( --ms-color-border, #e2e8f0 );
+}
+.ms-preview-modal__body {
+	padding: 0;
+}
+.ms-preview-modal__player {
+	position: relative;
+	width: 100%;
+	padding-bottom: 56.25%; /* 16:9 */
+	background: #000;
+}
+.ms-preview-modal__info {
+	display: flex;
+	gap: 20px;
+	padding: 12px 20px;
+	font-size: 13px;
+	color: #757575;
+	border-top: 1px solid var( --ms-color-border, #e2e8f0 );
+	background: #fafbfc;
+}
+.ms-preview-modal__info strong {
+	margin-right: 4px;
+}
+.components-modal__frame.ms-preview-modal {
+	width: 800px;
+	max-width: 90vw;
 }

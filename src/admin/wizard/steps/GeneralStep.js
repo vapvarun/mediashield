@@ -5,10 +5,10 @@ import { __ } from '@wordpress/i18n';
 import { ToggleControl, SelectControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
-export default function GeneralStep( { onSave } ) {
-	const [ enabled, setEnabled ] = useState( true );
-	const [ requireLogin, setRequireLogin ] = useState( true );
-	const [ protection, setProtection ] = useState( 'standard' );
+export default function GeneralStep( { onSave, initialData } ) {
+	const [ enabled, setEnabled ] = useState( initialData?.ms_enabled ?? true );
+	const [ requireLogin, setRequireLogin ] = useState( initialData?.ms_require_login ?? true );
+	const [ protection, setProtection ] = useState( initialData?.ms_default_protection || 'standard' );
 
 	const save = ( key, value ) => {
 		onSave( { [ key ]: value } );

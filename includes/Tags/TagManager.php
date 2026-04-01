@@ -7,6 +7,17 @@
 
 namespace MediaShield\Tags;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class TagManager
+ *
+ * CRUD operations for ms_tags and ms_video_tags tables.
+ *
+ * @since 1.0.0
+ */
 class TagManager {
 
 	/**
@@ -23,15 +34,19 @@ class TagManager {
 		$slug = sanitize_title( $name );
 
 		// Check for duplicate slug.
-		$existing = $wpdb->get_var( $wpdb->prepare(
-			"SELECT id FROM {$wpdb->prefix}ms_tags WHERE slug = %s",
-			$slug
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		$existing = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$wpdb->prefix}ms_tags WHERE slug = %s",
+				$slug
+			)
+		);
 
 		if ( $existing ) {
 			return false;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table insert.
 		$inserted = $wpdb->insert(
 			"{$wpdb->prefix}ms_tags",
 			array(
@@ -56,10 +71,13 @@ class TagManager {
 	public static function get( int $tag_id ): ?object {
 		global $wpdb;
 
-		return $wpdb->get_row( $wpdb->prepare(
-			"SELECT * FROM {$wpdb->prefix}ms_tags WHERE id = %d",
-			$tag_id
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}ms_tags WHERE id = %d",
+				$tag_id
+			)
+		);
 	}
 
 	/**
@@ -71,10 +89,13 @@ class TagManager {
 	public static function get_by_slug( string $slug ): ?object {
 		global $wpdb;
 
-		return $wpdb->get_row( $wpdb->prepare(
-			"SELECT * FROM {$wpdb->prefix}ms_tags WHERE slug = %s",
-			$slug
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}ms_tags WHERE slug = %s",
+				$slug
+			)
+		);
 	}
 
 	/**
@@ -92,15 +113,18 @@ class TagManager {
 		$args  = array();
 
 		if ( '' !== $search ) {
-			$where = 'WHERE name LIKE %s';
+			$where  = 'WHERE name LIKE %s';
 			$args[] = '%' . $wpdb->esc_like( $search ) . '%';
 		}
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Custom table with dynamic WHERE.
 		if ( ! empty( $args ) ) {
-			$total = (int) $wpdb->get_var( $wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->prefix}ms_tags {$where}",
-				...$args
-			) );
+			$total = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->prefix}ms_tags {$where}",
+					...$args
+				)
+			);
 		} else {
 			$total = (int) $wpdb->get_var(
 				"SELECT COUNT(*) FROM {$wpdb->prefix}ms_tags"
@@ -111,19 +135,27 @@ class TagManager {
 
 		if ( ! empty( $args ) ) {
 			$limit_args = array_merge( $args, array( $per_page, $offset ) );
-			$items = $wpdb->get_results( $wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}ms_tags {$where} ORDER BY name ASC LIMIT %d OFFSET %d",
-				...$limit_args
-			) );
+			$items      = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}ms_tags {$where} ORDER BY name ASC LIMIT %d OFFSET %d",
+					...$limit_args
+				)
+			);
 		} else {
-			$items = $wpdb->get_results( $wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}ms_tags ORDER BY name ASC LIMIT %d OFFSET %d",
-				$per_page,
-				$offset
-			) );
+			$items = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}ms_tags ORDER BY name ASC LIMIT %d OFFSET %d",
+					$per_page,
+					$offset
+				)
+			);
 		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
-		return array( 'items' => $items ?: array(), 'total' => $total );
+		return array(
+			'items' => ! empty( $items ) ? $items : array(),
+			'total' => $total,
+		);
 	}
 
 	/**
@@ -146,11 +178,14 @@ class TagManager {
 			$format[]       = '%s';
 
 			// Check slug uniqueness (exclude self).
-			$existing = $wpdb->get_var( $wpdb->prepare(
-				"SELECT id FROM {$wpdb->prefix}ms_tags WHERE slug = %s AND id != %d",
-				$update['slug'],
-				$tag_id
-			) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+			$existing = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM {$wpdb->prefix}ms_tags WHERE slug = %s AND id != %d",
+					$update['slug'],
+					$tag_id
+				)
+			);
 
 			if ( $existing ) {
 				return false;
@@ -166,6 +201,7 @@ class TagManager {
 			return false;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table update.
 		return (bool) $wpdb->update(
 			"{$wpdb->prefix}ms_tags",
 			$update,
@@ -185,12 +221,14 @@ class TagManager {
 		global $wpdb;
 
 		// Remove all video associations first.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$wpdb->delete(
 			"{$wpdb->prefix}ms_video_tags",
 			array( 'tag_id' => $tag_id ),
 			array( '%d' )
 		);
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		return (bool) $wpdb->delete(
 			"{$wpdb->prefix}ms_tags",
 			array( 'id' => $tag_id ),
@@ -210,14 +248,17 @@ class TagManager {
 		global $wpdb;
 
 		// INSERT IGNORE to handle duplicates gracefully.
-		$result = $wpdb->query( $wpdb->prepare(
-			"INSERT IGNORE INTO {$wpdb->prefix}ms_video_tags (video_id, tag_id, tagged_by, tagged_at)
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table insert with IGNORE.
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$wpdb->prefix}ms_video_tags (video_id, tag_id, tagged_by, tagged_at)
 			 VALUES (%d, %d, %d, %s)",
-			$video_id,
-			$tag_id,
-			$user_id,
-			current_time( 'mysql', true )
-		) );
+				$video_id,
+				$tag_id,
+				$user_id,
+				current_time( 'mysql', true )
+			)
+		);
 
 		return false !== $result && $result > 0;
 	}
@@ -232,6 +273,7 @@ class TagManager {
 	public static function unassign_from_video( int $video_id, int $tag_id ): bool {
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		return (bool) $wpdb->delete(
 			"{$wpdb->prefix}ms_video_tags",
 			array(
@@ -251,16 +293,19 @@ class TagManager {
 	public static function get_for_video( int $video_id ): array {
 		global $wpdb;
 
-		$results = $wpdb->get_results( $wpdb->prepare(
-			"SELECT t.*, vt.tagged_by, vt.tagged_at
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT t.*, vt.tagged_by, vt.tagged_at
 			 FROM {$wpdb->prefix}ms_tags t
 			 INNER JOIN {$wpdb->prefix}ms_video_tags vt ON t.id = vt.tag_id
 			 WHERE vt.video_id = %d
 			 ORDER BY t.name ASC",
-			$video_id
-		) );
+				$video_id
+			)
+		);
 
-		return $results ?: array();
+		return ! empty( $results ) ? $results : array();
 	}
 
 	/**
@@ -272,11 +317,14 @@ class TagManager {
 	public static function get_videos_for_tag( int $tag_id ): array {
 		global $wpdb;
 
-		$results = $wpdb->get_col( $wpdb->prepare(
-			"SELECT video_id FROM {$wpdb->prefix}ms_video_tags WHERE tag_id = %d",
-			$tag_id
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		$results = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT video_id FROM {$wpdb->prefix}ms_video_tags WHERE tag_id = %d",
+				$tag_id
+			)
+		);
 
-		return array_map( 'intval', $results ?: array() );
+		return array_map( 'intval', ! empty( $results ) ? $results : array() );
 	}
 }

@@ -7,8 +7,8 @@
  * @package MediaShield
  */
 
-import { useState, useEffect } from '@wordpress/element';
-import { Button, Spinner } from '@wordpress/components';
+import { useState, useEffect, useCallback } from '@wordpress/element';
+import { Button, Modal, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { decodeEntities } from '@wordpress/html-entities';
@@ -23,6 +23,93 @@ const PLATFORM_LABELS = {
 	wistia: 'Wistia',
 	self: 'Self-hosted',
 	iframe: 'Custom',
+};
+
+/**
+ * Build an embeddable preview URL from platform + video ID.
+ *
+ * @param {string} platform    Platform slug.
+ * @param {string} videoId     Platform video ID.
+ * @param {string} sourceUrl   Source/embed URL.
+ * @return {string|null} Embed URL or null.
+ */
+const getPreviewUrl = ( platform, videoId, sourceUrl ) => {
+	if ( platform === 'youtube' && videoId ) {
+		return `https://www.youtube.com/embed/${ videoId }?autoplay=1`;
+	}
+	if ( platform === 'vimeo' && videoId ) {
+		return `https://player.vimeo.com/video/${ videoId }?autoplay=1`;
+	}
+	if ( platform === 'wistia' && videoId ) {
+		return `https://fast.wistia.net/embed/iframe/${ videoId }?autoplay=true`;
+	}
+	if ( platform === 'bunny' && sourceUrl ) {
+		// For Bunny, use the iframe embed URL format.
+		if ( sourceUrl.includes( 'iframe.mediadelivery.net' ) ) {
+			return sourceUrl;
+		}
+		// HLS URL — wrap in a basic player isn't possible via iframe, use source URL.
+		return sourceUrl;
+	}
+	if ( sourceUrl ) {
+		return sourceUrl;
+	}
+	return null;
+};
+
+/**
+ * Preview lightbox modal component.
+ */
+const PreviewModal = ( { video, onClose } ) => {
+	const platform = video.meta?._ms_platform || 'self';
+	const videoId = video.meta?._ms_platform_video_id || '';
+	const sourceUrl = video.meta?._ms_source_url || '';
+	const previewUrl = getPreviewUrl( platform, videoId, sourceUrl );
+	const isIframeable = [ 'youtube', 'vimeo', 'wistia' ].includes( platform ) ||
+		( platform === 'bunny' && previewUrl?.includes( 'iframe.mediadelivery.net' ) );
+
+	return (
+		<Modal
+			title={ decodeEntities( video.title?.rendered || __( 'Preview', 'mediashield' ) ) }
+			onRequestClose={ onClose }
+			className="ms-preview-modal"
+			isFullScreen={ false }
+		>
+			<div className="ms-preview-modal__body">
+				{ ! previewUrl && (
+					<p>{ __( 'No preview available for this video.', 'mediashield' ) }</p>
+				) }
+				{ previewUrl && isIframeable && (
+					<div className="ms-preview-modal__player">
+						<iframe
+							src={ previewUrl }
+							title={ decodeEntities( video.title?.rendered || '' ) }
+							frameBorder="0"
+							allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+							allowFullScreen
+							style={ { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 } }
+						/>
+					</div>
+				) }
+				{ previewUrl && ! isIframeable && (
+					<div className="ms-preview-modal__player">
+						<video
+							src={ previewUrl }
+							controls
+							autoPlay
+							style={ { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, objectFit: 'contain', background: '#000' } }
+						/>
+					</div>
+				) }
+				<div className="ms-preview-modal__info">
+					<span><strong>{ __( 'Platform:', 'mediashield' ) }</strong> { PLATFORM_LABELS[ platform ] || platform }</span>
+					{ video.meta?._ms_duration > 0 && (
+						<span><strong>{ __( 'Duration:', 'mediashield' ) }</strong> { Math.floor( video.meta._ms_duration / 60 ) }:{ String( video.meta._ms_duration % 60 ).padStart( 2, '0' ) }</span>
+					) }
+				</div>
+			</div>
+		</Modal>
+	);
 };
 
 const ProtectionBadge = ( { level } ) => {
@@ -57,6 +144,7 @@ const Videos = () => {
 	const [ totalPages, setTotalPages ] = useState( 1 );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
+	const [ previewVideo, setPreviewVideo ] = useState( null );
 
 	useEffect( () => {
 		let cancelled = false;
@@ -177,16 +265,13 @@ const Videos = () => {
 										>
 											{ __( 'Edit', 'mediashield' ) }
 										</a>
-										{ video.link && (
-											<a
-												href={ video.link }
-												className="mediashield-action-btn mediashield-action-btn--view"
-												target="_blank"
-												rel="noopener noreferrer"
-											>
-												{ __( 'View', 'mediashield' ) }
-											</a>
-										) }
+										<button
+										type="button"
+										className="mediashield-action-btn mediashield-action-btn--view"
+										onClick={ () => setPreviewVideo( video ) }
+									>
+										{ __( 'Preview', 'mediashield' ) }
+									</button>
 									</td>
 								</tr>
 							) ) }
@@ -219,6 +304,14 @@ const Videos = () => {
 						</div>
 					) }
 				</div>
+			) }
+
+			{ /* Preview Lightbox */ }
+			{ previewVideo && (
+				<PreviewModal
+					video={ previewVideo }
+					onClose={ () => setPreviewVideo( null ) }
+				/>
 			) }
 		</div>
 	);

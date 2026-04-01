@@ -11,6 +11,17 @@
 
 namespace MediaShield\Admin;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class SetupWizard
+ *
+ * Setup wizard for first-time plugin activation.
+ *
+ * @since 1.0.0
+ */
 class SetupWizard {
 
 	/**
@@ -22,18 +33,25 @@ class SetupWizard {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 
 		// REST endpoint for wizard completion.
-		add_action( 'rest_api_init', function () {
-			register_rest_route( 'mediashield/v1', '/wizard/complete', array(
-				'methods'             => 'POST',
-				'callback'            => function () {
-					update_option( 'ms_wizard_completed', true );
-					return rest_ensure_response( array( 'success' => true ) );
-				},
-				'permission_callback' => function () {
-					return current_user_can( 'manage_options' );
-				},
-			) );
-		} );
+		add_action(
+			'rest_api_init',
+			function () {
+				register_rest_route(
+					'mediashield/v1',
+					'/wizard/complete',
+					array(
+						'methods'             => 'POST',
+						'callback'            => function () {
+							update_option( 'ms_wizard_completed', true );
+							return rest_ensure_response( array( 'success' => true ) );
+						},
+						'permission_callback' => function () {
+							return current_user_can( 'manage_options' );
+						},
+					)
+				);
+			}
+		);
 	}
 
 	/**
@@ -47,6 +65,7 @@ class SetupWizard {
 		delete_transient( 'ms_activation_redirect' );
 
 		// Don't redirect during bulk activation, AJAX, or CLI.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Activation redirect check, no data processing.
 		if ( wp_doing_ajax() || wp_doing_cron() || defined( 'WP_CLI' ) || isset( $_GET['activate-multi'] ) ) {
 			return;
 		}
@@ -78,7 +97,8 @@ class SetupWizard {
 	 * Render the wizard root element.
 	 */
 	public static function render_page(): void {
-		echo '<div id="mediashield-wizard-root" class="mediashield-wizard"></div>';
+		// Hardcoded HTML containers — no dynamic content, safe to output directly.
+		echo '<div id="mediashield-wizard-root" class="mediashield-wizard"></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
 		echo '<noscript><p style="padding:20px;">';
 		echo esc_html__( 'JavaScript is required for the setup wizard.', 'mediashield' );
 		echo '</p></noscript>';
@@ -121,16 +141,20 @@ class SetupWizard {
 			$ver
 		);
 
-		wp_localize_script( 'mediashield-wizard', 'mediashieldAdmin', array(
-			'restUrl'    => rest_url( 'mediashield/v1/' ),
-			'wpRestUrl'  => rest_url( 'wp/v2/' ),
-			'nonce'      => wp_create_nonce( 'wp_rest' ),
-			'version'    => $ver,
-			'userId'     => get_current_user_id(),
-			'adminUrl'   => admin_url(),
-			'siteUrl'    => home_url(),
-			'isProActive' => defined( 'MEDIASHIELD_PRO_VERSION' ),
-			'isWizard'   => true,
-		) );
+		wp_localize_script(
+			'mediashield-wizard',
+			'mediashieldAdmin',
+			array(
+				'restUrl'     => rest_url( 'mediashield/v1/' ),
+				'wpRestUrl'   => rest_url( 'wp/v2/' ),
+				'nonce'       => wp_create_nonce( 'wp_rest' ),
+				'version'     => $ver,
+				'userId'      => get_current_user_id(),
+				'adminUrl'    => admin_url(),
+				'siteUrl'     => home_url(),
+				'isProActive' => defined( 'MEDIASHIELD_PRO_VERSION' ),
+				'isWizard'    => true,
+			)
+		);
 	}
 }

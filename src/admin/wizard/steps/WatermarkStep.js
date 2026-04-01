@@ -1,14 +1,14 @@
 /**
- * Wizard Step 2: Watermark Configuration.
+ * Wizard Step 4: Watermark Configuration.
  */
 import { __ } from '@wordpress/i18n';
 import { RangeControl, ColorPicker, TextControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
-export default function WatermarkStep( { onSave } ) {
-	const [ opacity, setOpacity ] = useState( 0.3 );
-	const [ color, setColor ] = useState( '#ffffff' );
-	const [ swapInterval, setSwapInterval ] = useState( 20 );
+export default function WatermarkStep( { onSave, initialData } ) {
+	const [ opacity, setOpacity ] = useState( initialData?.ms_watermark_opacity ?? 0.5 );
+	const [ color, setColor ] = useState( initialData?.ms_watermark_color || '#ffffff' );
+	const [ swapInterval, setSwapInterval ] = useState( initialData?.ms_watermark_swap_interval ?? 30 );
 
 	return (
 		<div className="mediashield-wizard__step">

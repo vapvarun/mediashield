@@ -10,9 +10,20 @@
 
 namespace MediaShield\Upload;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\Upload\Drivers\DriverInterface;
 use MediaShield\Upload\Drivers\SelfHosted;
 
+/**
+ * Class UploadManager
+ *
+ * Upload manager — driver factory and orchestration.
+ *
+ * @since 1.0.0
+ */
 class UploadManager {
 
 	/**

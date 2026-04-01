@@ -10,6 +10,17 @@
 
 namespace MediaShield\Access;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class SessionManager
+ *
+ * HMAC-based video watch session manager.
+ *
+ * @since 1.0.0
+ */
 class SessionManager {
 
 	/**
@@ -36,30 +47,38 @@ class SessionManager {
 		// -- Concurrent session limit check (with row locking) --
 		$max_concurrent = (int) get_option( 'ms_max_concurrent_streams', 2 );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction start.
 		$wpdb->query( 'START TRANSACTION' );
 
-		$active_count = (int) $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$table}
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table with row locking.
+		$active_count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table}
 			 WHERE user_id = %d AND is_active = 1
 			 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
 			 FOR UPDATE",
-			$user_id,
-			$now
-		) );
+				$user_id,
+				$now
+			)
+		);
 
 		// Check for existing session on same video (dedup, locked).
-		$existing = $wpdb->get_row( $wpdb->prepare(
-			"SELECT * FROM {$table}
+		$existing = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$table}
 			 WHERE video_id = %d AND user_id = %d AND is_active = 1
 			 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
 			 ORDER BY last_heartbeat DESC LIMIT 1
 			 FOR UPDATE",
-			$video_id,
-			$user_id,
-			$now
-		) );
+				$video_id,
+				$user_id,
+				$now
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		if ( $existing ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
 			$wpdb->query( 'COMMIT' );
 
 			return array(
@@ -72,6 +91,7 @@ class SessionManager {
 
 		// Subtract 1 from active count if we're replacing a session on same video (not the case here).
 		if ( $active_count >= $max_concurrent ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction rollback.
 			$wpdb->query( 'ROLLBACK' );
 
 			/**
@@ -90,13 +110,17 @@ class SessionManager {
 		}
 
 		// Get resume position from most recent session (active or not).
-		$resume_position = (float) $wpdb->get_var( $wpdb->prepare(
-			"SELECT max_position FROM {$table}
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
+		$resume_position = (float) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT max_position FROM {$table}
 			 WHERE video_id = %d AND user_id = %d
 			 ORDER BY last_heartbeat DESC LIMIT 1",
-			$video_id,
-			$user_id
-		) );
+				$video_id,
+				$user_id
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		// Parse device info from user agent.
 		$device_type = self::parse_device_type( $ua );
@@ -105,29 +129,36 @@ class SessionManager {
 		// Create session token parts.
 		$session_token_raw = wp_generate_password( 32, false );
 
-		$inserted = $wpdb->insert( $table, array(
-			'video_id'       => $video_id,
-			'user_id'        => $user_id,
-			'session_token'  => $session_token_raw,
-			'ip_address'     => $ip,
-			'user_agent'     => mb_substr( $ua, 0, 500 ),
-			'device_type'    => $device_type,
-			'browser'        => $browser,
-			'started_at'     => $now,
-			'last_heartbeat' => $now,
-			'total_seconds'  => 0,
-			'max_position'   => 0,
-			'completion_pct' => 0,
-			'is_active'      => 1,
-		), array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%f', '%f', '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table insert.
+		$inserted = $wpdb->insert(
+			$table,
+			array(
+				'video_id'       => $video_id,
+				'user_id'        => $user_id,
+				'session_token'  => $session_token_raw,
+				'ip_address'     => $ip,
+				'user_agent'     => mb_substr( $ua, 0, 500 ),
+				'device_type'    => $device_type,
+				'browser'        => $browser,
+				'started_at'     => $now,
+				'last_heartbeat' => $now,
+				'total_seconds'  => 0,
+				'max_position'   => 0,
+				'completion_pct' => 0,
+				'is_active'      => 1,
+			),
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%f', '%f', '%d' )
+		);
 
 		if ( ! $inserted ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction rollback.
 			$wpdb->query( 'ROLLBACK' );
 			return false;
 		}
 
 		$session_id = (int) $wpdb->insert_id;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
 		$wpdb->query( 'COMMIT' );
 
 		$token = self::generate_token( $session_id, $video_id, $user_id, $now );
@@ -176,19 +207,23 @@ class SessionManager {
 		$completion_pct = $duration > 0 ? min( 100, ( $position / $duration ) * 100 ) : 0;
 
 		// Single atomic update with GREATEST for max_position.
-		$rows = $wpdb->query( $wpdb->prepare(
-			"UPDATE {$table} SET
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table update.
+		$rows = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table} SET
 				last_heartbeat = %s,
 				total_seconds = total_seconds + %d,
 				max_position = GREATEST(max_position, %f),
 				completion_pct = %f
 			WHERE id = %d AND is_active = 1",
-			$now,
-			$playing ? 30 : 0,
-			$position,
-			$completion_pct,
-			$parsed['session_id']
-		) );
+				$now,
+				$playing ? 30 : 0,
+				$position,
+				$completion_pct,
+				$parsed['session_id']
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		// Check milestones after updating completion percentage.
 		if ( $rows > 0 && $completion_pct > 0 ) {
@@ -218,6 +253,7 @@ class SessionManager {
 
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table update.
 		$result = $wpdb->update(
 			"{$wpdb->prefix}ms_watch_sessions",
 			array(
@@ -254,13 +290,16 @@ class SessionManager {
 	public static function revoke_user( int $user_id ): int {
 		global $wpdb;
 
-		$count = (int) $wpdb->query( $wpdb->prepare(
-			"UPDATE {$wpdb->prefix}ms_watch_sessions
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table bulk update.
+		$count = (int) $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}ms_watch_sessions
 			 SET is_active = 0, last_heartbeat = %s
 			 WHERE user_id = %d AND is_active = 1",
-			current_time( 'mysql', true ),
-			$user_id
-		) );
+				current_time( 'mysql', true ),
+				$user_id
+			)
+		);
 
 		if ( $count > 0 ) {
 			/**

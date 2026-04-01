@@ -165,23 +165,37 @@ const Settings = () => {
 				<ToggleControl
 					label={ __( 'Enable MediaShield', 'mediashield' ) }
 					help={ __( 'Turn video protection on or off globally.', 'mediashield' ) }
-					checked={ !! settings?.enabled }
-					onChange={ ( val ) => updateSetting( 'enabled', val ) }
+					checked={ !! settings?.ms_enabled }
+					onChange={ ( val ) => updateSetting( 'ms_enabled', val ) }
 					__nextHasNoMarginBottom
 				/>
 				<SelectControl
 					label={ __( 'Default Protection Level', 'mediashield' ) }
 					help={ __( 'Applied to new videos unless overridden per-video.', 'mediashield' ) }
-					value={ settings?.protection_level || 'standard' }
+					value={ settings?.ms_default_protection || 'standard' }
 					options={ PROTECTION_OPTIONS }
-					onChange={ ( val ) => updateSetting( 'protection_level', val ) }
+					onChange={ ( val ) => updateSetting( 'ms_default_protection', val ) }
 					__nextHasNoMarginBottom
 				/>
+				{ /* Protection level descriptions */ }
+				<div className="mediashield-settings__protection-descriptions" style={ {
+					fontSize: '13px',
+					color: 'var(--ms-color-text-tertiary, #757575)',
+					lineHeight: '1.6',
+					marginTop: '-8px',
+					marginBottom: '16px',
+					paddingLeft: '2px',
+				} }>
+					<div><strong>{ __( 'None:', 'mediashield' ) }</strong> { __( 'No protection applied', 'mediashield' ) }</div>
+					<div><strong>{ __( 'Basic:', 'mediashield' ) }</strong> { __( 'Login required, right-click disabled', 'mediashield' ) }</div>
+					<div><strong>{ __( 'Standard:', 'mediashield' ) }</strong> { __( 'Basic + watermark + session tracking', 'mediashield' ) }</div>
+					<div><strong>{ __( 'Strict:', 'mediashield' ) }</strong> { __( 'Standard + devtools detection + source hiding', 'mediashield' ) }</div>
+				</div>
 				<ToggleControl
 					label={ __( 'Require Login', 'mediashield' ) }
 					help={ __( 'Only logged-in users can view protected videos.', 'mediashield' ) }
-					checked={ !! settings?.require_login }
-					onChange={ ( val ) => updateSetting( 'require_login', val ) }
+					checked={ !! settings?.ms_require_login }
+					onChange={ ( val ) => updateSetting( 'ms_require_login', val ) }
 					__nextHasNoMarginBottom
 				/>
 			</SectionCard>
@@ -193,8 +207,8 @@ const Settings = () => {
 			>
 				<RangeControl
 					label={ __( 'Opacity', 'mediashield' ) }
-					value={ settings?.watermark_opacity ?? 0.5 }
-					onChange={ ( val ) => updateSetting( 'watermark_opacity', val ) }
+					value={ settings?.ms_watermark_opacity ?? 0.5 }
+					onChange={ ( val ) => updateSetting( 'ms_watermark_opacity', val ) }
 					min={ 0 }
 					max={ 1 }
 					step={ 0.05 }
@@ -203,8 +217,8 @@ const Settings = () => {
 				<div className="mediashield-settings__color-field">
 					<label>{ __( 'Watermark Color', 'mediashield' ) }</label>
 					<ColorPicker
-						color={ settings?.watermark_color || '#ffffff' }
-						onChange={ ( val ) => updateSetting( 'watermark_color', val ) }
+						color={ settings?.ms_watermark_color || '#ffffff' }
+						onChange={ ( val ) => updateSetting( 'ms_watermark_color', val ) }
 						enableAlpha={ false }
 					/>
 				</div>
@@ -212,9 +226,9 @@ const Settings = () => {
 					label={ __( 'Position Swap Interval', 'mediashield' ) }
 					help={ __( 'Seconds between watermark position changes. 0 = static.', 'mediashield' ) }
 					type="number"
-					value={ settings?.watermark_swap_interval ?? 30 }
+					value={ settings?.ms_watermark_swap_interval ?? 30 }
 					onChange={ ( val ) =>
-						updateSetting( 'watermark_swap_interval', parseInt( val, 10 ) || 0 )
+						updateSetting( 'ms_watermark_swap_interval', parseInt( val, 10 ) || 0 )
 					}
 					min={ 0 }
 					__nextHasNoMarginBottom
@@ -227,10 +241,10 @@ const Settings = () => {
 				description={ __( 'Restrict video playback to specific domains.', 'mediashield' ) }
 			>
 				<TextareaControl
-					label={ __( 'Domain Whitelist', 'mediashield' ) }
+					label={ __( 'Allowed Domains', 'mediashield' ) }
 					help={ __( 'One domain per line. Leave empty to allow all domains.', 'mediashield' ) }
-					value={ settings?.allowed_domains || '' }
-					onChange={ ( val ) => updateSetting( 'allowed_domains', val ) }
+					value={ settings?.ms_allowed_domains || '' }
+					onChange={ ( val ) => updateSetting( 'ms_allowed_domains', val ) }
 					rows={ 4 }
 					__nextHasNoMarginBottom
 				/>
@@ -244,8 +258,8 @@ const Settings = () => {
 				<RangeControl
 					label={ __( 'Max Concurrent Streams', 'mediashield' ) }
 					help={ __( 'Number of simultaneous video sessions per user.', 'mediashield' ) }
-					value={ settings?.max_concurrent_streams ?? 1 }
-					onChange={ ( val ) => updateSetting( 'max_concurrent_streams', val ) }
+					value={ settings?.ms_max_concurrent_streams ?? 1 }
+					onChange={ ( val ) => updateSetting( 'ms_max_concurrent_streams', val ) }
 					min={ 1 }
 					max={ 5 }
 					step={ 1 }
@@ -254,18 +268,67 @@ const Settings = () => {
 			</SectionCard>
 
 			<SectionCard
-				icon="upload"
-				title={ __( 'Upload', 'mediashield' ) }
-				description={ __( 'File upload limits for self-hosted videos.', 'mediashield' ) }
+				icon="lock"
+				title={ __( 'Login & Access Messages', 'mediashield' ) }
+				description={ __( 'Customize the messages shown when users need to log in or lack access.', 'mediashield' ) }
 			>
 				<TextControl
+					label={ __( 'Login Overlay Text', 'mediashield' ) }
+					help={ __( 'Message shown on the video overlay when login is required.', 'mediashield' ) }
+					value={ settings?.ms_login_overlay_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_login_overlay_text', val ) }
+					placeholder={ __( 'Please log in to watch this video', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Login Button Text', 'mediashield' ) }
+					help={ __( 'Label for the login button on the video overlay.', 'mediashield' ) }
+					value={ settings?.ms_login_button_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_login_button_text', val ) }
+					placeholder={ __( 'Log In', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Access Denied Text', 'mediashield' ) }
+					help={ __( 'Message shown when a logged-in user does not have permission to view a video.', 'mediashield' ) }
+					value={ settings?.ms_access_denied_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_access_denied_text', val ) }
+					placeholder={ __( 'You do not have access to this video', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+			</SectionCard>
+
+			<SectionCard
+				icon="upload"
+				title={ __( 'Upload & Storage', 'mediashield' ) }
+				description={ __( 'Configure where videos are stored and upload limits.', 'mediashield' ) }
+			>
+				{ settings?.ms_connected_platforms && settings.ms_connected_platforms.length > 0 && (
+					<SelectControl
+						label={ __( 'Default Upload Target', 'mediashield' ) }
+						help={ __( 'When set to "Auto", new uploads go to the first connected cloud platform. No video files are stored locally when a cloud service is connected.', 'mediashield' ) }
+						value={ settings?.ms_default_upload_target ?? 'auto' }
+						options={ [
+							{ label: __( 'Auto (use connected platform)', 'mediashield' ), value: 'auto' },
+							{ label: __( 'Self-hosted (local server)', 'mediashield' ), value: 'self' },
+							...( settings.ms_connected_platforms || [] ).map( ( p ) => ( {
+								label: ( p.platform.charAt( 0 ).toUpperCase() + p.platform.slice( 1 ) ),
+								value: p.platform,
+							} ) ),
+						] }
+						onChange={ ( val ) => updateSetting( 'ms_default_upload_target', val ) }
+						__nextHasNoMarginBottom
+					/>
+				) }
+				<TextControl
 					label={ __( 'Max Upload Size (MB)', 'mediashield' ) }
+					help={ __( 'Maximum file size for video uploads. Set to 0 for unlimited (server limit applies).', 'mediashield' ) }
 					type="number"
-					value={ settings?.max_upload_size ?? 500 }
+					value={ settings?.ms_max_upload_size ?? 500 }
 					onChange={ ( val ) =>
-						updateSetting( 'max_upload_size', parseInt( val, 10 ) || 0 )
+						updateSetting( 'ms_max_upload_size', parseInt( val, 10 ) || 0 )
 					}
-					min={ 1 }
+					min={ 0 }
 					__nextHasNoMarginBottom
 				/>
 			</SectionCard>
@@ -278,8 +341,8 @@ const Settings = () => {
 				<TextareaControl
 					label={ __( 'Custom URL Patterns', 'mediashield' ) }
 					help={ __( 'One regex pattern per line. Matches iframe src attributes for auto-wrapping.', 'mediashield' ) }
-					value={ settings?.custom_url_patterns || '' }
-					onChange={ ( val ) => updateSetting( 'custom_url_patterns', val ) }
+					value={ settings?.ms_custom_url_patterns || '' }
+					onChange={ ( val ) => updateSetting( 'ms_custom_url_patterns', val ) }
 					rows={ 4 }
 					__nextHasNoMarginBottom
 				/>

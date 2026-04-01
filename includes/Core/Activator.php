@@ -7,8 +7,19 @@
 
 namespace MediaShield\Core;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\DB\Schema;
 
+/**
+ * Class Activator
+ *
+ * Handles plugin activation tasks.
+ *
+ * @since 1.0.0
+ */
 class Activator {
 
 	/**
@@ -39,16 +50,33 @@ class Activator {
 		Schema::create_tables();
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
 
-		// Default options.
+		// Default options — plug & play experience.
 		$defaults = array(
+			// Core.
 			'ms_enabled'                 => true,
 			'ms_default_protection'      => 'standard',
 			'ms_require_login'           => true,
-			'ms_watermark_opacity'       => 0.3,
+
+			// Watermark.
+			'ms_watermark_opacity'       => 0.5,
 			'ms_watermark_color'         => '#ffffff',
-			'ms_watermark_swap_interval' => 20,
+			'ms_watermark_swap_interval' => 30,
+
+			// Access.
 			'ms_allowed_domains'         => '',
 			'ms_max_concurrent_streams'  => 2,
+
+			// Upload.
+			'ms_max_upload_size'         => 500,
+			'ms_custom_url_patterns'     => '',
+
+			// Badge.
+			'ms_show_badge'              => true,
+
+			// Login & Access Messages.
+			'ms_login_overlay_text'      => __( 'Please log in to watch this video', 'mediashield' ),
+			'ms_login_button_text'       => __( 'Log In', 'mediashield' ),
+			'ms_access_denied_text'      => __( 'You do not have access to this video', 'mediashield' ),
 		);
 
 		foreach ( $defaults as $key => $value ) {

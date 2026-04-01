@@ -7,8 +7,19 @@
 
 namespace MediaShield\Core;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use MediaShield\DB\Schema;
 
+/**
+ * Class Migrator
+ *
+ * Database version tracking and migration runner.
+ *
+ * @since 1.0.0
+ */
 class Migrator {
 
 	/**

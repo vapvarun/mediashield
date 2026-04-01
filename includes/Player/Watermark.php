@@ -10,6 +10,17 @@
 
 namespace MediaShield\Player;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class Watermark
+ *
+ * Watermark configuration for the canvas overlay.
+ *
+ * @since 1.0.0
+ */
 class Watermark {
 
 	/**

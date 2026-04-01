@@ -7,6 +7,17 @@
 
 namespace MediaShield\CPT;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class PlaylistPostType
+ *
+ * Registers the mediashield_playlist custom post type and meta fields.
+ *
+ * @since 1.0.0
+ */
 class PlaylistPostType {
 
 	/**
@@ -40,19 +51,25 @@ class PlaylistPostType {
 			'items_list'            => __( 'Playlists list', 'mediashield' ),
 		);
 
-		register_post_type( 'mediashield_playlist', array(
-			'labels'             => $labels,
-			'public'             => true,
-			'show_in_rest'       => true,
-			'rest_base'          => 'mediashield-playlists',
-			'has_archive'        => false,
-			'rewrite'            => array( 'slug' => 'playlist', 'with_front' => false ),
-			'supports'           => array( 'title', 'editor', 'thumbnail' ),
-			'menu_icon'          => 'dashicons-playlist-video',
-			'show_in_menu'       => false,
-			'capability_type'    => 'post',
-			'map_meta_cap'       => true,
-		) );
+		register_post_type(
+			'mediashield_playlist',
+			array(
+				'labels'          => $labels,
+				'public'          => true,
+				'show_in_rest'    => true,
+				'rest_base'       => 'mediashield-playlists',
+				'has_archive'     => false,
+				'rewrite'         => array(
+					'slug'       => 'playlist',
+					'with_front' => false,
+				),
+				'supports'        => array( 'title', 'editor', 'thumbnail' ),
+				'menu_icon'       => 'dashicons-playlist-video',
+				'show_in_menu'    => false,
+				'capability_type' => 'post',
+				'map_meta_cap'    => true,
+			)
+		);
 	}
 
 	/**
@@ -60,23 +77,39 @@ class PlaylistPostType {
 	 */
 	public static function register_meta(): void {
 		$meta_fields = array(
-			'_ms_autoplay'  => array( 'type' => 'boolean', 'default' => false ),
-			'_ms_countdown' => array( 'type' => 'integer', 'default' => 5 ),
-			'_ms_loop'      => array( 'type' => 'boolean', 'default' => false ),
-			'_ms_shuffle'   => array( 'type' => 'boolean', 'default' => false ),
+			'_ms_autoplay'  => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'_ms_countdown' => array(
+				'type'    => 'integer',
+				'default' => 5,
+			),
+			'_ms_loop'      => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'_ms_shuffle'   => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
 		);
 
 		foreach ( $meta_fields as $key => $args ) {
-			register_post_meta( 'mediashield_playlist', $key, array(
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => $args['type'],
-				'default'           => $args['default'],
-				'sanitize_callback' => 'boolean' === $args['type'] ? 'rest_sanitize_boolean' : 'absint',
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-			) );
+			register_post_meta(
+				'mediashield_playlist',
+				$key,
+				array(
+					'show_in_rest'      => true,
+					'single'            => true,
+					'type'              => $args['type'],
+					'default'           => $args['default'],
+					'sanitize_callback' => 'boolean' === $args['type'] ? 'rest_sanitize_boolean' : 'absint',
+					'auth_callback'     => function () {
+						return current_user_can( 'edit_posts' );
+					},
+				)
+			);
 		}
 	}
 }

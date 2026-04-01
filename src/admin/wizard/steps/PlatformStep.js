@@ -8,7 +8,7 @@ import { __ } from '@wordpress/i18n';
 
 const config = window.mediashieldAdmin || {};
 
-export default function PlatformStep() {
+export default function PlatformStep( { initialData } ) { // eslint-disable-line no-unused-vars
 	const platforms = [
 		{ name: 'YouTube', icon: 'dashicons-youtube' },
 		{ name: 'Vimeo', icon: 'dashicons-video-alt' },

@@ -1,5 +1,5 @@
 /**
- * MediaShield Admin -- Students Page
+ * MediaShield Admin -- Viewers Page
  *
  * User engagement tracking with avatar initials, progress bars,
  * and drill-down detail view.
@@ -105,7 +105,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 				onClick={ onBack }
 			>
 				<span className="dashicons dashicons-arrow-left-alt2" />
-				{ __( 'Back to Students', 'mediashield' ) }
+				{ __( 'Back to Viewers', 'mediashield' ) }
 			</Button>
 
 			{ loading && (
@@ -197,7 +197,7 @@ const Students = () => {
 		} )
 			.then( ( res ) => setUsers( res ) )
 			.catch( ( err ) =>
-				setError( err.message || __( 'Failed to load students.', 'mediashield' ) )
+				setError( err.message || __( 'Failed to load viewers.', 'mediashield' ) )
 			)
 			.finally( () => setLoading( false ) );
 	}, [ search ] );
@@ -221,7 +221,7 @@ const Students = () => {
 	return (
 		<div className="mediashield-page mediashield-students">
 			<header className="mediashield-page__header">
-				<h1>{ __( 'Students', 'mediashield' ) }</h1>
+				<h1>{ __( 'Viewers', 'mediashield' ) }</h1>
 			</header>
 
 			<div className="mediashield-search-bar">
@@ -237,7 +237,7 @@ const Students = () => {
 				<div className="mediashield-loader">
 					<Spinner />
 					<span className="mediashield-loader__text">
-						{ __( 'Loading students...', 'mediashield' ) }
+						{ __( 'Loading viewers...', 'mediashield' ) }
 					</span>
 				</div>
 			) }
@@ -253,7 +253,7 @@ const Students = () => {
 					<table className="mediashield-table">
 						<thead>
 							<tr>
-								<th>{ __( 'Student', 'mediashield' ) }</th>
+								<th>{ __( 'Viewer', 'mediashield' ) }</th>
 								<th>{ __( 'Videos Watched', 'mediashield' ) }</th>
 								<th>{ __( 'Avg Completion', 'mediashield' ) }</th>
 								<th>{ __( 'Last Active', 'mediashield' ) }</th>
@@ -265,8 +265,8 @@ const Students = () => {
 									<td colSpan="4" className="mediashield-table__empty">
 										<span className="mediashield-table__empty-icon dashicons dashicons-groups" />
 										{ search
-											? __( 'No students match your search.', 'mediashield' )
-											: __( 'No student activity recorded yet.', 'mediashield' ) }
+											? __( 'No viewers match your search.', 'mediashield' )
+											: __( 'No viewer activity recorded yet.', 'mediashield' ) }
 									</td>
 								</tr>
 							) }

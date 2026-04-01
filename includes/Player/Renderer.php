@@ -11,6 +11,17 @@
 
 namespace MediaShield\Player;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class Renderer
+ *
+ * Shared player renderer for protected video containers.
+ *
+ * @since 1.0.0
+ */
 class Renderer {
 
 	/**
@@ -27,13 +38,15 @@ class Renderer {
 			return '';
 		}
 
-		$platform         = get_post_meta( $video_id, '_ms_platform', true ) ?: 'self';
+		$platform_raw      = get_post_meta( $video_id, '_ms_platform', true );
+		$platform          = ! empty( $platform_raw ) ? $platform_raw : 'self';
 		$platform_video_id = get_post_meta( $video_id, '_ms_platform_video_id', true );
-		$source_url       = get_post_meta( $video_id, '_ms_source_url', true );
-		$stream_url       = get_post_meta( $video_id, '_ms_stream_url', true );
-		$protection_level = get_post_meta( $video_id, '_ms_protection_level', true ) ?: 'standard';
-		$duration         = (int) get_post_meta( $video_id, '_ms_duration', true );
-		$player_type      = apply_filters( 'mediashield_player_type', 'standard', $video_id );
+		$source_url        = get_post_meta( $video_id, '_ms_source_url', true );
+		$stream_url        = get_post_meta( $video_id, '_ms_stream_url', true );
+		$protection_raw    = get_post_meta( $video_id, '_ms_protection_level', true );
+		$protection_level  = ! empty( $protection_raw ) ? $protection_raw : 'standard';
+		$duration          = (int) get_post_meta( $video_id, '_ms_duration', true );
+		$player_type       = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 
 		if ( empty( $source_url ) && empty( $stream_url ) && empty( $platform_video_id ) ) {
 			return '';
@@ -46,12 +59,16 @@ class Renderer {
 
 		ob_start();
 		?>
-		<div class="ms-protected-player <?php echo $wrapper_attrs ? '' : ''; ?>"
+		<div class="ms-protected-player"
 			data-video-id="<?php echo esc_attr( $video_id ); ?>"
 			data-platform="<?php echo esc_attr( $platform ); ?>"
 			data-protection-level="<?php echo esc_attr( $protection_level ); ?>"
 			data-player-type="<?php echo esc_attr( $player_type ); ?>"
-			<?php if ( $wrapper_attrs ) { echo $wrapper_attrs; } // phpcs:ignore ?>
+			<?php
+			if ( $wrapper_attrs ) {
+				echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
+			}
+			?>
 		>
 			<div class="ms-player-target"
 				data-platform-video-id="<?php echo esc_attr( $platform_video_id ); ?>"

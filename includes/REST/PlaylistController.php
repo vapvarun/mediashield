@@ -13,81 +13,111 @@
 
 namespace MediaShield\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WP_Error;
 
+/**
+ * Class PlaylistController
+ *
+ * REST API controller for playlist items.
+ *
+ * @since 1.0.0
+ */
 class PlaylistController extends WP_REST_Controller {
 
-	/** @var string */
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
 	protected $namespace = 'mediashield/v1';
 
 	/**
 	 * Register routes.
 	 */
 	public function register_routes(): void {
-		// GET + POST /playlists/<id>/items
-		register_rest_route( $this->namespace, '/playlists/(?P<playlist_id>\d+)/items', array(
+		// GET + POST /playlists/<id>/items.
+		register_rest_route(
+			$this->namespace,
+			'/playlists/(?P<playlist_id>\d+)/items',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_items' ),
-				'permission_callback' => array( $this, 'read_permissions_check' ),
-			),
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'add_item' ),
-				'permission_callback' => array( $this, 'edit_permissions_check' ),
-				'args'                => array(
-					'video_id'   => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'sanitize_callback' => 'absint',
-					),
-					'sort_order' => array(
-						'type'              => 'integer',
-						'default'           => 0,
-						'sanitize_callback' => 'absint',
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_items' ),
+					'permission_callback' => array( $this, 'read_permissions_check' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'add_item' ),
+					'permission_callback' => array( $this, 'edit_permissions_check' ),
+					'args'                => array(
+						'video_id'   => array(
+							'type'              => 'integer',
+							'required'          => true,
+							'sanitize_callback' => 'absint',
+						),
+						'sort_order' => array(
+							'type'              => 'integer',
+							'default'           => 0,
+							'sanitize_callback' => 'absint',
+						),
 					),
 				),
-			),
-		) );
+			)
+		);
 
-		// DELETE /playlists/<id>/items/<item_id>
-		register_rest_route( $this->namespace, '/playlists/(?P<playlist_id>\d+)/items/(?P<item_id>\d+)', array(
+		// DELETE /playlists/<id>/items/<item_id>.
+		register_rest_route(
+			$this->namespace,
+			'/playlists/(?P<playlist_id>\d+)/items/(?P<item_id>\d+)',
 			array(
-				'methods'             => WP_REST_Server::DELETABLE,
-				'callback'            => array( $this, 'remove_item' ),
-				'permission_callback' => array( $this, 'edit_permissions_check' ),
-			),
-		) );
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'remove_item' ),
+					'permission_callback' => array( $this, 'edit_permissions_check' ),
+				),
+			)
+		);
 
-		// PUT /playlists/<id>/items/reorder
-		register_rest_route( $this->namespace, '/playlists/(?P<playlist_id>\d+)/items/reorder', array(
+		// PUT /playlists/<id>/items/reorder.
+		register_rest_route(
+			$this->namespace,
+			'/playlists/(?P<playlist_id>\d+)/items/reorder',
 			array(
-				'methods'             => 'PUT',
-				'callback'            => array( $this, 'reorder_items' ),
-				'permission_callback' => array( $this, 'edit_permissions_check' ),
-				'args'                => array(
-					'order' => array(
-						'type'     => 'array',
-						'required' => true,
-						'items'    => array(
-							'type'       => 'object',
-							'properties' => array(
-								'item_id'    => array( 'type' => 'integer' ),
-								'sort_order' => array( 'type' => 'integer' ),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( $this, 'reorder_items' ),
+					'permission_callback' => array( $this, 'edit_permissions_check' ),
+					'args'                => array(
+						'order' => array(
+							'type'     => 'array',
+							'required' => true,
+							'items'    => array(
+								'type'       => 'object',
+								'properties' => array(
+									'item_id'    => array( 'type' => 'integer' ),
+									'sort_order' => array( 'type' => 'integer' ),
+								),
 							),
 						),
 					),
 				),
-			),
-		) );
+			)
+		);
 	}
 
 	/**
 	 * Read permissions: any logged-in user.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
 	 */
 	public function read_permissions_check( WP_REST_Request $request ): bool {
 		return is_user_logged_in();
@@ -95,6 +125,9 @@ class PlaylistController extends WP_REST_Controller {
 
 	/**
 	 * Edit permissions: editors+.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
 	 */
 	public function edit_permissions_check( WP_REST_Request $request ): bool {
 		return current_user_can( 'edit_posts' );
@@ -116,6 +149,9 @@ class PlaylistController extends WP_REST_Controller {
 
 	/**
 	 * GET /playlists/<id>/items — list videos in playlist order.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_items( $request ): WP_REST_Response|WP_Error {
 		$playlist_id = (int) $request['playlist_id'];
@@ -126,8 +162,10 @@ class PlaylistController extends WP_REST_Controller {
 
 		global $wpdb;
 
-		$items = $wpdb->get_results( $wpdb->prepare(
-			"SELECT pi.id AS item_id, pi.video_id, pi.sort_order, pi.added_at,
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		$items = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT pi.id AS item_id, pi.video_id, pi.sort_order, pi.added_at,
 					p.post_title AS video_title, p.post_status AS video_status,
 					pm_platform.meta_value AS platform,
 					pm_url.meta_value AS source_url,
@@ -139,23 +177,25 @@ class PlaylistController extends WP_REST_Controller {
 			 LEFT JOIN {$wpdb->postmeta} pm_duration ON pi.video_id = pm_duration.post_id AND pm_duration.meta_key = '_ms_duration'
 			 WHERE pi.playlist_id = %d
 			 ORDER BY pi.sort_order ASC, pi.id ASC",
-			$playlist_id
-		) );
+				$playlist_id
+			)
+		);
 
 		// Sanitize output.
 		$result = array();
-		foreach ( ( $items ?: array() ) as $item ) {
-			$result[] = array(
+		foreach ( ( ! empty( $items ) ? $items : array() ) as $item ) {
+			$thumb_url = get_the_post_thumbnail_url( (int) $item->video_id, 'thumbnail' );
+			$result[]  = array(
 				'item_id'    => (int) $item->item_id,
 				'video_id'   => (int) $item->video_id,
 				'sort_order' => (int) $item->sort_order,
 				'added_at'   => $item->added_at,
 				'title'      => sanitize_text_field( $item->video_title ),
 				'status'     => $item->video_status,
-				'platform'   => sanitize_text_field( $item->platform ?: 'self' ),
-				'source_url' => esc_url( $item->source_url ?: '' ),
-				'duration'   => (int) ( $item->duration ?: 0 ),
-				'thumbnail'  => get_the_post_thumbnail_url( (int) $item->video_id, 'thumbnail' ) ?: '',
+				'platform'   => sanitize_text_field( ! empty( $item->platform ) ? $item->platform : 'self' ),
+				'source_url' => esc_url( ! empty( $item->source_url ) ? $item->source_url : '' ),
+				'duration'   => (int) ( ! empty( $item->duration ) ? $item->duration : 0 ),
+				'thumbnail'  => ! empty( $thumb_url ) ? $thumb_url : '',
 			);
 		}
 
@@ -164,6 +204,9 @@ class PlaylistController extends WP_REST_Controller {
 
 	/**
 	 * POST /playlists/<id>/items — add a video to the playlist.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function add_item( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$playlist_id = (int) $request['playlist_id'];
@@ -184,14 +227,18 @@ class PlaylistController extends WP_REST_Controller {
 		// Auto-assign sort_order if not provided.
 		if ( $sort_order <= 0 ) {
 			global $wpdb;
-			$max = (int) $wpdb->get_var( $wpdb->prepare(
-				"SELECT MAX(sort_order) FROM {$wpdb->prefix}ms_playlist_items WHERE playlist_id = %d",
-				$playlist_id
-			) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+			$max        = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT MAX(sort_order) FROM {$wpdb->prefix}ms_playlist_items WHERE playlist_id = %d",
+					$playlist_id
+				)
+			);
 			$sort_order = $max + 1;
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table insert.
 		$inserted = $wpdb->insert(
 			"{$wpdb->prefix}ms_playlist_items",
 			array(
@@ -207,15 +254,21 @@ class PlaylistController extends WP_REST_Controller {
 			return new WP_Error( 'insert_failed', __( 'Could not add video to playlist.', 'mediashield' ), array( 'status' => 500 ) );
 		}
 
-		return new WP_REST_Response( array(
-			'item_id'    => (int) $wpdb->insert_id,
-			'video_id'   => $video_id,
-			'sort_order' => $sort_order,
-		), 201 );
+		return new WP_REST_Response(
+			array(
+				'item_id'    => (int) $wpdb->insert_id,
+				'video_id'   => $video_id,
+				'sort_order' => $sort_order,
+			),
+			201
+		);
 	}
 
 	/**
 	 * DELETE /playlists/<id>/items/<item_id> — remove video from playlist.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function remove_item( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$playlist_id = (int) $request['playlist_id'];
@@ -227,6 +280,7 @@ class PlaylistController extends WP_REST_Controller {
 		}
 
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$deleted = $wpdb->delete(
 			"{$wpdb->prefix}ms_playlist_items",
 			array(
@@ -245,6 +299,9 @@ class PlaylistController extends WP_REST_Controller {
 
 	/**
 	 * PUT /playlists/<id>/items/reorder — batch update sort orders.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
 	 */
 	public function reorder_items( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$playlist_id = (int) $request['playlist_id'];
@@ -266,6 +323,7 @@ class PlaylistController extends WP_REST_Controller {
 			$sort_order = (int) ( $entry['sort_order'] ?? 0 );
 
 			if ( $item_id > 0 ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table update.
 				$wpdb->update(
 					"{$wpdb->prefix}ms_playlist_items",
 					array( 'sort_order' => $sort_order ),
