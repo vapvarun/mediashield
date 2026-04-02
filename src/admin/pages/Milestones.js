@@ -194,6 +194,16 @@ const Milestones = () => {
 					) }
 				</div>
 			) }
+
+			{ ! config.isProActive && (
+				<div className="ms-upsell-inline">
+					<span className="dashicons dashicons-megaphone" />
+					<span>
+						{ __( 'With', 'mediashield' ) } <strong>{ __( 'Pro', 'mediashield' ) }</strong>{ __( ', trigger actions on milestones: tag users, send emails, fire webhooks to CRMs.', 'mediashield' ) }
+					</span>
+					<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer">{ __( 'Learn more', 'mediashield' ) } &rarr;</a>
+				</div>
+			) }
 		</div>
 	);
 };

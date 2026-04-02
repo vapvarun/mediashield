@@ -314,6 +314,43 @@ const Dashboard = () => {
 							</div>
 						) }
 					</div>
+
+					{ /* Pro Upsell */ }
+					{ ! config.isProActive && (
+						<>
+							<div className="ms-upsell-grid">
+								<div className="ms-upsell-card">
+									<span className="dashicons dashicons-chart-area ms-upsell-card__icon" />
+									<h3>{ __( 'Playback Heatmaps', 'mediashield' ) }</h3>
+									<p>{ __( 'See exactly where viewers watch, rewatch, and drop off with 10-second precision heatmaps.', 'mediashield' ) }</p>
+								</div>
+								<div className="ms-upsell-card">
+									<span className="dashicons dashicons-controls-play ms-upsell-card__icon" />
+									<h3>{ __( 'Realtime Viewers', 'mediashield' ) }</h3>
+									<p>{ __( 'Live dashboard showing who\'s watching right now with 15-second auto-refresh.', 'mediashield' ) }</p>
+								</div>
+								<div className="ms-upsell-card">
+									<span className="dashicons dashicons-warning ms-upsell-card__icon" />
+									<h3>{ __( 'Suspicious Activity', 'mediashield' ) }</h3>
+									<p>{ __( 'Detect multi-IP usage, VPN, devtools, and rapid seeking with automatic alerts.', 'mediashield' ) }</p>
+								</div>
+								<div className="ms-upsell-card">
+									<span className="dashicons dashicons-download ms-upsell-card__icon" />
+									<h3>{ __( 'CSV & PDF Export', 'mediashield' ) }</h3>
+									<p>{ __( 'Export watch sessions, milestones, and user data as CSV or formatted PDF reports.', 'mediashield' ) }</p>
+								</div>
+							</div>
+							<div className="ms-upsell-banner">
+								<div className="ms-upsell-banner__content">
+									<h3>{ __( 'Unlock Advanced Analytics with MediaShield Pro', 'mediashield' ) }</h3>
+									<p>{ __( 'Heatmaps, realtime viewers, suspicious activity alerts, data export, and more.', 'mediashield' ) }</p>
+								</div>
+								<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer" className="ms-upsell-banner__btn">
+									{ __( 'Upgrade to Pro', 'mediashield' ) } &rarr;
+								</a>
+							</div>
+						</>
+					) }
 				</>
 			) }
 		</div>

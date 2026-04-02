@@ -29,6 +29,8 @@ class Menu {
 	public static function register(): void {
 		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_pro_notice' ) );
+		add_action( 'wp_ajax_ms_dismiss_pro_notice', array( __CLASS__, 'dismiss_pro_notice' ) );
 	}
 
 	/**
@@ -113,5 +115,64 @@ class Menu {
 
 		// Load script translations.
 		wp_set_script_translations( 'mediashield-admin', 'mediashield' );
+	}
+
+	/**
+	 * Show a dismissible Pro upsell notice after 7 days.
+	 *
+	 * Only displays on the MediaShield admin page and only when Pro is not active.
+	 */
+	public static function maybe_show_pro_notice(): void {
+		if ( defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+			return;
+		}
+
+		if ( get_option( 'ms_pro_notice_dismissed' ) ) {
+			return;
+		}
+
+		$activated = get_option( 'ms_activated_at' );
+		if ( ! $activated ) {
+			update_option( 'ms_activated_at', time() );
+			return;
+		}
+
+		// Show after 7 days.
+		if ( time() - (int) $activated < 7 * DAY_IN_SECONDS ) {
+			return;
+		}
+
+		// Only on MediaShield admin pages.
+		$screen = get_current_screen();
+		if ( ! $screen || 'toplevel_page_mediashield' !== $screen->base ) {
+			return;
+		}
+
+		$nonce = wp_create_nonce( 'ms_dismiss_pro' );
+		?>
+		<div class="notice notice-info is-dismissible ms-pro-notice" data-nonce="<?php echo esc_attr( $nonce ); ?>">
+			<p>
+				<strong><?php esc_html_e( 'Unlock the full power of MediaShield', 'mediashield' ); ?></strong> &mdash;
+				<?php esc_html_e( 'DRM encryption, heatmap analytics, LMS integration, email gate, and more.', 'mediashield' ); ?>
+				<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Get MediaShield Pro', 'mediashield' ); ?> &rarr;</a>
+			</p>
+		</div>
+		<script>
+		jQuery(function($){
+			$(document).on('click', '.ms-pro-notice .notice-dismiss', function(){
+				$.post(ajaxurl, { action: 'ms_dismiss_pro_notice', nonce: $(this).closest('.ms-pro-notice').data('nonce') });
+			});
+		});
+		</script>
+		<?php
+	}
+
+	/**
+	 * AJAX handler: dismiss the Pro upsell notice permanently.
+	 */
+	public static function dismiss_pro_notice(): void {
+		check_ajax_referer( 'ms_dismiss_pro', 'nonce' );
+		update_option( 'ms_pro_notice_dismissed', true );
+		wp_send_json_success();
 	}
 }

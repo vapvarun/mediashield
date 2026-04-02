@@ -100,6 +100,11 @@ class Activator {
 			$admin_role->add_cap( 'upload_mediashield' );
 		}
 
+		// Track activation time for delayed Pro upsell notice.
+		if ( false === get_option( 'ms_activated_at' ) ) {
+			add_option( 'ms_activated_at', time() );
+		}
+
 		// Flag for setup wizard redirect.
 		if ( ! get_option( 'ms_wizard_completed' ) ) {
 			set_transient( 'ms_activation_redirect', true, 30 );

@@ -407,6 +407,38 @@ const Settings = () => {
 					__nextHasNoMarginBottom
 				/>
 			</SectionCard>
+
+			{ ! config.isProActive && (
+				<div className="ms-upsell-section">
+					<div className="ms-upsell-section__header">
+						<span className="dashicons dashicons-lock" />
+						<div>
+							<strong>{ __( 'Pro Features', 'mediashield' ) }</strong>
+							<span>{ __( 'Available with MediaShield Pro', 'mediashield' ) }</span>
+						</div>
+					</div>
+					<div className="ms-upsell-section__features">
+						<div className="ms-upsell-feature">
+							<strong>{ __( 'Advanced Watermark', 'mediashield' ) }</strong> — { __( '7 configurable fields (username, email, IP, user ID, timestamp, site name, custom text)', 'mediashield' ) }
+						</div>
+						<div className="ms-upsell-feature">
+							<strong>{ __( 'Email Gate', 'mediashield' ) }</strong> — { __( 'Capture emails before video access with webhook integration for CRMs', 'mediashield' ) }
+						</div>
+						<div className="ms-upsell-feature">
+							<strong>{ __( 'DRM Encryption', 'mediashield' ) }</strong> — { __( 'Widevine ClearKey via Bunny Stream or Shaka Packager', 'mediashield' ) }
+						</div>
+						<div className="ms-upsell-feature">
+							<strong>{ __( 'LMS Integration', 'mediashield' ) }</strong> — { __( 'Auto-complete LearnDash, Tutor LMS, or LifterLMS lessons on video completion', 'mediashield' ) }
+						</div>
+						<div className="ms-upsell-feature">
+							<strong>{ __( 'Platform Browsers', 'mediashield' ) }</strong> — { __( 'Browse & bulk import videos from Bunny, YouTube, Vimeo, Wistia', 'mediashield' ) }
+						</div>
+					</div>
+					<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer" className="ms-upsell-section__btn">
+						{ __( 'Get MediaShield Pro', 'mediashield' ) } &rarr;
+					</a>
+				</div>
+			) }
 		</div>
 	);
 };

@@ -233,6 +233,15 @@ const Videos = () => {
 									<td colSpan="5" className="mediashield-table__empty">
 										<span className="mediashield-table__empty-icon dashicons dashicons-format-video" />
 										{ __( 'No videos yet. Create your first protected video.', 'mediashield' ) }
+										{ ! config.isProActive && (
+											<div className="ms-upsell-inline" style={ { marginTop: '16px', justifyContent: 'center' } }>
+												<span className="dashicons dashicons-cloud" />
+												<span>
+													{ __( 'With', 'mediashield' ) } <strong>{ __( 'Pro', 'mediashield' ) }</strong>{ __( ', browse & import videos directly from Bunny Stream, YouTube, Vimeo, or Wistia.', 'mediashield' ) }
+												</span>
+												<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer">{ __( 'Learn more', 'mediashield' ) } &rarr;</a>
+											</div>
+										) }
 									</td>
 								</tr>
 							) }

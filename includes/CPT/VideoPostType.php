@@ -122,6 +122,26 @@ class VideoPostType {
 			'side',
 			'default'
 		);
+
+		// Pro teaser meta boxes (only when Pro is NOT active).
+		if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+			add_meta_box(
+				'mediashield-pro-lms-teaser',
+				__( 'LMS Integration', 'mediashield' ) . ' <span class="ms-pro-badge-small">PRO</span>',
+				array( __CLASS__, 'render_lms_teaser' ),
+				'mediashield_video',
+				'side',
+				'low'
+			);
+			add_meta_box(
+				'mediashield-pro-features-teaser',
+				__( 'Pro Features', 'mediashield' ) . ' <span class="ms-pro-badge-small">PRO</span>',
+				array( __CLASS__, 'render_pro_teaser' ),
+				'mediashield_video',
+				'side',
+				'low'
+			);
+		}
 	}
 
 	/**
@@ -571,6 +591,44 @@ class VideoPostType {
 				}
 			})();
 			</script>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the LMS Integration teaser meta box (Pro upsell).
+	 *
+	 * @param \WP_Post $post Current post object.
+	 */
+	public static function render_lms_teaser( \WP_Post $post ): void {
+		?>
+		<div class="ms-teaser-box">
+			<p><strong><?php esc_html_e( 'Link this video to a LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
+			<ul>
+				<li><?php esc_html_e( 'Auto-mark lesson complete on video finish', 'mediashield' ); ?></li>
+				<li><?php esc_html_e( 'Require course enrollment to watch', 'mediashield' ); ?></li>
+				<li><?php esc_html_e( 'Configurable completion threshold', 'mediashield' ); ?></li>
+			</ul>
+			<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'Get Pro', 'mediashield' ); ?> &rarr;</a>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Pro Features teaser meta box (Pro upsell).
+	 *
+	 * @param \WP_Post $post Current post object.
+	 */
+	public static function render_pro_teaser( \WP_Post $post ): void {
+		?>
+		<div class="ms-teaser-box">
+			<ul>
+				<li><strong><?php esc_html_e( 'Email Gate', 'mediashield' ); ?></strong> — <?php esc_html_e( 'Require email before watching', 'mediashield' ); ?></li>
+				<li><strong><?php esc_html_e( 'Advanced Watermark', 'mediashield' ); ?></strong> — <?php esc_html_e( '7 fields (email, IP, timestamp...)', 'mediashield' ); ?></li>
+				<li><strong><?php esc_html_e( 'DRM', 'mediashield' ); ?></strong> — <?php esc_html_e( 'Widevine encryption', 'mediashield' ); ?></li>
+				<li><strong><?php esc_html_e( 'Heatmaps', 'mediashield' ); ?></strong> — <?php esc_html_e( 'See where viewers watch', 'mediashield' ); ?></li>
+			</ul>
+			<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'Upgrade', 'mediashield' ); ?> &rarr;</a>
 		</div>
 		<?php
 	}
