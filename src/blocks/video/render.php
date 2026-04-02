@@ -28,5 +28,6 @@ $extra = get_block_wrapper_attributes(
 	)
 );
 
+// Enqueue assets is handled inside Renderer::render() automatically.
 // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Renderer::render() returns pre-escaped HTML.
 echo \MediaShield\Player\Renderer::render( $video_id, $extra );

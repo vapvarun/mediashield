@@ -29,10 +29,19 @@ class Protection {
 	 * @return array Protection config.
 	 */
 	public static function get_config(): array {
-		return array(
+		$config = array(
 			'block_right_click' => true,
 			'block_keyboard'    => true, // Ctrl+S / Cmd+S.
 			'hide_source'       => true, // Move src to data-ms-src.
 		);
+
+		/**
+		 * Filter the protection configuration sent to the frontend.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array $config Protection config (block_right_click, block_keyboard, hide_source).
+		 */
+		return apply_filters( 'mediashield_protection_config', $config );
 	}
 }

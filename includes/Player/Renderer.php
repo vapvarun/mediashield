@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Core\Assets;
+
 /**
  * Class Renderer
  *
@@ -52,14 +54,36 @@ class Renderer {
 			return '';
 		}
 
+		// Enqueue frontend assets (only loads when video content exists).
+		Assets::enqueue();
+
 		// Flag that we need Shaka Player for self-hosted / bunny.
 		if ( in_array( $platform, array( 'self', 'bunny' ), true ) ) {
 			do_action( 'mediashield_needs_shaka' );
 		}
 
+		/**
+		 * Fires before a protected player is rendered.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $video_id Video CPT post ID.
+		 */
+		do_action( 'mediashield_before_player', $video_id );
+
+		/**
+		 * Filter the CSS classes applied to the player container.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param array $classes  Array of CSS class names.
+		 * @param int   $video_id Video CPT post ID.
+		 */
+		$classes = apply_filters( 'mediashield_player_classes', array( 'ms-protected-player' ), $video_id );
+
 		ob_start();
 		?>
-		<div class="ms-protected-player"
+		<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
 			data-video-id="<?php echo esc_attr( $video_id ); ?>"
 			data-platform="<?php echo esc_attr( $platform ); ?>"
 			data-protection-level="<?php echo esc_attr( $protection_level ); ?>"
@@ -76,13 +100,44 @@ class Renderer {
 				data-stream-url="<?php echo esc_url( $stream_url ); ?>"
 				data-duration="<?php echo esc_attr( $duration ); ?>">
 			</div>
-			<canvas class="ms-watermark-canvas"></canvas>
+			<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>
 			<div class="ms-protection-overlay"></div>
 			<button class="ms-fullscreen-btn" aria-label="<?php esc_attr_e( 'Fullscreen', 'mediashield' ); ?>" title="<?php esc_attr_e( 'Fullscreen', 'mediashield' ); ?>">
 				<span class="dashicons dashicons-fullscreen-alt"></span>
 			</button>
 		</div>
 		<?php
-		return ob_get_clean();
+		$html = ob_get_clean();
+
+		/**
+		 * Filter the complete player HTML output.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string $html     The rendered player HTML.
+		 * @param int    $video_id Video CPT post ID.
+		 * @param array  $atts     Player attributes (platform, protection_level, etc.).
+		 */
+		$html = apply_filters(
+			'mediashield_player_html',
+			$html,
+			$video_id,
+			array(
+				'platform'         => $platform,
+				'protection_level' => $protection_level,
+				'player_type'      => $player_type,
+			)
+		);
+
+		/**
+		 * Fires after a protected player is rendered.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param int $video_id Video CPT post ID.
+		 */
+		do_action( 'mediashield_after_player', $video_id );
+
+		return $html;
 	}
 }

@@ -37,7 +37,7 @@ class Assets {
 	 * Register hooks.
 	 */
 	public static function register(): void {
-		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_frontend' ) );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_frontend' ) );
 
 		// Listen for Shaka Player requests from Renderer/PlayerWrapper.
 		add_action(
@@ -49,10 +49,26 @@ class Assets {
 	}
 
 	/**
-	 * Enqueue frontend scripts and styles for video protection.
+	 * Register (but do not enqueue) frontend scripts and styles.
+	 *
+	 * Scripts are only enqueued when a shortcode, block, or output buffer
+	 * detects video content on the page via Assets::enqueue().
 	 */
-	public static function enqueue_frontend(): void {
+	public static function register_frontend(): void {
 		if ( is_admin() ) {
+			return;
+		}
+
+		/**
+		 * Filter whether MediaShield frontend assets should be registered.
+		 *
+		 * Return false to completely prevent asset registration.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param bool $register Whether to register assets. Default true.
+		 */
+		if ( ! apply_filters( 'mediashield_enqueue_frontend', true ) ) {
 			return;
 		}
 
@@ -64,7 +80,7 @@ class Assets {
 		$url = MEDIASHIELD_URL;
 
 		// Player wrapper — scans DOM for embeds and initializes protection.
-		wp_enqueue_script(
+		wp_register_script(
 			'mediashield-player-wrapper',
 			$url . 'assets/js/player-wrapper.js',
 			array(),
@@ -73,7 +89,7 @@ class Assets {
 		);
 
 		// Watermark — canvas overlay rendering.
-		wp_enqueue_script(
+		wp_register_script(
 			'mediashield-watermark',
 			$url . 'assets/js/watermark.js',
 			array( 'mediashield-player-wrapper' ),
@@ -82,7 +98,7 @@ class Assets {
 		);
 
 		// Tracker — heartbeat session tracking.
-		wp_enqueue_script(
+		wp_register_script(
 			'mediashield-tracker',
 			$url . 'assets/js/tracker.js',
 			array( 'mediashield-player-wrapper' ),
@@ -91,7 +107,7 @@ class Assets {
 		);
 
 		// Protection — anti-download measures.
-		wp_enqueue_script(
+		wp_register_script(
 			'mediashield-protection',
 			$url . 'assets/js/protection.js',
 			array( 'mediashield-player-wrapper' ),
@@ -100,7 +116,7 @@ class Assets {
 		);
 
 		// Player styles.
-		wp_enqueue_style(
+		wp_register_style(
 			'mediashield-player',
 			$url . 'assets/css/player.css',
 			array(),
@@ -122,5 +138,21 @@ class Assets {
 		);
 
 		wp_localize_script( 'mediashield-player-wrapper', 'mediashieldConfig', $config );
+	}
+
+	/**
+	 * Enqueue all registered MediaShield frontend assets.
+	 *
+	 * Called by shortcode render, block render, and output buffer when
+	 * video content is detected on the page. Safe to call multiple times.
+	 *
+	 * @since 1.1.0
+	 */
+	public static function enqueue(): void {
+		wp_enqueue_script( 'mediashield-player-wrapper' );
+		wp_enqueue_script( 'mediashield-watermark' );
+		wp_enqueue_script( 'mediashield-tracker' );
+		wp_enqueue_script( 'mediashield-protection' );
+		wp_enqueue_style( 'mediashield-player' );
 	}
 }

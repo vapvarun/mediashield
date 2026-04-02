@@ -384,6 +384,9 @@
 	function showLoginOverlay( el ) {
 		var overlay = document.createElement( 'div' );
 		overlay.className = 'ms-login-overlay';
+		overlay.setAttribute( 'role', 'dialog' );
+		overlay.setAttribute( 'aria-modal', 'true' );
+		overlay.setAttribute( 'aria-label', config.loginOverlayLabel || 'Login required' );
 
 		var message = document.createElement( 'div' );
 		message.className = 'ms-login-message';
@@ -400,6 +403,37 @@
 		message.appendChild( link );
 		overlay.appendChild( message );
 		el.appendChild( overlay );
+
+		// Focus the login link for keyboard accessibility.
+		link.focus();
+
+		// Focus trap: keep Tab within the overlay.
+		overlay.addEventListener( 'keydown', function ( e ) {
+			if ( e.key === 'Escape' ) {
+				overlay.remove();
+				return;
+			}
+
+			if ( e.key !== 'Tab' ) return;
+
+			var focusable = overlay.querySelectorAll( 'a, button, input, [tabindex]:not([tabindex="-1"])' );
+			if ( focusable.length === 0 ) return;
+
+			var first = focusable[0];
+			var last = focusable[ focusable.length - 1 ];
+
+			if ( e.shiftKey ) {
+				if ( document.activeElement === first ) {
+					e.preventDefault();
+					last.focus();
+				}
+			} else {
+				if ( document.activeElement === last ) {
+					e.preventDefault();
+					first.focus();
+				}
+			}
+		} );
 	}
 
 	// ─── Resume Prompt ───────────────────────────────────────────

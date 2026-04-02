@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Core\Assets;
+
 /**
  * Class PlayerWrapper
  *
@@ -35,6 +37,21 @@ class PlayerWrapper {
 	 * Start output buffering on frontend pages.
 	 */
 	public static function start_buffer(): void {
+		/**
+		 * Filter whether MediaShield output buffering is enabled.
+		 *
+		 * Return false to disable automatic video detection via output buffering.
+		 * Useful when using only shortcodes/blocks, or when OB conflicts with
+		 * caching plugins.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param bool $enable Whether to enable output buffering. Default true.
+		 */
+		if ( ! apply_filters( 'mediashield_enable_output_buffer', true ) ) {
+			return;
+		}
+
 		if ( is_admin() || wp_doing_ajax() || wp_doing_cron() ) {
 			return;
 		}
@@ -60,6 +77,9 @@ class PlayerWrapper {
 		if ( ! preg_match( '/<(iframe|video|div[^>]*wistia)/i', $html ) ) {
 			return $html;
 		}
+
+		// Video content detected in output buffer — enqueue assets.
+		Assets::enqueue();
 
 		// YouTube iframes (including nocookie).
 		$html = self::wrap_platform(
@@ -180,12 +200,14 @@ class PlayerWrapper {
 					do_action( 'mediashield_needs_shaka' );
 				}
 
+				$fullscreen_label = esc_attr__( 'Fullscreen', 'mediashield' );
+
 				return sprintf(
 					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s"%s>'
 					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""></div>'
-					. '<canvas class="ms-watermark-canvas"></canvas>'
+					. '<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>'
 					. '<div class="ms-protection-overlay"></div>'
-					. '<button class="ms-fullscreen-btn" aria-label="Fullscreen"><span class="dashicons dashicons-fullscreen-alt"></span></button>'
+					. '<button class="ms-fullscreen-btn" aria-label="%s"><span class="dashicons dashicons-fullscreen-alt"></span></button>'
 					. '</div>',
 					$video_post_id,
 					esc_attr( $platform ),
@@ -193,7 +215,8 @@ class PlayerWrapper {
 					esc_attr( $player_type ),
 					$untracked_attr,
 					esc_attr( $platform_video_id ),
-					esc_url( $src_url )
+					esc_url( $src_url ),
+					$fullscreen_label
 				);
 			},
 			$html

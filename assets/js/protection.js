@@ -84,11 +84,12 @@
 		el.appendChild(badge);
 	}
 
-	// Block Ctrl+S / Cmd+S globally when on a page with protected players.
+	// Block Ctrl+S / Cmd+S only when focus is inside a protected player.
 	if (protConfig.block_keyboard !== false) {
 		document.addEventListener('keydown', function (e) {
 			if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-				if (document.querySelector('.ms-protected-player')) {
+				var target = e.target;
+				if (target && target.closest && target.closest('.ms-protected-player')) {
 					e.preventDefault();
 					return false;
 				}

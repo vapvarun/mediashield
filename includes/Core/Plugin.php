@@ -130,6 +130,12 @@ class Plugin {
 	 */
 	public function video_template( string $template ): string {
 		if ( is_singular( 'mediashield_video' ) ) {
+			// Allow theme override: mediashield/single-mediashield_video.php.
+			$theme_template = locate_template( 'mediashield/single-mediashield_video.php' );
+			if ( $theme_template ) {
+				return $theme_template;
+			}
+
 			$custom = MEDIASHIELD_PATH . 'templates/single-mediashield_video.php';
 			if ( file_exists( $custom ) ) {
 				return $custom;

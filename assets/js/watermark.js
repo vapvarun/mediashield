@@ -32,6 +32,9 @@
 		var canvas = el.querySelector('.ms-watermark-canvas');
 		if (!canvas) return;
 
+		// Watermark canvas is purely visual — hide from assistive technology.
+		canvas.setAttribute('aria-hidden', 'true');
+
 		var ctx = canvas.getContext('2d');
 		var positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'];
 		var currentPos = 0;
@@ -113,26 +116,48 @@
 			ro.observe(el);
 		}
 
-		// Pause video if canvas is removed from DOM (anti-tamper).
+		// Pause video if canvas is removed from DOM or hidden via CSS (anti-tamper).
 		// Also clears the swap interval to prevent leaked timers.
+		function triggerAntiTamper() {
+			clearInterval(swapTimer);
+			if (ro) ro.disconnect();
+			mo.disconnect();
+			var video = el.querySelector('video');
+			if (video) video.pause();
+			var iframes = el.querySelectorAll('iframe');
+			iframes.forEach(function (iframe) {
+				iframe.style.display = 'none';
+			});
+		}
+
 		var mo = new MutationObserver(function (mutations) {
 			for (var i = 0; i < mutations.length; i++) {
-				for (var j = 0; j < mutations[i].removedNodes.length; j++) {
-					if (mutations[i].removedNodes[j] === canvas) {
-						clearInterval(swapTimer);
-						if (ro) ro.disconnect();
-						mo.disconnect();
-						var video = el.querySelector('video');
-						if (video) video.pause();
-						var iframes = el.querySelectorAll('iframe');
-						iframes.forEach(function (iframe) {
-							iframe.style.display = 'none';
-						});
+				var mutation = mutations[i];
+
+				// Check for canvas removal.
+				if (mutation.type === 'childList') {
+					for (var j = 0; j < mutation.removedNodes.length; j++) {
+						if (mutation.removedNodes[j] === canvas) {
+							triggerAntiTamper();
+							return;
+						}
+					}
+				}
+
+				// Check for style/class changes that would hide the canvas.
+				if (mutation.type === 'attributes' && mutation.target === canvas) {
+					var style = window.getComputedStyle(canvas);
+					if (
+						style.display === 'none' ||
+						style.visibility === 'hidden' ||
+						parseFloat(style.opacity) === 0
+					) {
+						triggerAntiTamper();
 						return;
 					}
 				}
 			}
 		});
-		mo.observe(el, { childList: true });
+		mo.observe(el, { childList: true, attributes: true, attributeFilter: ['style', 'class'], subtree: true });
 	}
 })();

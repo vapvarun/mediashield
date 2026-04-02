@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Core\Assets;
 use MediaShield\Player\Renderer;
 
 /**
@@ -47,6 +48,21 @@ class Shortcode {
 			'mediashield'
 		);
 
-		return Renderer::render( (int) $atts['id'] );
+		$video_id = (int) $atts['id'];
+
+		/**
+		 * Filter the video source URL before rendering.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string $source_url The source URL (empty string to use default from meta).
+		 * @param int    $video_id   Video CPT post ID.
+		 * @param array  $atts       Shortcode attributes.
+		 */
+		apply_filters( 'mediashield_shortcode_source_url', '', $video_id, $atts );
+
+		Assets::enqueue();
+
+		return Renderer::render( $video_id );
 	}
 }
