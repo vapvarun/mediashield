@@ -25,7 +25,7 @@
 
 		<!-- Modern PHP short arrays and ternary -->
 		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
-		<exclude name="WordPress.PHP.DisallowShortTernary"/>
+		<exclude name="Universal.Operators.DisallowShortTernary"/>
 
 		<!-- Yoda conditions not required -->
 		<exclude name="WordPress.PHP.YodaConditions"/>
