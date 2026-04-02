@@ -342,15 +342,38 @@ Key option names used by `SettingsController`:
 
 ## Documentation
 
+### User-Facing Docs (`docs/`)
+
 | Document | Path | Description |
 |----------|------|-------------|
-| Feature Audit | `docs/audit/FEATURE_AUDIT.md` | Complete feature inventory: CPTs, DB tables, REST endpoints, hooks, settings, blocks, shortcodes, cron jobs, capabilities, templates, GDPR |
-| Code Flows | `docs/audit/CODE_FLOWS.md` | 16 detailed code flow maps covering bootstrap, session lifecycle, upload, output buffer, cascade delete, milestone tracking, access control, HMAC tokens |
-| Architecture | `docs/architecture/PLUGIN_ARCHITECTURE.md` | High-level architecture, module dependency graph, data architecture, JS adapter pattern, security model, extension architecture, build system, file inventory |
-| Design Spec | `docs/DESIGN_SPEC.md` | Original design specification |
-| Design Spec v2 | `docs/DESIGN_SPEC_v2.md` | Updated design specification |
-| Implementation Plan | `docs/IMPLEMENTATION_PLAN.md` | Original implementation plan |
-| Implementation Plan v2 | `docs/IMPLEMENTATION_PLAN_v2.md` | Updated implementation plan |
+| Installation | `docs/free/installation.md` | Requirements, install steps, first-time setup |
+| Configuration | `docs/free/configuration.md` | All settings explained with option keys |
+| Shortcodes & Blocks | `docs/free/shortcodes-blocks.md` | Shortcode attributes, block usage, PHP templates |
+| Hooks & Filters | `docs/free/hooks-filters.md` | Every hook with params, example, and use case |
+| FAQ | `docs/free/faq.md` | Common questions and troubleshooting |
+| Pro: Getting Started | `docs/pro/getting-started.md` | Pro activation, license, first steps |
+| Pro: Platform Connections | `docs/pro/platform-connections.md` | How to connect Bunny, YouTube, Vimeo, Wistia |
+| Pro: DRM Setup | `docs/pro/drm-setup.md` | DRM configuration guide (Bunny/Shaka) |
+| Pro: Analytics | `docs/pro/analytics.md` | Heatmaps, realtime, alerts, export |
+| Pro: Email Gate | `docs/pro/email-gate.md` | Email gate setup, webhook integration |
+| Pro: Hooks & Filters | `docs/pro/hooks-filters-pro.md` | Pro-specific hooks and consumed hooks |
+
+### Planning Docs (`plan/`)
+
+| Document | Path | Description |
+|----------|------|-------------|
+| Release Fix Plan | `plan/RELEASE_FIX_PLAN.md` | Critical/high issues found during audit |
+| QA Checklist (Free) | `plan/QA_CHECKLIST_FREE.md` | Manual QA checklist for free plugin |
+| QA Checklist (Pro) | `plan/QA_CHECKLIST_PRO.md` | Manual QA checklist for pro plugin |
+| Design Spec | `plan/DESIGN_SPEC.md` | Original design specification |
+| Design Spec v2 | `plan/DESIGN_SPEC_v2.md` | Updated design specification |
+| Implementation Plan | `plan/IMPLEMENTATION_PLAN.md` | Original implementation plan |
+| Implementation Plan v2 | `plan/IMPLEMENTATION_PLAN_v2.md` | Updated implementation plan |
+| Architecture | `plan/architecture/PLUGIN_ARCHITECTURE.md` | High-level architecture, module graph |
+| Feature Audit | `plan/audit/FEATURE_AUDIT.md` | Complete feature inventory |
+| Code Flows | `plan/audit/CODE_FLOWS.md` | 16 code flow maps |
+| Pro CLAUDE.md | `plan/PRO_CLAUDE.md` | Pro plugin developer reference (moved from pro) |
+| Pro Docs | `plan/pro-docs/` | Pro plugin planning docs (moved from pro) |
 
 ---
 
@@ -358,5 +381,6 @@ Key option names used by `SettingsController`:
 
 | Date | Files | Summary |
 |------|-------|---------|
+| 2026-04-01 | docs/, plan/, README.md, readme.txt | Docs reorg: user-facing docs in docs/, planning in plan/, QA checklists, README rewrite |
 | 2026-04-01 | docs/audit/, docs/architecture/ | Full onboard: feature audit, code flow maps, architecture docs |
 | 2026-03-30 | Initial | v1.0.0 -- Full plugin implementation |
