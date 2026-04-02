@@ -52,3 +52,60 @@ add_action(
 		\MediaShield\Core\Plugin::instance();
 	}
 );
+
+// EDD Software Licensing SDK — free plugin auto-updates with preset key.
+add_action(
+	'edd_sl_sdk_registry',
+	function ( $registry ) {
+		$registry->register(
+			array(
+				'id'      => 'mediashield',
+				'url'     => 'https://wbcomdesigns.com',
+				'item_id' => 1661218,
+				'version' => MEDIASHIELD_VERSION,
+				'file'    => MEDIASHIELD_FILE,
+				'license' => 'wbcomfreec7e2a9b45d8f1c3e6a0b9d2f7c4e8a11',
+			)
+		);
+	}
+);
+
+if ( file_exists( MEDIASHIELD_PATH . 'vendor/easy-digital-downloads/edd-sl-sdk/edd-sl-sdk.php' ) ) {
+	require_once MEDIASHIELD_PATH . 'vendor/easy-digital-downloads/edd-sl-sdk/edd-sl-sdk.php';
+}
+
+// Auto-activate the preset license key on first load so downloads work.
+add_action(
+	'admin_init',
+	function () {
+		$preset_key = 'wbcomfreec7e2a9b45d8f1c3e6a0b9d2f7c4e8a11';
+		$option     = 'mediashield_license_key';
+		$activated  = 'mediashield_preset_activated';
+
+		if ( get_option( $activated ) ) {
+			return;
+		}
+
+		update_option( $option, $preset_key, false );
+
+		$response = wp_remote_post(
+			'https://wbcomdesigns.com',
+			array(
+				'timeout' => 15,
+				'body'    => array(
+					'edd_action' => 'activate_license',
+					'license'    => $preset_key,
+					'item_id'    => 1661218,
+					'url'        => home_url(),
+				),
+			)
+		);
+
+		if ( ! is_wp_error( $response ) ) {
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			if ( 'valid' === ( $body['license'] ?? '' ) ) {
+				update_option( $activated, 1, false );
+			}
+		}
+	}
+);

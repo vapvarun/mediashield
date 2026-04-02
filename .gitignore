@@ -1,4 +1,5 @@
 node_modules/
-vendor/
+vendor/*
+!vendor/easy-digital-downloads/
 dist/
 *.zip
