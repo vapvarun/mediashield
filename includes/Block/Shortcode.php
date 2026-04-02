@@ -59,10 +59,26 @@ class Shortcode {
 		 * @param int    $video_id   Video CPT post ID.
 		 * @param array  $atts       Shortcode attributes.
 		 */
-		apply_filters( 'mediashield_shortcode_source_url', '', $video_id, $atts );
+		$filtered_source_url = apply_filters( 'mediashield_shortcode_source_url', '', $video_id, $atts );
+
+		// If a filter provided a custom source URL, temporarily set the post meta
+		// so the Renderer picks it up. Restore after rendering.
+		$restore_source_url = false;
+		if ( ! empty( $filtered_source_url ) && $video_id > 0 ) {
+			$original_source_url = get_post_meta( $video_id, '_ms_source_url', true );
+			update_post_meta( $video_id, '_ms_source_url', $filtered_source_url );
+			$restore_source_url = true;
+		}
 
 		Assets::enqueue();
 
-		return Renderer::render( $video_id );
+		$html = Renderer::render( $video_id );
+
+		// Restore original source URL if we temporarily overrode it.
+		if ( $restore_source_url ) {
+			update_post_meta( $video_id, '_ms_source_url', $original_source_url );
+		}
+
+		return $html;
 	}
 }

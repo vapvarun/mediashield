@@ -340,7 +340,7 @@
 	/**
 	 * Build an end screen overlay using safe DOM methods.
 	 */
-	function buildEndScreen( container, adapter, playerConfig ) {
+	function buildEndScreen( container, adapter, endscreenConfig ) {
 		if ( container.querySelector( '.ms-endscreen' ) ) return;
 
 		var overlay = document.createElement( 'div' );
@@ -350,10 +350,10 @@
 		content.className = 'ms-endscreen__content';
 
 		var msg = document.createElement( 'p' );
-		msg.textContent = featText( 'endscreenText' ) || 'Thanks for watching!';
+		msg.textContent = ( endscreenConfig && endscreenConfig.text ) || 'Thanks for watching!';
 		content.appendChild( msg );
 
-		var endUrl = featText( 'endscreenUrl' );
+		var endUrl = endscreenConfig && endscreenConfig.url;
 		if ( endUrl ) {
 			var cta = document.createElement( 'a' );
 			cta.href = endUrl;
@@ -483,8 +483,12 @@
 
 		// ── End screen overlay (all platforms) ──
 		if ( feat( 'endscreen' ) ) {
+			var endscreenConfig = {
+				text: featText( 'endscreenText' ),
+				url: featText( 'endscreenUrl' ),
+			};
 			adapter.onEnded( function () {
-				buildEndScreen( container, adapter, playerConfig );
+				buildEndScreen( container, adapter, endscreenConfig );
 			} );
 		}
 	}
@@ -533,6 +537,16 @@
 			startSession( el, videoId, playerAdapter );
 		} );
 	}
+
+	// ─── Email Gate Passed ──────────────────────────────────────
+
+	window.addEventListener( 'mediashield:email-gate-passed', function ( e ) {
+		var el = e.detail.el;
+		var videoId = e.detail.videoId;
+		if ( el && el._msAdapter ) {
+			startSession( el, videoId, el._msAdapter );
+		}
+	} );
 
 	function startSession( el, videoId, adapter ) {
 		if ( ! videoId ) {

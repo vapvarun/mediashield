@@ -23,7 +23,16 @@ import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
 
 const config = window.mediashieldAdmin || {};
+const lmsConfig = window.mediashieldProLMS || {};
 const DEBOUNCE_MS = 800;
+
+const LMS_PCT_OPTIONS = [
+	{ label: '25%', value: 25 },
+	{ label: '50%', value: 50 },
+	{ label: '75%', value: 75 },
+	{ label: '90%', value: 90 },
+	{ label: '100%', value: 100 },
+];
 
 const PROTECTION_OPTIONS = [
 	{ label: __( 'None', 'mediashield' ), value: 'none' },
@@ -232,6 +241,13 @@ const Settings = () => {
 					min={ 0 }
 					__nextHasNoMarginBottom
 				/>
+				<ToggleControl
+					label={ __( 'Show MediaShield Badge', 'mediashield' ) }
+					help={ __( 'Display a small "Protected by MediaShield" badge on the player.', 'mediashield' ) }
+					checked={ !! settings?.ms_show_badge }
+					onChange={ ( val ) => updateSetting( 'ms_show_badge', val ) }
+					__nextHasNoMarginBottom
+				/>
 			</SectionCard>
 
 			<SectionCard
@@ -407,6 +423,40 @@ const Settings = () => {
 					__nextHasNoMarginBottom
 				/>
 			</SectionCard>
+
+			{ lmsConfig.isLMSActive && settings?.ms_lms_auto_complete !== undefined && (
+				<SectionCard
+					icon="welcome-learn-more"
+					title={ __( 'LMS Integration', 'mediashield' ) }
+					description={ lmsConfig.lmsLabel
+						? __( 'Settings for', 'mediashield' ) + ' ' + lmsConfig.lmsLabel + ' ' + __( 'integration.', 'mediashield' )
+						: __( 'Automatically complete lessons when students finish watching videos.', 'mediashield' )
+					}
+				>
+					<ToggleControl
+						label={ __( 'Auto-complete lessons', 'mediashield' ) }
+						help={ __( 'Mark the associated LMS lesson as complete when a student finishes the video.', 'mediashield' ) }
+						checked={ !! settings?.ms_lms_auto_complete }
+						onChange={ ( val ) => updateSetting( 'ms_lms_auto_complete', val ) }
+						__nextHasNoMarginBottom
+					/>
+					<ToggleControl
+						label={ __( 'Require enrollment', 'mediashield' ) }
+						help={ __( 'Only allow enrolled students to watch course videos.', 'mediashield' ) }
+						checked={ !! settings?.ms_lms_enrollment_check }
+						onChange={ ( val ) => updateSetting( 'ms_lms_enrollment_check', val ) }
+						__nextHasNoMarginBottom
+					/>
+					<SelectControl
+						label={ __( 'Global completion %', 'mediashield' ) }
+						help={ __( 'Minimum video watch percentage required to trigger lesson completion.', 'mediashield' ) }
+						value={ settings?.ms_lms_complete_pct ?? 100 }
+						options={ LMS_PCT_OPTIONS }
+						onChange={ ( val ) => updateSetting( 'ms_lms_complete_pct', parseInt( val, 10 ) ) }
+						__nextHasNoMarginBottom
+					/>
+				</SectionCard>
+			) }
 
 			{ ! config.isProActive && (
 				<div className="ms-upsell-section">

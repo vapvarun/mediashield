@@ -116,7 +116,7 @@ $wrapper_attributes = get_block_wrapper_attributes(
 			foreach ( $items as $idx => $item ) :
 				$thumb = get_the_post_thumbnail_url( (int) $item->video_id, 'thumbnail' );
 				?>
-				<div class="ms-playlist-item <?php echo 0 === $idx ? 'is-active' : ''; ?>"
+				<div class="ms-playlist-item <?php echo esc_attr( 0 === $idx ? 'is-active' : '' ); ?>"
 					data-video-id="<?php echo esc_attr( $item->video_id ); ?>"
 					data-source-url="<?php echo esc_url( $item->source_url ? $item->source_url : '' ); ?>"
 					data-platform="<?php echo esc_attr( $item->platform ? $item->platform : 'self' ); ?>"

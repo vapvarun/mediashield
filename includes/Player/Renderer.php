@@ -98,7 +98,7 @@ class Renderer {
 			// Per-video player feature overrides (tri-state: on/off/empty=global).
 			$video_overrides = array();
 			$override_keys   = array(
-				'_ms_player_speed'     => 'speed',
+				'_ms_player_speed'     => 'speedControl',
 				'_ms_player_keyboard'  => 'keyboard',
 				'_ms_player_resume'    => 'resume',
 				'_ms_player_sticky'    => 'sticky',

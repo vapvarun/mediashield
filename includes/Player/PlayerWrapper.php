@@ -202,9 +202,39 @@ class PlayerWrapper {
 
 				$fullscreen_label = esc_attr__( 'Fullscreen', 'mediashield' );
 
+				// Per-video player feature overrides (same logic as Renderer.php).
+				$video_overrides  = array();
+				$overrides_attr   = '';
+				if ( $video_post_id > 0 ) {
+					$override_keys = array(
+						'_ms_player_speed'     => 'speedControl',
+						'_ms_player_keyboard'  => 'keyboard',
+						'_ms_player_resume'    => 'resume',
+						'_ms_player_sticky'    => 'sticky',
+						'_ms_player_endscreen' => 'endscreen',
+					);
+					foreach ( $override_keys as $meta_key => $js_key ) {
+						$val = get_post_meta( $video_post_id, $meta_key, true );
+						if ( 'on' === $val || 'off' === $val ) {
+							$video_overrides[ $js_key ] = ( 'on' === $val );
+						}
+					}
+					$es_text = get_post_meta( $video_post_id, '_ms_player_endscreen_text', true );
+					$es_url  = get_post_meta( $video_post_id, '_ms_player_endscreen_url', true );
+					if ( ! empty( $es_text ) ) {
+						$video_overrides['endscreenText'] = $es_text;
+					}
+					if ( ! empty( $es_url ) ) {
+						$video_overrides['endscreenUrl'] = $es_url;
+					}
+					if ( ! empty( $video_overrides ) ) {
+						$overrides_attr = ' data-player-overrides="' . esc_attr( wp_json_encode( $video_overrides ) ) . '"';
+					}
+				}
+
 				return sprintf(
 					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s"%s>'
-					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""></div>'
+					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""%s></div>'
 					. '<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>'
 					. '<div class="ms-protection-overlay"></div>'
 					. '<button class="ms-fullscreen-btn" aria-label="%s"><span class="dashicons dashicons-fullscreen-alt"></span></button>'
@@ -216,6 +246,7 @@ class PlayerWrapper {
 					$untracked_attr,
 					esc_attr( $platform_video_id ),
 					esc_url( $src_url ),
+					$overrides_attr,
 					$fullscreen_label
 				);
 			},

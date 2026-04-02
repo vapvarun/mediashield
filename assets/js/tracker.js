@@ -72,6 +72,7 @@
 					session.failCount = ( session.failCount || 0 ) + 1;
 					if ( session.failCount >= 3 ) {
 						console.warn( 'MediaShield: heartbeat failed 3 times, stopping for token ' + session.token );
+						session.stopped = true;
 						if ( session.intervalId ) {
 							clearInterval( session.intervalId );
 							session.intervalId = null;
@@ -84,6 +85,7 @@
 				console.warn( 'MediaShield: heartbeat failed', err );
 				if ( session.failCount >= 3 ) {
 					console.warn( 'MediaShield: heartbeat failed 3 times, stopping for token ' + session.token );
+					session.stopped = true;
 					if ( session.intervalId ) {
 						clearInterval( session.intervalId );
 						session.intervalId = null;
@@ -162,7 +164,7 @@
 		var intervalMs = config.interval || 30000;
 
 		activeSessions.forEach( function ( session ) {
-			if ( ! session.intervalId ) {
+			if ( ! session.intervalId && ! session.stopped ) {
 				session.intervalId = setInterval( function () {
 					sendHeartbeat( session );
 				}, intervalMs );
