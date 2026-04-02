@@ -1,0 +1,24 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - includes/
+    excludePaths:
+        analyseAndScan:
+            - vendor/
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+        - vendor/autoload.php
+    scanDirectories:
+        - vendor/woocommerce/
+    ignoreErrors:
+        -
+            identifier: argument.type
+            message: '#Parameter \#\d+ .+ of (function|static method) (do_action|apply_filters|add_action|add_filter)#'
+        -
+            identifier: missingType.iterableValue
+        -
+            identifier: argument.templateType
+    reportUnmatchedIgnoredErrors: false
