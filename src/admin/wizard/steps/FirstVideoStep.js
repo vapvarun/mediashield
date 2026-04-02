@@ -1,5 +1,5 @@
 /**
- * Wizard Step 4: Protect Your First Video.
+ * Wizard Step 3: Protect Your First Video.
  *
  * Paste a URL to auto-detect platform and create a video CPT post.
  */
@@ -53,44 +53,55 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 	};
 
 	return (
-		<div className="mediashield-wizard__step">
-			<h2>{ __( 'Protect Your First Video', 'mediashield' ) }</h2>
-			<p>{ __( 'Paste a video URL to see protection in action. You can skip this and add videos later.', 'mediashield' ) }</p>
+		<div className="ms-wizard__step">
+			<div className="ms-wizard__step-header">
+				<span className="ms-wizard__step-icon dashicons dashicons-video-alt3" />
+				<div>
+					<h2>{ __( 'Protect Your First Video', 'mediashield' ) }</h2>
+					<p>{ __( 'Paste a video URL to see protection in action. You can skip this and add videos later.', 'mediashield' ) }</p>
+				</div>
+			</div>
 
-			{ ! created ? (
-				<div style={ { display: 'flex', gap: '8px', alignItems: 'flex-end' } }>
-					<TextControl
-						label={ __( 'Video URL', 'mediashield' ) }
-						value={ url }
-						onChange={ setUrl }
-						placeholder="https://youtube.com/watch?v=..."
-						style={ { flex: 1 } }
-					/>
-					<Button
-						variant="primary"
-						onClick={ handleCreate }
-						disabled={ creating || ! url.trim() }
-					>
-						{ creating ? <Spinner /> : __( 'Protect', 'mediashield' ) }
-					</Button>
-				</div>
-			) : (
-				<div style={ {
-					background: '#f0f9f0',
-					border: '1px solid #46b450',
-					borderRadius: '8px',
-					padding: '16px',
-					marginTop: '16px',
-				} }>
-					<p style={ { margin: 0, fontWeight: 600, color: '#2e7d32' } }>
-						{ __( 'Video protected!', 'mediashield' ) }
-					</p>
-					<p style={ { margin: '4px 0 0', fontSize: '13px', color: '#555' } }>
-						{ __( 'Platform:', 'mediashield' ) } { created.platform } &middot;
-						{ __( 'ID:', 'mediashield' ) } #{ created.id }
-					</p>
-				</div>
-			) }
+			<div className="ms-wizard__step-fields">
+				{ ! created ? (
+					<div className="ms-wizard__url-input">
+						<TextControl
+							label={ __( 'Video URL', 'mediashield' ) }
+							value={ url }
+							onChange={ setUrl }
+							placeholder="https://youtube.com/watch?v=..."
+						/>
+						<Button
+							variant="primary"
+							onClick={ handleCreate }
+							disabled={ creating || ! url.trim() }
+							className="ms-wizard__btn--protect"
+						>
+							{ creating ? <Spinner /> : (
+								<>
+									<span className="dashicons dashicons-shield" />
+									{ __( 'Protect', 'mediashield' ) }
+								</>
+							) }
+						</Button>
+					</div>
+				) : (
+					<div className="ms-wizard__success-banner">
+						<span className="dashicons dashicons-yes-alt" />
+						<div>
+							<strong>{ __( 'Video protected successfully!', 'mediashield' ) }</strong>
+							<span>
+								{ __( 'Platform:', 'mediashield' ) } { created.platform } &middot;
+								{ __( 'ID:', 'mediashield' ) } #{ created.id }
+							</span>
+						</div>
+					</div>
+				) }
+			</div>
+
+			<p className="ms-wizard__hint">
+				{ __( 'Supports YouTube, Vimeo, Bunny Stream, Wistia, and direct MP4/WebM URLs.', 'mediashield' ) }
+			</p>
 		</div>
 	);
 }
