@@ -43,7 +43,7 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 		'ms_login_button_text',
 		'ms_access_denied_text',
 		'ms_db_version',
-		'mediashield_wizard_complete',
+		'ms_wizard_completed',
 	);
 	foreach ( $free_options as $option ) {
 		delete_option( $option );
