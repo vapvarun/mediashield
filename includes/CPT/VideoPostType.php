@@ -489,6 +489,9 @@ class VideoPostType {
 		}
 		?>
 		<div class="ms-player-options">
+			<p class="description" style="margin-bottom: 12px;">
+				<?php esc_html_e( 'These options apply to self-hosted and Bunny videos. YouTube, Vimeo, and Wistia use their own player controls.', 'mediashield' ); ?>
+			</p>
 			<p>
 				<label>
 					<input type="checkbox" name="_ms_autoplay" value="1" <?php checked( $autoplay, '1' ); ?> />

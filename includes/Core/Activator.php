@@ -77,6 +77,15 @@ class Activator {
 			'ms_login_overlay_text'      => __( 'Please log in to watch this video', 'mediashield' ),
 			'ms_login_button_text'       => __( 'Log In', 'mediashield' ),
 			'ms_access_denied_text'      => __( 'You do not have access to this video', 'mediashield' ),
+
+			// Player controls.
+			'ms_player_speed_control'    => true,
+			'ms_player_sticky'           => false,
+			'ms_player_keyboard'         => true,
+			'ms_player_resume'           => true,
+			'ms_player_endscreen'        => false,
+			'ms_player_endscreen_text'   => '',
+			'ms_player_endscreen_url'    => '',
 		);
 
 		foreach ( $defaults as $key => $value ) {

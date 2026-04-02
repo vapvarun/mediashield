@@ -57,6 +57,15 @@ class SettingsController extends WP_REST_Controller {
 		'ms_login_overlay_text'      => 'string',
 		'ms_login_button_text'       => 'string',
 		'ms_access_denied_text'      => 'string',
+
+		// Player controls.
+		'ms_player_speed_control'    => 'boolean',
+		'ms_player_sticky'           => 'boolean',
+		'ms_player_keyboard'         => 'boolean',
+		'ms_player_resume'           => 'boolean',
+		'ms_player_endscreen'        => 'boolean',
+		'ms_player_endscreen_text'   => 'string',
+		'ms_player_endscreen_url'    => 'string',
 	);
 
 	/**

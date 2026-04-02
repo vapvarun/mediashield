@@ -135,6 +135,15 @@ class Assets {
 			'interval'   => 30000, // Heartbeat interval in ms.
 			'watermark'  => Watermark::get_config(),
 			'protection' => Protection::get_config(),
+			'player'     => array(
+				'speedControl'  => (bool) get_option( 'ms_player_speed_control', true ),
+				'keyboard'      => (bool) get_option( 'ms_player_keyboard', true ),
+				'resume'        => (bool) get_option( 'ms_player_resume', true ),
+				'sticky'        => (bool) get_option( 'ms_player_sticky', false ),
+				'endscreen'     => (bool) get_option( 'ms_player_endscreen', false ),
+				'endscreenText' => get_option( 'ms_player_endscreen_text', '' ),
+				'endscreenUrl'  => get_option( 'ms_player_endscreen_url', '' ),
+			),
 		);
 
 		wp_localize_script( 'mediashield-player-wrapper', 'mediashieldConfig', $config );

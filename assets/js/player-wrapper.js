@@ -213,7 +213,7 @@
 
 			var video = document.createElement( 'video' );
 			video.controls = true;
-			video.setAttribute( 'controlsList', 'nodownload nofullscreen' );
+			video.setAttribute( 'controlsList', 'nodownload nofullscreen noremoteplayback' );
 			video.preload = 'metadata';
 			video.style.width = '100%';
 			video.style.display = 'block';
@@ -275,6 +275,202 @@
 		}
 	}
 
+	// ─── Player Features (admin-configurable) ───────────────────
+
+	/**
+	 * Toggle fullscreen on the given container.
+	 */
+	function toggleFullscreen( container ) {
+		if ( document.fullscreenElement ) {
+			document.exitFullscreen();
+		} else {
+			container.requestFullscreen().catch( function () {} );
+		}
+	}
+
+	/**
+	 * Build a speed control menu using safe DOM methods.
+	 */
+	function buildSpeedControl( el, container ) {
+		var speedControl = document.createElement( 'div' );
+		speedControl.className = 'ms-speed-control';
+
+		var speedBtn = document.createElement( 'button' );
+		speedBtn.className = 'ms-speed-btn';
+		speedBtn.setAttribute( 'aria-label', 'Playback speed' );
+		speedBtn.textContent = '1x';
+		speedControl.appendChild( speedBtn );
+
+		var menu = document.createElement( 'div' );
+		menu.className = 'ms-speed-menu';
+
+		var speeds = [ 0.5, 0.75, 1, 1.25, 1.5, 2 ];
+		speeds.forEach( function ( s ) {
+			var opt = document.createElement( 'button' );
+			opt.className = 'ms-speed-option' + ( s === 1 ? ' is-active' : '' );
+			opt.dataset.speed = s;
+			opt.textContent = s + 'x';
+			opt.addEventListener( 'click', function ( e ) {
+				e.stopPropagation();
+				if ( el._msAdapter && el._msAdapter._video ) {
+					el._msAdapter._video.playbackRate = s;
+				}
+				speedBtn.textContent = s + 'x';
+				menu.querySelectorAll( '.ms-speed-option' ).forEach( function ( o ) { o.classList.remove( 'is-active' ); } );
+				opt.classList.add( 'is-active' );
+				speedControl.classList.remove( 'is-open' );
+			} );
+			menu.appendChild( opt );
+		} );
+
+		speedControl.appendChild( menu );
+
+		speedBtn.addEventListener( 'click', function ( e ) {
+			e.stopPropagation();
+			speedControl.classList.toggle( 'is-open' );
+		} );
+
+		document.addEventListener( 'click', function () {
+			speedControl.classList.remove( 'is-open' );
+		} );
+
+		container.appendChild( speedControl );
+	}
+
+	/**
+	 * Build an end screen overlay using safe DOM methods.
+	 */
+	function buildEndScreen( container, adapter, playerConfig ) {
+		if ( container.querySelector( '.ms-endscreen' ) ) return;
+
+		var overlay = document.createElement( 'div' );
+		overlay.className = 'ms-endscreen';
+
+		var content = document.createElement( 'div' );
+		content.className = 'ms-endscreen__content';
+
+		var msg = document.createElement( 'p' );
+		msg.textContent = playerConfig.endscreenText || 'Thanks for watching!';
+		content.appendChild( msg );
+
+		if ( playerConfig.endscreenUrl ) {
+			var cta = document.createElement( 'a' );
+			cta.href = playerConfig.endscreenUrl;
+			cta.className = 'ms-endscreen__cta';
+			cta.textContent = 'Continue \u2192';
+			content.appendChild( cta );
+		}
+
+		var replayBtn = document.createElement( 'button' );
+		replayBtn.className = 'ms-endscreen__replay';
+		replayBtn.textContent = 'Replay';
+		replayBtn.addEventListener( 'click', function () {
+			overlay.remove();
+			adapter.seekTo( 0 );
+			adapter.play();
+		} );
+		content.appendChild( replayBtn );
+
+		overlay.appendChild( content );
+		container.appendChild( overlay );
+	}
+
+	/**
+	 * Apply admin-configurable player features to a container/adapter pair.
+	 * Speed control is ONLY for native <video> (self/bunny). Keyboard, sticky,
+	 * and end screen work on ALL platforms.
+	 */
+	function applyPlayerFeatures( el, adapter ) {
+		var playerConfig = config.player;
+		if ( ! playerConfig ) return;
+
+		var container = el;
+		var platform = el.dataset.platform || '';
+
+		// ── Speed control (native video only — YouTube/Vimeo/Wistia have their own) ──
+		if ( playerConfig.speedControl && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
+			buildSpeedControl( el, container );
+		}
+
+		// ── Keyboard shortcuts (scoped to player focus — all platforms) ──
+		if ( playerConfig.keyboard ) {
+			container.setAttribute( 'tabindex', '0' );
+			container.addEventListener( 'keydown', function ( e ) {
+				var a = el._msAdapter;
+				if ( ! a ) return;
+				switch ( e.key ) {
+					case ' ':
+						e.preventDefault();
+						a.isPlaying() ? a.pause() : a.play();
+						break;
+					case 'ArrowLeft':
+						e.preventDefault();
+						a.seekTo( Math.max( 0, a.getPosition() - 5 ) );
+						break;
+					case 'ArrowRight':
+						e.preventDefault();
+						a.seekTo( a.getPosition() + 5 );
+						break;
+					case 'ArrowUp':
+						e.preventDefault();
+						if ( a._video ) { a._video.volume = Math.min( 1, a._video.volume + 0.1 ); }
+						break;
+					case 'ArrowDown':
+						e.preventDefault();
+						if ( a._video ) { a._video.volume = Math.max( 0, a._video.volume - 0.1 ); }
+						break;
+					case 'f':
+					case 'F':
+						e.preventDefault();
+						toggleFullscreen( container );
+						break;
+					case 'm':
+					case 'M':
+						if ( a._video ) { a._video.muted = ! a._video.muted; }
+						break;
+				}
+			} );
+		}
+
+		// ── Sticky / floating player on scroll (all platforms) ──
+		if ( playerConfig.sticky ) {
+			var stickyDismissed = false;
+			var observer = new IntersectionObserver( function ( entries ) {
+				entries.forEach( function ( entry ) {
+					if ( stickyDismissed ) return;
+					if ( ! entry.isIntersecting && adapter.isPlaying() ) {
+						container.classList.add( 'ms-sticky-player' );
+						if ( ! container.querySelector( '.ms-sticky-close' ) ) {
+							var closeBtn = document.createElement( 'button' );
+							closeBtn.className = 'ms-sticky-close';
+							closeBtn.textContent = '\u00D7';
+							closeBtn.setAttribute( 'aria-label', 'Close sticky player' );
+							closeBtn.addEventListener( 'click', function ( e ) {
+								e.stopPropagation();
+								container.classList.remove( 'ms-sticky-player' );
+								stickyDismissed = true;
+								closeBtn.remove();
+							} );
+							container.appendChild( closeBtn );
+						}
+					} else {
+						container.classList.remove( 'ms-sticky-player' );
+						var existing = container.querySelector( '.ms-sticky-close' );
+						if ( existing ) existing.remove();
+					}
+				} );
+			}, { threshold: 0.3 } );
+			observer.observe( container );
+		}
+
+		// ── End screen overlay (all platforms) ──
+		if ( playerConfig.endscreen ) {
+			adapter.onEnded( function () {
+				buildEndScreen( container, adapter, playerConfig );
+			} );
+		}
+	}
+
 	// ─── Player Init ─────────────────────────────────────────────
 
 	function init() {
@@ -293,7 +489,12 @@
 		// No protection — free preview.
 		if ( protectionLevel === 'none' ) {
 			var adapter = createAdapter( el );
-			if ( adapter ) el._msAdapter = adapter;
+			if ( adapter ) {
+				el._msAdapter = adapter;
+				adapter.onReady( function () {
+					applyPlayerFeatures( el, adapter );
+				} );
+			}
 			return;
 		}
 
@@ -308,8 +509,9 @@
 		if ( ! playerAdapter ) return;
 		el._msAdapter = playerAdapter;
 
-		// Start session after adapter is ready.
+		// Start session and apply player features after adapter is ready.
 		playerAdapter.onReady( function () {
+			applyPlayerFeatures( el, playerAdapter );
 			startSession( el, videoId, playerAdapter );
 		} );
 	}

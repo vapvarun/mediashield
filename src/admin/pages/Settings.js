@@ -298,6 +298,67 @@ const Settings = () => {
 			</SectionCard>
 
 			<SectionCard
+				icon="controls-play"
+				title={ __( 'Player Controls', 'mediashield' ) }
+				description={ __( 'Customize the video player behavior and features.', 'mediashield' ) }
+			>
+				<ToggleControl
+					label={ __( 'Speed Control', 'mediashield' ) }
+					help={ __( 'Show playback speed selector (0.5x to 2x) on self-hosted and Bunny videos. Platform players (YouTube, Vimeo, Wistia) use their own speed controls.', 'mediashield' ) }
+					checked={ !! settings?.ms_player_speed_control }
+					onChange={ ( val ) => updateSetting( 'ms_player_speed_control', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Keyboard Shortcuts', 'mediashield' ) }
+					help={ __( 'Space = play/pause, \u2190 \u2192 = seek 5s, \u2191 \u2193 = volume, M = mute, F = fullscreen. Only active when player is focused.', 'mediashield' ) }
+					checked={ !! settings?.ms_player_keyboard }
+					onChange={ ( val ) => updateSetting( 'ms_player_keyboard', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Resume Playback', 'mediashield' ) }
+					help={ __( 'Remember where the viewer left off and offer to resume on return.', 'mediashield' ) }
+					checked={ !! settings?.ms_player_resume }
+					onChange={ ( val ) => updateSetting( 'ms_player_resume', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Sticky Player', 'mediashield' ) }
+					help={ __( 'Float the player in a corner when the viewer scrolls past it.', 'mediashield' ) }
+					checked={ !! settings?.ms_player_sticky }
+					onChange={ ( val ) => updateSetting( 'ms_player_sticky', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'End Screen', 'mediashield' ) }
+					help={ __( 'Show a call-to-action overlay when the video finishes.', 'mediashield' ) }
+					checked={ !! settings?.ms_player_endscreen }
+					onChange={ ( val ) => updateSetting( 'ms_player_endscreen', val ) }
+					__nextHasNoMarginBottom
+				/>
+				{ settings?.ms_player_endscreen && (
+					<>
+						<TextControl
+							label={ __( 'End Screen Message', 'mediashield' ) }
+							value={ settings?.ms_player_endscreen_text || '' }
+							onChange={ ( val ) => updateSetting( 'ms_player_endscreen_text', val ) }
+							placeholder={ __( 'Enjoyed this video? Explore more content.', 'mediashield' ) }
+							__nextHasNoMarginBottom
+						/>
+						<TextControl
+							label={ __( 'End Screen Button URL', 'mediashield' ) }
+							type="url"
+							value={ settings?.ms_player_endscreen_url || '' }
+							onChange={ ( val ) => updateSetting( 'ms_player_endscreen_url', val ) }
+							placeholder="https://..."
+							__nextHasNoMarginBottom
+						/>
+					</>
+				) }
+			</SectionCard>
+
+			<SectionCard
 				icon="upload"
 				title={ __( 'Upload & Storage', 'mediashield' ) }
 				description={ __( 'Configure where videos are stored and upload limits.', 'mediashield' ) }
