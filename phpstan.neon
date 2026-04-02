@@ -1,4 +1,5 @@
 includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
     - phpstan-baseline.neon
 
 parameters:
@@ -7,12 +8,11 @@ parameters:
         - includes/
     excludePaths:
         analyseAndScan:
-            - vendor/
+            - vendor/ (?)
     bootstrapFiles:
         - phpstan-bootstrap.php
         - vendor/autoload.php
-    scanDirectories:
-        - vendor/woocommerce/
+    treatPhpDocTypesAsCertain: false
     ignoreErrors:
         -
             identifier: argument.type
