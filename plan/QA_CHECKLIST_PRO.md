@@ -55,11 +55,52 @@
 - [ ] Upload progress tracking
 - [ ] Disconnect preserves imported videos
 
-### Multiple Library Connections
+### Platform Browsers
+- [ ] Bunny Browser: browse videos from connected library
+- [ ] Bunny Browser: search works with debounce
+- [ ] Bunny Browser: collection filter dropdown works
+- [ ] Bunny Browser: checkbox select + bulk import
+- [ ] Bunny Browser: import creates mediashield_video CPT
+- [ ] Bunny Browser: import downloads thumbnail as featured image
+- [ ] Bunny Browser: "Already imported" badge on imported videos
+- [ ] Bunny Browser: shows "No Bunny connection" when not connected
+- [ ] YouTube Browser: browse channel videos
+- [ ] YouTube Browser: playlist filter works
+- [ ] YouTube Browser: bulk import with correct meta (_ms_platform=youtube)
+- [ ] Vimeo Browser: browse user videos
+- [ ] Vimeo Browser: folder filter works
+- [ ] Vimeo Browser: bulk import with correct meta
+- [ ] Wistia Browser: browse project medias
+- [ ] Wistia Browser: project filter works
+- [ ] Wistia Browser: bulk import with correct meta
+
+### Multiple Platform Connections
+- [ ] Can connect multiple Bunny libraries (different Library IDs)
+- [ ] Connection Name/label saves and displays on card
+- [ ] Each connection shows "Browse & Import" button
+- [ ] Platform cards show platform-specific help text for API keys
+- [ ] Bunny: Pull Zone hostname auto-appends .b-cdn.net if just prefix entered
+- [ ] YouTube: Channel ID field appears when YouTube selected
+- [ ] Info card shows "Videos streamed from CDN, not stored locally"
+
+### Multiple Library Connections (Legacy)
 - [ ] Connect two Bunny libraries simultaneously
 - [ ] Browse each library separately
 - [ ] Import from different libraries assigns correct platform_video_id
 - [ ] Disconnect one library does not affect the other
+
+### LMS Integration
+- [ ] LMS Integration meta box appears on video edit when LearnDash active
+- [ ] Lesson dropdown grouped by course
+- [ ] Completion % dropdown saves (per-video override)
+- [ ] "Require enrollment" checkbox saves
+- [ ] Video completion at configured % marks LearnDash lesson complete
+- [ ] Non-enrolled user blocked from watching linked video
+- [ ] LMS meta box hidden when no LMS active
+- [ ] Tutor LMS adapter: lesson dropdown shows Tutor lessons
+- [ ] LifterLMS adapter: lesson dropdown shows Lifter lessons
+- [ ] Third-party adapter can register via mediashield_lms_adapters_loaded
+- [ ] mediashield_lms_lesson_completed action fires after completion
 
 ### DRM -- Bunny Stream (Cloud)
 - [ ] DRM method set to `cloud_bunny` saves correctly
@@ -82,6 +123,16 @@
 - [ ] Auto-package on upload works (when enabled)
 - [ ] Packaged video plays via Shaka Player
 - [ ] Action Scheduler job created for packaging
+
+### DRM Admin
+- [ ] DRM method dropdown saves (none/cloud_bunny/cloud_aws/local_shaka)
+- [ ] AWS shows "Coming Soon" warning when selected
+- [ ] Shaka Packager path field appears when local_shaka selected
+- [ ] License duration (streaming) saves in hours, stored in seconds
+- [ ] License duration (persistent) saves in days, stored in seconds
+- [ ] Auto-package toggle saves
+- [ ] DRM intro educational text displayed
+- [ ] "Enable Offline Playback" help text mentions DRM requirement
 
 ### DRM -- License Management
 - [ ] Streaming license issued (24h default)
@@ -110,20 +161,30 @@
 - [ ] Badge visibility toggle works
 
 ### Email Gate
+- [ ] Email gate toggle saves
+- [ ] Webhook URL saves
+- [ ] Cookie duration saves
+- [ ] Retention months saves
 - [ ] Set video access type to `email_gate`
 - [ ] Non-authenticated user sees email gate overlay
+- [ ] Email gate overlay shows on gated video
 - [ ] Email submission succeeds with valid email
+- [ ] Email submission fires webhook
 - [ ] Cookie set after successful submission
+- [ ] Cookie prevents re-asking (per-video)
 - [ ] Cookie persists for configured duration (default 7 days)
 - [ ] Returning visitor with cookie skips email gate
 - [ ] Email stored in ms_email_captures table
 - [ ] Unique constraint: same email + video does not duplicate
 - [ ] Webhook fires on email submission
 - [ ] Webhook payload includes all expected fields
+- [ ] Rate limiting: 5 attempts/min per IP
 - [ ] Rate limiting: 6th submission from same IP within 1 hour rejected
 - [ ] Name field is optional
 - [ ] Consent checkbox required when shown
 - [ ] Cookie is HttpOnly and SameSite=Lax
+- [ ] Email gate overlay: role=dialog, focus trap, Escape key
+- [ ] After email gate passed, video session starts and plays
 
 ### Heatmap Analytics
 - [ ] Playback events logged to ms_playback_events
@@ -157,6 +218,12 @@
 - [ ] Dismissed alerts pruned after 90 days by cron
 
 ### Milestone Actions
+- [ ] Milestone Config page shows 25/50/75/100% cards
+- [ ] Each card has enable toggle + action type dropdown
+- [ ] Tag user action saves tag name
+- [ ] Send email action saves recipient + subject
+- [ ] Fire webhook action saves URL
+- [ ] Global milestone config saves via milestones/config endpoint
 - [ ] Configure milestone action: tag user
 - [ ] Configure milestone action: send email
 - [ ] Configure milestone action: fire webhook
@@ -251,6 +318,11 @@
 
 ### Security
 - [ ] Platform credentials encrypted with AES-256-CBC
+- [ ] Bunny webhook validates signature when key configured
+- [ ] Encrypt/decrypt handles all binary data correctly (no colon collision)
+- [ ] Settings PUT only accepts defined keys (no arbitrary ms_ write)
+- [ ] Session start response does NOT include source_url
+- [ ] Email gate rate limit uses REMOTE_ADDR only (not X-Forwarded-For)
 - [ ] Shaka Packager arguments escaped with escapeshellarg()
 - [ ] DRM license endpoint validates user access
 - [ ] Email gate endpoint validates input (sanitize_email, absint)
