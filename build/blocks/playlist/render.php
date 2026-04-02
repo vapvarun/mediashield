@@ -124,7 +124,7 @@ $wrapper_attributes = get_block_wrapper_attributes(
 					data-index="<?php echo esc_attr( $idx ); ?>">
 					<span class="ms-playlist-item-num"><?php echo esc_html( $idx + 1 ); ?></span>
 					<?php if ( $thumb ) : ?>
-						<img src="<?php echo esc_url( $thumb ); ?>" alt="" class="ms-playlist-item-thumb" loading="lazy" />
+						<img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $item->video_title ); ?>" class="ms-playlist-item-thumb" loading="lazy" />
 					<?php else : ?>
 						<span class="dashicons dashicons-video-alt3 ms-playlist-item-thumb-placeholder"></span>
 					<?php endif; ?>

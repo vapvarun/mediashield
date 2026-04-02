@@ -87,7 +87,10 @@ class Thumbnail {
 				return "https://img.youtube.com/vi/{$video_id}/maxresdefault.jpg";
 
 			case 'vimeo':
-				$response = wp_remote_get( "https://vimeo.com/api/oembed.json?url=https://vimeo.com/{$video_id}" );
+				$response = wp_remote_get(
+					"https://vimeo.com/api/oembed.json?url=https://vimeo.com/{$video_id}",
+					array( 'timeout' => 15 )
+				);
 				if ( ! is_wp_error( $response ) ) {
 					$data = json_decode( wp_remote_retrieve_body( $response ), true );
 					return $data['thumbnail_url'] ?? '';
@@ -103,7 +106,10 @@ class Thumbnail {
 				return '';
 
 			case 'wistia':
-				$response = wp_remote_get( "https://fast.wistia.com/oembed?url=https://home.wistia.com/medias/{$video_id}" );
+				$response = wp_remote_get(
+					"https://fast.wistia.com/oembed?url=https://home.wistia.com/medias/{$video_id}",
+					array( 'timeout' => 15 )
+				);
 				if ( ! is_wp_error( $response ) ) {
 					$data = json_decode( wp_remote_retrieve_body( $response ), true );
 					return $data['thumbnail_url'] ?? '';
