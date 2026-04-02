@@ -36,6 +36,14 @@ if ( file_exists( MEDIASHIELD_PATH . 'vendor/autoload.php' ) ) {
 register_activation_hook( __FILE__, array( 'MediaShield\\Core\\Activator', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'MediaShield\\Core\\Deactivator', 'deactivate' ) );
 
+// Load text domain for translations.
+add_action(
+	'init',
+	function () {
+		load_plugin_textdomain( 'mediashield', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	}
+);
+
 // Bootstrap the plugin on plugins_loaded.
 add_action(
 	'plugins_loaded',

@@ -114,7 +114,7 @@ class Menu {
 		);
 
 		// Load script translations.
-		wp_set_script_translations( 'mediashield-admin', 'mediashield' );
+		wp_set_script_translations( 'mediashield-admin', 'mediashield', MEDIASHIELD_PATH . 'languages' );
 	}
 
 	/**
