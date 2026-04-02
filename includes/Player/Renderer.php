@@ -94,11 +94,41 @@ class Renderer {
 			}
 			?>
 		>
+			<?php
+			// Per-video player feature overrides (tri-state: on/off/empty=global).
+			$video_overrides = array();
+			$override_keys   = array(
+				'_ms_player_speed'     => 'speed',
+				'_ms_player_keyboard'  => 'keyboard',
+				'_ms_player_resume'    => 'resume',
+				'_ms_player_sticky'    => 'sticky',
+				'_ms_player_endscreen' => 'endscreen',
+			);
+			foreach ( $override_keys as $meta_key => $js_key ) {
+				$val = get_post_meta( $video_id, $meta_key, true );
+				if ( 'on' === $val || 'off' === $val ) {
+					$video_overrides[ $js_key ] = ( 'on' === $val );
+				}
+			}
+			// Per-video end screen text/URL.
+			$es_text = get_post_meta( $video_id, '_ms_player_endscreen_text', true );
+			$es_url  = get_post_meta( $video_id, '_ms_player_endscreen_url', true );
+			if ( ! empty( $es_text ) ) {
+				$video_overrides['endscreenText'] = $es_text;
+			}
+			if ( ! empty( $es_url ) ) {
+				$video_overrides['endscreenUrl'] = $es_url;
+			}
+			?>
 			<div class="ms-player-target"
 				data-platform-video-id="<?php echo esc_attr( $platform_video_id ); ?>"
 				data-source-url="<?php echo esc_url( $source_url ); ?>"
 				data-stream-url="<?php echo esc_url( $stream_url ); ?>"
-				data-duration="<?php echo esc_attr( $duration ); ?>">
+				data-duration="<?php echo esc_attr( $duration ); ?>"
+				<?php if ( ! empty( $video_overrides ) ) : ?>
+					data-player-overrides="<?php echo esc_attr( wp_json_encode( $video_overrides ) ); ?>"
+				<?php endif; ?>
+			>
 			</div>
 			<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>
 			<div class="ms-protection-overlay"></div>

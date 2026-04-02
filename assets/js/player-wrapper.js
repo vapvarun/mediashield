@@ -350,12 +350,13 @@
 		content.className = 'ms-endscreen__content';
 
 		var msg = document.createElement( 'p' );
-		msg.textContent = playerConfig.endscreenText || 'Thanks for watching!';
+		msg.textContent = featText( 'endscreenText' ) || 'Thanks for watching!';
 		content.appendChild( msg );
 
-		if ( playerConfig.endscreenUrl ) {
+		var endUrl = featText( 'endscreenUrl' );
+		if ( endUrl ) {
 			var cta = document.createElement( 'a' );
-			cta.href = playerConfig.endscreenUrl;
+			cta.href = endUrl;
 			cta.className = 'ms-endscreen__cta';
 			cta.textContent = 'Continue \u2192';
 			content.appendChild( cta );
@@ -384,16 +385,33 @@
 		var playerConfig = config.player;
 		if ( ! playerConfig ) return;
 
+		// Per-video overrides from data-player-overrides JSON attribute.
+		var target = el.querySelector( '.ms-player-target' );
+		var overridesJson = target ? target.dataset.playerOverrides : '';
+		var overrides = {};
+		if ( overridesJson ) {
+			try { overrides = JSON.parse( overridesJson ); } catch ( e ) { /* ignore */ }
+		}
+
+		// Helper: resolve per-video override (true/false) or fall back to global setting.
+		function feat( key ) {
+			if ( typeof overrides[ key ] !== 'undefined' ) return !! overrides[ key ];
+			return !! playerConfig[ key ];
+		}
+		function featText( key ) {
+			return overrides[ key ] || playerConfig[ key ] || '';
+		}
+
 		var container = el;
 		var platform = el.dataset.platform || '';
 
 		// ── Speed control (native video only — YouTube/Vimeo/Wistia have their own) ──
-		if ( playerConfig.speedControl && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
+		if ( feat( 'speedControl' ) && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
 			buildSpeedControl( el, container );
 		}
 
 		// ── Keyboard shortcuts (scoped to player focus — all platforms) ──
-		if ( playerConfig.keyboard ) {
+		if ( feat( 'keyboard' ) ) {
 			container.setAttribute( 'tabindex', '0' );
 			container.addEventListener( 'keydown', function ( e ) {
 				var a = el._msAdapter;
@@ -433,7 +451,7 @@
 		}
 
 		// ── Sticky / floating player on scroll (all platforms) ──
-		if ( playerConfig.sticky ) {
+		if ( feat( 'sticky' ) ) {
 			var stickyDismissed = false;
 			var observer = new IntersectionObserver( function ( entries ) {
 				entries.forEach( function ( entry ) {
@@ -464,7 +482,7 @@
 		}
 
 		// ── End screen overlay (all platforms) ──
-		if ( playerConfig.endscreen ) {
+		if ( feat( 'endscreen' ) ) {
 			adapter.onEnded( function () {
 				buildEndScreen( container, adapter, playerConfig );
 			} );

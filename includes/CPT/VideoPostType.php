@@ -517,6 +517,60 @@ class VideoPostType {
 					<?php esc_html_e( 'Show player controls', 'mediashield' ); ?>
 				</label>
 			</p>
+
+			<hr style="margin: 16px 0;" />
+			<p style="margin-bottom: 8px;"><strong><?php esc_html_e( 'Feature Overrides', 'mediashield' ); ?></strong></p>
+			<p class="description" style="margin-bottom: 10px;">
+				<?php esc_html_e( 'Override global settings for this video. "Default" uses the value from Settings → Player Controls.', 'mediashield' ); ?>
+			</p>
+			<?php
+			$overrides = array(
+				'_ms_player_speed'     => __( 'Speed Control', 'mediashield' ),
+				'_ms_player_keyboard'  => __( 'Keyboard Shortcuts', 'mediashield' ),
+				'_ms_player_resume'    => __( 'Resume Playback', 'mediashield' ),
+				'_ms_player_sticky'    => __( 'Sticky Player', 'mediashield' ),
+				'_ms_player_endscreen' => __( 'End Screen', 'mediashield' ),
+			);
+			foreach ( $overrides as $key => $label ) :
+				$val = get_post_meta( $post->ID, $key, true );
+				?>
+				<p style="margin: 4px 0;">
+					<label><?php echo esc_html( $label ); ?>:
+						<select name="<?php echo esc_attr( $key ); ?>" style="margin-left: 4px;">
+							<option value="" <?php selected( $val, '' ); ?>><?php esc_html_e( 'Default (global)', 'mediashield' ); ?></option>
+							<option value="on" <?php selected( $val, 'on' ); ?>><?php esc_html_e( 'On', 'mediashield' ); ?></option>
+							<option value="off" <?php selected( $val, 'off' ); ?>><?php esc_html_e( 'Off', 'mediashield' ); ?></option>
+						</select>
+					</label>
+				</p>
+			<?php endforeach; ?>
+
+			<?php
+			$endscreen_text = get_post_meta( $post->ID, '_ms_player_endscreen_text', true );
+			$endscreen_url  = get_post_meta( $post->ID, '_ms_player_endscreen_url', true );
+			?>
+			<div id="ms-endscreen-fields" style="margin-top: 8px; <?php echo 'on' !== get_post_meta( $post->ID, '_ms_player_endscreen', true ) ? 'display:none;' : ''; ?>">
+				<p style="margin: 4px 0;">
+					<label><?php esc_html_e( 'End Screen Text:', 'mediashield' ); ?>
+						<input type="text" name="_ms_player_endscreen_text" value="<?php echo esc_attr( $endscreen_text ); ?>" class="widefat" placeholder="<?php esc_attr_e( 'Leave blank to use global default', 'mediashield' ); ?>" />
+					</label>
+				</p>
+				<p style="margin: 4px 0;">
+					<label><?php esc_html_e( 'End Screen URL:', 'mediashield' ); ?>
+						<input type="url" name="_ms_player_endscreen_url" value="<?php echo esc_url( $endscreen_url ); ?>" class="widefat" placeholder="<?php esc_attr_e( 'Leave blank to use global default', 'mediashield' ); ?>" />
+					</label>
+				</p>
+			</div>
+
+			<script>
+			(function(){
+				var sel = document.querySelector('select[name="_ms_player_endscreen"]');
+				var fields = document.getElementById('ms-endscreen-fields');
+				if (sel && fields) {
+					sel.addEventListener('change', function(){ fields.style.display = this.value === 'on' ? '' : 'none'; });
+				}
+			})();
+			</script>
 		</div>
 		<?php
 	}
@@ -560,6 +614,37 @@ class VideoPostType {
 		$checkboxes = array( '_ms_autoplay', '_ms_loop', '_ms_muted', '_ms_show_controls' );
 		foreach ( $checkboxes as $cb ) {
 			update_post_meta( $post_id, $cb, isset( $_POST[ $cb ] ) ? '1' : '0' );
+		}
+
+		// Player feature overrides (tri-state: '', 'on', 'off').
+		$override_keys = array( '_ms_player_speed', '_ms_player_keyboard', '_ms_player_resume', '_ms_player_sticky', '_ms_player_endscreen' );
+		foreach ( $override_keys as $key ) {
+			if ( isset( $_POST[ $key ] ) ) {
+				$val = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
+				if ( in_array( $val, array( 'on', 'off' ), true ) ) {
+					update_post_meta( $post_id, $key, $val );
+				} else {
+					delete_post_meta( $post_id, $key ); // '' = use global default.
+				}
+			}
+		}
+
+		// Per-video end screen text/URL.
+		if ( isset( $_POST['_ms_player_endscreen_text'] ) ) {
+			$text = sanitize_text_field( wp_unslash( $_POST['_ms_player_endscreen_text'] ) );
+			if ( ! empty( $text ) ) {
+				update_post_meta( $post_id, '_ms_player_endscreen_text', $text );
+			} else {
+				delete_post_meta( $post_id, '_ms_player_endscreen_text' );
+			}
+		}
+		if ( isset( $_POST['_ms_player_endscreen_url'] ) ) {
+			$url = esc_url_raw( wp_unslash( $_POST['_ms_player_endscreen_url'] ) );
+			if ( ! empty( $url ) ) {
+				update_post_meta( $post_id, '_ms_player_endscreen_url', $url );
+			} else {
+				delete_post_meta( $post_id, '_ms_player_endscreen_url' );
+			}
 		}
 
 		// Milestone tags (per-video).
