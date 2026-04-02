@@ -99,24 +99,29 @@
 
 		// Position swap interval.
 		var swapMs = (wmConfig.swap_interval || 20) * 1000;
-		setInterval(function () {
+		var swapTimer = setInterval(function () {
 			currentPos++;
 			render();
 		}, swapMs);
 
 		// Re-render on resize.
+		var ro = null;
 		if (window.ResizeObserver) {
-			var ro = new ResizeObserver(function () {
+			ro = new ResizeObserver(function () {
 				render();
 			});
 			ro.observe(el);
 		}
 
 		// Pause video if canvas is removed from DOM (anti-tamper).
+		// Also clears the swap interval to prevent leaked timers.
 		var mo = new MutationObserver(function (mutations) {
 			for (var i = 0; i < mutations.length; i++) {
 				for (var j = 0; j < mutations[i].removedNodes.length; j++) {
 					if (mutations[i].removedNodes[j] === canvas) {
+						clearInterval(swapTimer);
+						if (ro) ro.disconnect();
+						mo.disconnect();
 						var video = el.querySelector('video');
 						if (video) video.pause();
 						var iframes = el.querySelectorAll('iframe');

@@ -146,7 +146,6 @@ const Settings = () => {
 				<h1>{ __( 'Settings', 'mediashield' ) }</h1>
 				<span style={ {
 					fontSize: '12px',
-					color: 'var(--ms-color-text-tertiary)',
 					background: 'var(--ms-color-success-light)',
 					padding: '4px 10px',
 					borderRadius: 'var(--ms-radius-full)',

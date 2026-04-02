@@ -74,7 +74,7 @@ class Menu {
 		// Load asset manifest if available.
 		$asset_file = $build_dir . 'index.asset.php';
 		$asset      = file_exists( $asset_file ) ? require $asset_file : array(
-			'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'wp-hooks', 'wp-notices' ),
+			'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'wp-hooks', 'wp-notices', 'wp-dom-ready' ),
 			'version'      => $ver,
 		);
 

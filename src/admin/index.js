@@ -5,22 +5,21 @@
  */
 
 import { createRoot } from '@wordpress/element';
+import domReady from '@wordpress/dom-ready';
 import App from './App';
 import Wizard from './wizard/Wizard';
 import './admin.css';
 
-const config = window.mediashieldAdmin || {};
+domReady( () => {
+	// Admin SPA mount.
+	const adminRoot = document.getElementById( 'mediashield-admin-root' );
+	if ( adminRoot ) {
+		createRoot( adminRoot ).render( <App /> );
+	}
 
-// Admin SPA mount.
-const adminRoot = document.getElementById( 'mediashield-admin-root' );
-if ( adminRoot ) {
-	const root = createRoot( adminRoot );
-	root.render( <App /> );
-}
-
-// Wizard mount (separate page, same JS bundle).
-const wizardRoot = document.getElementById( 'mediashield-wizard-root' );
-if ( wizardRoot ) {
-	const root = createRoot( wizardRoot );
-	root.render( <Wizard /> );
-}
+	// Wizard mount (separate page, same JS bundle).
+	const wizardRoot = document.getElementById( 'mediashield-wizard-root' );
+	if ( wizardRoot ) {
+		createRoot( wizardRoot ).render( <Wizard /> );
+	}
+} );

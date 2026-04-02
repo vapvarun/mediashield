@@ -11,6 +11,7 @@ import { __ } from '@wordpress/i18n';
 
 import Sidebar from './components/Sidebar';
 import Toast from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import Videos from './pages/Videos';
 import Playlists from './pages/Playlists';
@@ -105,7 +106,9 @@ const App = () => {
 				<Sidebar routes={ routes } currentHash={ currentHash } />
 				<main className="mediashield-admin__content">
 					<Toast />
-					<ActiveComponent />
+					<ErrorBoundary key={ currentHash }>
+						<ActiveComponent />
+					</ErrorBoundary>
 				</main>
 			</div>
 		</SlotFillProvider>
