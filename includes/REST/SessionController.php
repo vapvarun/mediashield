@@ -234,7 +234,6 @@ class SessionController extends WP_REST_Controller {
 					'id'               => $video_id,
 					'title'            => sanitize_text_field( $video->post_title ),
 					'platform'         => sanitize_text_field( get_post_meta( $video_id, '_ms_platform', true ) ),
-					'source_url'       => esc_url( get_post_meta( $video_id, '_ms_source_url', true ) ),
 					'protection_level' => sanitize_text_field( get_post_meta( $video_id, '_ms_protection_level', true ) ),
 					'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
 				),

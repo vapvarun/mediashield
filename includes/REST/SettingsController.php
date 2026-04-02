@@ -160,8 +160,10 @@ class SettingsController extends WP_REST_Controller {
 		$data = apply_filters( 'mediashield_settings_update', $data );
 
 		foreach ( $data as $key => $value ) {
-			// Only allow known settings or pro-filtered settings.
-			if ( ! isset( self::SETTINGS[ $key ] ) && ! str_starts_with( $key, 'ms_' ) ) {
+			// Only allow settings explicitly defined in the SETTINGS const.
+			// Pro settings are handled by their own filter callbacks (DRMSettings, ProSettings)
+			// which call update_option directly and unset the key from $data.
+			if ( ! isset( self::SETTINGS[ $key ] ) ) {
 				continue;
 			}
 
