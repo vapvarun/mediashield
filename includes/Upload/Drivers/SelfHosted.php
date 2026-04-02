@@ -186,10 +186,10 @@ class SelfHosted implements DriverInterface {
 		// Find the video post by platform_video_id meta to build the streaming URL.
 		$posts = get_posts(
 			array(
-				'post_type'  => 'mediashield_video',
-				'meta_key'   => '_ms_platform_video_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				'meta_value' => sanitize_file_name( $platform_video_id ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-				'fields'     => 'ids',
+				'post_type'   => 'mediashield_video',
+				'meta_key'    => '_ms_platform_video_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'  => sanitize_file_name( $platform_video_id ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'fields'      => 'ids',
 				'numberposts' => 1,
 			)
 		);

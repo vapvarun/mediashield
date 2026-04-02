@@ -87,7 +87,7 @@ class Cleanup {
 		}
 
 		// Delete the video file/resource from the hosting platform.
-		$platform         = get_post_meta( $post_id, '_ms_platform', true );
+		$platform          = get_post_meta( $post_id, '_ms_platform', true );
 		$platform_video_id = get_post_meta( $post_id, '_ms_platform_video_id', true );
 
 		if ( ! empty( $platform ) && ! empty( $platform_video_id ) ) {

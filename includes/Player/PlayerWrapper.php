@@ -168,7 +168,7 @@ class PlayerWrapper {
 				$protection        = get_option( 'ms_default_protection', 'standard' );
 
 				// Look up mediashield_video CPT by platform video ID.
-				$video_post_id = 0;
+				$video_post_id  = 0;
 				$untracked_attr = '';
 				if ( ! empty( $platform_video_id ) ) {
 					$found_posts = get_posts(

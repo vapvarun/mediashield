@@ -99,9 +99,9 @@ class SetupWizard {
 	public static function render_page(): void {
 		// Hardcoded HTML containers — no dynamic content, safe to output directly.
 		echo '<div id="mediashield-wizard-root" class="mediashield-wizard"></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
-		echo '<noscript><p style="padding:20px;">';
+		echo '<noscript><p style="padding:20px;">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
 		echo esc_html__( 'JavaScript is required for the setup wizard.', 'mediashield' );
-		echo '</p></noscript>';
+		echo '</p></noscript>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
 	}
 
 	/**

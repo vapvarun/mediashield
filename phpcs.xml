@@ -30,6 +30,9 @@
 		<!-- Yoda conditions not required -->
 		<exclude name="WordPress.PHP.YodaConditions"/>
 
+		<!-- Allow ms_ short prefix (used for options, meta, tables) -->
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
+
 		<!-- Allow non-prefixed variables in namespaced code -->
 		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound"/>
 

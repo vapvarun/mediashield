@@ -13,7 +13,9 @@ define( 'MEDIASHIELD_PATH', __DIR__ . '/' );
 define( 'MEDIASHIELD_URL', 'https://example.com/wp-content/plugins/mediashield/' );
 
 // WordPress constants PHPStan may need.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WP core constants for static analysis.
 define( 'ABSPATH', '/tmp/wordpress/' );
 define( 'WPINC', 'wp-includes' );
 define( 'WP_CONTENT_DIR', '/tmp/wordpress/wp-content' );
 define( 'WP_PLUGIN_DIR', '/tmp/wordpress/wp-content/plugins' );
+// phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound

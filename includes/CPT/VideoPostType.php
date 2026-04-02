@@ -152,12 +152,12 @@ class VideoPostType {
 	public static function render_source_meta_box( \WP_Post $post ): void {
 		wp_nonce_field( 'mediashield_video_meta', '_ms_meta_nonce' );
 
-		$platform  = get_post_meta( $post->ID, '_ms_platform', true ) ?: '';
-		$video_id  = get_post_meta( $post->ID, '_ms_platform_video_id', true );
-		$source    = get_post_meta( $post->ID, '_ms_source_url', true );
-		$duration  = (int) get_post_meta( $post->ID, '_ms_duration', true );
-		$is_new    = empty( $platform ) && empty( $source );
-		$has_pro   = defined( 'MEDIASHIELD_PRO_VERSION' );
+		$platform = get_post_meta( $post->ID, '_ms_platform', true ) ?: '';
+		$video_id = get_post_meta( $post->ID, '_ms_platform_video_id', true );
+		$source   = get_post_meta( $post->ID, '_ms_source_url', true );
+		$duration = (int) get_post_meta( $post->ID, '_ms_duration', true );
+		$is_new   = empty( $platform ) && empty( $source );
+		$has_pro  = defined( 'MEDIASHIELD_PRO_VERSION' );
 
 		// Check connected platforms.
 		$connected_platforms = array();
@@ -463,10 +463,11 @@ class VideoPostType {
 				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $default_pcts as $pct ) :
+				<?php
+				foreach ( $default_pcts as $pct ) :
 					$tag     = $milestones[ $pct ]['tag'] ?? '';
 					$enabled = ! empty( $milestones[ $pct ]['enabled'] );
-				?>
+					?>
 				<tr>
 					<td>
 						<strong><?php echo esc_html( $pct . '%' ); ?></strong>
@@ -474,10 +475,12 @@ class VideoPostType {
 					<td>
 						<input type="text" name="_ms_milestone_tags[<?php echo esc_attr( $pct ); ?>][tag]"
 							value="<?php echo esc_attr( $tag ); ?>"
-							placeholder="<?php
+							placeholder="
+							<?php
 								/* translators: %d: milestone percentage */
 								echo esc_attr( sprintf( __( 'e.g. watched-%d-pct', 'mediashield' ), $pct ) );
-							?>"
+							?>
+							"
 							class="regular-text" style="width: 100%;" />
 					</td>
 					<td style="text-align: center;">
@@ -500,9 +503,9 @@ class VideoPostType {
 	 * @param \WP_Post $post Current post object.
 	 */
 	public static function render_player_meta_box( \WP_Post $post ): void {
-		$autoplay   = get_post_meta( $post->ID, '_ms_autoplay', true );
-		$loop       = get_post_meta( $post->ID, '_ms_loop', true );
-		$muted      = get_post_meta( $post->ID, '_ms_muted', true );
+		$autoplay      = get_post_meta( $post->ID, '_ms_autoplay', true );
+		$loop          = get_post_meta( $post->ID, '_ms_loop', true );
+		$muted         = get_post_meta( $post->ID, '_ms_muted', true );
 		$show_controls = get_post_meta( $post->ID, '_ms_show_controls', true );
 		if ( '' === $show_controls ) {
 			$show_controls = '1'; // Default to showing controls.
@@ -664,6 +667,7 @@ class VideoPostType {
 
 		foreach ( $fields as $key => $sanitize ) {
 			if ( isset( $_POST[ $key ] ) ) {
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized via $sanitize callback (sanitize_text_field, esc_url_raw, absint).
 				update_post_meta( $post_id, $key, $sanitize( wp_unslash( $_POST[ $key ] ) ) );
 			}
 		}

@@ -45,11 +45,11 @@ while ( have_posts() ) :
 	?>
 
 	<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-		<header class="entry-header<?php echo $is_block_theme ? ' alignwide' : ''; ?>">
+		<header class="entry-header<?php echo esc_attr( $is_block_theme ? ' alignwide' : '' ); ?>">
 			<?php the_title( '<h1 class="entry-title wp-block-post-title">', '</h1>' ); ?>
 		</header>
 
-		<div class="entry-content<?php echo $is_block_theme ? ' alignwide' : ''; ?>">
+		<div class="entry-content<?php echo esc_attr( $is_block_theme ? ' alignwide' : '' ); ?>">
 			<?php
 			// Render the protected player via adapter system.
 			echo \MediaShield\Player\Renderer::render( $video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

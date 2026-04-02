@@ -54,9 +54,9 @@ class Menu {
 	public static function render_page(): void {
 		// Hardcoded HTML containers — no dynamic content, safe to output directly.
 		echo '<div id="mediashield-admin-root" class="mediashield-admin"></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
-		echo '<noscript><p style="padding:20px;">';
+		echo '<noscript><p style="padding:20px;">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
 		echo esc_html__( 'JavaScript is required for the MediaShield admin dashboard.', 'mediashield' );
-		echo '</p></noscript>';
+		echo '</p></noscript>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
 	}
 
 	/**
