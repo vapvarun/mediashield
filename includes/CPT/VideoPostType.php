@@ -475,6 +475,7 @@ class VideoPostType {
 					<td>
 						<input type="text" name="_ms_milestone_tags[<?php echo esc_attr( $pct ); ?>][tag]"
 							value="<?php echo esc_attr( $tag ); ?>"
+							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Tag for %d%% milestone', 'mediashield' ), $pct ) ); ?>"
 							placeholder="
 							<?php
 								/* translators: %d: milestone percentage */
@@ -485,6 +486,7 @@ class VideoPostType {
 					</td>
 					<td style="text-align: center;">
 						<input type="checkbox" name="_ms_milestone_tags[<?php echo esc_attr( $pct ); ?>][enabled]"
+							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Enable %d%% milestone', 'mediashield' ), $pct ) ); ?>"
 							value="1" <?php checked( $enabled ); ?> />
 					</td>
 				</tr>

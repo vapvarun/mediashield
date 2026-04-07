@@ -167,7 +167,7 @@ class SettingsController extends WP_REST_Controller {
 				continue;
 			}
 
-			$type = self::SETTINGS[ $key ] ?? 'string';
+			$type = self::SETTINGS[ $key ];
 
 			// Sanitize by type.
 			$sanitized = match ( $type ) {
