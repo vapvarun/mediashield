@@ -41,18 +41,53 @@ class Cleanup {
 		add_action( 'ms_cleanup_inactive_sessions', array( __CLASS__, 'cleanup_inactive_sessions' ) );
 		add_action( 'ms_archive_old_sessions', array( __CLASS__, 'archive_old_sessions' ) );
 
+		// Register monthly schedule for WP-Cron fallback.
+		add_filter( 'cron_schedules', array( __CLASS__, 'add_monthly_schedule' ) );
+
 		// Schedule recurring actions.
 		add_action( 'init', array( __CLASS__, 'schedule_actions' ) );
 	}
 
 	/**
-	 * Schedule recurring Action Scheduler actions.
+	 * Register a monthly cron schedule interval.
+	 *
+	 * @param array $schedules Existing schedules.
+	 * @return array Modified schedules.
+	 */
+	public static function add_monthly_schedule( array $schedules ): array {
+		if ( ! isset( $schedules['monthly'] ) ) {
+			$schedules['monthly'] = array(
+				'interval' => MONTH_IN_SECONDS,
+				'display'  => __( 'Once Monthly', 'mediashield' ),
+			);
+		}
+		return $schedules;
+	}
+
+	/**
+	 * Schedule recurring cleanup actions.
+	 *
+	 * Prefers Action Scheduler when available, falls back to WP-Cron.
 	 */
 	public static function schedule_actions(): void {
-		if ( ! function_exists( 'as_has_scheduled_action' ) ) {
+		if ( function_exists( 'as_has_scheduled_action' ) ) {
+			self::schedule_with_action_scheduler();
 			return;
 		}
 
+		// Fallback to WP-Cron.
+		if ( ! wp_next_scheduled( 'ms_cleanup_inactive_sessions' ) ) {
+			wp_schedule_event( time(), 'hourly', 'ms_cleanup_inactive_sessions' );
+		}
+		if ( ! wp_next_scheduled( 'ms_archive_old_sessions' ) ) {
+			wp_schedule_event( time(), 'monthly', 'ms_archive_old_sessions' );
+		}
+	}
+
+	/**
+	 * Schedule via Action Scheduler when available.
+	 */
+	private static function schedule_with_action_scheduler(): void {
 		// Hourly: mark stale sessions inactive.
 		if ( false === as_has_scheduled_action( 'ms_cleanup_inactive_sessions' ) ) {
 			as_schedule_recurring_action(

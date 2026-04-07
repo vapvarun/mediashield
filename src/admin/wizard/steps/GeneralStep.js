@@ -46,6 +46,8 @@ export default function GeneralStep( { onSave, initialData } ) {
 						{ label: __( 'None (No protection)', 'mediashield' ), value: 'none' },
 					] }
 					onChange={ ( val ) => { setProtection( val ); save( 'ms_default_protection', val ); } }
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			</div>
 		</div>

@@ -28,6 +28,8 @@ export default function WatermarkStep( { onSave, initialData } ) {
 					min={ 0.1 }
 					max={ 1.0 }
 					step={ 0.1 }
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 
 				<div className="ms-wizard__color-field">

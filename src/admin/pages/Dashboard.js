@@ -220,6 +220,7 @@ const Dashboard = () => {
 					options={ PERIOD_OPTIONS }
 					onChange={ setPeriod }
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			</header>
 

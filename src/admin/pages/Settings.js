@@ -184,6 +184,7 @@ const Settings = () => {
 					options={ PROTECTION_OPTIONS }
 					onChange={ ( val ) => updateSetting( 'ms_default_protection', val ) }
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 				{ /* Protection level descriptions */ }
 				<div className="mediashield-settings__protection-descriptions" style={ {
@@ -221,6 +222,7 @@ const Settings = () => {
 					max={ 1 }
 					step={ 0.05 }
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 				<div className="mediashield-settings__color-field">
 					<label>{ __( 'Watermark Color', 'mediashield' ) }</label>
@@ -279,6 +281,7 @@ const Settings = () => {
 					max={ 5 }
 					step={ 1 }
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			</SectionCard>
 
@@ -394,6 +397,7 @@ const Settings = () => {
 						] }
 						onChange={ ( val ) => updateSetting( 'ms_default_upload_target', val ) }
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 				) }
 				<TextControl
@@ -454,6 +458,7 @@ const Settings = () => {
 						options={ LMS_PCT_OPTIONS }
 						onChange={ ( val ) => updateSetting( 'ms_lms_complete_pct', parseInt( val, 10 ) ) }
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 				</SectionCard>
 			) }
