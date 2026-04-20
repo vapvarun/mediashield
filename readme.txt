@@ -12,80 +12,80 @@ Protect your video content with dynamic watermarking, session tracking, multi-pl
 
 == Description ==
 
-MediaShield protects your video content on WordPress with dynamic watermarking, session-based access control, engagement analytics, and milestone tracking. It supports self-hosted videos, YouTube, Vimeo, Bunny Stream, and Wistia embeds -- all without forcing you off your existing video hosting.
+MediaShield protects your video content on WordPress with dynamic watermarking, session-based access control, engagement analytics, and milestone tracking. It supports self-hosted videos, YouTube, Vimeo, Bunny Stream, and Wistia embeds, so you keep your existing video hosting.
 
 = Video Protection =
 
-* **Dynamic Watermarking** -- Overlay user-specific watermarks (name + IP) on every video to deter unauthorized screen recording. Watermark position swaps at configurable intervals.
-* **Anti-Download Protection** -- Right-click blocking, keyboard shortcut prevention, devtools detection, and source URL hiding.
-* **Domain Whitelisting** -- Restrict video embeds to approved domains only.
+* **Dynamic Watermarking.** User-specific watermarks (name plus IP) overlaid on every video to deter unauthorized screen recording. Watermark position swaps at configurable intervals.
+* **Anti-Download Protection.** Right-click blocking, keyboard shortcut prevention, devtools detection, and source URL hiding.
+* **Domain Whitelisting.** Restrict video embeds to approved domains only.
 
-= Session Tracking & Access Control =
+= Session Tracking and Access Control =
 
-* **HMAC Session Tokens** -- Cryptographic session validation without database lookups for maximum performance.
-* **Concurrent Stream Limits** -- Configurable max simultaneous streams per user (default: 2).
-* **Login-Gated Playback** -- Require users to log in before watching videos.
-* **Role-Based Restriction** -- Restrict specific videos to certain WordPress roles.
-* **30-Second Heartbeat** -- Continuous progress tracking with automatic session cleanup.
+* **HMAC Session Tokens.** Cryptographic session validation without database lookups. Good performance even on busy sites.
+* **Concurrent Stream Limits.** Configurable max simultaneous streams per user. Default is 2.
+* **Login-Gated Playback.** Require users to log in before watching videos.
+* **Role-Based Restriction.** Restrict specific videos to certain WordPress roles.
+* **30-Second Heartbeat.** Continuous progress tracking with automatic session cleanup.
 
-= Analytics & Milestones =
+= Analytics and Milestones =
 
-* **Analytics Dashboard** -- Views, sessions, completion rates, active viewers, top videos, and per-user drill-down.
-* **Milestone Tracking** -- Fire actions at 25%, 50%, 75%, and 100% completion thresholds.
-* **Per-Video Tags** -- Assign tags to users at milestone completion for LMS and CRM integration.
+* **Analytics Dashboard.** Views, sessions, completion rates, active viewers, top videos, and per-user drill-down.
+* **Milestone Tracking.** Fires actions at 25%, 50%, 75%, and 100% completion thresholds.
+* **Per-Video Tags.** Assign tags to users at milestone completion for LMS and CRM integration.
 
 = Multi-Platform Support =
 
-* **YouTube** -- Protect YouTube embeds with watermark overlay and session tracking.
-* **Vimeo** -- Protect Vimeo embeds with full protection suite.
-* **Bunny Stream** -- Native support for Bunny.net video hosting.
-* **Wistia** -- Protect Wistia inline embeds.
-* **Self-Hosted** -- Upload and protect MP4, WebM, MOV, and M4V files.
+* **YouTube.** Protect YouTube embeds with watermark overlay and session tracking.
+* **Vimeo.** Protect Vimeo embeds with the full protection suite.
+* **Bunny Stream.** Native support for Bunny.net video hosting.
+* **Wistia.** Protect Wistia inline embeds.
+* **Self-Hosted.** Upload and protect MP4, WebM, MOV, and M4V files.
 
 = Player Controls =
 
-* **Speed Control** -- Playback speed adjustment for self-hosted videos.
-* **Keyboard Shortcuts** -- Space, arrow keys, M (mute), F (fullscreen) when player is focused.
-* **Sticky Player** -- Player sticks to corner when scrolling past a playing video.
-* **End Screen CTA** -- Configurable call-to-action after video completion.
-* **Per-Video Overrides** -- Override global settings on individual videos.
+* **Speed Control.** Playback speed adjustment for self-hosted videos.
+* **Keyboard Shortcuts.** Space, arrow keys, M (mute), F (fullscreen) when the player is focused.
+* **Sticky Player.** Player sticks to a corner when scrolling past a playing video.
+* **End Screen CTA.** Configurable call-to-action after video completion.
+* **Per-Video Overrides.** Override global settings on individual videos.
 
 = Developer Friendly =
 
-* **Gutenberg Blocks** -- Video, Playlist, and My Videos blocks with full block editor integration.
-* **Shortcodes** -- `[mediashield id=X]` for protected videos, `[mediashield_my_videos]` for watch history.
-* **REST API** -- Full REST API for tags, sessions, playlists, uploads, settings, and analytics.
-* **Hooks & Filters** -- 8 actions and 8 filters for custom integrations (LMS, CRM, etc.).
-* **Output Buffer Detection** -- Automatically wraps video embeds from any page builder.
+* **Gutenberg Blocks.** Video, Playlist, and My Videos blocks with full block editor integration.
+* **Shortcodes.** `[mediashield id=X]` for protected videos. `[mediashield_my_videos]` for watch history.
+* **REST API.** Full REST API for tags, sessions, playlists, uploads, settings, and analytics.
+* **Hooks and Filters.** 8 actions and 8 filters for custom integrations (LMS, CRM, etc.).
+* **Output Buffer Detection.** Automatically wraps video embeds from any page builder.
 
-= Privacy & Compliance =
+= Privacy and Compliance =
 
-* **GDPR Compliant** -- Built-in personal data exporter and eraser for WordPress privacy tools.
-* **Data Anonymization** -- PII is anonymized during erasure while retaining aggregate analytics.
+* **GDPR Compliant.** Built-in personal data exporter and eraser for WordPress privacy tools.
+* **Data Anonymization.** PII is anonymized during erasure while aggregate analytics are retained.
 
 = Pro Features =
 
 [MediaShield Pro](https://wbcomdesigns.com/downloads/mediashield-pro/) extends the free plugin with:
 
-* **Platform Connections** -- Browse and bulk import videos from Bunny, YouTube, Vimeo, and Wistia.
-* **DRM Encryption** -- ClearKey DRM (software-based AES-128 encryption via Shaka Player) with Bunny Stream cloud packaging or local Shaka Packager. Widevine L1 hardware DRM is not included.
-* **Advanced Watermark** -- 7 configurable fields: username, email, IP, user ID, timestamp, site name, custom text.
-* **Heatmap Analytics** -- Per-video playback heatmaps with 10-second position buckets and retention curves.
-* **Realtime Dashboard** -- Live active viewer count with 15-second auto-refresh.
-* **Suspicious Activity Detection** -- Multi-IP, devtools, rapid seek, and VPN detection with alert management.
-* **Email Gate** -- Capture emails before video access with webhook integration for marketing tools.
-* **Milestone Actions** -- Tag user, send email, or fire webhook at completion milestones.
-* **Weekly Digest** -- Automated analytics summary email to site admins.
-* **CSV/PDF Export** -- Export watch data as CSV or generate async PDF reports.
-* **Frontend Upload** -- `[mediashield_upload]` shortcode for user video submissions.
-* **PWA Offline Playback** -- Service Worker-based offline viewing for DRM-protected content.
+* **Platform Connections.** Browse and bulk import videos from Bunny, YouTube, Vimeo, and Wistia.
+* **DRM Encryption.** ClearKey DRM, software-based AES-128 encryption via Shaka Player, with Bunny Stream cloud packaging or local Shaka Packager. Widevine L1 hardware DRM is not included.
+* **Advanced Watermark.** 7 configurable fields: username, email, IP, user ID, timestamp, site name, custom text.
+* **Heatmap Analytics.** Per-video playback heatmaps with 10-second position buckets and retention curves.
+* **Realtime Dashboard.** Live active viewer count with 15-second auto-refresh.
+* **Suspicious Activity Detection.** Multi-IP, devtools, rapid seek, and VPN detection with alert management.
+* **Email Gate.** Capture emails before video access with webhook integration for marketing tools.
+* **Milestone Actions.** Tag user, send email, or fire webhook at completion milestones.
+* **Weekly Digest.** Automated analytics summary email to site admins.
+* **CSV and PDF Export.** Export watch data as CSV or generate async PDF reports.
+* **Frontend Upload.** `[mediashield_upload]` shortcode for user video submissions.
+* **PWA Offline Playback.** Service Worker-based offline viewing for DRM-protected content.
 
 == Installation ==
 
-1. Upload the `mediashield` folder to the `/wp-content/plugins/` directory.
-2. Activate the plugin through the 'Plugins' menu in WordPress.
+1. Upload the `mediashield` folder to `/wp-content/plugins/`.
+2. Activate the plugin through the Plugins menu in WordPress.
 3. Follow the setup wizard to configure your initial settings.
-4. Create your first video under MediaShield > Videos.
+4. Create your first video under MediaShield, Videos.
 5. For Pro features, install and activate MediaShield Pro separately.
 
 = Requirements =
@@ -101,7 +101,7 @@ MediaShield supports self-hosted videos (MP4, WebM, MOV, M4V), YouTube, Vimeo, B
 
 = Does MediaShield work with page builders? =
 
-Yes. MediaShield uses output buffering to detect and wrap video embeds automatically, so it works with Elementor, Beaver Builder, Divi, WPBakery, and any builder that outputs standard video or iframe elements.
+Yes. MediaShield uses output buffering to detect and wrap video embeds automatically. It works with Elementor, Beaver Builder, Divi, WPBakery, and any builder that outputs standard video or iframe elements.
 
 = Does it work with LMS plugins? =
 
@@ -113,7 +113,7 @@ MediaShield renders a dynamic canvas overlay on top of the video player showing 
 
 = How are concurrent streams limited? =
 
-Each user is allowed a configurable number of simultaneous video streams (default: 2). When the limit is reached, the user must close another video before starting a new one. Sessions are tracked via HMAC tokens with 30-second heartbeats.
+Each user is allowed a configurable number of simultaneous video streams. Default is 2. When the limit is reached, the user must close another video before starting a new one. Sessions are tracked via HMAC tokens with 30-second heartbeats.
 
 = Will MediaShield slow down my site? =
 
@@ -121,7 +121,7 @@ No. MediaShield only loads its CSS and JavaScript on pages that contain video co
 
 = Is it GDPR compliant? =
 
-Yes. MediaShield registers personal data exporters and erasers with the WordPress privacy tools. Watch session PII (IP address, user agent) is anonymized during erasure while retaining aggregate analytics.
+Yes. MediaShield registers personal data exporters and erasers with the WordPress privacy tools. Watch session PII (IP address, user agent) is anonymized during erasure while aggregate analytics are retained.
 
 = Can I customize the access control logic? =
 
@@ -134,7 +134,7 @@ Yes. Use the `mediashield_can_watch` filter to implement custom access logic:
 
 = Does it support multisite? =
 
-Yes. MediaShield is multisite-aware with per-site tables using the `$wpdb->prefix`. Pro adds network-wide platform connections.
+Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. Pro adds network-wide platform connections.
 
 == Screenshots ==
 

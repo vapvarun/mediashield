@@ -203,8 +203,8 @@ class PlayerWrapper {
 				$fullscreen_label = esc_attr__( 'Fullscreen', 'mediashield' );
 
 				// Per-video player feature overrides (same logic as Renderer.php).
-				$video_overrides  = array();
-				$overrides_attr   = '';
+				$video_overrides = array();
+				$overrides_attr  = '';
 				if ( $video_post_id > 0 ) {
 					$override_keys = array(
 						'_ms_player_speed'     => 'speedControl',
