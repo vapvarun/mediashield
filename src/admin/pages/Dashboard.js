@@ -239,7 +239,43 @@ const Dashboard = () => {
 				</div>
 			) }
 
-			{ ! loading && ! error && (
+			{ ! loading && ! error && data?.total_videos === 0 && (
+				<div className="mediashield-onboarding-hero">
+					<div className="mediashield-onboarding-hero__icon">
+						<span className="dashicons dashicons-video-alt3" />
+					</div>
+					<h2 className="mediashield-onboarding-hero__title">
+						{ __( 'Welcome to MediaShield!', 'mediashield' ) }
+					</h2>
+					<p className="mediashield-onboarding-hero__lede">
+						{ __( 'You haven\u2019t added a video yet. Once you do, this dashboard fills up with real engagement data \u2014 sessions, completion rates, top videos, and milestone events.', 'mediashield' ) }
+					</p>
+					<ol className="mediashield-onboarding-hero__steps">
+						<li>
+							<strong>{ __( '1. Add your first video', 'mediashield' ) }</strong>
+							<span>{ __( 'Paste a YouTube, Vimeo, Bunny, or Wistia URL \u2014 we auto-detect the platform.', 'mediashield' ) }</span>
+						</li>
+						<li>
+							<strong>{ __( '2. Embed it', 'mediashield' ) }</strong>
+							<span>{ __( 'Use the [mediashield id=X] shortcode or the MediaShield Video block.', 'mediashield' ) }</span>
+						</li>
+						<li>
+							<strong>{ __( '3. Watch it play', 'mediashield' ) }</strong>
+							<span>{ __( 'Visit the page in an incognito window to see the watermark and protection in action.', 'mediashield' ) }</span>
+						</li>
+					</ol>
+					<div className="mediashield-onboarding-hero__actions">
+						<a href="#/videos" className="components-button is-primary">
+							{ __( 'Add Your First Video', 'mediashield' ) }
+						</a>
+						<a href="#/settings" className="components-button is-secondary">
+							{ __( 'Review Settings', 'mediashield' ) }
+						</a>
+					</div>
+				</div>
+			) }
+
+			{ ! loading && ! error && data?.total_videos > 0 && (
 				<>
 					{ /* Stat Cards */ }
 					<div className="mediashield-stats">
