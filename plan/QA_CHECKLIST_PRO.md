@@ -205,6 +205,30 @@
 - [ ] Empty state when no active viewers
 - [ ] Realtime REST endpoint returns correct data
 
+### VPN / Proxy Detection
+- [ ] Setting `ms_vpn_detection_enabled` default true when Pro active
+- [ ] Setting can be toggled via Settings REST / admin UI
+- [ ] Session started from public IP → Action Scheduler queues `ms_vpn_lookup`
+- [ ] Session started from private IP (10.x, 192.168.x, 127.x) → lookup skipped
+- [ ] Session started from localhost → lookup skipped
+- [ ] Lookup calls ip-api.com with 3s timeout
+- [ ] Successful lookup caches result for 24h in transient `ms_vpn_{md5(ip)}`
+- [ ] Failed lookup caches negative result for 1h (rate limit protection)
+- [ ] Proxy-flagged IP creates alert row with type=`vpn_detected`, severity=`info`
+- [ ] Hosting/datacenter-flagged IP creates same alert
+- [ ] Mobile carrier IP (mobile=true, proxy=false) does NOT create alert
+- [ ] User in safe-list (`ms_safe_users`) → lookup skipped even if IP flagged
+- [ ] Disable `ms_vpn_detection_enabled` → no new lookups queued
+- [ ] Alert message includes IP, classification (proxy/VPN or datacenter), and ISP name
+- [ ] When Action Scheduler unavailable, falls back to inline lookup (no fatal)
+
+### DevTools Detection Alert (from free)
+- [ ] Free plugin fires `mediashield_devtools_detected` action on client report
+- [ ] Pro's SuspiciousActivity creates alert with type=`devtools`, severity=`warning`
+- [ ] Alert appears in Alerts admin page with strategy (size_delta/debugger_timing) in message
+- [ ] User in safe-list → alert NOT created
+- [ ] Free plugin rate-limits (1/hr per user+IP) — Pro does not receive duplicate events
+
 ### Suspicious Activity
 - [ ] Multi-IP alert fires when same user on 2+ IPs (medium sensitivity)
 - [ ] Devtools alert fires on devtools detection event

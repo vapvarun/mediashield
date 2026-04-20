@@ -71,7 +71,7 @@ Protect your video content with dynamic watermarking, session tracking, DRM encr
 | Suspicious activity detection (multi-IP, VPN) | -- | Yes |
 | Suspicious activity alerts + dashboard | -- | Yes |
 | User whitelisting (mark as safe) | -- | Yes |
-| Widevine ClearKey DRM encryption | -- | Yes |
+| ClearKey DRM encryption (software-based) | -- | Yes |
 | Bunny Stream DRM | -- | Yes |
 | Local Shaka Packager DRM | -- | Yes |
 | PWA offline playback (service worker) | -- | Yes |
