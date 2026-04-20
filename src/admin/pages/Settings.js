@@ -210,6 +210,70 @@ const Settings = () => {
 			</SectionCard>
 
 			<SectionCard
+				icon="shield"
+				title={ __( 'Protection', 'mediashield' ) }
+				description={ __( 'Anti-download behavior applied to the player.', 'mediashield' ) }
+			>
+				<ToggleControl
+					label={ __( 'Block Right-Click', 'mediashield' ) }
+					help={ __( 'Prevent the browser context menu inside the player.', 'mediashield' ) }
+					checked={ settings?.ms_block_right_click !== false }
+					onChange={ ( val ) => updateSetting( 'ms_block_right_click', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Block Save Shortcut (Ctrl+S / Cmd+S)', 'mediashield' ) }
+					help={ __( 'Intercept the save keyboard shortcut when the player is focused.', 'mediashield' ) }
+					checked={ settings?.ms_block_keyboard !== false }
+					onChange={ ( val ) => updateSetting( 'ms_block_keyboard', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Hide Video Source URL', 'mediashield' ) }
+					help={ __( 'Move the src attribute to a data-* attribute so it is not visible in View Source.', 'mediashield' ) }
+					checked={ settings?.ms_hide_source !== false }
+					onChange={ ( val ) => updateSetting( 'ms_hide_source', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Detect Developer Tools', 'mediashield' ) }
+					help={ __( 'Detect when the viewer opens browser DevTools and log a warning. Skipped on mobile and touch devices.', 'mediashield' ) }
+					checked={ settings?.ms_detect_devtools !== false }
+					onChange={ ( val ) => updateSetting( 'ms_detect_devtools', val ) }
+					__nextHasNoMarginBottom
+				/>
+				{ settings?.ms_detect_devtools !== false && (
+					<>
+						<ToggleControl
+							label={ __( 'Pause Video When Detected', 'mediashield' ) }
+							help={ __( 'Pause playback and show an overlay when DevTools is detected. Off by default — detection is logged either way.', 'mediashield' ) }
+							checked={ !! settings?.ms_pause_on_devtools }
+							onChange={ ( val ) => updateSetting( 'ms_pause_on_devtools', val ) }
+							__nextHasNoMarginBottom
+						/>
+						{ settings?.ms_pause_on_devtools && (
+							<>
+								<TextControl
+									label={ __( 'Overlay Title', 'mediashield' ) }
+									value={ settings?.ms_devtools_title || '' }
+									placeholder={ __( 'Developer Tools Detected', 'mediashield' ) }
+									onChange={ ( val ) => updateSetting( 'ms_devtools_title', val ) }
+									__nextHasNoMarginBottom
+								/>
+								<TextControl
+									label={ __( 'Overlay Message', 'mediashield' ) }
+									value={ settings?.ms_devtools_message || '' }
+									placeholder={ __( 'Please close developer tools to continue watching this video.', 'mediashield' ) }
+									onChange={ ( val ) => updateSetting( 'ms_devtools_message', val ) }
+									__nextHasNoMarginBottom
+								/>
+							</>
+						) }
+					</>
+				) }
+			</SectionCard>
+
+			<SectionCard
 				icon="art"
 				title={ __( 'Watermark', 'mediashield' ) }
 				description={ __( 'Dynamic overlay that identifies the viewer.', 'mediashield' ) }

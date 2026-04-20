@@ -128,6 +128,20 @@
 - [ ] Admin notice is dismissible and stays dismissed
 - [ ] ALL upsell elements hidden when Pro is active
 
+### DevTools Detection
+- [ ] Settings → Protection → "Detect Developer Tools" toggle visible, default on
+- [ ] Desktop Chrome: open F12 → `mediashield:devtools-detected` event fires (verify via console listener)
+- [ ] Desktop Firefox: Ctrl+Shift+I triggers detection
+- [ ] POST to `/mediashield/v1/protection/devtools-event` returns 200 when nonce valid, 401 without nonce
+- [ ] Rate-limit: reopening DevTools within 1hr does NOT create a second alert row
+- [ ] Mobile viewport (<1024px or touch) — detection skipped (no false positives on iPad/phone)
+- [ ] "Pause Video When Detected" toggle off by default — video keeps playing, event logs silently
+- [ ] "Pause Video When Detected" toggle on — video pauses, overlay appears with configured title/message
+- [ ] Overlay uses `role="dialog"` + `aria-modal="true"`
+- [ ] Overlay custom title + message save and render on frontend
+- [ ] PHP error log receives event when Pro inactive (or Pro logs to ms_activity_alerts when active)
+- [ ] Works alongside right-click blocking and source hiding
+
 ### Badge Toggle
 - [ ] Settings → Watermark section has "Show MediaShield Badge" toggle
 - [ ] Toggle saves correctly

@@ -66,6 +66,15 @@ class SettingsController extends WP_REST_Controller {
 		'ms_player_endscreen'        => 'boolean',
 		'ms_player_endscreen_text'   => 'string',
 		'ms_player_endscreen_url'    => 'string',
+
+		// Protection controls.
+		'ms_block_right_click'       => 'boolean',
+		'ms_block_keyboard'          => 'boolean',
+		'ms_hide_source'             => 'boolean',
+		'ms_detect_devtools'         => 'boolean',
+		'ms_pause_on_devtools'       => 'boolean',
+		'ms_devtools_title'          => 'string',
+		'ms_devtools_message'        => 'string',
 	);
 
 	/**

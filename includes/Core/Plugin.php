@@ -25,6 +25,7 @@ use MediaShield\REST\UploadController;
 use MediaShield\REST\SettingsController;
 use MediaShield\REST\AnalyticsController;
 use MediaShield\REST\StreamController;
+use MediaShield\REST\ProtectionController;
 use MediaShield\Admin\Menu;
 use MediaShield\Admin\SetupWizard;
 use MediaShield\Core\Assets;
@@ -120,6 +121,7 @@ class Plugin {
 		( new SettingsController() )->register_routes();
 		( new AnalyticsController() )->register_routes();
 		( new StreamController() )->register_routes();
+		( new ProtectionController() )->register_routes();
 	}
 
 	/**
