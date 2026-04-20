@@ -110,7 +110,13 @@ class ProtectionController extends WP_REST_Controller {
 		// Rate limit: one event per user/IP per hour.
 		$rl_key = 'ms_devtools_rl_' . md5( $user_id . '|' . $ip );
 		if ( false !== get_transient( $rl_key ) ) {
-			return new WP_REST_Response( array( 'recorded' => false, 'reason' => 'rate_limited' ), 200 );
+			return new WP_REST_Response(
+				array(
+					'recorded' => false,
+					'reason'   => 'rate_limited',
+				),
+				200
+			);
 		}
 		set_transient( $rl_key, 1, HOUR_IN_SECONDS );
 
