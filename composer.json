@@ -31,5 +31,23 @@
             "composer/*": true,
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
+    },
+    "scripts": {
+        "lint": "find includes -name '*.php' -not -path '*/vendor/*' -not -path '*/node_modules/*' -print0 | xargs -0 -n1 -P4 php -l | (! grep -v 'No syntax errors detected')",
+        "phpcs": "phpcs --standard=phpcs.xml --runtime-set ignore_warnings_on_exit 1",
+        "phpcbf": "phpcbf --standard=phpcs.xml",
+        "phpstan": "phpstan analyse --memory-limit=2G --no-progress",
+        "check": [
+            "@lint",
+            "@phpcs",
+            "@phpstan"
+        ]
+    },
+    "scripts-descriptions": {
+        "lint": "PHP syntax check (parallelized) across all includes/*.php files.",
+        "phpcs": "WordPress Coding Standards check (errors block, warnings pass).",
+        "phpcbf": "Auto-fix WPCS issues where possible.",
+        "phpstan": "Static analysis at level 5 with WordPress stubs.",
+        "check": "Run the full local gate: lint + phpcs + phpstan. Required before push."
     }
 }
