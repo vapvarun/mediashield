@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-04-20T10:17:33+00:00\n"
+"POT-Creation-Date: 2026-04-20T12:16:11+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -999,82 +999,132 @@ msgid "Loading analytics..."
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:265
-msgid "Activity Overview"
+#: src/admin/pages/Dashboard.js:248
+msgid "Welcome to MediaShield!"
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:273
-msgid "No analytics data yet."
+#: src/admin/pages/Dashboard.js:251
+msgid "You haven’t added a video yet. Once you do, this dashboard fills up with real engagement data — sessions, completion rates, top videos, and milestone events."
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:274
-msgid "Data will appear here once viewers start watching your videos."
+#: src/admin/pages/Dashboard.js:255
+msgid "1. Add your first video"
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:285
-msgid "Top Videos"
+#: src/admin/pages/Dashboard.js:256
+msgid "Paste a YouTube, Vimeo, Bunny, or Wistia URL — we auto-detect the platform."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:259
+msgid "2. Embed it"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:260
+msgid "Use the [mediashield id=X] shortcode or the MediaShield Video block."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:263
+msgid "3. Watch it play"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:264
+msgid "Visit the page in an incognito window to see the watermark and protection in action."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:269
+msgid "Add Your First Video"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:272
+msgid "Review Settings"
 msgstr ""
 
 #: build/admin/index.js:1
 #: src/admin/pages/Dashboard.js:301
+msgid "Activity Overview"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:309
+msgid "No analytics data yet."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:310
+msgid "Data will appear here once viewers start watching your videos."
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:321
+msgid "Top Videos"
+msgstr ""
+
+#: build/admin/index.js:1
+#: src/admin/pages/Dashboard.js:337
 msgid "Recent Milestones"
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:325
+#: src/admin/pages/Dashboard.js:361
 msgid "Playback Heatmaps"
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:326
+#: src/admin/pages/Dashboard.js:362
 msgid "See exactly where viewers watch, rewatch, and drop off with 10-second precision heatmaps."
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:330
+#: src/admin/pages/Dashboard.js:366
 msgid "Realtime Viewers"
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:331
+#: src/admin/pages/Dashboard.js:367
 msgid "Live dashboard showing who's watching right now with 15-second auto-refresh."
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:335
+#: src/admin/pages/Dashboard.js:371
 msgid "Suspicious Activity"
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:336
+#: src/admin/pages/Dashboard.js:372
 msgid "Detect multi-IP usage, VPN, devtools, and rapid seeking with automatic alerts."
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:340
+#: src/admin/pages/Dashboard.js:376
 msgid "CSV & PDF Export"
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:341
+#: src/admin/pages/Dashboard.js:377
 msgid "Export watch sessions, milestones, and user data as CSV or formatted PDF reports."
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:346
+#: src/admin/pages/Dashboard.js:382
 msgid "Unlock Advanced Analytics with MediaShield Pro"
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:347
+#: src/admin/pages/Dashboard.js:383
 msgid "Heatmaps, realtime viewers, suspicious activity alerts, data export, and more."
 msgstr ""
 
 #: build/admin/index.js:1
-#: src/admin/pages/Dashboard.js:350
+#: src/admin/pages/Dashboard.js:386
 msgid "Upgrade to Pro"
 msgstr ""
 
