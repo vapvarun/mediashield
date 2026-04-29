@@ -1,5 +1,7 @@
 # MediaShield - Developer Reference
 
+> **READ FIRST:** [`audit/manifest.json`](audit/manifest.json) is the canonical inventory — 22 REST routes (`mediashield/v1`), 0 AJAX, 2 admin pages, 6 tables, 3 blocks, 2 shortcodes, 2 cron jobs, 2 CPTs (`mediashield_video`, `mediashield_playlist`), 25 hooks (12 actions + 13 filters), 30 services, 24 settings, 1 storage driver. Use this before grepping. See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
+
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
 - **Version:** 1.0.0

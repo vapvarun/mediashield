@@ -3,3 +3,6 @@ vendor/*
 !vendor/easy-digital-downloads/
 dist/
 *.zip
+
+# wp-plugin-onboard scratch dir
+.claude-tmp/

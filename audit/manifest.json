@@ -1,0 +1,230 @@
+{
+  "$schema": "https://wpmediaverse.com/schemas/wp-plugin-manifest-v1.json",
+  "plugin": {
+    "slug": "mediashield",
+    "name": "MediaShield",
+    "version": "1.0.0",
+    "namespace": "MediaShield",
+    "main_file": "mediashield.php",
+    "text_domain": "mediashield",
+    "extends": null,
+    "extension_hook_consumed": null,
+    "extension_hook_fired": "mediashield_loaded"
+  },
+  "rest": {
+    "namespace": "mediashield/v1",
+    "endpoints": [
+      { "route": "/tags", "methods": ["GET", "POST"], "handler": "TagController::list_tags|create_tag", "permission": "manage_options", "purpose": "List all tags / create tag" },
+      { "route": "/tags/(?P<id>\\d+)", "methods": ["GET", "PUT", "DELETE"], "handler": "TagController::get_tag|update_tag|delete_tag", "permission": "manage_options", "purpose": "Single tag CRUD" },
+      { "route": "/videos/(?P<video_id>\\d+)/tags", "methods": ["GET", "POST"], "handler": "TagController::get_video_tags|assign_tag", "permission": "manage_options", "purpose": "Tags for a video / assign tag" },
+      { "route": "/videos/(?P<video_id>\\d+)/tags/(?P<tag_id>\\d+)", "methods": ["DELETE"], "handler": "TagController::remove_tag", "permission": "manage_options", "purpose": "Remove tag from video" },
+      { "route": "/session/start", "methods": ["POST"], "handler": "SessionController::start_session", "permission": "is_user_logged_in", "purpose": "Start watch session, returns HMAC token" },
+      { "route": "/session/heartbeat", "methods": ["POST"], "handler": "SessionController::heartbeat", "permission": "is_user_logged_in", "purpose": "Update session position + progress (every 30s)" },
+      { "route": "/session/end", "methods": ["POST"], "handler": "SessionController::end_session", "permission": "is_user_logged_in", "purpose": "End session, finalize stats" },
+      { "route": "/session/revoke-user", "methods": ["POST"], "handler": "SessionController::revoke_user", "permission": "manage_options", "purpose": "Kill all active sessions for a user" },
+      { "route": "/playlists/(?P<playlist_id>\\d+)/items", "methods": ["GET", "POST"], "handler": "PlaylistController::list_items|add_item", "permission": "manage_options", "purpose": "List/add playlist items" },
+      { "route": "/playlists/(?P<playlist_id>\\d+)/items/(?P<item_id>\\d+)", "methods": ["DELETE"], "handler": "PlaylistController::remove_item", "permission": "manage_options", "purpose": "Remove playlist item" },
+      { "route": "/playlists/(?P<playlist_id>\\d+)/items/reorder", "methods": ["POST"], "handler": "PlaylistController::reorder_items", "permission": "manage_options", "purpose": "Reorder playlist items" },
+      { "route": "/upload/init", "methods": ["POST"], "handler": "UploadController::init_upload", "permission": "manage_options", "purpose": "Initialize upload (chunked supported)" },
+      { "route": "/upload/status/(?P<upload_id>[a-zA-Z0-9._-]+)", "methods": ["GET"], "handler": "UploadController::get_status", "permission": "manage_options", "purpose": "Check upload progress" },
+      { "route": "/settings", "methods": ["GET", "PUT"], "handler": "SettingsController::get_settings|update_settings", "permission": "manage_options", "purpose": "Retrieve / update plugin settings (filterable via mediashield_settings_response, mediashield_settings_update)" },
+      { "route": "/analytics/overview", "methods": ["GET"], "handler": "AnalyticsController::get_overview", "permission": "manage_options", "purpose": "Dashboard summary stats" },
+      { "route": "/videos/(?P<id>\\d+)/stats", "methods": ["GET"], "handler": "AnalyticsController::get_video_stats", "permission": "manage_options", "purpose": "Per-video statistics" },
+      { "route": "/analytics/milestones", "methods": ["GET"], "handler": "AnalyticsController::get_milestones", "permission": "manage_options", "purpose": "Milestone completion data" },
+      { "route": "/analytics/users", "methods": ["GET"], "handler": "AnalyticsController::get_users", "permission": "manage_options", "purpose": "User engagement list" },
+      { "route": "/analytics/users/(?P<user_id>\\d+)", "methods": ["GET"], "handler": "AnalyticsController::get_user_detail", "permission": "manage_options", "purpose": "Single user detail" },
+      { "route": "/analytics/my-videos", "methods": ["GET"], "handler": "AnalyticsController::get_my_videos", "permission": "is_user_logged_in", "purpose": "Current user's watched videos" },
+      { "route": "/stream/(?P<video_id>\\d+)", "methods": ["GET"], "handler": "StreamController::stream_video", "permission": "AccessControl::can_watch (mediashield_can_watch filter)", "purpose": "Stream a self-hosted video file with permission gate" },
+      { "route": "/protection/devtools-event", "methods": ["POST"], "handler": "ProtectionController::log_devtools_event", "permission": "is_user_logged_in", "purpose": "Log a devtools-detection event for analytics + rate limiting" }
+    ]
+  },
+  "ajax": [],
+  "admin_pages": [
+    { "title": "MediaShield", "slug": "mediashield", "parent": "<top-level>", "capability": "manage_options", "source": "includes/Admin/Menu.php (add_menu_page)" },
+    { "title": "Setup", "slug": "mediashield-setup", "parent": "mediashield", "capability": "manage_options", "source": "includes/Admin/SetupWizard.php (add_submenu_page)" }
+  ],
+  "settings": [
+    { "key": "ms_enabled", "group": "ms_settings", "type": "bool", "default": true, "controls": "Master enable/disable toggle" },
+    { "key": "ms_default_protection", "group": "ms_settings", "type": "string", "default": "standard", "controls": "Default protection level (standard|drm)" },
+    { "key": "ms_require_login", "group": "ms_settings", "type": "bool", "default": false, "controls": "Require login to view protected videos" },
+    { "key": "ms_watermark_opacity", "group": "ms_settings", "type": "float", "default": 0.5, "controls": "Watermark overlay opacity (0-1)" },
+    { "key": "ms_watermark_color", "group": "ms_settings", "type": "string", "default": "#ffffff", "controls": "Watermark text color (hex)" },
+    { "key": "ms_watermark_swap_interval", "group": "ms_settings", "type": "int", "default": 30, "controls": "Watermark position-swap interval (seconds)" },
+    { "key": "ms_allowed_domains", "group": "ms_settings", "type": "array", "default": [], "controls": "Allowed embed domains (anti-leech)" },
+    { "key": "ms_max_concurrent_streams", "group": "ms_settings", "type": "int", "default": 2, "controls": "Max concurrent stream sessions per user" },
+    { "key": "ms_custom_url_patterns", "group": "ms_settings", "type": "array", "default": [], "controls": "Custom URL patterns to detect+wrap as videos" },
+    { "key": "ms_show_badge", "group": "ms_settings", "type": "bool", "default": true, "controls": "Show 'Protected by MediaShield' badge on player" },
+    { "key": "ms_max_upload_size", "group": "ms_settings", "type": "int", "default": 524288000, "controls": "Max upload size in bytes (default 500MB)" },
+    { "key": "ms_login_overlay_text", "group": "ms_settings", "type": "string", "default": "", "controls": "Text for the login-required overlay" },
+    { "key": "ms_login_button_text", "group": "ms_settings", "type": "string", "default": "Log in", "controls": "Login overlay CTA button text" },
+    { "key": "ms_access_denied_text", "group": "ms_settings", "type": "string", "default": "", "controls": "Text shown when role-based access is denied" },
+    { "key": "ms_block_right_click", "group": "ms_settings", "type": "bool", "default": true, "controls": "Disable right-click context menu on protected players" },
+    { "key": "ms_block_keyboard", "group": "ms_settings", "type": "bool", "default": true, "controls": "Block keyboard shortcuts on protected players" },
+    { "key": "ms_detect_devtools", "group": "ms_settings", "type": "bool", "default": true, "controls": "Detect when devtools are open" },
+    { "key": "ms_pause_on_devtools", "group": "ms_settings", "type": "bool", "default": true, "controls": "Pause playback if devtools detected" },
+    { "key": "ms_devtools_title", "group": "ms_settings", "type": "string", "default": "", "controls": "Title shown to user when devtools are detected" },
+    { "key": "ms_devtools_message", "group": "ms_settings", "type": "string", "default": "", "controls": "Message body shown when devtools detected" },
+    { "key": "ms_milestones", "group": "ms_settings", "type": "array", "default": [25, 50, 75, 100], "controls": "Milestone percentages to track" },
+    { "key": "ms_db_version", "group": "ms_internal", "type": "int", "default": 1, "controls": "Internal DB schema version (managed by Migrator)" },
+    { "key": "ms_archive_old_sessions", "group": "ms_settings", "type": "bool", "default": true, "controls": "Archive watch sessions older than N days (cron-driven)" },
+    { "key": "ms_cleanup_inactive_sessions", "group": "ms_settings", "type": "bool", "default": true, "controls": "Clean up sessions whose last_heartbeat is older than the inactivity threshold" }
+  ],
+  "shortcodes": [
+    { "tag": "mediashield", "handler": "Block\\Shortcode::render", "attrs": ["id"] },
+    { "tag": "mediashield_my_videos", "handler": "Block\\MyVideosBlock::shortcode_render", "attrs": [] }
+  ],
+  "blocks": [
+    { "name": "mediashield/video", "render": "Block\\VideoBlock::render", "interactivity": false, "source": "src/blocks/video/", "build": "build/blocks/video/" },
+    { "name": "mediashield/playlist", "render": "Block\\PlaylistBlock::render", "interactivity": false, "source": "src/blocks/playlist/", "build": "build/blocks/playlist/" },
+    { "name": "mediashield/my-videos", "render": "Block\\MyVideosBlock::render", "interactivity": false, "source": "src/blocks/my-videos/", "build": "build/blocks/my-videos/" }
+  ],
+  "post_types": [
+    { "slug": "mediashield_video", "rest_base": "mediashield-videos", "supports": ["title", "editor", "thumbnail", "custom-fields"], "purpose": "Protected video item with platform metadata", "registered_in": "includes/CPT/VideoPostType.php" },
+    { "slug": "mediashield_playlist", "rest_base": "mediashield-playlists", "supports": ["title", "editor", "thumbnail"], "purpose": "Playlist of videos with autoplay/countdown/loop/shuffle controls", "registered_in": "includes/CPT/PlaylistPostType.php" }
+  ],
+  "taxonomies": [],
+  "tables": [
+    { "name": "{prefix}ms_tags", "purpose": "Tag dictionary (id, name, slug, description, created_by, created_at)", "schema_in": "includes/DB/Schema.php:35" },
+    { "name": "{prefix}ms_video_tags", "purpose": "Video↔tag junction (video_id, tag_id unique pair)", "schema_in": "includes/DB/Schema.php:49" },
+    { "name": "{prefix}ms_watch_sessions", "purpose": "Active + recent watch sessions with HMAC tokens, IP, device, position, progress", "schema_in": "includes/DB/Schema.php:60" },
+    { "name": "{prefix}ms_watch_sessions_archive", "purpose": "Archive table for sessions older than retention threshold (mirrors ms_watch_sessions schema)", "schema_in": "includes/DB/Schema.php (dynamic)" },
+    { "name": "{prefix}ms_milestones", "purpose": "Milestone completion records (video, user, milestone_pct, reached_at)", "schema_in": "includes/DB/Schema.php:95" },
+    { "name": "{prefix}ms_playlist_items", "purpose": "Ordered playlist items (playlist_id, video_id, sort_order)", "schema_in": "includes/DB/Schema.php:110" }
+  ],
+  "capabilities": [],
+  "services": [
+    { "key": "core.plugin", "class": "MediaShield\\Core\\Plugin", "added": "1.0.0" },
+    { "key": "core.activator", "class": "MediaShield\\Core\\Activator", "added": "1.0.0" },
+    { "key": "core.deactivator", "class": "MediaShield\\Core\\Deactivator", "added": "1.0.0" },
+    { "key": "core.migrator", "class": "MediaShield\\Core\\Migrator", "added": "1.0.0" },
+    { "key": "core.assets", "class": "MediaShield\\Core\\Assets", "added": "1.0.0" },
+    { "key": "cpt.video", "class": "MediaShield\\CPT\\VideoPostType", "added": "1.0.0" },
+    { "key": "cpt.playlist", "class": "MediaShield\\CPT\\PlaylistPostType", "added": "1.0.0" },
+    { "key": "cpt.thumbnail", "class": "MediaShield\\CPT\\Thumbnail", "added": "1.0.0" },
+    { "key": "privacy.exporter", "class": "MediaShield\\Privacy\\PrivacyExporter", "added": "1.0.0" },
+    { "key": "privacy.eraser", "class": "MediaShield\\Privacy\\PrivacyEraser", "added": "1.0.0" },
+    { "key": "access.session_manager", "class": "MediaShield\\Access\\SessionManager", "added": "1.0.0" },
+    { "key": "access.access_control", "class": "MediaShield\\Access\\AccessControl", "added": "1.0.0" },
+    { "key": "admin.menu", "class": "MediaShield\\Admin\\Menu", "added": "1.0.0" },
+    { "key": "admin.setup_wizard", "class": "MediaShield\\Admin\\SetupWizard", "added": "1.0.0" },
+    { "key": "tags.manager", "class": "MediaShield\\Tags\\TagManager", "added": "1.0.0" },
+    { "key": "milestones.tracker", "class": "MediaShield\\Milestones\\MilestoneTracker", "added": "1.0.0" },
+    { "key": "db.schema", "class": "MediaShield\\DB\\Schema", "added": "1.0.0" },
+    { "key": "rest.stream", "class": "MediaShield\\REST\\StreamController", "added": "1.0.0" },
+    { "key": "rest.protection", "class": "MediaShield\\REST\\ProtectionController", "added": "1.0.0" },
+    { "key": "rest.analytics", "class": "MediaShield\\REST\\AnalyticsController", "added": "1.0.0" },
+    { "key": "rest.playlist", "class": "MediaShield\\REST\\PlaylistController", "added": "1.0.0" },
+    { "key": "rest.upload", "class": "MediaShield\\REST\\UploadController", "added": "1.0.0" },
+    { "key": "rest.session", "class": "MediaShield\\REST\\SessionController", "added": "1.0.0" },
+    { "key": "rest.settings", "class": "MediaShield\\REST\\SettingsController", "added": "1.0.0" },
+    { "key": "rest.tag", "class": "MediaShield\\REST\\TagController", "added": "1.0.0" },
+    { "key": "upload.manager", "class": "MediaShield\\Upload\\UploadManager", "added": "1.0.0" },
+    { "key": "cron.cleanup", "class": "MediaShield\\Cron\\Cleanup", "added": "1.0.0" },
+    { "key": "block.shortcode", "class": "MediaShield\\Block\\Shortcode", "added": "1.0.0" },
+    { "key": "block.playlist", "class": "MediaShield\\Block\\PlaylistBlock", "added": "1.0.0" },
+    { "key": "block.my_videos", "class": "MediaShield\\Block\\MyVideosBlock", "added": "1.0.0" }
+  ],
+  "hooks_fired": [
+    { "name": "mediashield_loaded", "type": "action", "args": "(none)", "where": "includes/Core/Plugin.php:110", "consumed_by": "PRO bootstrap (mediashield-pro)" },
+    { "name": "mediashield_concurrent_limit_reached", "type": "action", "args": "$user_id, $video_id, $active_count, $max_concurrent", "where": "includes/Access/SessionManager.php:107", "consumed_by": null },
+    { "name": "mediashield_session_started", "type": "action", "args": "$session_id, $video_id, $user_id, $ip", "where": "includes/Access/SessionManager.php:176", "consumed_by": null },
+    { "name": "mediashield_session_ended", "type": "action", "args": "$session_id, $video_id, $user_id", "where": "includes/REST/SessionController.php:278", "consumed_by": null },
+    { "name": "mediashield_user_access_revoked", "type": "action", "args": "$user_id, $count", "where": "includes/REST/SessionController.php:313", "consumed_by": null },
+    { "name": "mediashield_milestone_reached", "type": "action", "args": "$user_id, $video_id, $pct, $session_id", "where": "includes/Milestones/MilestoneTracker.php:126", "consumed_by": "PRO Modules\\Milestones\\AdvancedActions" },
+    { "name": "mediashield_milestone_{pct}", "type": "action", "args": "$user_id, $video_id (dynamic — pct 25/50/75/100)", "where": "includes/Milestones/MilestoneTracker.php:138", "consumed_by": "PRO Modules\\Milestones\\AdvancedActions" },
+    { "name": "mediashield_devtools_detected", "type": "action", "args": "$context", "where": "includes/REST/ProtectionController.php:154", "consumed_by": null },
+    { "name": "mediashield_upload_complete", "type": "action", "args": "$video_id, $driver_name, $result", "where": "includes/Upload/UploadManager.php:148", "consumed_by": null },
+    { "name": "mediashield_needs_shaka", "type": "action", "args": "(none)", "where": "includes/Block/VideoBlock.php:62, includes/Block/PlaylistBlock.php:200", "consumed_by": "Frontend Assets enqueue (loads shaka-player when needed)" },
+    { "name": "mediashield_before_player", "type": "action", "args": "$video_id", "where": "includes/Player/PlayerWrapper.php:72", "consumed_by": null },
+    { "name": "mediashield_after_player", "type": "action", "args": "$video_id", "where": "includes/Player/PlayerWrapper.php:169", "consumed_by": null },
+
+    { "name": "mediashield_enqueue_frontend", "type": "filter", "args": "$enqueue (bool)", "where": "includes/Core/Assets.php:71", "consumed_by": null },
+    { "name": "mediashield_can_watch", "type": "filter", "args": "$result, $video_id, $user_id", "where": "includes/Access/AccessControl.php:64", "consumed_by": "PRO Access\\RoleAccess, PRO Access\\EmailGate, PRO LMS adapters" },
+    { "name": "mediashield_milestone_thresholds", "type": "filter", "args": "$thresholds, $video_id", "where": "includes/Milestones/MilestoneTracker.php:52", "consumed_by": "PRO Modules\\Milestones\\AdvancedActions" },
+    { "name": "mediashield_trusted_ip_headers", "type": "filter", "args": "$headers", "where": "includes/Access/SessionManager.php:165, includes/REST/StreamController.php:340", "consumed_by": null },
+    { "name": "mediashield_watermark_config", "type": "filter", "args": "$watermark_config, $video_id, $user_id", "where": "includes/Player/Watermark.php:225", "consumed_by": "PRO Watermark\\AdvancedConfig" },
+    { "name": "mediashield_settings_response", "type": "filter", "args": "$settings", "where": "includes/REST/SettingsController.php:142", "consumed_by": "PRO Admin\\ProSettings, PRO Admin\\DRMSettings (extends settings shape with PRO fields)" },
+    { "name": "mediashield_settings_update", "type": "filter", "args": "$data", "where": "includes/REST/SettingsController.php:169", "consumed_by": "PRO Admin\\ProSettings, PRO Admin\\DRMSettings (saves PRO fields)" },
+    { "name": "mediashield_upload_drivers", "type": "filter", "args": "$drivers", "where": "includes/Upload/UploadManager.php:48", "consumed_by": "PRO Upload\\Drivers (Bunny, YouTube, Vimeo, Wistia)" },
+    { "name": "mediashield_shortcode_source_url", "type": "filter", "args": "$source_url, $video_id, $atts", "where": "includes/Block/Shortcode.php:62", "consumed_by": null },
+    { "name": "mediashield_player_type", "type": "filter", "args": "$type, $video_id", "where": "includes/Player/Protection.php:51, includes/Player/PlayerWrapper.php:196", "consumed_by": "PRO DRM\\Packager (returns 'drm' for DRM-protected videos)" },
+    { "name": "mediashield_player_classes", "type": "filter", "args": "$classes, $video_id", "where": "includes/Player/PlayerWrapper.php:82", "consumed_by": null },
+    { "name": "mediashield_enable_output_buffer", "type": "filter", "args": "$enable (bool)", "where": "includes/Player/PlayerWrapper.php:51", "consumed_by": null },
+    { "name": "mediashield_protection_config", "type": "filter", "args": "$config", "where": "includes/Player/Protection.php:52", "consumed_by": null }
+  ],
+  "buddypress_integration": {
+    "enabled_when": "n/a — not a BuddyPress integration",
+    "manager": null,
+    "sub_classes": []
+  },
+  "frontend_assets": {
+    "js": [
+      { "handle": "mediashield-player-wrapper", "src": "assets/js/player-wrapper.js", "purpose": "Vanilla JS player detection + protection wrapper" },
+      { "handle": "mediashield-watermark", "src": "assets/js/watermark.js", "purpose": "Dynamic user watermark overlay" },
+      { "handle": "mediashield-tracker", "src": "assets/js/tracker.js", "purpose": "Heartbeat POST to /session/heartbeat every 30s" },
+      { "handle": "mediashield-protection", "src": "assets/js/protection.js", "purpose": "Right-click block, devtools detection" },
+      { "handle": "mediashield-admin", "src": "build/admin/index.js", "purpose": "React admin SPA (Dashboard, Videos, Playlists, Tags, Students, Milestones, Settings, Wizard)" }
+    ],
+    "css": [
+      { "handle": "mediashield-player", "src": "assets/css/player.css", "purpose": "Player + watermark styles" }
+    ],
+    "external_libs": ["chart.js", "shaka-player"]
+  },
+  "cron": [
+    { "hook": "mediashield_archive_old_sessions", "interval": "daily", "callback": "Cron\\Cleanup::archive_old_sessions", "purpose": "Move sessions older than retention threshold to ms_watch_sessions_archive" },
+    { "hook": "mediashield_cleanup_inactive_sessions", "interval": "hourly", "callback": "Cron\\Cleanup::cleanup_inactive_sessions", "purpose": "Mark sessions whose last_heartbeat is stale as inactive" }
+  ],
+  "wp_cli": [],
+  "storage_drivers": [
+    { "key": "self", "class": "MediaShield\\Upload\\Drivers\\SelfHosted", "purpose": "Local wp-content upload driver (default)" }
+  ],
+  "security": {
+    "uploads_gate": "AccessControl::can_watch (mediashield_can_watch filter chain) — applied to /stream/{video_id} and player rendering",
+    "signing_entry_points": ["SessionManager::generate_token (HMAC-signed session tokens)"],
+    "always_sign_filter": null,
+    "rate_limit_middleware": "ms_devtools_rl_* options track devtools-event POST rate limits per IP"
+  },
+  "ci_guards": {
+    "script": "composer verify",
+    "url_emission_regex": null,
+    "storage_internal_marker": null,
+    "phpstan_level": 5
+  },
+  "coding_rules": [
+    "PSR-4 autoload via Composer (MediaShield\\ → includes/)",
+    "PHP 8.1+ minimum",
+    "WordPress 6.5+ minimum",
+    "REST namespace mediashield/v1 — exclusive (PRO uses mediashield-pro/v1)",
+    "Hooks fired = wbam_*-style with mediashield_ prefix; PRO listens but never re-fires under our prefix",
+    "DB tables prefixed with ms_; option keys prefixed with ms_",
+    "Asset handles prefixed mediashield-* (PRO uses mediashield-pro-*)"
+  ],
+  "build_commands": {
+    "release": "grunt build (npm run build)",
+    "ci_local": "composer verify"
+  },
+  "extension_points_for_pro": [
+    { "pattern": "mediashield_admin_routes", "detail": "Filter — Pro adds React admin routes to the SPA hash router" },
+    { "pattern": "wp.hooks SlotFill", "detail": "Admin SPA exposes injection points for Pro to render UI in existing pages" },
+    { "pattern": "mediashield_settings_response / mediashield_settings_update", "detail": "Pro adds settings to the GET/PUT REST shape and saves them" },
+    { "pattern": "mediashield_player_type", "detail": "Pro overrides to 'drm' for DRM-protected videos, swapping player type" },
+    { "pattern": "mediashield_can_watch", "detail": "Pro injects RoleAccess, EmailGate, LMS adapter checks into the access decision" },
+    { "pattern": "mediashield_upload_drivers", "detail": "Pro registers Bunny, YouTube, Vimeo, Wistia upload drivers" }
+  ],
+  "notes": [
+    "FREE plugin uses 'mediashield_loaded' as the extension hook PRO consumes for its bootstrap.",
+    "Multi-method REST routes (GET+PUT on /settings, GET+POST on /tags, GET+PUT+DELETE on /tags/{id}) are counted as one register_rest_route call each — total: 22 calls representing more logical endpoint × method combinations.",
+    "ms_watch_sessions_archive table mirrors ms_watch_sessions but is populated by the daily archive cron — same schema, dynamic creation.",
+    "Block source lives at src/blocks/<name>/ and is built to build/blocks/<name>/ via webpack. block.json appears in both — the build/ copy is the one register_block_type_from_metadata() actually loads.",
+    "Coverage gate: REST 22/22 (100%), AJAX 0/0 (no AJAX in FREE), hooks_fired 25/25 (12 actions + 13 filters), tables 5 grep + 1 dynamic = 6 logical, blocks 3 unique (6 grep hits because src/ + build/ each have one), shortcodes 2/2, cron 2/2, admin_pages 2/2, services 30/30."
+  ],
+  "generated": {
+    "at": "2026-04-30T00:00:00Z",
+    "from": "wp-plugin-onboard skill",
+    "branch": "main",
+    "schema_version": "v1",
+    "scan_scope": "gruntfile",
+    "scan_path": ".",
+    "php_file_count": 49
+  }
+}
