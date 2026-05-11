@@ -1,0 +1,159 @@
+# MediaShield — Architecture Invariants
+#
+# Canonical source of truth. `bin/architecture-checks.sh` parses this
+# file at runtime — adding an invariant here AND a matching check_*
+# function in the script are the two halves of a contract. The script
+# refuses to run when they drift apart.
+#
+# Schema for each entry:
+#   id           : stable identifier (e.g. U1, A2, B3) — also names the check function (`check_<id>`)
+#   group        : one of [universal, data-flow, controller, documentation, coupling, security]
+#   title        : short human description
+#   why          : the failure mode this gate prevents
+#   severity     : [error, warning] — errors fail the gate; warnings print only
+#   status       : [enforced, manual-review, planned, partial]
+#   gate_function: the bash function in architecture-checks.sh (null for manual-review)
+#   added_in     : ISO date — when the invariant was added
+
+version: 1
+plugin: mediashield
+
+# ──────────────────────────────────────────────────────────────────────
+# Universal invariants (every WBcom plugin should ship with these).
+# Add plugin-specific groups (A/B/C/etc.) below this section.
+# ──────────────────────────────────────────────────────────────────────
+
+invariants:
+
+  # U1 adaptation: MediaShield does not have a single Models/ folder.
+  # Data writes are co-located with the feature that owns them
+  # (DB/Schema, Access/SessionManager, Milestones/MilestoneTracker, Tags/TagManager,
+  # Cron/Cleanup, Privacy/*, Upload/*, CPT/*). check_U1 enforces "no $wpdb in
+  # the REST/Admin/Block/Player layers" — the actually-load-bearing variant.
+  - id: U1
+    group: universal
+    title: "Zero raw \\$wpdb in REST/Admin/Block/Player layers (allowed in DB/, Access/, Milestones/, Tags/, Cron/, Privacy/, Upload/, CPT/)"
+    why: "$wpdb in a REST controller or block render means cache invalidation, sanitization, and migration concerns get re-implemented per call site instead of going through the data-layer files that own those tables."
+    severity: error
+    status: enforced
+    gate_function: check_U1
+    added_in: 2026-05-11
+
+  # U2 deviation: N/A for MediaShield.
+  # The plugin uses CPTs (mediashield_video, mediashield_playlist) plus a thin
+  # DB\Schema + per-feature table accessors (SessionManager, MilestoneTracker,
+  # TagManager) instead of an abstract Model base class. An abstract Model
+  # would be premature abstraction at the current surface area; U1 covers the
+  # equivalent ground by gating where $wpdb is allowed to live. Marked
+  # manual-review until someone makes the case to refactor into a Models layer.
+  - id: U2
+    group: universal
+    title: "Every Model class extends the plugin's Model base — N/A (no Models layer)"
+    why: "MediaShield uses CPTs + per-feature data accessors instead of a Model base. See INVARIANTS.yaml comment block above for the architectural rationale."
+    severity: warning
+    status: manual-review
+    gate_function: null
+    added_in: 2026-05-11
+
+  # U3 adaptation: there is no Base_Controller — controllers extend
+  # WP_REST_Controller directly. check_U3 enforces (a) namespace
+  # MediaShield\REST and (b) extends WP_REST_Controller for every
+  # includes/REST/*Controller.php.
+  - id: U3
+    group: universal
+    title: "Every REST controller lives in MediaShield\\REST and extends WP_REST_Controller"
+    why: "Controllers are the public REST surface. Wrong namespace breaks PSR-4 autoload; wrong base class means no shape-validation helpers from WP core. This is the closest-fit rule until a Base_Controller is introduced."
+    severity: error
+    status: enforced
+    gate_function: check_U3
+    added_in: 2026-05-11
+
+  - id: U4
+    group: universal
+    title: "audit/manifest.json refreshed within 30 days or no structural commits since"
+    why: "Stale manifest equals wrong claims in CLAUDE.md equals drifted understanding. Future sessions read the manifest as truth."
+    severity: warning
+    status: enforced
+    gate_function: check_U4
+    added_in: 2026-05-11
+
+  - id: U5
+    group: universal
+    title: "plan/README.yaml lists every file/folder under plan/"
+    why: "Scattered plan/ docs without an index produce drift. The README is the single source of truth for what is and is not a real plan."
+    severity: error
+    status: enforced
+    gate_function: check_U5
+    added_in: 2026-05-11
+
+  - id: U6
+    group: universal
+    title: "All asset handles use the plugin slug prefix"
+    why: "Prevents enqueue handle collisions across plugins and clearly attributes assets in the WP enqueue ledger."
+    severity: warning
+    status: enforced
+    gate_function: check_U6
+    added_in: 2026-05-11
+
+  - id: U7
+    group: universal
+    title: "Text domain matches plugin slug across all gettext calls"
+    why: "Inconsistent text domains break translation loading silently — strings render in English on translated sites."
+    severity: warning
+    status: manual-review
+    gate_function: null
+    added_in: 2026-05-11
+
+# ──────────────────────────────────────────────────────────────────────
+# Plugin-specific invariants
+#
+# Add groups B/C/D below for your plugin's specific architectural rules.
+# Common patterns:
+#   - Free/Pro coupling rules (A-group, see plan/free-pro-architecture-contract.md if applicable)
+#   - Controller patterns specific to this plugin's Base_Controller subclass
+#   - Service/Repository layer rules
+#   - Capability fallback patterns
+# ──────────────────────────────────────────────────────────────────────
+
+# Example plugin-specific invariant — uncomment and customise:
+#
+#  - id: B1
+#    group: data-flow
+#    title: "Every Service class is a thin facade — no SQL"
+#    why: "SQL belongs in Models. Services orchestrate."
+#    severity: error
+#    status: enforced
+#    gate_function: check_B1
+#    added_in: 2026-05-11
+
+# ──────────────────────────────────────────────────────────────────────
+# Baseline — pre-existing violations recorded here as warnings, not
+# errors. Every entry needs an `eta` (target fix date) so the baseline
+# shrinks over time.
+#
+# Rule: if you add to the baseline, also document in plan/FOLLOWUPS.md
+# so the debt is visible at the plan level too.
+# ──────────────────────────────────────────────────────────────────────
+
+baseline:
+
+  - gate: U1
+    path: "includes/REST/AnalyticsController.php"
+    reason: "Analytics aggregations were originally co-located in the controller. Refactor target: extract into includes/Analytics/AnalyticsRepository.php so the controller becomes a thin formatter."
+    eta: v1.2
+    added: 2026-05-11
+    surfaced_by: "wp-plugin-onboard refresh 2026-05-11 (Phase 4.7.2.5 first-run gate)"
+
+  - gate: U1
+    path: "includes/REST/PlaylistController.php"
+    reason: "Playlist item CRUD is co-located in the controller. Refactor target: includes/Playlist/PlaylistRepository.php (mirroring existing TagManager pattern)."
+    eta: v1.2
+    added: 2026-05-11
+    surfaced_by: "wp-plugin-onboard refresh 2026-05-11 (Phase 4.7.2.5 first-run gate)"
+
+  - gate: U1
+    path: "includes/Player/PlaylistRenderer.php"
+    reason: "Renderer fetches playlist items inline for efficiency. Renderer SHOULD ask PlaylistRepository::get_items($id) instead — same refactor target as PlaylistController."
+    eta: v1.2
+    added: 2026-05-11
+    surfaced_by: "wp-plugin-onboard refresh 2026-05-11 (Phase 4.7.2.5 first-run gate)"

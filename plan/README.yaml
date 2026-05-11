@@ -1,0 +1,162 @@
+# MediaShield — plan/ index
+#
+# Single source of truth for everything in plan/. Two kinds of documents:
+#
+#   - LIVING contracts (kind: living) sit at plan/ root because they're
+#     long-lived: INVARIANTS.yaml, this README, any other contract that
+#     evolves with the codebase. They don't have a "shipped" date.
+#
+#   - DATED artifacts (kind: dated) sit in YYYY-MM-DD-<slug>/ folders
+#     because they capture a specific pass: a release plan, a triage
+#     log, a refactor narrative. Once shipped, they don't change.
+#
+# Rule: if you add a document to plan/, add it here too. Strays produce
+# drift. The architecture-invariants gate's U5 check enforces this.
+
+version: 1
+plugin: mediashield
+
+# ──────────────────────────────────────────────────────────────────────
+# LIVING contracts — evolve with the codebase, no shipped date
+# ──────────────────────────────────────────────────────────────────────
+
+living:
+
+  - id: README
+    path: README.yaml
+    title: Plan index (this file)
+    scope: Single source of truth for everything under plan/.
+    owner: TBD
+    format: yaml
+
+  - id: INVARIANTS
+    path: INVARIANTS.yaml
+    title: Architecture invariants
+    scope: Every architectural rule the codebase commits to. Parsed at runtime by bin/architecture-checks.sh.
+    owner: TBD
+    format: yaml
+    consumed_by:
+      - bin/architecture-checks.sh
+      - bin/local-ci.sh (via composer arch-checks)
+
+  - id: PRO_CLAUDE
+    path: PRO_CLAUDE.md
+    title: Pro plugin developer reference (mirror of mediashield-pro CLAUDE.md)
+    scope: Long-lived reference for Pro internals — kept in free repo so contributors see the Free/Pro contract while editing Free.
+    owner: TBD
+    format: markdown
+
+  - id: ARCHITECTURE
+    path: architecture
+    title: Architecture documents folder
+    scope: PLUGIN_ARCHITECTURE.md and other long-lived architectural narratives.
+    owner: TBD
+    format: folder
+
+  - id: PRO_DOCS
+    path: pro-docs
+    title: Pro plugin planning docs (moved here from pro repo)
+    scope: Pro plugin design + implementation notes that need to live alongside Free for context.
+    owner: TBD
+    format: folder
+
+  - id: QA_CHECKLIST_FREE
+    path: QA_CHECKLIST_FREE.md
+    title: Manual QA checklist (Free)
+    scope: Pre-release manual QA pass for the Free plugin.
+    owner: TBD
+    format: markdown
+
+  - id: QA_CHECKLIST_PRO
+    path: QA_CHECKLIST_PRO.md
+    title: Manual QA checklist (Pro)
+    scope: Pre-release manual QA pass for the Pro plugin.
+    owner: TBD
+    format: markdown
+
+  - id: QA_FUNCTIONAL_CHECKLIST
+    path: QA_FUNCTIONAL_CHECKLIST.md
+    title: Unified functional QA checklist
+    scope: Functional QA grouped by feature area (Free + Pro combined).
+    owner: TBD
+    format: markdown
+
+  - id: QA_BUYER_EXPECTATIONS
+    path: QA_BUYER_EXPECTATIONS.md
+    title: Buyer-perspective acceptance criteria
+    scope: What a paying customer expects to work on first install.
+    owner: TBD
+    format: markdown
+
+  - id: QA_RELEASE_PROSPECT
+    path: QA_RELEASE_PROSPECT.md
+    title: Pre-release prospect checklist
+    scope: Final go/no-go gate before tagging a release.
+    owner: TBD
+    format: markdown
+
+# ──────────────────────────────────────────────────────────────────────
+# DATED artifacts — capture a specific pass, frozen once shipped.
+#
+# Note: existing flat files (DESIGN_SPEC*.md, IMPLEMENTATION_PLAN*.md,
+# RELEASE_FIX_PLAN.md, 1.1.0-player-config-filter.md) are listed here
+# as `dated` even though they aren't yet inside YYYY-MM-DD-<slug>/
+# folders — moving them is a follow-up. The U5 check just needs them
+# indexed; the folder convention is a normalization for the next pass.
+# ──────────────────────────────────────────────────────────────────────
+
+dated:
+
+  - id: DESIGN_SPEC
+    path: DESIGN_SPEC.md
+    status: superseded
+    started: 2026-03-01
+    shipped: 2026-03-15
+    scope: Original design specification (superseded by DESIGN_SPEC_v2.md).
+    owner: TBD
+    format: markdown
+
+  - id: DESIGN_SPEC_v2
+    path: DESIGN_SPEC_v2.md
+    status: shipped
+    started: 2026-03-15
+    shipped: 2026-03-30
+    scope: Updated design specification used to drive v1.0.0 implementation.
+    owner: TBD
+    format: markdown
+
+  - id: IMPLEMENTATION_PLAN
+    path: IMPLEMENTATION_PLAN.md
+    status: superseded
+    started: 2026-03-01
+    shipped: 2026-03-15
+    scope: Original implementation plan (superseded by v2).
+    owner: TBD
+    format: markdown
+
+  - id: IMPLEMENTATION_PLAN_v2
+    path: IMPLEMENTATION_PLAN_v2.md
+    status: shipped
+    started: 2026-03-15
+    shipped: 2026-03-30
+    scope: Updated implementation plan that drove v1.0.0 build-out.
+    owner: TBD
+    format: markdown
+
+  - id: RELEASE_FIX_PLAN
+    path: RELEASE_FIX_PLAN.md
+    status: in-progress
+    started: 2026-04-01
+    shipped: null
+    scope: Critical/high issues found during initial audit; tracked to release-readiness.
+    owner: TBD
+    format: markdown
+
+  - id: 1.1.0-player-config-filter
+    path: 1.1.0-player-config-filter.md
+    status: planned
+    started: 2026-05-11
+    shipped: null
+    scope: FREE-slice plan — mediashield_player_config filter + stable JS event contract for 1.1.0.
+    owner: TBD
+    format: markdown

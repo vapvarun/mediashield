@@ -1,0 +1,57 @@
+{
+  "$schema": "https://wpmediaverse.com/schemas/wp-plugin-manifest-summary-v2.json",
+  "plugin": {
+    "slug": "mediashield",
+    "name": "MediaShield",
+    "version": "1.1.0-dev",
+    "namespace": "MediaShield",
+    "main_file": "mediashield.php",
+    "text_domain": "mediashield",
+    "extends": null,
+    "extension_hook_consumed": null,
+    "extension_hook_fired": "mediashield_loaded"
+  },
+  "counts": {
+    "rest_endpoints": 22,
+    "ajax": 1,
+    "admin_pages": 2,
+    "settings": 24,
+    "shortcodes": 3,
+    "blocks": 3,
+    "post_types": 2,
+    "taxonomies": 0,
+    "tables": 6,
+    "capabilities": 1,
+    "services": 34,
+    "hooks_fired": 25,
+    "cron": 2,
+    "wp_cli": 0,
+    "storage_drivers": 1
+  },
+  "detail_files": {
+    "rest": "manifest.json#/rest",
+    "ajax": "manifest.json#/ajax",
+    "settings": "manifest.json#/settings",
+    "hooks_fired": "manifest.json#/hooks_fired",
+    "services": "manifest.json#/services",
+    "static_analysis": "manifest.json#/static_analysis"
+  },
+  "release_readiness": {
+    "status": "BLOCKED",
+    "blockers": [
+      {
+        "code": "nonce-no-cap",
+        "where": "includes/Admin/Menu.php:174"
+      }
+    ]
+  },
+  "generated": {
+    "at": "2026-05-11T00:00:00Z",
+    "from": "wp-plugin-onboard skill (v2.2 refresh)",
+    "branch": "main",
+    "schema_version": "v2.2",
+    "scan_scope": "gruntfile",
+    "scan_path": ".",
+    "php_file_count": 52
+  }
+}

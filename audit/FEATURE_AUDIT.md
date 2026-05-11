@@ -1,8 +1,35 @@
 # MediaShield -- Feature Audit
 
-**Plugin:** MediaShield v1.0.0
-**Audited:** 2026-04-01
-**Files analyzed:** 249 total (34 PHP source, 35 JS source/built, 6 CSS, 3 block.json, 2 templates)
+**Plugin:** MediaShield v1.1.0-dev
+**Audited:** 2026-04-01 · **Refreshed:** 2026-05-11 (v2.2 manifest, wppqa baseline)
+**Files analyzed:** 249 total (34 PHP source, 35 JS source/built, 6 CSS, 3 block.json, 2 templates) — refreshed: 52 PHP source files
+
+---
+
+## 2026-05-11 Refresh delta
+
+Source-code changes since the 2026-04-01 audit (uncommitted in working tree as of refresh):
+
+| Change | Impact |
+|---|---|
+| **NEW** `includes/Block/PlaylistShortcode.php` + `mediashield_playlist` shortcode | Playlist now renderable from a shortcode (parity with playlist block). Delegates to new `Player\PlaylistRenderer`. |
+| **NEW** `includes/Player/PlaylistRenderer.php` | Shared playlist render — both shortcode and block produce byte-identical markup. |
+| **NEW** `includes/Core/Settings.php` | Single source of truth for free-plugin options — schema (type+default), get/get_all/seed_defaults/sanitize, frontend_config(). Activator + SettingsController + Watermark + AccessControl + Assets all derive from this. |
+| **NEW** `includes/Player/Renderer.php` (existed at audit time but now formalized as service) | Shared single-video render (mirrored by PlaylistRenderer). |
+| Modified `Activator.php`, `Migrator.php`, `Plugin.php`, `Watermark.php`, `AccessControl.php`, `SettingsController.php`, `mediashield.php`, `Block/Shortcode.php`, `Core/Assets.php` | Refactored to consume `Core\Settings` schema — single source of truth migration. |
+| Modified `src/blocks/playlist/render.php` | Now delegates to `Player\PlaylistRenderer`. |
+
+### wppqa baseline 2026-05-11 — release blockers
+
+| Severity | Code | Where | Issue |
+|---|---|---|---|
+| **HIGH** | `nonce-no-cap` | `includes/Admin/Menu.php:174` | AJAX `ms_dismiss_pro_notice` checks nonce but no `current_user_can()`. Nonces prevent CSRF, do NOT authorize. |
+| MEDIUM | `inline-onclick` | `includes/CPT/VideoPostType.php:382, 396` | Inline `onclick=` fights Interactivity API + CSP. |
+| LOW | `tap-target-small` | `assets/css/player.css:179, 202` | Buttons at 32px / 18px violate 40px minimum tap target. |
+
+🚫 **NOT release-ready** until the HIGH is fixed. See [`audit/wppqa-baseline-2026-05-11/SUMMARY.md`](wppqa-baseline-2026-05-11/SUMMARY.md).
+
+---
 
 ---
 
@@ -119,17 +146,22 @@ All created via `dbDelta` in `includes/DB/Schema.php`. Prefix: `{$wpdb->prefix}`
 
 ---
 
-## 4. AJAX Handlers
+## 4. AJAX Handlers (1)
 
-**None.** The plugin uses REST API exclusively; no `wp_ajax_` handlers.
+| Action | File | Nonce | Capability | Purpose |
+|---|---|---|---|---|
+| `wp_ajax_ms_dismiss_pro_notice` | `includes/Admin/Menu.php:33` | `ms_dismiss_pro_notice` | **MISSING** — flagged HIGH by wppqa baseline 2026-05-11 (`nonce-no-cap`) | Dismiss the Pro upsell admin notice for current user (records in user meta). Pair with `current_user_can('manage_options')` before 1.1.0. |
+
+All other server interactions use REST.
 
 ---
 
-## 5. Shortcodes (2)
+## 5. Shortcodes (3)
 
 | Shortcode | File | Description |
 |-----------|------|-------------|
-| `[mediashield id=X]` | `includes/Block/Shortcode.php` | Render protected video player via `Renderer::render()` |
+| `[mediashield id=X]` | `includes/Block/Shortcode.php` | Render protected video player via `Player\Renderer::render()` |
+| `[mediashield_playlist id=Y]` | `includes/Block/PlaylistShortcode.php` (new in 1.1.0) | Render protected playlist via `Player\PlaylistRenderer::render()` — byte-identical to playlist block render |
 | `[mediashield_my_videos]` | `includes/Block/MyVideosBlock.php` | Render current user's watch history grid |
 
 ---

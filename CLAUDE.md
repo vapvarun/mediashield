@@ -1,6 +1,6 @@
 # MediaShield - Developer Reference
 
-> **READ FIRST:** [`audit/manifest.json`](audit/manifest.json) is the canonical inventory — 22 REST routes (`mediashield/v1`), 0 AJAX, 2 admin pages, 6 tables, 3 blocks, 2 shortcodes, 2 cron jobs, 2 CPTs (`mediashield_video`, `mediashield_playlist`), 25 hooks (12 actions + 13 filters), 30 services, 24 settings, 1 storage driver. Use this before grepping. See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
+> **READ FIRST:** Load [`audit/manifest.summary.json`](audit/manifest.summary.json) first (~1.4 KB index) — drill into [`audit/manifest.json`](audit/manifest.json) only when a task touches a specific category. Manifest v2.2 — 22 REST routes (`mediashield/v1`), 1 AJAX (`ms_dismiss_pro_notice`), 2 admin pages, 6 tables, 3 blocks, **3 shortcodes** (added `mediashield_playlist` in 1.1.0), 2 cron jobs, 2 CPTs, 25 hooks (12 actions + 13 filters), 33 services, 24 settings, 1 capability (`upload_mediashield`). 🚫 **Release blocked** by wppqa baseline 2026-05-11 — see [`audit/wppqa-baseline-2026-05-11/SUMMARY.md`](audit/wppqa-baseline-2026-05-11/SUMMARY.md) (1 HIGH: nonce-no-cap at `Menu.php:174`). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
 
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
@@ -38,8 +38,9 @@ includes/
     Plugin.php               Singleton, registers all hooks
     Activator.php            Activation (DB schema, options, flush rewrite)
     Deactivator.php          Deactivation (clear crons)
-    Migrator.php             DB version migration runner
-    Assets.php               Frontend JS/CSS enqueue
+    Migrator.php             DB version migration runner — calls Settings::seed_defaults() on every version bump
+    Settings.php             Single source of truth for free-plugin options — schema (type+default), get/get_all/seed_defaults/sanitize, frontend_config()
+    Assets.php               Frontend JS/CSS enqueue — pulls localized config from Settings::frontend_config()
   CPT/
     VideoPostType.php        mediashield_video CPT + meta
     PlaylistPostType.php     mediashield_playlist CPT + meta
@@ -53,8 +54,10 @@ includes/
     UploadController.php     /upload/init, /upload/status/{id}
     SettingsController.php   /settings GET + PUT
     AnalyticsController.php  /analytics/overview, milestones, users, my-videos
+    ProtectionController.php /protection/devtools-event beacon
+    StreamController.php     /stream/{video_id} signed-URL handoff
   Access/
-    AccessControl.php        Permission checks (mediashield_can_watch filter)
+    AccessControl.php        Permission checks — login gate, per-video `_ms_access_role`, allowed-domain whitelist (default-deny empty referer + `mediashield_allow_empty_referer` filter), `mediashield_can_watch` filter chain. Consumed by SessionController and StreamController.
     SessionManager.php       HMAC token generation, concurrent stream limits
   Block/
     VideoBlock.php           mediashield/video Gutenberg block
@@ -65,6 +68,8 @@ includes/
     PlayerWrapper.php        Output buffer video detection + wrapping
     Protection.php           Right-click disable, devtools detection
     Watermark.php            Dynamic watermark overlay
+    Renderer.php             Shared .ms-protected-player container output for a single video (used by [mediashield] shortcode, video block, single template). Validates the CPT + source URLs and enqueues assets only when output will be produced. Emits per-video playback options (`data-autoplay`/`data-loop`/`data-muted`/`data-controls`) from `_ms_autoplay`/`_ms_loop`/`_ms_muted`/`_ms_show_controls` meta.
+    PlaylistRenderer.php     Shared playlist player output (used by [mediashield_playlist] shortcode and the playlist Gutenberg block). Validates the playlist CPT + items and enqueues assets only when output will be produced.
   Milestones/
     MilestoneTracker.php     25/50/75/100% completion tracking
   Upload/
@@ -214,6 +219,16 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 | GET | `/analytics/users/{user_id}` | Single user detail |
 | GET | `/analytics/my-videos` | Current user's watched videos |
 
+### Protection
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/protection/devtools-event` | Beacon endpoint for client-side devtools/right-click events (permission: `beacon_permission`) |
+
+### Stream
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/stream/{video_id}` | Authenticated streaming handoff (permission: `stream_permissions_check`); used to gate self-hosted media URLs |
+
 ---
 
 ## Gutenberg Blocks
@@ -228,8 +243,11 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 
 ## Shortcodes
 
-- `[mediashield id=X]` -- Render protected video player for video CPT ID X
+- `[mediashield id=X]` -- Render protected video player for video CPT ID X (delegates to `Player\Renderer`)
+- `[mediashield_playlist id=Y]` -- Render protected playlist for playlist CPT ID Y (delegates to `Player\PlaylistRenderer`)
 - `[mediashield_my_videos]` -- Render current user's watched videos grid
+
+Both video and playlist shortcodes return empty output and skip asset enqueue for invalid/missing/non-published IDs.
 
 ---
 
@@ -258,6 +276,8 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 | `mediashield_settings_response` | $settings | GET /settings output |
 | `mediashield_settings_update` | $data | PUT /settings input |
 | `mediashield_trusted_ip_headers` | $headers | IP detection header names |
+| `mediashield_allow_empty_referer` | $allow | When the allowed-domain whitelist is active, decides whether to permit playback for requests with no Referer header. Default `false` (deny). |
+| `mediashield_frontend_config` | $config | Frontend localized config payload emitted as `window.mediashieldConfig`. Pro hooks this to inject premium player options. |
 
 ---
 
@@ -337,8 +357,102 @@ The free plugin provides 4 extension patterns for the Pro add-on:
 
 ## Settings (wp_options)
 
-Key option names used by `SettingsController`:
-`ms_enabled`, `ms_default_protection`, `ms_require_login`, `ms_watermark_opacity`, `ms_watermark_color`, `ms_watermark_swap_interval`, `ms_allowed_domains`, `ms_max_concurrent_streams`, `ms_custom_url_patterns`, `ms_show_badge`, `ms_max_upload_size`, `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`
+All free-plugin options are declared in **`Core\Settings::schema()`** — that array is the single source of truth for option name, scalar type, and default value. Activator, REST controller, Watermark, AccessControl, and Assets all derive from it.
+
+Adding a new option:
+1. Add the entry to `Settings::schema()` (with type + default).
+2. Bump `MEDIASHIELD_DB_VERSION` in `mediashield.php` so existing installs pick it up via `Migrator::run()` → `Settings::seed_defaults()`.
+3. (If exposed to JS) reference it from `Settings::frontend_config()`.
+
+Schema covers: `ms_enabled`, `ms_default_protection`, `ms_require_login`, `ms_watermark_opacity`, `ms_watermark_color`, `ms_watermark_swap_interval`, `ms_allowed_domains`, `ms_max_concurrent_streams`, `ms_custom_url_patterns`, `ms_show_badge`, `ms_max_upload_size`, `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`, `ms_player_speed_control`, `ms_player_sticky`, `ms_player_keyboard`, `ms_player_resume`, `ms_player_endscreen`, `ms_player_endscreen_text`, `ms_player_endscreen_url`, `ms_block_right_click`, `ms_block_keyboard`, `ms_hide_source`, `ms_detect_devtools`, `ms_pause_on_devtools`, `ms_devtools_title`, `ms_devtools_message`.
+
+Pro extends both the GET (`mediashield_settings_response`) and PUT (`mediashield_settings_update`) paths via filter callbacks; Pro callbacks `unset()` their own keys from `$data` so the free SettingsController loop ignores them.
+
+---
+
+## Local CI pipeline
+
+`bin/local-ci.sh` is the single entry point for every quality + correctness check. It runs without GitHub Actions or any external infrastructure — designed to be runnable from a fresh clone.
+
+```bash
+composer ci                      # full gate (static + arch + manifest + journeys + scale)
+composer ci:quick                # lint + coding-rules only (~10s)
+composer ci:no-journeys          # skip browser-dependent stages
+composer install-hooks           # install bin/git-hooks/pre-push (one-time)
+SKIP_LOCAL_CI=1 git push         # emergency bypass
+```
+
+Stages (each prints a tag like `1.1`, `2.2` so you can scroll back to the first red):
+
+| Stage | What | When skipped |
+|---|---|---|
+| 1.1 | PHP lint (every changed source file) | never |
+| 1.2 | WPCS via `composer phpcs` | `--quick` mode, or vendor missing |
+| 1.3 | PHPStan via `composer phpstan` | `--quick` mode, or vendor missing |
+| 2.1 | `bin/coding-rules-check.sh` | never |
+| 2.2 | `bin/architecture-checks.sh` (parses `plan/INVARIANTS.yaml`) | never |
+| 3.1 | Manifest freshness (`audit/manifest.json` < 30 days) | `--quick` mode |
+| 4.1 | `bin/run-journeys.sh` against `$LOCAL_CI_SITE_URL` (default `http://mediashield.local`) | `--quick` / `--no-journeys`, or site unreachable |
+| 5.1 | `wp mediashield scale benchmark` | `wp` not on PATH or command not registered |
+
+### Architecture invariants (`plan/INVARIANTS.yaml`)
+
+The canonical list of architectural rules lives at `plan/INVARIANTS.yaml`. `bin/architecture-checks.sh` parses it at runtime — adding an invariant there AND a matching `check_<id>` function in the script is a contract. The script refuses to run when they drift apart.
+
+MediaShield-specific deviations from the universal U-set:
+- **U1** — adapted: enforces "no `$wpdb` in REST/Admin/Block/Player layers" (allowed in `DB/`, `Access/`, `Milestones/`, `Tags/`, `Cron/`, `Privacy/`, `Upload/`, `CPT/`).
+- **U2** — N/A. MediaShield uses CPTs + per-feature data accessors instead of an abstract Model base. `gate_function: null`, status `manual-review`. See `plan/INVARIANTS.yaml` comment block for the rationale.
+- **U3** — adapted: enforces controllers under `includes/REST/*Controller.php` live in `MediaShield\REST` namespace and extend `WP_REST_Controller` (no Base_Controller exists yet).
+
+Pre-existing `$wpdb` violations should be moved to the `baseline:` array in `plan/INVARIANTS.yaml` with an `eta` for fix, not silently allowed.
+
+---
+
+## Customer journeys
+
+End-to-end customer flows live under `audit/journeys/<role>/`. Each is a self-contained markdown file with YAML frontmatter (`journey`, `priority`, `roles`, `covers`, `prerequisites`). A journey-aware agent (Playwright + curl + mysql) reads the file and executes every step against a live site.
+
+```bash
+composer journeys                 # all journeys (default site $LOCAL_CI_SITE_URL)
+composer journeys:critical        # only priority: critical
+composer journeys:dry-run         # list what would run, no exec
+bash bin/run-journeys.sh --site http://staging.local --only customer/watch
+```
+
+Results land in `audit/journey-runs/{YYYY-MM-DD-HHMM}/{slug}.json` plus an aggregated `summary.json`. The local-CI gate stage 4.1 fails the run if the most recent prior run had any FAIL journeys (regression sentinel).
+
+Critical journeys shipped 2026-05-11:
+- `customer/watch-protected-video.md` — full happy path: log in → wrapper renders → watermark → heartbeat → 25% milestone fires.
+- `admin/upload-and-publish-video.md` — upload via `/upload/init` → CPT publishes → renders via shortcode AND block.
+- `security/concurrent-stream-limit.md` — third concurrent stream is denied with `mediashield_concurrent_limit_reached` hook fired.
+
+When a new customer-facing feature lands, add one journey per feature. When a bug is fixed that wasn't journey-covered, add one as a regression sentinel. See `audit/journeys/README.md` for schema + execution model + when NOT to write a journey.
+
+---
+
+## Scale benchmark
+
+`src/CLI/ScaleCommand.php` ships three WP-CLI commands that gate hot-path query budgets against a production-shape dataset.
+
+```bash
+composer scale:seed       # 10000 users × 10 sessions × 4 milestones (~400k rows)
+composer scale:bench      # times 5 hot paths against budgets, exits non-zero on overage
+composer scale:teardown   # drops every synthetic row (uid >= 1_000_000)
+```
+
+Hot paths gated:
+
+| Key | What it measures | Budget |
+|---|---|---|
+| `session_heartbeat` | UPDATE `wp_ms_watch_sessions` SET last_heartbeat WHERE id=PK | 5ms |
+| `access_can_watch` | COUNT(*) active sessions for user (concurrent-limit) | 5ms |
+| `stream_signed_lookup` | SELECT row by `(session_token, video_id)` | 30ms |
+| `milestone_record` | INSERT IGNORE on UNIQUE `(video_id, user_id, pct)` | 20ms |
+| `analytics_overview` | totals + distinct users + completed-100% count | 30ms |
+
+Budgets are calibrated for a typical Local-by-Flywheel MySQL 8 box. If a query exceeds budget, `composer scale:bench` exits 1 and the local-CI gate (stage 5.1) blocks the push. Teardown is idempotent — synthetic rows are keyed by `user_id >= 1000000` and a CPT title literal.
+
+Tighten budgets when refactoring a hot path. Loosen only with a written rationale in `plan/INVARIANTS.yaml` (add a `B`-group invariant or a release note in `plan/RELEASE_FIX_PLAN.md`).
 
 ---
 
@@ -367,15 +481,19 @@ Key option names used by `SettingsController`:
 | Release Fix Plan | `plan/RELEASE_FIX_PLAN.md` | Critical/high issues found during audit |
 | QA Checklist (Free) | `plan/QA_CHECKLIST_FREE.md` | Manual QA checklist for free plugin |
 | QA Checklist (Pro) | `plan/QA_CHECKLIST_PRO.md` | Manual QA checklist for pro plugin |
+| QA Functional Checklist | `plan/QA_FUNCTIONAL_CHECKLIST.md` | Unified functional QA grouped by feature area |
+| QA Buyer Expectations | `plan/QA_BUYER_EXPECTATIONS.md` | Buyer-perspective acceptance criteria |
+| QA Release Prospect | `plan/QA_RELEASE_PROSPECT.md` | Pre-release prospect checklist |
 | Design Spec | `plan/DESIGN_SPEC.md` | Original design specification |
 | Design Spec v2 | `plan/DESIGN_SPEC_v2.md` | Updated design specification |
 | Implementation Plan | `plan/IMPLEMENTATION_PLAN.md` | Original implementation plan |
 | Implementation Plan v2 | `plan/IMPLEMENTATION_PLAN_v2.md` | Updated implementation plan |
+| 1.1.0 Player Config Filter | `plan/1.1.0-player-config-filter.md` | FREE-slice plan for `mediashield_player_config` filter + stable JS event contract |
 | Architecture | `plan/architecture/PLUGIN_ARCHITECTURE.md` | High-level architecture, module graph |
-| Feature Audit | `plan/audit/FEATURE_AUDIT.md` | Complete feature inventory |
-| Code Flows | `plan/audit/CODE_FLOWS.md` | 16 code flow maps |
 | Pro CLAUDE.md | `plan/PRO_CLAUDE.md` | Pro plugin developer reference (moved from pro) |
 | Pro Docs | `plan/pro-docs/` | Pro plugin planning docs (moved from pro) |
+
+> The canonical feature audit and code-flow maps now live in the top-level `audit/` directory (`audit/FEATURE_AUDIT.md`, `audit/CODE_FLOWS.md`, `audit/manifest.json`, `audit/ROLE_MATRIX.md`, `audit/graph.html`), not under `plan/audit/`.
 
 ---
 
@@ -383,6 +501,74 @@ Key option names used by `SettingsController`:
 
 | Date | Files | Summary |
 |------|-------|---------|
+| 2026-05-11 | audit/manifest.json, audit/manifest.summary.json, audit/derived/, audit/wppqa-baseline-2026-05-11/, audit/FEATURE_AUDIT.md | wp-plugin-onboard refresh: v1→v2.2 manifest (added category_sources, static_analysis, summary, derived/cross-plugin-coupling), wppqa baseline (1 HIGH nonce-no-cap blocking release), Phase 4.7 local-CI scaffold (separate commit) |
+| 2026-05-11 | plan/1.1.0-player-config-filter.md | FREE-slice plan — `mediashield_player_config` filter + stable JS event contract for 1.1.0 |
+| 2026-05-05 | audit/manifest.json, audit/graph.html, audit/ROLE_MATRIX.md | Canonical audit onboard — manifest, Cytoscape graph, role matrix |
+| 2026-05-03 | dist/, languages/, Gruntfile.js | Plain-English docs + WPCS auto-fixes + Grunt dist excludes |
+| 2026-05-01 | .github/, audit/ | Moved CI from GitHub Actions to local-only |
+| 2026-04-30 | src/admin/pages/Dashboard.js | Dashboard onboarding hero for first-time admins |
+| 2026-04-28 | docs/free/, docs/pro/ | Release must-haves — protection philosophy, troubleshooting, license, migration, expanded FAQ |
+| 2026-04-27 | includes/Player/Protection.php, includes/REST/ProtectionController.php | DevTools detection + honest DRM terminology + release QA |
+| 2026-04-26 | includes/Cron/Cleanup.php | WP-Cron fallback for session cleanup + WP 6.8+ component deprecations |
+| 2026-04-25 | plan/QA_FUNCTIONAL_CHECKLIST.md | Unified functional QA checklist grouped by feature area |
+| 2026-04-24 | includes/, src/admin/ | Accessibility + PHPStan fixes from QA audit |
+| 2026-04-23 | includes/Core/, src/edd-sdk/ | EDD Software Licensing SDK for free plugin auto-updates |
+| 2026-04-22 | src/admin/wizard/, src/admin/components/ | Setup wizard UX + dashicon overlap fixes |
+| 2026-04-20 | includes/REST/SettingsController.php | Security — fix arbitrary `ms_` option write + remove `source_url` from session response |
+| 2026-04-18 | .github/workflows/, phpcs.xml, phpstan.neon | CI — PHP lint, WPCS, PHPStan L5, PHPUnit (later moved local) |
+| 2026-04-15 | languages/, Gruntfile.js, package.json | i18n + Grunt distribution — `.pot` files, `npm run dist` |
+| 2026-04-12 | includes/, src/admin/ | Pro upsell system — 7 contextual touchpoints |
+| 2026-04-10 | includes/Block/, src/admin/pages/Videos.js | Per-video player control overrides (global + per-video) |
 | 2026-04-01 | docs/, plan/, README.md, readme.txt | Docs reorg: user-facing docs in docs/, planning in plan/, QA checklists, README rewrite |
-| 2026-04-01 | docs/audit/, docs/architecture/ | Full onboard: feature audit, code flow maps, architecture docs |
+| 2026-04-01 | audit/, plan/architecture/ | Full onboard: feature audit, code flow maps, architecture docs |
 | 2026-03-30 | Initial | v1.0.0 -- Full plugin implementation |
+
+---
+
+## Basecamp — MediaShield Project
+
+The MediaShield Basecamp project is the source of truth for bugs, UI issues, and the dev/test pipeline. IDs below are stable — use them directly with the `basecamp-mcp-server` rather than re-searching each time.
+
+- **Account ID:** `5798509`
+- **Project ID (bucket):** `47045023`
+- **App URL:** https://3.basecamp.com/5798509/projects/47045023
+- **Card Table ID:** `9827871758` (`Kanban::Board`)
+
+### Card Table Columns
+
+Snapshot taken 2026-05-11. `cards_count` is point-in-time — re-fetch via `mcp__basecamp__basecamp_list_cards` (or `GET cards_url`) before acting.
+
+| Column Title | Column ID | Type | Pos | Color | Cards |
+|---|---|---|---|---|---|
+| Triage | `9827871761` | `Kanban::Triage` | (fixed) | — | 0 |
+| Not now | `9827871762` | `Kanban::NotNowColumn` | (fixed) | — | 0 |
+| Suggestion | `9827871768` | `Kanban::Column` | 1 | — | 5 |
+| Bugs | `9827871763` | `Kanban::Column` | 3 | purple | 48 |
+| UI issues | `9829137292` | `Kanban::Column` | 3 | — | 4 |
+| Ready for Development | `9827871766` | `Kanban::Column` | 4 | — | 0 |
+| In Development | `9827872480` | `Kanban::Column` | 5 | — | 0 |
+| Ready for Testing | `9827871767` | `Kanban::Column` | 6 | yellow | 0 |
+| In Testing | `9827872883` | `Kanban::Column` | 7 | — | 0 |
+| Done | `9827871765` | `Kanban::DoneColumn` | (fixed) | — | 0 |
+
+### Fetch examples (basecamp-mcp-server)
+
+```text
+# All Bugs cards
+mcp__basecamp__basecamp_list_cards(project_id="47045023", column_id="9827871763")
+
+# Single card
+mcp__basecamp__basecamp_get_card(project_id="47045023", card_id=<id>)
+
+# Re-list columns (live, bypassing index)
+mcp__basecamp__basecamp_list_columns(project_id="47045023", table_id="9827871758")
+
+# Raw cards URL pattern (for any column)
+https://3.basecampapi.com/5798509/buckets/47045023/card_tables/lists/<column_id>/cards.json
+```
+
+### Workflow lanes
+
+- **Inbound:** new tickets land in **Bugs** (purple, 48 open) or **UI issues** (4 open). **Suggestion** holds feature requests (5 open).
+- **Dev pipeline:** `Ready for Development → In Development → Ready for Testing (yellow) → In Testing → Done`.
+- **Triage / Not now / Done** are fixed Kanban roles — do not delete or rename.

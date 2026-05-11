@@ -1,0 +1,75 @@
+{
+  "name": "cross-plugin-coupling",
+  "computed_at": "2026-05-11T18:07:29Z",
+  "input_globs": [
+    "includes/**/*.php",
+    "../mediashield-pro/includes/**/*.php"
+  ],
+  "algorithm_version": "1.0",
+  "result": {
+    "free_hooks_consumed_by_pro": [
+      {
+        "hook": "mediashield_loaded",
+        "type": "action",
+        "where_fired": "includes/Core/Plugin.php:110",
+        "consumed_by": "PRO bootstrap (mediashield-pro)"
+      },
+      {
+        "hook": "mediashield_milestone_reached",
+        "type": "action",
+        "where_fired": "includes/Milestones/MilestoneTracker.php:126",
+        "consumed_by": "PRO Modules\\Milestones\\AdvancedActions"
+      },
+      {
+        "hook": "mediashield_milestone_{pct}",
+        "type": "action",
+        "where_fired": "includes/Milestones/MilestoneTracker.php:138",
+        "consumed_by": "PRO Modules\\Milestones\\AdvancedActions"
+      },
+      {
+        "hook": "mediashield_can_watch",
+        "type": "filter",
+        "where_fired": "includes/Access/AccessControl.php:64",
+        "consumed_by": "PRO Access\\RoleAccess, PRO Access\\EmailGate, PRO LMS adapters"
+      },
+      {
+        "hook": "mediashield_milestone_thresholds",
+        "type": "filter",
+        "where_fired": "includes/Milestones/MilestoneTracker.php:52",
+        "consumed_by": "PRO Modules\\Milestones\\AdvancedActions"
+      },
+      {
+        "hook": "mediashield_watermark_config",
+        "type": "filter",
+        "where_fired": "includes/Player/Watermark.php:225",
+        "consumed_by": "PRO Watermark\\AdvancedConfig"
+      },
+      {
+        "hook": "mediashield_settings_response",
+        "type": "filter",
+        "where_fired": "includes/REST/SettingsController.php:142",
+        "consumed_by": "PRO Admin\\ProSettings, PRO Admin\\DRMSettings (extends settings shape with PRO fields)"
+      },
+      {
+        "hook": "mediashield_settings_update",
+        "type": "filter",
+        "where_fired": "includes/REST/SettingsController.php:169",
+        "consumed_by": "PRO Admin\\ProSettings, PRO Admin\\DRMSettings (saves PRO fields)"
+      },
+      {
+        "hook": "mediashield_upload_drivers",
+        "type": "filter",
+        "where_fired": "includes/Upload/UploadManager.php:48",
+        "consumed_by": "PRO Upload\\Drivers (Bunny, YouTube, Vimeo, Wistia)"
+      },
+      {
+        "hook": "mediashield_player_type",
+        "type": "filter",
+        "where_fired": "includes/Player/Protection.php:51, includes/Player/PlayerWrapper.php:196",
+        "consumed_by": "PRO DRM\\Packager (returns 'drm' for DRM-protected videos)"
+      }
+    ],
+    "pro_consumed_count": 10,
+    "free_total_hooks": 25
+  }
+}
