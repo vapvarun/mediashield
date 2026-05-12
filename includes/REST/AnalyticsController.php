@@ -173,21 +173,33 @@ class AnalyticsController extends WP_REST_Controller {
 		$total_videos = (int) wp_count_posts( 'mediashield_video' )->publish;
 
 		// All queries below use $sessions (table name variable) and $interval (hardcoded allowlist value).
+		// `started_at` / `last_heartbeat` are stored UTC via current_time('mysql', true);
+		// pass the same function's output here as a prepared %s parameter so both
+		// sides share a single clock — WordPress-international standard for UTC
+		// comparisons (avoids MySQL NOW() session_tz drift and UTC_TIMESTAMP()
+		// SQL_MODE sensitivity).
+		$now_utc = current_time( 'mysql', true );
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
-		// `started_at` / `last_heartbeat` are stored in UTC, so compare against
-		// UTC_TIMESTAMP() rather than NOW() (whose value depends on the MySQL
-		// server's session timezone).
 		$total_sessions = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL {$interval})"
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval})",
+				$now_utc
+			)
 		);
 
 		$avg_completion = (float) $wpdb->get_var(
-			"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL {$interval}) AND completion_pct > 0"
+			$wpdb->prepare(
+				"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND completion_pct > 0",
+				$now_utc
+			)
 		);
 
 		$active_viewers = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT user_id) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE)"
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT user_id) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(%s, INTERVAL 5 MINUTE)",
+				$now_utc
+			)
 		);
 
 		// Sessions per day for chart — group by site-timezone date, not the UTC
@@ -199,23 +211,27 @@ class AnalyticsController extends WP_REST_Controller {
 			$wpdb->prepare(
 				"SELECT DATE(CONVERT_TZ(started_at, '+00:00', %s)) AS date, COUNT(*) AS count
 				 FROM {$sessions}
-				 WHERE started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL {$interval})
+				 WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval})
 				 GROUP BY DATE(CONVERT_TZ(started_at, '+00:00', %s))
 				 ORDER BY date ASC",
 				$offset,
+				$now_utc,
 				$offset
 			)
 		);
 
 		// Top 5 videos by sessions.
 		$top_videos = $wpdb->get_results(
-			"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
-			 FROM {$sessions} s
-			 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID
-			 WHERE s.started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL {$interval})
-			 GROUP BY s.video_id
-			 ORDER BY session_count DESC
-			 LIMIT 5"
+			$wpdb->prepare(
+				"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
+				 FROM {$sessions} s
+				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID
+				 WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval})
+				 GROUP BY s.video_id
+				 ORDER BY session_count DESC
+				 LIMIT 5",
+				$now_utc
+			)
 		);
 
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared

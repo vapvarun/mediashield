@@ -308,14 +308,15 @@ class Cleanup {
 			$table = "{$wpdb->prefix}ms_watch_sessions";
 
 			// `last_heartbeat` is written via `current_time( 'mysql', true )` (UTC)
-			// in SessionManager. Comparing against MySQL `NOW()` would inherit the
-			// session timezone — UTC on most managed hosts but never guaranteed —
-			// and could mark sessions inactive minutes early or late on misconfigured
-			// servers. `UTC_TIMESTAMP()` keeps both sides on the same clock.
+			// in SessionManager. Pass the SAME function's output as a prepared
+			// parameter on the read side so the comparison stays on a single clock
+			// — the WP-idiomatic alternative to relying on MySQL's `NOW()` (which
+			// inherits session_tz) or `UTC_TIMESTAMP()` (host-dependent SQL_MODE).
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table bulk update.
 			$wpdb->query(
 				$wpdb->prepare(
-					"UPDATE {$table} SET is_active = 0 WHERE is_active = 1 AND last_heartbeat < DATE_SUB( UTC_TIMESTAMP(), INTERVAL %d MINUTE )",
+					"UPDATE {$table} SET is_active = 0 WHERE is_active = 1 AND last_heartbeat < DATE_SUB( %s, INTERVAL %d MINUTE )",
+					current_time( 'mysql', true ),
 					10
 				)
 			);
@@ -354,11 +355,12 @@ class Cleanup {
 			// Use a transaction so INSERT + DELETE are atomic.
 			$wpdb->query( 'START TRANSACTION' );
 
-			// `started_at` is UTC (current_time('mysql', true) in SessionManager).
-			// Use UTC_TIMESTAMP() so the 24-month cutoff is reliable across hosts.
+			// `started_at` is UTC; pass current_time('mysql', true) as a prepared
+			// %s parameter so insertion and comparison share the same clock.
 			$inserted = $wpdb->query(
 				$wpdb->prepare(
-					"INSERT INTO {$archive} SELECT * FROM {$sessions} WHERE started_at < DATE_SUB( UTC_TIMESTAMP(), INTERVAL %d MONTH )",
+					"INSERT INTO {$archive} SELECT * FROM {$sessions} WHERE started_at < DATE_SUB( %s, INTERVAL %d MONTH )",
+					current_time( 'mysql', true ),
 					24
 				)
 			);
@@ -369,11 +371,12 @@ class Cleanup {
 				return;
 			}
 
-			// Delete archived sessions from main table. UTC_TIMESTAMP for the
-			// same reason as the matching INSERT above.
+			// Delete archived sessions from main table. Same prepared
+			// current_time('mysql', true) parameter as the matching INSERT.
 			$deleted = $wpdb->query(
 				$wpdb->prepare(
-					"DELETE FROM {$sessions} WHERE started_at < DATE_SUB( UTC_TIMESTAMP(), INTERVAL %d MONTH )",
+					"DELETE FROM {$sessions} WHERE started_at < DATE_SUB( %s, INTERVAL %d MONTH )",
+					current_time( 'mysql', true ),
 					24
 				)
 			);
