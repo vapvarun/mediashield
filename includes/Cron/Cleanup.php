@@ -191,6 +191,12 @@ class Cleanup {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$wpdb->delete( $playlist_items, array( 'video_id' => $post_id ), array( '%d' ) );
 
+		// Cleanup user-meta milestone records for this video. Each user has a
+		// single `_ms_video_tags` meta entry — a map keyed `<video_id>_<pct>`
+		// — and we drop every entry that points at the post being deleted so
+		// orphan tag records can't accumulate.
+		self::purge_user_milestone_tags_for_video( $post_id );
+
 		// Pro tables cascade (only if pro is active).
 		if ( defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			// Delete video_id-based pro data (no session dependency).
@@ -219,6 +225,58 @@ class Cleanup {
 					)
 				);
 				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			}
+		}
+	}
+
+	/**
+	 * Drop every `_ms_video_tags` user-meta entry that references the deleted
+	 * video. Each user stores a single serialised map keyed `<video_id>_<pct>`;
+	 * we narrow the SQL scan with a LIKE on the serialised representation of
+	 * the video_id key, then verify in PHP before saving.
+	 *
+	 * @param int $video_id Video CPT post ID being deleted.
+	 */
+	private static function purge_user_milestone_tags_for_video( int $video_id ): void {
+		global $wpdb;
+
+		// Narrow the scan: the map keys look like `<video_id>_25`, `<video_id>_50`, ...
+		// — so the serialised form always contains `"<video_id>_` as a key prefix.
+		$like = '%"' . $video_id . '_%';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Per-video cleanup of user meta blobs.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags' AND meta_value LIKE %s",
+				$like
+			)
+		);
+		if ( empty( $rows ) ) {
+			return;
+		}
+
+		foreach ( $rows as $row ) {
+			$user_tags = maybe_unserialize( $row->meta_value );
+			if ( ! is_array( $user_tags ) ) {
+				continue;
+			}
+
+			$changed = false;
+			foreach ( $user_tags as $key => $entry ) {
+				$matches_by_field = is_array( $entry ) && (int) ( $entry['video_id'] ?? 0 ) === $video_id;
+				$matches_by_key   = is_string( $key ) && str_starts_with( $key, $video_id . '_' );
+				if ( $matches_by_field || $matches_by_key ) {
+					unset( $user_tags[ $key ] );
+					$changed = true;
+				}
+			}
+
+			if ( $changed ) {
+				if ( empty( $user_tags ) ) {
+					delete_user_meta( (int) $row->user_id, '_ms_video_tags' );
+				} else {
+					update_user_meta( (int) $row->user_id, '_ms_video_tags', $user_tags );
+				}
 			}
 		}
 	}
