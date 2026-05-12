@@ -169,6 +169,13 @@ class VideoPostType {
 		}
 		?>
 		<div class="ms-source-meta-box">
+			<?php
+			// Suppress browser autofill for the entire metabox. Without this,
+			// Chrome/Firefox happily refill the URL input with the previously-
+			// submitted value when a new video is added — looking to QA like
+			// the form is "leaking" state across posts.
+			?>
+			<input type="text" style="display:none !important" autocomplete="username" tabindex="-1" aria-hidden="true">
 			<?php if ( $is_new ) : ?>
 				<p class="ms-source-intro">
 					<?php esc_html_e( 'Paste a video URL from YouTube, Vimeo, Wistia, or Bunny Stream. The platform and video ID will be detected automatically.', 'mediashield' ); ?>
@@ -213,6 +220,8 @@ class VideoPostType {
 					<td>
 						<input type="url" id="ms-video-url" name="_ms_source_url"
 							value="<?php echo esc_url( $source ); ?>" class="large-text"
+							autocomplete="off"
+							data-form-type="other"
 							placeholder="<?php esc_attr_e( 'https://www.youtube.com/watch?v=... or https://vimeo.com/...', 'mediashield' ); ?>" />
 						<p class="description"><?php esc_html_e( 'Paste the video URL. Supported: YouTube, Vimeo, Wistia, Bunny Stream embed URLs, or a direct video file URL.', 'mediashield' ); ?></p>
 					</td>
@@ -229,7 +238,8 @@ class VideoPostType {
 					<th><label for="ms-duration"><?php esc_html_e( 'Duration', 'mediashield' ); ?></label></th>
 					<td>
 						<input type="number" id="ms-duration" name="_ms_duration"
-							value="<?php echo esc_attr( $duration ); ?>" class="small-text" min="0" />
+							value="<?php echo esc_attr( $duration ); ?>" class="small-text" min="0"
+							autocomplete="off" data-form-type="other" />
 						<span class="description"><?php esc_html_e( 'seconds (auto-filled on import)', 'mediashield' ); ?></span>
 					</td>
 				</tr>
