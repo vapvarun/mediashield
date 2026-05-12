@@ -7,36 +7,32 @@ import { __ } from '@wordpress/i18n';
 import { TextControl, Button, Spinner } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
+import { detectPlatform, extractVideoId } from '../../utils/platform';
 
 export default function FirstVideoStep( { initialData } ) { // eslint-disable-line no-unused-vars
 	const [ url, setUrl ] = useState( '' );
 	const [ creating, setCreating ] = useState( false );
 	const [ created, setCreated ] = useState( null );
 
-	const detectPlatform = ( videoUrl ) => {
-		if ( /youtube\.com|youtu\.be/.test( videoUrl ) ) return 'youtube';
-		if ( /vimeo\.com/.test( videoUrl ) ) return 'vimeo';
-		if ( /iframe\.mediadelivery\.net|bunny/.test( videoUrl ) ) return 'bunny';
-		if ( /wistia/.test( videoUrl ) ) return 'wistia';
-		if ( /\.(mp4|webm|mov)(\?|$)/i.test( videoUrl ) ) return 'self';
-		return 'iframe';
-	};
-
 	const handleCreate = async () => {
 		if ( ! url.trim() ) return;
 
 		setCreating( true );
 		const platform = detectPlatform( url );
+		const platformVideoId = extractVideoId( url, platform );
 
 		try {
 			const video = await apiFetch( {
 				path: '/wp/v2/mediashield-videos',
 				method: 'POST',
 				data: {
-					title: url.substring( 0, 60 ),
+					title: platformVideoId
+						? `${ platform } - ${ platformVideoId }`
+						: url.substring( 0, 60 ),
 					status: 'publish',
 					meta: {
 						_ms_platform: platform,
+						_ms_platform_video_id: platformVideoId,
 						_ms_source_url: url,
 						_ms_protection_level: 'standard',
 					},

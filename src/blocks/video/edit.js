@@ -20,36 +20,7 @@ import {
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import VideoPickerModal from '../../admin/components/VideoPickerModal';
-
-/**
- * Detect platform from a video URL.
- */
-function detectPlatform( url ) {
-	if ( /youtube\.com|youtu\.be|youtube-nocookie\.com/.test( url ) ) return 'youtube';
-	if ( /vimeo\.com/.test( url ) ) return 'vimeo';
-	if ( /iframe\.mediadelivery\.net|bunny/.test( url ) ) return 'bunny';
-	if ( /wistia\.com|wistia\.net/.test( url ) ) return 'wistia';
-	if ( /\.(mp4|webm|mov|m4v)(\?|$)/i.test( url ) ) return 'self';
-	return 'iframe';
-}
-
-/**
- * Extract platform video ID from URL.
- */
-function extractVideoId( url, platform ) {
-	switch ( platform ) {
-		case 'youtube': {
-			const m = url.match( /(?:embed\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/ );
-			return m ? m[ 1 ] : '';
-		}
-		case 'vimeo': {
-			const m = url.match( /vimeo\.com\/(?:video\/)?(\d+)/ );
-			return m ? m[ 1 ] : '';
-		}
-		default:
-			return '';
-	}
-}
+import { detectPlatform, extractVideoId } from '../../admin/utils/platform';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { videoId, url } = attributes;
