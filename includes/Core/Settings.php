@@ -20,31 +20,63 @@ class Settings {
 	/**
 	 * Schema for every free-plugin option.
 	 *
-	 * Each entry: `'<option_name>' => array( 'type' => '<scalar>', 'default' => <value> )`.
+	 * Each entry: `array( 'type' => <scalar>, 'default' => <value>, 'validate' => ?callable )`.
 	 *
 	 * Translatable defaults must be returned from a method (not a const) so the
 	 * text domain is loaded before the strings are read.
 	 *
-	 * @return array<string, array{type: string, default: mixed}>
+	 * `validate` runs AFTER type-casting in {@see self::sanitize()}. It must
+	 * return the (possibly clamped/normalised) value to save, or `null` to
+	 * reject — `Settings::sanitize()` propagates the null up and the REST
+	 * controller skips the update so the existing value sticks.
+	 *
+	 * @return array<string, array{type: string, default: mixed, validate?: callable}>
 	 */
 	public static function schema(): array {
+		// Validator helpers — declared inline so the schema entries read as a
+		// single decision table.
+		$enum = static fn( array $allowed ) => static function ( $value ) use ( $allowed ) {
+			return in_array( $value, $allowed, true ) ? $value : null;
+		};
+		$hex_color = static function ( $value ) {
+			return preg_match( '/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/', (string) $value )
+				? strtolower( (string) $value )
+				: null;
+		};
+		$clamp = static fn( float $min, float $max ) => static function ( $value ) use ( $min, $max ) {
+			$num = is_numeric( $value ) ? (float) $value : $min;
+			return max( $min, min( $max, $num ) );
+		};
+		$min_int = static fn( int $min ) => static function ( $value ) use ( $min ) {
+			$num = is_numeric( $value ) ? (int) $value : $min;
+			return max( $min, $num );
+		};
+		$url_or_empty = static function ( $value ) {
+			$value = trim( (string) $value );
+			if ( '' === $value ) {
+				return '';
+			}
+			$clean = esc_url_raw( $value );
+			return '' !== $clean ? $clean : null;
+		};
+
 		return array(
 			// Core.
 			'ms_enabled'                 => array( 'type' => 'boolean', 'default' => true ),
-			'ms_default_protection'      => array( 'type' => 'string',  'default' => 'standard' ),
+			'ms_default_protection'      => array( 'type' => 'string',  'default' => 'standard', 'validate' => $enum( array( 'none', 'basic', 'standard', 'strict' ) ) ),
 			'ms_require_login'           => array( 'type' => 'boolean', 'default' => true ),
 
 			// Watermark.
-			'ms_watermark_opacity'       => array( 'type' => 'float',   'default' => 0.5 ),
-			'ms_watermark_color'         => array( 'type' => 'string',  'default' => '#ffffff' ),
-			'ms_watermark_swap_interval' => array( 'type' => 'integer', 'default' => 30 ),
+			'ms_watermark_opacity'       => array( 'type' => 'float',   'default' => 0.5, 'validate' => $clamp( 0.0, 1.0 ) ),
+			'ms_watermark_color'         => array( 'type' => 'string',  'default' => '#ffffff', 'validate' => $hex_color ),
+			'ms_watermark_swap_interval' => array( 'type' => 'integer', 'default' => 30, 'validate' => $min_int( 1 ) ),
 
 			// Access.
 			'ms_allowed_domains'         => array( 'type' => 'string',  'default' => '' ),
-			'ms_max_concurrent_streams'  => array( 'type' => 'integer', 'default' => 2 ),
+			'ms_max_concurrent_streams'  => array( 'type' => 'integer', 'default' => 2, 'validate' => $min_int( 1 ) ),
 
 			// Upload.
-			'ms_max_upload_size'         => array( 'type' => 'integer', 'default' => 500 ),
+			'ms_max_upload_size'         => array( 'type' => 'integer', 'default' => 500, 'validate' => $min_int( 1 ) ),
 			'ms_custom_url_patterns'     => array( 'type' => 'string',  'default' => '' ),
 
 			// Badge.
@@ -62,7 +94,7 @@ class Settings {
 			'ms_player_resume'           => array( 'type' => 'boolean', 'default' => true ),
 			'ms_player_endscreen'        => array( 'type' => 'boolean', 'default' => false ),
 			'ms_player_endscreen_text'   => array( 'type' => 'string',  'default' => '' ),
-			'ms_player_endscreen_url'    => array( 'type' => 'string',  'default' => '' ),
+			'ms_player_endscreen_url'    => array( 'type' => 'string',  'default' => '', 'validate' => $url_or_empty ),
 
 			// Protection controls (right-click, keyboard, devtools).
 			'ms_block_right_click'       => array( 'type' => 'boolean', 'default' => true ),
@@ -156,22 +188,43 @@ class Settings {
 	/**
 	 * Sanitize an incoming value for a known setting key.
 	 *
+	 * Pipeline:
+	 *   1. Reject unknown keys (return `null`).
+	 *   2. Type-cast (boolean/integer/float/string with sanitize_textarea_field).
+	 *   3. Apply the per-field `validate` callable from the schema, if any.
+	 *      The validator must return the (possibly clamped/normalised) value
+	 *      or `null` to reject.
+	 *
+	 * `null` propagates up: `SettingsController::update_settings()` skips
+	 * `update_option()` for `null` values, so the existing stored value sticks.
+	 *
 	 * @param string $key   Option name.
 	 * @param mixed  $value Raw value from a REST request.
-	 * @return mixed|null Sanitized value, or null if the key is unknown.
+	 * @return mixed|null Sanitized value, or null if the key is unknown or the input is invalid.
 	 */
 	public static function sanitize( string $key, mixed $value ): mixed {
-		$types = self::types();
-		if ( ! isset( $types[ $key ] ) ) {
+		$schema = self::schema();
+		if ( ! isset( $schema[ $key ] ) ) {
 			return null;
 		}
 
-		return match ( $types[ $key ] ) {
+		$entry     = $schema[ $key ];
+		$sanitized = match ( $entry['type'] ) {
 			'boolean' => (bool) $value,
 			'integer' => (int) $value,
 			'float'   => (float) $value,
 			default   => sanitize_textarea_field( (string) $value ),
 		};
+
+		if ( isset( $entry['validate'] ) && is_callable( $entry['validate'] ) ) {
+			$validated = ( $entry['validate'] )( $sanitized );
+			if ( null === $validated ) {
+				return null;
+			}
+			return $validated;
+		}
+
+		return $sanitized;
 	}
 
 	/**
