@@ -1,9 +1,42 @@
 /**
  * MediaShield Player Styles
+ *
+ * Tokens are scoped to .ms-protected-player so the frontend overlay shares the
+ * same spacing / font-size / radius / color vocabulary as the admin SPA (see
+ * src/admin/admin.css :root block) — required by wp-plugin-development
+ * Part 7.6.1 (BLOCK gate F9, same-family rule).
  */
 
 /* Protected player container */
 .ms-protected-player {
+	/* Spacing scale */
+	--ms-space-1: 4px;
+	--ms-space-2: 8px;
+	--ms-space-3: 12px;
+	--ms-space-4: 16px;
+	--ms-space-5: 20px;
+	--ms-space-6: 24px;
+	--ms-space-8: 32px;
+
+	/* Typography scale (subset — frontend overlay only needs label sizes) */
+	--ms-font-size-xs: 0.625rem;
+	--ms-font-size-sm: 0.75rem;
+	--ms-font-size-base: 0.875rem;
+	--ms-font-size-md: 1rem;
+	--ms-font-size-lg: 1.125rem;
+
+	/* Radius */
+	--ms-radius-sm: 3px;
+	--ms-radius-md: 6px;
+	--ms-radius-lg: 12px;
+
+	/* Surfaces — semi-transparent overlay panels are intentional design
+	 * primitives here, not arbitrary colours. */
+	--ms-overlay-surface: rgba(0, 0, 0, 0.6);
+	--ms-overlay-surface-strong: rgba(0, 0, 0, 0.85);
+	--ms-overlay-surface-soft: rgba(0, 0, 0, 0.5);
+	--ms-overlay-text: rgba(255, 255, 255, 0.6);
+
 	position: relative;
 	overflow: hidden;
 	background: #000;
@@ -72,19 +105,19 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: rgba(0, 0, 0, 0.85);
+	background: var(--ms-overlay-surface-strong);
 }
 
 .ms-error-message {
 	text-align: center;
 	color: #fff;
 	line-height: 1.6;
-	padding: 2rem;
+	padding: var(--ms-space-8);
 	max-width: 32rem;
 }
 
 .ms-error-message p {
-	font-size: 1.125rem;
+	font-size: var(--ms-font-size-lg);
 	margin: 0;
 }
 
@@ -183,17 +216,19 @@
 	color: #fff;
 }
 
-/* Protected by MediaShield badge */
+/* Protected by MediaShield badge — moved to top-left so it doesn't sit on
+ * top of the native <video> controls bar on self-hosted players (the bottom
+ * row is reserved for play/seek/volume/fullscreen). */
 .ms-badge {
 	position: absolute;
-	bottom: 8px;
-	left: 8px;
+	top: var(--ms-space-3);
+	left: var(--ms-space-3);
 	z-index: 15;
-	background: rgba(0, 0, 0, 0.5);
-	color: rgba(255, 255, 255, 0.6);
-	font-size: 0.625rem;
-	padding: 3px 8px;
-	border-radius: 3px;
+	background: var(--ms-overlay-surface-soft);
+	color: var(--ms-overlay-text);
+	font-size: var(--ms-font-size-xs);
+	padding: var(--ms-space-1) var(--ms-space-2);
+	border-radius: var(--ms-radius-sm);
 	pointer-events: none;
 	line-height: 1.4;
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -260,11 +295,13 @@
 	right: 20px;
 }
 
-/* Speed control (native video only) */
+/* Speed control (native video only) — sits in the top-right corner so it
+ * doesn't collide with the native browser controls bar (play/seek/volume/
+ * fullscreen) running along the bottom edge. */
 .ms-speed-control {
 	position: absolute;
-	bottom: 10px;
-	right: 50px;
+	top: var(--ms-space-3);
+	right: var(--ms-space-3);
 	z-index: 15;
 }
 
@@ -286,12 +323,12 @@
 .ms-speed-menu {
 	display: none;
 	position: absolute;
-	bottom: 100%;
+	top: 100%;
 	right: 0;
 	background: rgba(0, 0, 0, 0.9);
 	border-radius: 6px;
 	padding: 4px 0;
-	margin-bottom: 4px;
+	margin-top: 4px;
 }
 
 .ms-speed-control.is-open .ms-speed-menu {
