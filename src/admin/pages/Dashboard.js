@@ -337,12 +337,15 @@ const Dashboard = () => {
 									{ __( 'Recent Milestones', 'mediashield' ) }
 								</div>
 								<ul className="mediashield-quick-stat__list">
-									{ recentMilestones.slice( 0, 5 ).map( ( m, i ) => (
-										<li key={ i } className="mediashield-quick-stat__item">
-											<span>{ m.user_name || 'User' }</span>
-											<span className="mediashield-milestone-badge">
-												<span className={ `mediashield-milestone-badge__ring mediashield-milestone-badge__ring--${ m.milestone }` }>
-													{ m.milestone }
+									{ recentMilestones.slice( 0, 5 ).map( ( m ) => (
+										<li key={ m.id } className="mediashield-quick-stat__item">
+											<div className="mediashield-quick-stat__item-main">
+												<span>{ m.user_name || __( 'User', 'mediashield' ) }</span>
+												<span className="mediashield-quick-stat__item-meta">{ m.video_title }</span>
+											</div>
+											<span className="mediashield-milestone-badge" title={ m.reached_at_fmt }>
+												<span className={ `mediashield-milestone-badge__ring mediashield-milestone-badge__ring--${ m.milestone_pct }` }>
+													{ m.milestone_pct }
 												</span>
 											</span>
 										</li>

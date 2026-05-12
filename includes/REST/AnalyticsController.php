@@ -175,28 +175,36 @@ class AnalyticsController extends WP_REST_Controller {
 		// All queries below use $sessions (table name variable) and $interval (hardcoded allowlist value).
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
-		// Sessions in period.
+		// `started_at` / `last_heartbeat` are stored in UTC, so compare against
+		// UTC_TIMESTAMP() rather than NOW() (whose value depends on the MySQL
+		// server's session timezone).
 		$total_sessions = (int) $wpdb->get_var(
-			"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(NOW(), INTERVAL {$interval})"
+			"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL {$interval})"
 		);
 
-		// Avg completion in period.
 		$avg_completion = (float) $wpdb->get_var(
-			"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(NOW(), INTERVAL {$interval}) AND completion_pct > 0"
+			"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL {$interval}) AND completion_pct > 0"
 		);
 
-		// Active viewers (heartbeat in last 5 minutes).
 		$active_viewers = (int) $wpdb->get_var(
-			"SELECT COUNT(DISTINCT user_id) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)"
+			"SELECT COUNT(DISTINCT user_id) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE)"
 		);
 
-		// Sessions per day for chart.
+		// Sessions per day for chart — group by site-timezone date, not the UTC
+		// `DATE(started_at)` which can place late-evening sessions on the wrong
+		// calendar day for non-UTC sites.
+		$offset = self::tz_offset();
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $offset is a regex-validated tz string built from wp_timezone().
 		$sessions_per_day = $wpdb->get_results(
-			"SELECT DATE(started_at) AS date, COUNT(*) AS count
-			 FROM {$sessions}
-			 WHERE started_at >= DATE_SUB(NOW(), INTERVAL {$interval})
-			 GROUP BY DATE(started_at)
-			 ORDER BY date ASC"
+			$wpdb->prepare(
+				"SELECT DATE(CONVERT_TZ(started_at, '+00:00', %s)) AS date, COUNT(*) AS count
+				 FROM {$sessions}
+				 WHERE started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL {$interval})
+				 GROUP BY DATE(CONVERT_TZ(started_at, '+00:00', %s))
+				 ORDER BY date ASC",
+				$offset,
+				$offset
+			)
 		);
 
 		// Top 5 videos by sessions.
@@ -204,7 +212,7 @@ class AnalyticsController extends WP_REST_Controller {
 			"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
 			 FROM {$sessions} s
 			 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID
-			 WHERE s.started_at >= DATE_SUB(NOW(), INTERVAL {$interval})
+			 WHERE s.started_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL {$interval})
 			 GROUP BY s.video_id
 			 ORDER BY session_count DESC
 			 LIMIT 5"
@@ -214,12 +222,12 @@ class AnalyticsController extends WP_REST_Controller {
 
 		return rest_ensure_response(
 			array(
-				'total_videos'   => $total_videos,
-				'total_sessions' => $total_sessions,
-				'avg_completion' => round( $avg_completion, 1 ),
-				'active_viewers' => $active_viewers,
-				'sessions_chart' => ! empty( $sessions_per_day ) ? $sessions_per_day : array(),
-				'top_videos'     => array_map(
+				'total_videos'      => $total_videos,
+				'total_sessions'    => $total_sessions,
+				'avg_completion'    => round( $avg_completion, 1 ),
+				'active_viewers'    => $active_viewers,
+				'sessions_chart'    => ! empty( $sessions_per_day ) ? $sessions_per_day : array(),
+				'top_videos'        => array_map(
 					function ( $row ) {
 						return array(
 							'video_id'       => (int) $row->video_id,
@@ -230,6 +238,8 @@ class AnalyticsController extends WP_REST_Controller {
 					},
 					! empty( $top_videos ) ? $top_videos : array()
 				),
+				'recent_milestones' => self::recent_milestones(),
+				'site_timezone'     => wp_timezone_string(),
 			)
 		);
 	}
@@ -538,5 +548,85 @@ class AnalyticsController extends WP_REST_Controller {
 			'90d'   => '90 DAY',
 			default => '7 DAY',
 		};
+	}
+
+	/**
+	 * Site timezone offset string for use with MySQL CONVERT_TZ(), e.g. `+05:30`.
+	 *
+	 * The watch-session tables store UTC timestamps via `current_time('mysql', true)`,
+	 * but the dashboard renders dates in the site owner's timezone — using
+	 * `wp_timezone()` here keeps the conversion DST-aware.
+	 */
+	private static function tz_offset(): string {
+		$offset = wp_timezone()->getOffset( new \DateTime( 'now', new \DateTimeZone( 'UTC' ) ) );
+		$sign   = $offset < 0 ? '-' : '+';
+		$abs    = abs( $offset );
+		return sprintf( '%s%02d:%02d', $sign, intdiv( $abs, HOUR_IN_SECONDS ), intdiv( $abs % HOUR_IN_SECONDS, MINUTE_IN_SECONDS ) );
+	}
+
+	/**
+	 * Convert a stored UTC datetime string to a site-timezone display string
+	 * using `wp_date()` so the format honours the WP date/time settings.
+	 *
+	 * @param string $utc_datetime MySQL datetime string in UTC.
+	 * @param string $format       PHP date format, defaults to combined site format.
+	 * @return string Formatted, or empty string if the input was empty.
+	 */
+	private static function local_datetime( string $utc_datetime, string $format = '' ): string {
+		if ( '' === $utc_datetime ) {
+			return '';
+		}
+		if ( '' === $format ) {
+			$format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
+		}
+		$ts = strtotime( $utc_datetime . ' UTC' );
+		return false === $ts ? '' : wp_date( $format, $ts );
+	}
+
+	/**
+	 * Recent milestone events for the dashboard activity feed.
+	 *
+	 * Joins ms_milestones with ms_watch_sessions + posts so the UI can show
+	 * "<user> hit <pct>% on <video>" with a site-timezone timestamp.
+	 *
+	 * @param int $limit Max rows to return.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function recent_milestones( int $limit = 10 ): array {
+		global $wpdb;
+
+		$milestones = "{$wpdb->prefix}ms_milestones";
+		$sessions   = "{$wpdb->prefix}ms_watch_sessions";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom analytics tables joined with core posts; aggregated read-only feed for the admin dashboard.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT m.id, m.video_id, m.user_id, m.milestone_pct, m.reached_at,
+				        p.post_title AS video_title,
+				        u.display_name AS user_name
+				 FROM {$milestones} m
+				 INNER JOIN {$wpdb->posts} p ON m.video_id = p.ID AND p.post_status = 'publish'
+				 LEFT JOIN {$wpdb->users} u ON m.user_id = u.ID
+				 ORDER BY m.reached_at DESC
+				 LIMIT %d",
+				$limit
+			)
+		);
+
+		return array_map(
+			static function ( $row ): array {
+				return array(
+					'id'             => (int) $row->id,
+					'video_id'       => (int) $row->video_id,
+					'video_title'    => sanitize_text_field( (string) $row->video_title ),
+					'user_id'        => (int) $row->user_id,
+					'user_name'      => sanitize_text_field( (string) ( $row->user_name ?? __( 'Guest', 'mediashield' ) ) ),
+					'milestone_pct'  => (int) $row->milestone_pct,
+					'reached_at'     => (string) $row->reached_at, // raw UTC for clients that prefer ISO
+					'reached_at_fmt' => self::local_datetime( (string) $row->reached_at ),
+				);
+			},
+			is_array( $rows ) ? $rows : array()
+		);
 	}
 }

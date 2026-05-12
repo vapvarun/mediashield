@@ -35,7 +35,8 @@
 	// ─── YouTube Adapter ─────────────────────────────────────────
 
 	var YouTubeAdapter = {
-		create: function ( target, videoId ) {
+		create: function ( target, videoId, options ) {
+			options = options || {};
 			var adapter = {
 				_player: null, _position: 0, _duration: 0, _playing: false,
 				_readyCb: null, _endedCb: null, _pollId: null,
@@ -54,9 +55,14 @@
 			};
 
 			function initPlayer() {
+				var pv = { modestbranding: 1, rel: 0, fs: 0 };
+				if ( options.autoplay === true ) pv.autoplay = 1;
+				if ( options.loop === true ) { pv.loop = 1; pv.playlist = videoId; }
+				if ( options.muted === true ) pv.mute = 1;
+				if ( options.controls === false ) pv.controls = 0;
 				adapter._player = new YT.Player( target, {
 					videoId: videoId,
-					playerVars: { autoplay: 0, modestbranding: 1, rel: 0, fs: 0 },
+					playerVars: pv,
 					events: {
 						onReady: function () {
 							adapter._duration = adapter._player.getDuration() || 0;
@@ -98,7 +104,8 @@
 	// ─── Vimeo Adapter ───────────────────────────────────────────
 
 	var VimeoAdapter = {
-		create: function ( target, videoId ) {
+		create: function ( target, videoId, options ) {
+			options = options || {};
 			var adapter = {
 				_player: null, _position: 0, _duration: 0, _playing: false,
 				_readyCb: null, _endedCb: null,
@@ -115,9 +122,12 @@
 
 			loadSDK( 'https://player.vimeo.com/api/player.js', function () { return window.Vimeo; } )
 				.then( function () {
-					adapter._player = new Vimeo.Player( target, {
-						id: videoId, responsive: true, fullscreen: false,
-					} );
+					var vimeoOpts = { id: videoId, responsive: true, fullscreen: false };
+					if ( options.autoplay === true ) vimeoOpts.autoplay = true;
+					if ( options.loop === true ) vimeoOpts.loop = true;
+					if ( options.muted === true ) vimeoOpts.muted = true;
+					if ( options.controls === false ) vimeoOpts.controls = false;
+					adapter._player = new Vimeo.Player( target, vimeoOpts );
 
 					adapter._player.on( 'timeupdate', function ( data ) {
 						adapter._position = data.seconds;
@@ -144,7 +154,8 @@
 	// ─── Wistia Adapter ──────────────────────────────────────────
 
 	var WistiaAdapter = {
-		create: function ( target, hashedId ) {
+		create: function ( target, hashedId, options ) {
+			options = options || {};
 			var adapter = {
 				_video: null, _position: 0, _duration: 0, _playing: false,
 				_readyCb: null, _endedCb: null,
@@ -159,9 +170,16 @@
 				destroy: function () { if ( adapter._video ) adapter._video.remove(); },
 			};
 
-			// Create Wistia embed div inside target.
+			// Create Wistia embed div inside target. Per-video options become
+			// `wistia_async_<id>` modifier classes (the documented runtime API
+			// for declarative Wistia config).
+			var embedClasses = [ 'wistia_embed', 'wistia_async_' + hashedId ];
+			if ( options.autoplay === true ) embedClasses.push( 'autoPlay=true' );
+			if ( options.loop === true ) embedClasses.push( 'endVideoBehavior=loop' );
+			if ( options.muted === true ) embedClasses.push( 'volume=0' );
+			if ( options.controls === false ) embedClasses.push( 'playbar=false', 'fullscreenButton=false', 'volumeControl=false', 'settingsControl=false', 'playbackRateControl=false', 'controlsVisibleOnLoad=false' );
 			var embedDiv = document.createElement( 'div' );
-			embedDiv.className = 'wistia_embed wistia_async_' + hashedId;
+			embedDiv.className = embedClasses.join( ' ' );
 			embedDiv.style.width = '100%';
 			embedDiv.style.height = '100%';
 			target.appendChild( embedDiv );
@@ -194,7 +212,8 @@
 	// ─── Self-Hosted / Bunny Adapter (Shaka Player or <video>) ──
 
 	var NativeAdapter = {
-		create: function ( target, sourceUrl, streamUrl ) {
+		create: function ( target, sourceUrl, streamUrl, options ) {
+			options = options || {};
 			var adapter = {
 				_video: null, _shakaPlayer: null,
 				_readyCb: null, _endedCb: null,
@@ -212,7 +231,11 @@
 			};
 
 			var video = document.createElement( 'video' );
-			video.controls = true;
+			// Per-video overrides. `controls` defaults true; the others default false.
+			video.controls = options.controls === false ? false : true;
+			video.autoplay = options.autoplay === true;
+			video.loop     = options.loop === true;
+			video.muted    = options.muted === true;
 			video.setAttribute( 'controlsList', 'nodownload nofullscreen noremoteplayback' );
 			video.preload = 'metadata';
 			video.style.width = '100%';
@@ -257,20 +280,34 @@
 		var sourceUrl = target.dataset.sourceUrl || '';
 		var streamUrl = target.dataset.streamUrl || '';
 
+		// Per-video playback options. Tri-state via data attrs: "1" = on, "0" =
+		// off, missing = adapter default. Anything other than "1"/"0" is ignored.
+		function tri( v ) {
+			if ( v === '1' ) return true;
+			if ( v === '0' ) return false;
+			return undefined;
+		}
+		var options = {
+			autoplay: tri( target.dataset.autoplay ),
+			loop:     tri( target.dataset.loop ),
+			muted:    tri( target.dataset.muted ),
+			controls: tri( target.dataset.controls ),
+		};
+
 		switch ( platform ) {
 			case 'youtube':
-				return platformVideoId ? YouTubeAdapter.create( target, platformVideoId ) : null;
+				return platformVideoId ? YouTubeAdapter.create( target, platformVideoId, options ) : null;
 			case 'vimeo':
-				return platformVideoId ? VimeoAdapter.create( target, platformVideoId ) : null;
+				return platformVideoId ? VimeoAdapter.create( target, platformVideoId, options ) : null;
 			case 'wistia':
-				return platformVideoId ? WistiaAdapter.create( target, platformVideoId ) : null;
+				return platformVideoId ? WistiaAdapter.create( target, platformVideoId, options ) : null;
 			case 'bunny':
-				return NativeAdapter.create( target, sourceUrl, streamUrl );
+				return NativeAdapter.create( target, sourceUrl, streamUrl, options );
 			case 'self':
-				return NativeAdapter.create( target, sourceUrl, streamUrl );
+				return NativeAdapter.create( target, sourceUrl, streamUrl, options );
 			default:
 				// Generic iframe fallback — limited tracking.
-				if ( sourceUrl ) return NativeAdapter.create( target, sourceUrl, '' );
+				if ( sourceUrl ) return NativeAdapter.create( target, sourceUrl, '', options );
 				return null;
 		}
 	}

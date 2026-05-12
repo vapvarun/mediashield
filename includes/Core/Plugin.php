@@ -19,6 +19,7 @@ use MediaShield\REST\SessionController;
 use MediaShield\Player\PlayerWrapper;
 use MediaShield\Block\VideoBlock;
 use MediaShield\Block\PlaylistBlock;
+use MediaShield\Block\PlaylistShortcode;
 use MediaShield\Block\Shortcode;
 use MediaShield\REST\PlaylistController;
 use MediaShield\REST\UploadController;
@@ -76,6 +77,7 @@ class Plugin {
 		VideoBlock::register();
 		PlaylistBlock::register();
 		Shortcode::register();
+		PlaylistShortcode::register();
 
 		// Player wrapper (output buffer for video detection + wrapping).
 		PlayerWrapper::register();

@@ -9,9 +9,11 @@
 
 import { useState, useEffect } from '@wordpress/element';
 import { Button, Modal, Spinner } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { decodeEntities } from '@wordpress/html-entities';
+import { useDispatch } from '@wordpress/data';
+import { store as noticesStore } from '@wordpress/notices';
 
 const config = window.mediashieldAdmin || {};
 const PER_PAGE = 20;
@@ -145,6 +147,39 @@ const Videos = () => {
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const [ previewVideo, setPreviewVideo ] = useState( null );
+
+	const { createSuccessNotice, createErrorNotice } = useDispatch( noticesStore );
+
+	const copyShortcode = async ( videoId ) => {
+		const shortcode = `[mediashield id=${ videoId }]`;
+		try {
+			// `navigator.clipboard` requires a secure context; fall back to a
+			// hidden textarea + execCommand for plain-HTTP dev environments.
+			if ( navigator.clipboard && window.isSecureContext ) {
+				await navigator.clipboard.writeText( shortcode );
+			} else {
+				const ta = document.createElement( 'textarea' );
+				ta.value = shortcode;
+				ta.setAttribute( 'readonly', '' );
+				ta.style.position = 'absolute';
+				ta.style.left = '-9999px';
+				document.body.appendChild( ta );
+				ta.select();
+				document.execCommand( 'copy' );
+				document.body.removeChild( ta );
+			}
+			createSuccessNotice(
+				sprintf(
+					/* translators: %s: shortcode that was copied to clipboard */
+					__( 'Copied %s to clipboard', 'mediashield' ),
+					shortcode
+				),
+				{ type: 'snackbar' }
+			);
+		} catch ( err ) {
+			createErrorNotice( __( 'Could not copy shortcode — please copy manually.', 'mediashield' ), { type: 'snackbar' } );
+		}
+	};
 
 	useEffect( () => {
 		let cancelled = false;
@@ -280,6 +315,14 @@ const Videos = () => {
 										onClick={ () => setPreviewVideo( video ) }
 									>
 										{ __( 'Preview', 'mediashield' ) }
+									</button>
+									<button
+										type="button"
+										className="mediashield-action-btn mediashield-action-btn--copy"
+										onClick={ () => copyShortcode( video.id ) }
+										title={ __( 'Copy [mediashield id=…] shortcode', 'mediashield' ) }
+									>
+										{ __( 'Copy shortcode', 'mediashield' ) }
 									</button>
 									</td>
 								</tr>

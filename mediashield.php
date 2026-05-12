@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Plugin constants.
 define( 'MEDIASHIELD_VERSION', '1.0.0' );
-define( 'MEDIASHIELD_DB_VERSION', 1 );
+define( 'MEDIASHIELD_DB_VERSION', 2 );
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );
@@ -72,6 +72,15 @@ add_action(
 
 if ( file_exists( MEDIASHIELD_PATH . 'vendor/easy-digital-downloads/edd-sl-sdk/edd-sl-sdk.php' ) ) {
 	require_once MEDIASHIELD_PATH . 'vendor/easy-digital-downloads/edd-sl-sdk/edd-sl-sdk.php';
+}
+
+// WP-CLI commands.
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	$ms_scale_command = MEDIASHIELD_PATH . 'src/CLI/ScaleCommand.php';
+	if ( file_exists( $ms_scale_command ) ) {
+		require_once $ms_scale_command;
+		\WP_CLI::add_command( 'mediashield scale', \MediaShield\CLI\ScaleCommand::class );
+	}
 }
 
 // Auto-activate the preset license key on first load so downloads work.

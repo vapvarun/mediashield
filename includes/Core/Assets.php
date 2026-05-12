@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Core\Settings;
 use MediaShield\Player\Watermark;
 use MediaShield\Player\Protection;
 
@@ -76,7 +77,11 @@ class Assets {
 			return;
 		}
 
-		$ver = MEDIASHIELD_VERSION;
+		// In WP_DEBUG / SCRIPT_DEBUG environments use the file mtime so browser
+		// caches don't serve stale player JS during local iteration. Production
+		// keeps the static plugin version for predictable cache keys.
+		$dev = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) || ( defined( 'WP_DEBUG' ) && WP_DEBUG );
+		$ver = $dev ? (string) filemtime( MEDIASHIELD_PATH . 'assets/js/player-wrapper.js' ) : MEDIASHIELD_VERSION;
 		$url = MEDIASHIELD_URL;
 
 		// Player wrapper — scans DOM for embeds and initializes protection.
@@ -123,28 +128,12 @@ class Assets {
 			$ver
 		);
 
-		// Localize config for all scripts.
-		$user = wp_get_current_user();
-
-		$config = array(
-			'restUrl'    => rest_url( 'mediashield/v1/' ),
-			'nonce'      => wp_create_nonce( 'wp_rest' ),
-			'isLoggedIn' => is_user_logged_in(),
-			'userId'     => $user->ID,
-			'loginUrl'   => wp_login_url( get_permalink() ),
-			'interval'   => 30000, // Heartbeat interval in ms.
-			'watermark'  => Watermark::get_config(),
-			'protection' => Protection::get_config(),
-			'player'     => array(
-				'speedControl'  => (bool) get_option( 'ms_player_speed_control', true ),
-				'keyboard'      => (bool) get_option( 'ms_player_keyboard', true ),
-				'resume'        => (bool) get_option( 'ms_player_resume', true ),
-				'sticky'        => (bool) get_option( 'ms_player_sticky', false ),
-				'endscreen'     => (bool) get_option( 'ms_player_endscreen', false ),
-				'endscreenText' => get_option( 'ms_player_endscreen_text', '' ),
-				'endscreenUrl'  => get_option( 'ms_player_endscreen_url', '' ),
-			),
-		);
+		// Localize config for all scripts. Player options + messages come from
+		// the central Settings service; watermark/protection keep their own
+		// shape because they have additional runtime-derived fields (IP, etc.).
+		$config               = Settings::frontend_config();
+		$config['watermark']  = Watermark::get_config();
+		$config['protection'] = Protection::get_config();
 
 		wp_localize_script( 'mediashield-player-wrapper', 'mediashieldConfig', $config );
 	}

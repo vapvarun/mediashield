@@ -14,6 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Core\Settings;
+
 /**
  * Class Watermark
  *
@@ -31,22 +33,15 @@ class Watermark {
 	public static function get_config(): array {
 		$user = wp_get_current_user();
 
-		$config = array(
-			'enabled'       => (bool) get_option( 'ms_enabled', true ),
+		return array(
+			'enabled'       => Settings::get( 'ms_enabled' ),
 			'text'          => $user->ID ? $user->display_name : __( 'Guest', 'mediashield' ),
 			'ip'            => self::get_client_ip(),
-			'opacity'       => (float) get_option( 'ms_watermark_opacity', 0.3 ),
-			'color'         => get_option( 'ms_watermark_color', '#ffffff' ),
-			'swap_interval' => (int) get_option( 'ms_watermark_swap_interval', 20 ),
-			'show_badge'    => (bool) get_option( 'ms_show_badge', true ),
+			'opacity'       => Settings::get( 'ms_watermark_opacity' ),
+			'color'         => Settings::get( 'ms_watermark_color' ),
+			'swap_interval' => Settings::get( 'ms_watermark_swap_interval' ),
+			'show_badge'    => Settings::get( 'ms_show_badge' ),
 		);
-
-		// Force badge visible if pro not active (free always shows badge).
-		if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
-			$config['show_badge'] = true;
-		}
-
-		return $config;
 	}
 
 	/**

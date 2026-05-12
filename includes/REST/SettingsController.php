@@ -15,19 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Core\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use WP_Error;
 
-/**
- * Class SettingsController
- *
- * REST API controller for plugin settings.
- *
- * @since 1.0.0
- */
 class SettingsController extends WP_REST_Controller {
 
 	/**
@@ -36,46 +30,6 @@ class SettingsController extends WP_REST_Controller {
 	 * @var string
 	 */
 	protected $namespace = 'mediashield/v1';
-
-	/**
-	 * Default settings with their types.
-	 *
-	 * @var array
-	 */
-	private const SETTINGS = array(
-		'ms_enabled'                 => 'boolean',
-		'ms_default_protection'      => 'string',
-		'ms_require_login'           => 'boolean',
-		'ms_watermark_opacity'       => 'float',
-		'ms_watermark_color'         => 'string',
-		'ms_watermark_swap_interval' => 'integer',
-		'ms_allowed_domains'         => 'string',
-		'ms_max_concurrent_streams'  => 'integer',
-		'ms_custom_url_patterns'     => 'string',
-		'ms_show_badge'              => 'boolean',
-		'ms_max_upload_size'         => 'integer',
-		'ms_login_overlay_text'      => 'string',
-		'ms_login_button_text'       => 'string',
-		'ms_access_denied_text'      => 'string',
-
-		// Player controls.
-		'ms_player_speed_control'    => 'boolean',
-		'ms_player_sticky'           => 'boolean',
-		'ms_player_keyboard'         => 'boolean',
-		'ms_player_resume'           => 'boolean',
-		'ms_player_endscreen'        => 'boolean',
-		'ms_player_endscreen_text'   => 'string',
-		'ms_player_endscreen_url'    => 'string',
-
-		// Protection controls.
-		'ms_block_right_click'       => 'boolean',
-		'ms_block_keyboard'          => 'boolean',
-		'ms_hide_source'             => 'boolean',
-		'ms_detect_devtools'         => 'boolean',
-		'ms_pause_on_devtools'       => 'boolean',
-		'ms_devtools_title'          => 'string',
-		'ms_devtools_message'        => 'string',
-	);
 
 	/**
 	 * Register routes.
@@ -116,19 +70,7 @@ class SettingsController extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_settings( WP_REST_Request $request ): WP_REST_Response {
-		$settings = array();
-
-		foreach ( self::SETTINGS as $key => $type ) {
-			$value = get_option( $key );
-
-			// Cast to correct type.
-			$settings[ $key ] = match ( $type ) {
-				'boolean' => (bool) $value,
-				'integer' => (int) $value,
-				'float'   => (float) $value,
-				default   => (string) ( $value ?? '' ),
-			};
-		}
+		$settings = Settings::get_all();
 
 		/**
 		 * Filter the settings response.
@@ -160,7 +102,8 @@ class SettingsController extends WP_REST_Controller {
 		/**
 		 * Filter the settings data before saving.
 		 *
-		 * Pro hooks this to handle pro-specific fields.
+		 * Pro hooks this to handle pro-specific fields. Pro callbacks unset
+		 * their keys from $data after persisting them so the loop below skips them.
 		 *
 		 * @since 1.0.0
 		 *
@@ -169,22 +112,12 @@ class SettingsController extends WP_REST_Controller {
 		$data = apply_filters( 'mediashield_settings_update', $data );
 
 		foreach ( $data as $key => $value ) {
-			// Only allow settings explicitly defined in the SETTINGS const.
-			// Pro settings are handled by their own filter callbacks (DRMSettings, ProSettings)
-			// which call update_option directly and unset the key from $data.
-			if ( ! isset( self::SETTINGS[ $key ] ) ) {
+			$sanitized = Settings::sanitize( (string) $key, $value );
+
+			// Unknown keys (not in the schema and not consumed by Pro) are ignored.
+			if ( null === $sanitized ) {
 				continue;
 			}
-
-			$type = self::SETTINGS[ $key ];
-
-			// Sanitize by type.
-			$sanitized = match ( $type ) {
-				'boolean' => (bool) $value,
-				'integer' => (int) $value,
-				'float'   => (float) $value,
-				default   => sanitize_textarea_field( (string) $value ),
-			};
 
 			update_option( $key, $sanitized );
 		}

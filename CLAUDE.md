@@ -53,7 +53,7 @@ includes/
     PlaylistController.php   /playlists/{id}/items CRUD + reorder
     UploadController.php     /upload/init, /upload/status/{id}
     SettingsController.php   /settings GET + PUT
-    AnalyticsController.php  /analytics/overview, milestones, users, my-videos
+    AnalyticsController.php  /analytics/overview, milestones, users, my-videos. Overview payload includes `recent_milestones` + `site_timezone`; date grouping uses MySQL CONVERT_TZ() so daily counts honour the WP site timezone.
     ProtectionController.php /protection/devtools-event beacon
     StreamController.php     /stream/{video_id} signed-URL handoff
   Access/

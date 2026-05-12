@@ -119,12 +119,30 @@ class Renderer {
 			if ( ! empty( $es_url ) ) {
 				$video_overrides['endscreenUrl'] = $es_url;
 			}
+
+			// Binary playback options stored on the video CPT. Meta is tri-state:
+			// '1' = explicit on, '0' = explicit off, '' = pristine (never saved —
+			// treat as adapter default so older videos keep working unchanged).
+			$playback_keys = array(
+				'_ms_autoplay'      => 'autoplay',
+				'_ms_loop'          => 'loop',
+				'_ms_muted'         => 'muted',
+				'_ms_show_controls' => 'controls',
+			);
+			$playback_attrs = '';
+			foreach ( $playback_keys as $meta_key => $data_attr ) {
+				$raw = (string) get_post_meta( $video_id, $meta_key, true );
+				if ( '1' === $raw || '0' === $raw ) {
+					$playback_attrs .= sprintf( ' data-%s="%s"', $data_attr, esc_attr( $raw ) );
+				}
+			}
 			?>
 			<div class="ms-player-target"
 				data-platform-video-id="<?php echo esc_attr( $platform_video_id ); ?>"
 				data-source-url="<?php echo esc_url( $source_url ); ?>"
 				data-stream-url="<?php echo esc_url( $stream_url ); ?>"
 				data-duration="<?php echo esc_attr( $duration ); ?>"
+				<?php echo $playback_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes pre-escaped above. ?>
 				<?php if ( ! empty( $video_overrides ) ) : ?>
 					data-player-overrides="<?php echo esc_attr( wp_json_encode( $video_overrides ) ); ?>"
 				<?php endif; ?>

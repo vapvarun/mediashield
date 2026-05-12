@@ -14,7 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use MediaShield\Core\Assets;
 use MediaShield\Player\Renderer;
 
 /**
@@ -70,8 +69,9 @@ class Shortcode {
 			$restore_source_url = true;
 		}
 
-		Assets::enqueue();
-
+		// Renderer validates the video CPT + source and enqueues frontend assets
+		// only when output will be produced — calling enqueue() here would leak
+		// JS/CSS for invalid or non-existent IDs.
 		$html = Renderer::render( $video_id );
 
 		// Restore original source URL if we temporarily overrode it.
