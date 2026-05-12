@@ -46,7 +46,16 @@ class Renderer {
 		$source_url        = get_post_meta( $video_id, '_ms_source_url', true );
 		$stream_url        = get_post_meta( $video_id, '_ms_stream_url', true );
 		$protection_raw    = get_post_meta( $video_id, '_ms_protection_level', true );
-		$protection_level  = ! empty( $protection_raw ) ? $protection_raw : 'standard';
+		// Fall back to the operator-configured global default before the
+		// last-resort 'standard' so the Settings → Default Protection Level
+		// toggle actually has an effect on videos that don't carry a per-video
+		// override.
+		$protection_level  = ! empty( $protection_raw )
+			? $protection_raw
+			: \MediaShield\Core\Settings::get( 'ms_default_protection' );
+		if ( empty( $protection_level ) ) {
+			$protection_level = 'standard';
+		}
 		$duration          = (int) get_post_meta( $video_id, '_ms_duration', true );
 		$player_type       = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 

@@ -762,7 +762,12 @@ class VideoPostType {
 			),
 			'_ms_protection_level'  => array(
 				'type'    => 'string',
-				'default' => 'standard',
+				// Empty string means "inherit the operator-configured global
+				// `ms_default_protection`". `Renderer::render()` and the
+				// metabox both perform that fallback. A pre-baked literal
+				// default would mask the Settings → Default Protection Level
+				// toggle (filed as bug 9857698036).
+				'default' => '',
 			),
 			'_ms_access_role'       => array(
 				'type'    => 'string',
