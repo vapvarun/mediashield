@@ -63,6 +63,30 @@ class TagManager {
 	}
 
 	/**
+	 * Idempotent "get or create": return the existing tag ID for the given name
+	 * (matched by slug) or create the tag and return the new ID.
+	 *
+	 * Called by the milestone tracker and any future automation that needs to
+	 * promote a free-form tag string into a real `ms_tags` row.
+	 *
+	 * @param string $name        Tag display name. Must be non-empty.
+	 * @param int    $created_by  User ID to record on creation.
+	 * @return int Tag ID, or 0 if the input was invalid.
+	 */
+	public static function ensure( string $name, int $created_by = 0 ): int {
+		$name = trim( $name );
+		if ( '' === $name ) {
+			return 0;
+		}
+		$existing = self::get_by_slug( sanitize_title( $name ) );
+		if ( $existing ) {
+			return (int) $existing->id;
+		}
+		$id = self::create( $name, '', $created_by );
+		return false === $id ? 0 : (int) $id;
+	}
+
+	/**
 	 * Get a single tag by ID.
 	 *
 	 * @param int $tag_id Tag ID.

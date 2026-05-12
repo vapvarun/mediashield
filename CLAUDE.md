@@ -38,7 +38,7 @@ includes/
     Plugin.php               Singleton, registers all hooks
     Activator.php            Activation (DB schema, options, flush rewrite)
     Deactivator.php          Deactivation (clear crons)
-    Migrator.php             DB version migration runner — calls Settings::seed_defaults() on every version bump
+    Migrator.php             DB version migration runner — calls Settings::seed_defaults() on every version bump. v3 backfills legacy `_ms_video_tags` user meta entries into `ms_tags` so installs that pre-date the milestone-tag unification gain tag rows without manual intervention.
     Settings.php             Single source of truth for free-plugin options — schema (type+default), get/get_all/seed_defaults/sanitize, frontend_config()
     Assets.php               Frontend JS/CSS enqueue — pulls localized config from Settings::frontend_config()
   CPT/
@@ -65,13 +65,13 @@ includes/
     MyVideosBlock.php        mediashield/my-videos block + shortcode
     Shortcode.php            [mediashield id=X] shortcode
   Player/
-    PlayerWrapper.php        Output buffer video detection + wrapping
+    PlayerWrapper.php        Output buffer video detection + wrapping. Sticky-player observer watches a 1px sentinel placed before the player (not the player itself) to avoid the position:fixed feedback flicker.
     Protection.php           Right-click disable, devtools detection
     Watermark.php            Dynamic watermark overlay
     Renderer.php             Shared .ms-protected-player container output for a single video (used by [mediashield] shortcode, video block, single template). Validates the CPT + source URLs and enqueues assets only when output will be produced. Emits per-video playback options (`data-autoplay`/`data-loop`/`data-muted`/`data-controls`) from `_ms_autoplay`/`_ms_loop`/`_ms_muted`/`_ms_show_controls` meta.
     PlaylistRenderer.php     Shared playlist player output (used by [mediashield_playlist] shortcode and the playlist Gutenberg block). Validates the playlist CPT + items and enqueues assets only when output will be produced.
   Milestones/
-    MilestoneTracker.php     25/50/75/100% completion tracking
+    MilestoneTracker.php     25/50/75/100% completion tracking. When a milestone with a configured tag fires, the tag is promoted into the unified `ms_tags` dictionary (via `TagManager::ensure()`) and the video↔tag link recorded in `ms_video_tags`. The per-user earn record stays in `_ms_video_tags` user meta but now carries `tag_id` alongside the display string for cross-reference.
   Upload/
     UploadManager.php        Driver registry (mediashield_upload_drivers filter)
     Drivers/
