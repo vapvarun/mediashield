@@ -307,10 +307,15 @@ class Cleanup {
 
 			$table = "{$wpdb->prefix}ms_watch_sessions";
 
+			// `last_heartbeat` is written via `current_time( 'mysql', true )` (UTC)
+			// in SessionManager. Comparing against MySQL `NOW()` would inherit the
+			// session timezone — UTC on most managed hosts but never guaranteed —
+			// and could mark sessions inactive minutes early or late on misconfigured
+			// servers. `UTC_TIMESTAMP()` keeps both sides on the same clock.
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table bulk update.
 			$wpdb->query(
 				$wpdb->prepare(
-					"UPDATE {$table} SET is_active = 0 WHERE is_active = 1 AND last_heartbeat < DATE_SUB( NOW(), INTERVAL %d MINUTE )",
+					"UPDATE {$table} SET is_active = 0 WHERE is_active = 1 AND last_heartbeat < DATE_SUB( UTC_TIMESTAMP(), INTERVAL %d MINUTE )",
 					10
 				)
 			);
@@ -349,10 +354,11 @@ class Cleanup {
 			// Use a transaction so INSERT + DELETE are atomic.
 			$wpdb->query( 'START TRANSACTION' );
 
-			// Insert old sessions into archive.
+			// `started_at` is UTC (current_time('mysql', true) in SessionManager).
+			// Use UTC_TIMESTAMP() so the 24-month cutoff is reliable across hosts.
 			$inserted = $wpdb->query(
 				$wpdb->prepare(
-					"INSERT INTO {$archive} SELECT * FROM {$sessions} WHERE started_at < DATE_SUB( NOW(), INTERVAL %d MONTH )",
+					"INSERT INTO {$archive} SELECT * FROM {$sessions} WHERE started_at < DATE_SUB( UTC_TIMESTAMP(), INTERVAL %d MONTH )",
 					24
 				)
 			);
@@ -363,10 +369,11 @@ class Cleanup {
 				return;
 			}
 
-			// Delete archived sessions from main table.
+			// Delete archived sessions from main table. UTC_TIMESTAMP for the
+			// same reason as the matching INSERT above.
 			$deleted = $wpdb->query(
 				$wpdb->prepare(
-					"DELETE FROM {$sessions} WHERE started_at < DATE_SUB( NOW(), INTERVAL %d MONTH )",
+					"DELETE FROM {$sessions} WHERE started_at < DATE_SUB( UTC_TIMESTAMP(), INTERVAL %d MONTH )",
 					24
 				)
 			);
