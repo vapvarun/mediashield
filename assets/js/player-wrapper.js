@@ -488,8 +488,20 @@
 		}
 
 		// ── Sticky / floating player on scroll (all platforms) ──
+		// The observer must NOT watch the player itself: once `.ms-sticky-player`
+		// applies `position: fixed`, the player re-enters the viewport in its
+		// new corner, the observer fires `isIntersecting=true`, the class is
+		// removed, the element falls back to its original off-screen position,
+		// and the cycle restarts \u2014 visible to the user as flicker. Watching a
+		// 1px in-flow sentinel placed just before the player avoids the loop.
 		if ( feat( 'sticky' ) ) {
 			var stickyDismissed = false;
+			var sentinel = document.createElement( 'div' );
+			sentinel.className = 'ms-sticky-sentinel';
+			sentinel.setAttribute( 'aria-hidden', 'true' );
+			sentinel.style.cssText = 'width:100%;height:1px;pointer-events:none;';
+			container.parentNode.insertBefore( sentinel, container );
+
 			var observer = new IntersectionObserver( function ( entries ) {
 				entries.forEach( function ( entry ) {
 					if ( stickyDismissed ) return;
@@ -514,8 +526,8 @@
 						if ( existing ) existing.remove();
 					}
 				} );
-			}, { threshold: 0.3 } );
-			observer.observe( container );
+			} );
+			observer.observe( sentinel );
 		}
 
 		// ── End screen overlay (all platforms) ──
