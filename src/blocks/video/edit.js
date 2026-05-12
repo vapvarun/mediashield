@@ -169,9 +169,30 @@ export default function Edit( { attributes, setAttributes } ) {
 	// Video selected — show preview.
 	const platform = video.meta?._ms_platform || 'unknown';
 	const sourceUrl = video.meta?._ms_source_url || url;
+	const platformVideoId = video.meta?._ms_platform_video_id || '';
+
+	// Resolve a preview thumbnail:
+	// 1. WP featured image when the editor has set one.
+	// 2. Otherwise derive a free CDN URL for known platforms so the block has a
+	//    real preview without an extra API call.
+	const derivedThumbnail = ( () => {
+		if ( platform === 'youtube' && platformVideoId ) {
+			return `https://i.ytimg.com/vi/${ platformVideoId }/hqdefault.jpg`;
+		}
+		if ( platform === 'bunny' && platformVideoId ) {
+			// Bunny thumbnail convention — first segment of the platformVideoId
+			// is the library, second is the video GUID; bail if it doesn't match.
+			const parts = platformVideoId.split( '/' );
+			if ( parts.length === 2 ) {
+				return `https://vz-${ parts[ 0 ] }.b-cdn.net/${ parts[ 1 ] }/thumbnail.jpg`;
+			}
+		}
+		return '';
+	} )();
+
 	const thumbnailUrl = video.featured_media_src_url
 		|| video._embedded?.[ 'wp:featuredmedia' ]?.[ 0 ]?.source_url
-		|| '';
+		|| derivedThumbnail;
 
 	return (
 		<div { ...blockProps }>
@@ -232,7 +253,21 @@ export default function Edit( { attributes, setAttributes } ) {
 					</div>
 				) : (
 					<div className="ms-block-embed-preview">
-						{ sourceUrl && /^https?:\/\//.test( sourceUrl ) && platform !== 'self' ? (
+						{ platform === 'self' && sourceUrl ? (
+							<video
+								src={ sourceUrl }
+								preload="metadata"
+								controls
+								style={ { width: '100%', display: 'block' } }
+							/>
+						) : platform === 'vimeo' && platformVideoId ? (
+							<iframe
+								src={ `https://player.vimeo.com/video/${ platformVideoId }` }
+								title={ video.title?.rendered || 'Video' }
+								style={ { width: '100%', aspectRatio: '16/9', border: 'none' } }
+								allow="autoplay; fullscreen; picture-in-picture"
+							/>
+						) : sourceUrl && /^https?:\/\//.test( sourceUrl ) ? (
 							<iframe
 								src={ sourceUrl }
 								title={ video.title?.rendered || 'Video' }
