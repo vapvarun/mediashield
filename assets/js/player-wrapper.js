@@ -619,6 +619,18 @@
 				var status = result.status;
 				var data = result.data;
 
+				// Concurrent-stream limit (HTTP 429) — show the operator-configured
+				// message inline so the viewer knows why the player is idle. The
+				// REST handler returns the localised text in `data.message`.
+				if ( status === 429 || data.code === 'concurrent_limit' ) {
+					showErrorOverlay( el, data.message || 'Too many active streams. Please close another video first.' );
+					window.dispatchEvent( new CustomEvent( 'mediashield:concurrent-limit', {
+						bubbles: true,
+						detail: { el: el, videoId: videoId, message: data.message },
+					} ) );
+					return;
+				}
+
 				// Handle access-denied responses (403 or error codes).
 				if ( status === 403 || data.code === 'access_denied' || data.code === 'email_gate_required' || data.code === 'login_required' ) {
 					var reason = data.code || 'access_denied';
@@ -629,6 +641,10 @@
 						return;
 					}
 
+					// Show access-denied overlay when no upstream listener handles
+					// the event (Pro can call preventDefault to suppress this).
+					var msg = data.message || ( config.messages && config.messages.accessDenied ) || 'You do not have access to this video.';
+					showErrorOverlay( el, msg );
 					window.dispatchEvent( new CustomEvent( 'mediashield:access-denied', {
 						bubbles: true,
 						detail: { el: el, videoId: videoId, reason: reason },
@@ -660,6 +676,32 @@
 			.catch( function ( err ) {
 				console.warn( 'MediaShield: session start failed', err );
 			} );
+	}
+
+	// ─── Error Overlay (generic) ────────────────────────────────
+	//
+	// Used for non-recoverable session-start errors: concurrent stream limit,
+	// access denied when no upstream listener handles the dispatch, etc. Sits
+	// on top of the player container so the viewer can read why the player
+	// isn't loading. Single instance per container — repeated calls replace.
+	function showErrorOverlay( el, message ) {
+		var existing = el.querySelector( '.ms-error-overlay' );
+		if ( existing ) existing.remove();
+
+		var overlay = document.createElement( 'div' );
+		overlay.className = 'ms-error-overlay';
+		overlay.setAttribute( 'role', 'alert' );
+		overlay.setAttribute( 'aria-live', 'polite' );
+
+		var inner = document.createElement( 'div' );
+		inner.className = 'ms-error-message';
+
+		var text = document.createElement( 'p' );
+		text.textContent = String( message || '' );
+
+		inner.appendChild( text );
+		overlay.appendChild( inner );
+		el.appendChild( overlay );
 	}
 
 	// ─── Login Overlay ───────────────────────────────────────────

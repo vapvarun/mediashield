@@ -64,6 +64,30 @@
 	pointer-events: none;
 }
 
+/* Generic error overlay — concurrent-stream limit, access denied, etc. */
+.ms-error-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.85);
+}
+
+.ms-error-message {
+	text-align: center;
+	color: #fff;
+	line-height: 1.6;
+	padding: 2rem;
+	max-width: 32rem;
+}
+
+.ms-error-message p {
+	font-size: 1.125rem;
+	margin: 0;
+}
+
 /* Login overlay */
 .ms-login-overlay {
 	position: absolute;
