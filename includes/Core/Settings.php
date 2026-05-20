@@ -83,9 +83,14 @@ class Settings {
 			'ms_show_badge'              => array( 'type' => 'boolean', 'default' => true ),
 
 			// Login & access messages.
-			'ms_login_overlay_text'      => array( 'type' => 'string',  'default' => __( 'Please log in to watch this video', 'mediashield' ) ),
-			'ms_login_button_text'       => array( 'type' => 'string',  'default' => __( 'Log In', 'mediashield' ) ),
-			'ms_access_denied_text'      => array( 'type' => 'string',  'default' => __( 'You do not have access to this video', 'mediashield' ) ),
+			// Defaults are plain strings, not __(): schema() is read by
+			// seed_defaults() on plugins_loaded (before init), and calling __()
+			// there triggers the WP 6.7+ "translation loaded too early" notice.
+			// These are admin-editable message defaults (a seeded translation would
+			// freeze the locale at activation time anyway), so literals are correct.
+			'ms_login_overlay_text'      => array( 'type' => 'string',  'default' => 'Please log in to watch this video' ),
+			'ms_login_button_text'       => array( 'type' => 'string',  'default' => 'Log In' ),
+			'ms_access_denied_text'      => array( 'type' => 'string',  'default' => 'You do not have access to this video' ),
 
 			// Player controls.
 			'ms_player_speed_control'    => array( 'type' => 'boolean', 'default' => true ),
@@ -102,8 +107,10 @@ class Settings {
 			'ms_hide_source'             => array( 'type' => 'boolean', 'default' => true ),
 			'ms_detect_devtools'         => array( 'type' => 'boolean', 'default' => true ),
 			'ms_pause_on_devtools'       => array( 'type' => 'boolean', 'default' => false ),
-			'ms_devtools_title'          => array( 'type' => 'string',  'default' => __( 'Developer Tools Detected', 'mediashield' ) ),
-			'ms_devtools_message'        => array( 'type' => 'string',  'default' => __( 'Please close developer tools to continue watching this video.', 'mediashield' ) ),
+			// Plain-string defaults (see the login-message note above re: __() and
+			// the early-translation notice).
+			'ms_devtools_title'          => array( 'type' => 'string',  'default' => 'Developer Tools Detected' ),
+			'ms_devtools_message'        => array( 'type' => 'string',  'default' => 'Please close developer tools to continue watching this video.' ),
 		);
 	}
 
