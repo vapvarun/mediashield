@@ -32,17 +32,17 @@ class PlaylistRenderer {
 	 */
 	public static function render( int $playlist_id, string $wrapper_attrs = '' ): string {
 		if ( $playlist_id <= 0 ) {
-			return '';
+			return self::notice( __( 'No playlist selected.', 'mediashield' ) );
 		}
 
 		$playlist = get_post( $playlist_id );
 		if ( ! $playlist || 'mediashield_playlist' !== $playlist->post_type || 'publish' !== $playlist->post_status ) {
-			return '';
+			return self::notice( __( 'Playlist not found or not published.', 'mediashield' ) );
 		}
 
 		$items = self::fetch_items( $playlist_id );
 		if ( empty( $items ) ) {
-			return '';
+			return self::notice( __( 'This playlist has no videos yet.', 'mediashield' ) );
 		}
 
 		// Only enqueue assets once we know we have something to render.
@@ -135,6 +135,26 @@ class PlaylistRenderer {
 </div>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Build an editor-only placeholder notice for empty/invalid playlists.
+	 *
+	 * Front-end visitors get an empty string (no broken UI); users who can edit
+	 * content get a visible explanation so the blank area is never a mystery.
+	 *
+	 * @param string $message Already-translated, human-readable explanation.
+	 * @return string Notice HTML for editors, empty string otherwise.
+	 */
+	private static function notice( string $message ): string {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return '';
+		}
+
+		// Ensure the notice picks up player.css styling.
+		Assets::enqueue();
+
+		return '<p class="ms-playlist-notice">' . esc_html( $message ) . '</p>';
 	}
 
 	/**

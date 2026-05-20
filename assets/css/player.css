@@ -532,3 +532,17 @@
 		-webkit-backdrop-filter: none;
 	}
 }
+
+/*
+ * Editor-only placeholder shown when a playlist is empty or unavailable.
+ * Uses currentColor so it adapts to any theme (incl. dark) without raw colors.
+ */
+.ms-playlist-notice {
+	margin: 0;
+	padding: 16px 20px;
+	border: 1px dashed currentColor;
+	border-radius: 8px;
+	opacity: 0.6;
+	font-size: 0.875rem;
+	text-align: center;
+}
