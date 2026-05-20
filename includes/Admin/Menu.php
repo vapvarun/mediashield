@@ -172,6 +172,13 @@ class Menu {
 	 */
 	public static function dismiss_pro_notice(): void {
 		check_ajax_referer( 'ms_dismiss_pro', 'nonce' );
+
+		// Nonce proves intent, not authorization — gate on capability too so a
+		// low-privilege logged-in user cannot dismiss the admin-only notice.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'mediashield' ) ), 403 );
+		}
+
 		update_option( 'ms_pro_notice_dismissed', true );
 		wp_send_json_success();
 	}
