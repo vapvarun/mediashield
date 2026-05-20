@@ -98,6 +98,46 @@ class UploadManager {
 			);
 		}
 
-		return $instance->upload( $file_path, $options );
+		/**
+		 * Fires just before an upload begins, for any driver.
+		 *
+		 * Lets add-ons record the attempt (e.g. Pro's upload queue) so the full
+		 * upload lifecycle is tracked from start to finish.
+		 *
+		 * @since 1.0.1
+		 *
+		 * @param string $driver    Driver name (e.g. 'self_hosted', 'bunny').
+		 * @param string $file_path Absolute path to the source file.
+		 * @param array  $options   Driver-specific options.
+		 */
+		do_action( 'mediashield_upload_started', $driver, $file_path, $options );
+
+		$result = $instance->upload( $file_path, $options );
+
+		if ( empty( $result['success'] ) ) {
+			/**
+			 * Fires when an upload fails.
+			 *
+			 * @since 1.0.1
+			 *
+			 * @param string $driver  Driver name.
+			 * @param string $error   Human-readable error message.
+			 * @param array  $options Driver-specific options.
+			 */
+			do_action( 'mediashield_upload_failed', $driver, isset( $result['error'] ) ? (string) $result['error'] : '', $options );
+		} else {
+			/**
+			 * Fires after a video upload completes successfully (any driver/caller).
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param int    $video_id Created video CPT post ID.
+			 * @param string $driver   Upload driver used.
+			 * @param array  $result   Full upload result.
+			 */
+			do_action( 'mediashield_upload_complete', isset( $result['video_id'] ) ? (int) $result['video_id'] : 0, $driver, $result );
+		}
+
+		return $result;
 	}
 }

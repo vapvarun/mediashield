@@ -136,16 +136,9 @@ class UploadController extends WP_REST_Controller {
 			);
 		}
 
-		/**
-		 * Fires after a video upload completes successfully.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param int    $video_id    Created video CPT post ID.
-		 * @param string $driver_name Upload driver used.
-		 * @param array  $result      Full upload result.
-		 */
-		do_action( 'mediashield_upload_complete', $result['video_id'], $driver_name, $result );
+		// The mediashield_upload_complete / _started / _failed actions now fire
+		// inside UploadManager::upload() so every caller (admin + frontend) tracks
+		// the full upload lifecycle in one place.
 
 		return new WP_REST_Response(
 			array(
