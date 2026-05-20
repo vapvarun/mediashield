@@ -216,7 +216,7 @@ class VideoPostType {
 
 				<?php if ( $has_pro && ! empty( $connected_platforms ) ) : ?>
 					<p class="ms-source-intro" style="color: #2271b1;">
-						<span class="dashicons dashicons-yes-alt" style="margin-right: 4px;"></span>
+						<?php echo \MediaShield\Support\Icons::svg( 'circle-check', array( 'size' => 16, 'class' => 'ms-inline-icon' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. ?>
 						<?php
 						printf(
 							/* translators: %s: comma-separated platform names */
@@ -229,7 +229,7 @@ class VideoPostType {
 				<?php elseif ( $has_pro ) : ?>
 					<div class="notice notice-info inline" style="margin: 8px 0;">
 						<p>
-							<span class="dashicons dashicons-cloud" style="margin-right: 4px;"></span>
+							<?php echo \MediaShield\Support\Icons::svg( 'cloud', array( 'size' => 16, 'class' => 'ms-inline-icon' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. ?>
 							<?php
 							printf(
 								/* translators: %s: link to Platforms page */
@@ -241,7 +241,7 @@ class VideoPostType {
 					</div>
 				<?php else : ?>
 					<p class="ms-source-intro" style="color: #757575;">
-						<span class="dashicons dashicons-lock" style="margin-right: 4px;"></span>
+						<?php echo \MediaShield\Support\Icons::svg( 'lock', array( 'size' => 16, 'class' => 'ms-inline-icon' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. ?>
 						<?php esc_html_e( 'Upgrade to MediaShield Pro to connect cloud platforms (Bunny, YouTube, Vimeo, Wistia) for protected streaming, bulk import, and advanced analytics.', 'mediashield' ); ?>
 					</p>
 				<?php endif; ?>
@@ -372,7 +372,7 @@ class VideoPostType {
 				<div class="ms-embed-copy-row">
 					<input type="text" value="<?php echo esc_attr( $shortcode ); ?>" readonly class="ms-embed-input" id="ms-shortcode-input" />
 					<button type="button" class="button ms-embed-copy-btn" data-copy="ms-shortcode-input" title="<?php esc_attr_e( 'Copy', 'mediashield' ); ?>">
-						<span class="dashicons dashicons-clipboard"></span>
+						<?php echo \MediaShield\Support\Icons::svg( 'clipboard', array( 'size' => 16, 'class' => 'ms-copy-idle' ) ) . \MediaShield\Support\Icons::svg( 'check', array( 'size' => 16, 'class' => 'ms-copy-done' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. ?>
 					</button>
 				</div>
 				<p class="description"><?php esc_html_e( 'Paste in any page, post, or lesson using the Classic Editor.', 'mediashield' ); ?></p>
@@ -386,7 +386,7 @@ class VideoPostType {
 				<div class="ms-embed-copy-row">
 					<input type="text" value="<?php echo esc_attr( '<?php echo do_shortcode(\'[mediashield id=' . $post_id . ']\'); ?>' ); ?>" readonly class="ms-embed-input" id="ms-php-input" />
 					<button type="button" class="button ms-embed-copy-btn" data-copy="ms-php-input" title="<?php esc_attr_e( 'Copy', 'mediashield' ); ?>">
-						<span class="dashicons dashicons-clipboard"></span>
+						<?php echo \MediaShield\Support\Icons::svg( 'clipboard', array( 'size' => 16, 'class' => 'ms-copy-idle' ) ) . \MediaShield\Support\Icons::svg( 'check', array( 'size' => 16, 'class' => 'ms-copy-done' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. ?>
 					</button>
 				</div>
 			<?php endif; ?>

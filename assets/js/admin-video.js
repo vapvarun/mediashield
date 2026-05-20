@@ -64,16 +64,10 @@
 			}
 			input.select();
 			navigator.clipboard.writeText( input.value ).then( function () {
+				// .copied swaps the clipboard icon for the check icon via CSS.
 				btn.classList.add( 'copied' );
-				var icon = btn.querySelector( '.dashicons' );
-				if ( icon ) {
-					icon.classList.replace( 'dashicons-clipboard', 'dashicons-yes' );
-				}
 				setTimeout( function () {
 					btn.classList.remove( 'copied' );
-					if ( icon ) {
-						icon.classList.replace( 'dashicons-yes', 'dashicons-clipboard' );
-					}
 				}, 2000 );
 			} );
 		} );

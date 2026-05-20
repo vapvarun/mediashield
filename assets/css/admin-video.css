@@ -68,13 +68,31 @@
 	box-shadow: none;
 }
 
-.ms-embed-copy-btn .dashicons {
-	font-size: 16px;
-	width: 16px;
-	height: 16px;
-	margin-top: 2px;
+/* Lucide icon base (admin meta boxes). */
+.ms-icon {
+	display: inline-block;
+	vertical-align: middle;
+	flex-shrink: 0;
+}
+
+/* Inline status icon sitting before text (logical spacing for RTL). */
+.ms-inline-icon {
+	margin-inline-end: 4px;
 }
 
 .ms-embed-copy-btn.copied {
 	color: var(--ms-admin-embed-success);
+}
+
+/* Copy button toggles between the clipboard (idle) and check (copied) icons. */
+.ms-embed-copy-btn .ms-copy-done {
+	display: none;
+}
+
+.ms-embed-copy-btn.copied .ms-copy-idle {
+	display: none;
+}
+
+.ms-embed-copy-btn.copied .ms-copy-done {
+	display: inline-block;
 }
