@@ -35,10 +35,14 @@
 	display: flex;
 	gap: 4px;
 	margin-bottom: 4px;
+	align-items: stretch;
 }
 
 .ms-embed-input {
 	flex: 1;
+	/* min-width:0 lets the input shrink inside the flex row instead of forcing
+	   overflow on narrow admin/mobile widths (flex items default to min-width:auto). */
+	min-width: 0;
 	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 	font-size: 12px;
 	padding: 4px 8px;
@@ -51,6 +55,7 @@
 .ms-embed-copy-btn {
 	padding: 0 6px !important;
 	min-width: 32px;
+	flex: 0 0 auto;
 }
 
 .ms-embed-copy-btn .dashicons {
