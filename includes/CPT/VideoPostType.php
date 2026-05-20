@@ -745,5 +745,67 @@ class VideoPostType {
 				)
 			);
 		}
+
+		// Milestone tags are a nested object ({ pct: { enabled, tag } }), so they
+		// need a custom REST schema + sanitizer instead of the scalar loop above.
+		// Without this the admin SPA cannot read/write milestone tags via REST —
+		// only the classic meta box's $_POST path works (card 9909829782).
+		register_post_meta(
+			'mediashield_video',
+			'_ms_milestone_tags',
+			array(
+				'show_in_rest'      => array(
+					'schema' => array(
+						'type'                 => 'object',
+						'additionalProperties' => array(
+							'type'       => 'object',
+							'properties' => array(
+								'enabled' => array( 'type' => 'boolean' ),
+								'tag'     => array( 'type' => 'string' ),
+							),
+						),
+					),
+				),
+				'single'            => true,
+				'type'              => 'object',
+				'default'           => array(),
+				'sanitize_callback' => array( __CLASS__, 'sanitize_milestone_tags' ),
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+			)
+		);
+	}
+
+	/**
+	 * Sanitize the _ms_milestone_tags object (mirrors save_meta_box()).
+	 *
+	 * Keeps only percentages 1-100 that have a non-empty tag; coerces enabled to
+	 * a boolean. Shared shape between the classic meta box and the REST API.
+	 *
+	 * @param mixed $value Raw meta value.
+	 * @return array<int, array{tag: string, enabled: bool}>
+	 */
+	public static function sanitize_milestone_tags( $value ): array {
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
+
+		$clean = array();
+		foreach ( $value as $pct => $data ) {
+			$pct = absint( $pct );
+			if ( $pct < 1 || $pct > 100 || ! is_array( $data ) ) {
+				continue;
+			}
+			$tag = sanitize_text_field( $data['tag'] ?? '' );
+			if ( '' !== $tag ) {
+				$clean[ $pct ] = array(
+					'tag'     => $tag,
+					'enabled' => ! empty( $data['enabled'] ),
+				);
+			}
+		}
+
+		return $clean;
 	}
 }
