@@ -160,7 +160,7 @@ class Renderer {
 			<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>
 			<div class="ms-protection-overlay"></div>
 			<button class="ms-fullscreen-btn" aria-label="<?php esc_attr_e( 'Fullscreen', 'mediashield' ); ?>" title="<?php esc_attr_e( 'Fullscreen', 'mediashield' ); ?>">
-				<span class="dashicons dashicons-fullscreen-alt"></span>
+				<?php echo \MediaShield\Support\Icons::svg( 'maximize', array( 'size' => 20 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. ?>
 			</button>
 		</div>
 		<?php

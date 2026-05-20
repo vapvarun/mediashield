@@ -122,7 +122,7 @@ class PlaylistRenderer {
 					<?php if ( $thumb ) : ?>
 						<img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $item->video_title ); ?>" class="ms-playlist-item-thumb" loading="lazy" />
 					<?php else : ?>
-						<span class="dashicons dashicons-video-alt3 ms-playlist-item-thumb-placeholder"></span>
+						<?php echo \MediaShield\Support\Icons::svg( 'video', array( 'size' => 24, 'class' => 'ms-playlist-item-thumb-placeholder' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. ?>
 					<?php endif; ?>
 					<div class="ms-playlist-item-info">
 						<span class="ms-playlist-item-title"><?php echo esc_html( $item->video_title ); ?></span>

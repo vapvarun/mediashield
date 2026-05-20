@@ -274,11 +274,19 @@
 	background: rgba(0, 0, 0, 0.8);
 }
 
-.ms-fullscreen-btn .dashicons {
-	font-size: 18px;
-	width: 18px;
-	height: 18px;
-	line-height: 18px;
+/* Base Lucide icon — sizing comes from the SVG width/height attributes. */
+.ms-icon {
+	display: inline-block;
+	vertical-align: middle;
+	flex-shrink: 0;
+}
+
+.ms-fullscreen-btn .ms-icon {
+	display: block;
+}
+
+.ms-playlist-item-thumb-placeholder {
+	opacity: 0.5;
 }
 
 /* Fullscreen mode — container fills viewport, watermark stays on top */

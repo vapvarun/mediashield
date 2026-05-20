@@ -237,7 +237,7 @@ class PlayerWrapper {
 					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""%s></div>'
 					. '<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>'
 					. '<div class="ms-protection-overlay"></div>'
-					. '<button class="ms-fullscreen-btn" aria-label="%s"><span class="dashicons dashicons-fullscreen-alt"></span></button>'
+					. '<button class="ms-fullscreen-btn" aria-label="%s">' . \MediaShield\Support\Icons::svg( 'maximize', array( 'size' => 20 ) ) . '</button>'
 					. '</div>',
 					$video_post_id,
 					esc_attr( $platform ),
