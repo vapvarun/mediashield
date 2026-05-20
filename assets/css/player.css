@@ -366,12 +366,16 @@
 	z-index: 99999;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 	border-radius: 8px;
-	overflow: hidden;
+	/* overflow:visible so the floating close button (positioned at top/right:-10px)
+	   is not clipped. Corner-rounding moves to the media child below. */
+	overflow: visible;
 	transition: all 0.3s ease;
 }
 
 .ms-sticky-player .ms-player-target {
 	aspect-ratio: 16 / 9;
+	border-radius: 8px;
+	overflow: hidden;
 }
 
 .ms-sticky-close {
@@ -383,9 +387,15 @@
 	color: #fff;
 	border: 2px solid #fff;
 	border-radius: 50%;
+	/* min-width:0 + padding:0 stop theme <button> styles from widening it into
+	   an oval; box-sizing keeps the 2px border inside the 24px circle. */
+	box-sizing: border-box;
+	min-width: 0;
 	width: 24px;
 	height: 24px;
+	padding: 0;
 	font-size: 14px;
+	line-height: 1;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
