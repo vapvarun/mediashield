@@ -83,14 +83,33 @@ class SetupWizard {
 	 * Register the wizard page (hidden — no menu item).
 	 */
 	public static function register_page(): void {
-		add_submenu_page(
-			'', // Hidden — no parent menu (empty string avoids null deprecation).
+		// Empty parent keeps the page hidden (no menu item) and gives it the
+		// hook suffix `admin_page_mediashield-wizard` used by the asset enqueue below.
+		$hook = add_submenu_page(
+			'', // Hidden — no parent menu item.
 			__( 'MediaShield Setup', 'mediashield' ),
 			__( 'Setup', 'mediashield' ),
 			'manage_options',
 			'mediashield-wizard',
 			array( __CLASS__, 'render_page' )
 		);
+
+		// A hidden (parentless) page has no menu entry for get_admin_page_title()
+		// to resolve, so it returns null → strip_tags(null)/strpos(null) deprecations
+		// on PHP 8.1+. Setting $title on page load makes that function return early.
+		if ( $hook ) {
+			add_action( "load-{$hook}", array( __CLASS__, 'set_admin_title' ) );
+		}
+	}
+
+	/**
+	 * Pre-set the admin page title for the hidden wizard page so WordPress core
+	 * does not walk its (empty) menu entry and pass null into string functions.
+	 */
+	public static function set_admin_title(): void {
+		if ( empty( $GLOBALS['title'] ) ) {
+			$GLOBALS['title'] = __( 'MediaShield Setup', 'mediashield' );
+		}
 	}
 
 	/**
