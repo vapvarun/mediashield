@@ -350,9 +350,16 @@
 			case 'self':
 				return NativeAdapter.create( target, sourceUrl, streamUrl, options );
 			default:
-				// Generic iframe fallback — limited tracking.
-				if ( sourceUrl ) return NativeAdapter.create( target, sourceUrl, '', options );
-				return null;
+				// Unknown platform: a direct media file plays in a <video>
+				// (full tracking); anything else is treated as an HTML embed
+				// page and rendered in an <iframe> — a <video> element can't
+				// render an HTML page (same class of bug the 'bunny' case
+				// above guards against). Tracking is limited on cross-origin
+				// iframes.
+				if ( ! sourceUrl ) return null;
+				return /\.(mp4|webm|ogg|ogv|mov|m3u8)(\?|#|$)/i.test( sourceUrl )
+					? NativeAdapter.create( target, sourceUrl, streamUrl, options )
+					: IframeAdapter.create( target, sourceUrl, options );
 		}
 	}
 
