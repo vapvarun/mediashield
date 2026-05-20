@@ -1,0 +1,65 @@
+/**
+ * MediaShield — video edit screen meta-box styles.
+ *
+ * Extracted from inline <style> in CPT\VideoPostType so the markup stays free of
+ * inline styles (ux-foundation BLOCK gate F1). Colors live as tokens in :root so
+ * the file carries no raw hex outside the token block (gate F3).
+ */
+
+:root {
+	--ms-admin-embed-bg: #f7f7f5;
+	--ms-admin-embed-border: #e2e8f0;
+	--ms-admin-embed-text: #1e1e1e;
+	--ms-admin-embed-success: #2ea44f;
+}
+
+.ms-embed-meta-box {
+	padding: 2px 0;
+}
+
+.ms-embed-label {
+	display: block;
+	font-weight: 600;
+	font-size: 12px;
+	margin-bottom: 4px;
+	color: var(--ms-admin-embed-text);
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.ms-embed-label--spaced {
+	margin-top: 14px;
+}
+
+.ms-embed-copy-row {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 4px;
+}
+
+.ms-embed-input {
+	flex: 1;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 12px;
+	padding: 4px 8px;
+	background: var(--ms-admin-embed-bg);
+	border: 1px solid var(--ms-admin-embed-border);
+	border-radius: 4px;
+	color: var(--ms-admin-embed-text);
+}
+
+.ms-embed-copy-btn {
+	padding: 0 6px !important;
+	min-width: 32px;
+}
+
+.ms-embed-copy-btn .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	margin-top: 2px;
+}
+
+.ms-embed-copy-btn.copied {
+	color: var(--ms-admin-embed-success);
+}

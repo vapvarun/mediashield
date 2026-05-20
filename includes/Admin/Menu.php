@@ -88,6 +88,15 @@ class Menu {
 			true
 		);
 
+		// Pro-notice dismiss handler (replaces the former inline script).
+		wp_enqueue_script(
+			'mediashield-admin-notice',
+			MEDIASHIELD_URL . 'assets/js/admin-notice.js',
+			array(),
+			$ver,
+			true
+		);
+
 		// CSS: webpack outputs index.css (not style-index.css).
 		$css_file = file_exists( $build_dir . 'style-index.css' ) ? 'style-index.css' : 'index.css';
 		wp_enqueue_style(
@@ -157,14 +166,8 @@ class Menu {
 				<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Get MediaShield Pro', 'mediashield' ); ?> &rarr;</a>
 			</p>
 		</div>
-		<script>
-		jQuery(function($){
-			$(document).on('click', '.ms-pro-notice .notice-dismiss', function(){
-				$.post(ajaxurl, { action: 'ms_dismiss_pro_notice', nonce: $(this).closest('.ms-pro-notice').data('nonce') });
-			});
-		});
-		</script>
 		<?php
+		// Dismiss behavior lives in assets/js/admin-notice.js (enqueued on this screen).
 	}
 
 	/**

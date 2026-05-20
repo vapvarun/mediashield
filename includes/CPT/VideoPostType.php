@@ -28,6 +28,7 @@ class VideoPostType {
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_boxes' ) );
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'save_meta_box' ), 10, 2 );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_edit_assets' ) );
 	}
 
 	/**
@@ -145,6 +146,38 @@ class VideoPostType {
 	}
 
 	/**
+	 * Enqueue the video edit screen meta-box CSS/JS (only on that screen).
+	 *
+	 * @param string $hook_suffix Current admin page.
+	 */
+	public static function enqueue_edit_assets( string $hook_suffix ): void {
+		if ( 'post.php' !== $hook_suffix && 'post-new.php' !== $hook_suffix ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+		if ( ! $screen || 'mediashield_video' !== $screen->post_type ) {
+			return;
+		}
+
+		wp_enqueue_style( 'mediashield-admin-video', MEDIASHIELD_URL . 'assets/css/admin-video.css', array(), MEDIASHIELD_VERSION );
+		wp_enqueue_script( 'mediashield-admin-video', MEDIASHIELD_URL . 'assets/js/admin-video.js', array(), MEDIASHIELD_VERSION, true );
+		wp_localize_script(
+			'mediashield-admin-video',
+			'mediashieldVideoAdmin',
+			array(
+				'labels' => array(
+					'youtube' => __( 'YouTube', 'mediashield' ),
+					'vimeo'   => __( 'Vimeo', 'mediashield' ),
+					'wistia'  => __( 'Wistia', 'mediashield' ),
+					'bunny'   => __( 'Bunny Stream', 'mediashield' ),
+					'self'    => __( 'Self-hosted / Direct URL', 'mediashield' ),
+				),
+			)
+		);
+	}
+
+	/**
 	 * Render the Video Source meta box.
 	 *
 	 * @param \WP_Post $post Current post object.
@@ -246,61 +279,9 @@ class VideoPostType {
 			</table>
 		</div>
 
-		<script>
-		(function() {
-			var urlField = document.getElementById('ms-video-url');
-			var platformField = document.getElementById('ms-platform');
-			var videoIdField = document.getElementById('ms-platform-video-id');
-			var platformRow = document.getElementById('ms-detected-platform-row');
-			var platformLabel = document.getElementById('ms-detected-platform-label');
-
-			var patterns = {
-				youtube: [
-					/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-				],
-				vimeo: [
-					/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/,
-				],
-				wistia: [
-					/(?:wistia\.com\/medias\/|fast\.wistia\.net\/embed\/iframe\/)([a-z0-9]+)/,
-				],
-				bunny: [
-					/(?:iframe\.mediadelivery\.net\/embed\/\d+\/)([a-f0-9-]+)/,
-					/(?:b-cdn\.net\/)([a-f0-9-]+)/,
-				],
-			};
-
-			var labels = {
-				youtube: <?php echo wp_json_encode( __( 'YouTube', 'mediashield' ) ); ?>,
-				vimeo: <?php echo wp_json_encode( __( 'Vimeo', 'mediashield' ) ); ?>,
-				wistia: <?php echo wp_json_encode( __( 'Wistia', 'mediashield' ) ); ?>,
-				bunny: <?php echo wp_json_encode( __( 'Bunny Stream', 'mediashield' ) ); ?>,
-				self: <?php echo wp_json_encode( __( 'Self-hosted / Direct URL', 'mediashield' ) ); ?>,
-			};
-
-			if (urlField) {
-				urlField.addEventListener('input', function() {
-					var url = this.value.trim();
-					var detected = 'self';
-					var vid = '';
-
-					for (var p in patterns) {
-						for (var i = 0; i < patterns[p].length; i++) {
-							var m = url.match(patterns[p][i]);
-							if (m) { detected = p; vid = m[1]; break; }
-						}
-						if (vid) break;
-					}
-
-					platformField.value = detected;
-					videoIdField.value = vid;
-					platformLabel.textContent = labels[detected] + (vid ? ' (' + vid + ')' : '');
-					platformRow.style.display = url ? '' : 'none';
-				});
-			}
-		})();
-		</script>
 		<?php
+		// Platform auto-detection behavior lives in assets/js/admin-video.js
+		// (enqueued by enqueue_edit_assets()).
 	}
 
 	/**
@@ -389,7 +370,7 @@ class VideoPostType {
 			<?php else : ?>
 				<label class="ms-embed-label"><?php esc_html_e( 'Shortcode', 'mediashield' ); ?></label>
 				<div class="ms-embed-copy-row">
-					<input type="text" value="<?php echo esc_attr( $shortcode ); ?>" readonly class="ms-embed-input" id="ms-shortcode-input" onclick="this.select();" />
+					<input type="text" value="<?php echo esc_attr( $shortcode ); ?>" readonly class="ms-embed-input" id="ms-shortcode-input" />
 					<button type="button" class="button ms-embed-copy-btn" data-copy="ms-shortcode-input" title="<?php esc_attr_e( 'Copy', 'mediashield' ); ?>">
 						<span class="dashicons dashicons-clipboard"></span>
 					</button>
@@ -401,9 +382,9 @@ class VideoPostType {
 					<?php esc_html_e( 'In the Block Editor, search for "MediaShield" to find the Video block. Select this video from the block settings.', 'mediashield' ); ?>
 				</p>
 
-				<label class="ms-embed-label" style="margin-top: 14px; display: block;"><?php esc_html_e( 'PHP Template', 'mediashield' ); ?></label>
+				<label class="ms-embed-label ms-embed-label--spaced"><?php esc_html_e( 'PHP Template', 'mediashield' ); ?></label>
 				<div class="ms-embed-copy-row">
-					<input type="text" value="<?php echo esc_attr( '<?php echo do_shortcode(\'[mediashield id=' . $post_id . ']\'); ?>' ); ?>" readonly class="ms-embed-input" id="ms-php-input" onclick="this.select();" />
+					<input type="text" value="<?php echo esc_attr( '<?php echo do_shortcode(\'[mediashield id=' . $post_id . ']\'); ?>' ); ?>" readonly class="ms-embed-input" id="ms-php-input" />
 					<button type="button" class="button ms-embed-copy-btn" data-copy="ms-php-input" title="<?php esc_attr_e( 'Copy', 'mediashield' ); ?>">
 						<span class="dashicons dashicons-clipboard"></span>
 					</button>
@@ -411,38 +392,9 @@ class VideoPostType {
 			<?php endif; ?>
 		</div>
 
-		<style>
-			.ms-embed-meta-box { padding: 2px 0; }
-			.ms-embed-label { display: block; font-weight: 600; font-size: 12px; margin-bottom: 4px; color: #1e1e1e; text-transform: uppercase; letter-spacing: 0.03em; }
-			.ms-embed-copy-row { display: flex; gap: 4px; margin-bottom: 4px; }
-			.ms-embed-input { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; padding: 4px 8px; background: #f7f7f5; border: 1px solid #e2e8f0; border-radius: 4px; color: #1e1e1e; }
-			.ms-embed-copy-btn { padding: 0 6px !important; min-width: 32px; }
-			.ms-embed-copy-btn .dashicons { font-size: 16px; width: 16px; height: 16px; margin-top: 2px; }
-			.ms-embed-copy-btn.copied { color: #2ea44f; }
-		</style>
-
-		<script>
-		(function() {
-			document.querySelectorAll('.ms-embed-copy-btn').forEach(function(btn) {
-				btn.addEventListener('click', function() {
-					var input = document.getElementById(this.dataset.copy);
-					if (input) {
-						input.select();
-						navigator.clipboard.writeText(input.value).then(function() {
-							btn.classList.add('copied');
-							var icon = btn.querySelector('.dashicons');
-							if (icon) { icon.classList.replace('dashicons-clipboard', 'dashicons-yes'); }
-							setTimeout(function() {
-								btn.classList.remove('copied');
-								if (icon) { icon.classList.replace('dashicons-yes', 'dashicons-clipboard'); }
-							}, 2000);
-						});
-					}
-				});
-			});
-		})();
-		</script>
 		<?php
+		// Embed-box styles live in assets/css/admin-video.css; the copy-to-clipboard
+		// behavior lives in assets/js/admin-video.js (enqueued by enqueue_edit_assets()).
 	}
 
 	/**
@@ -597,15 +549,9 @@ class VideoPostType {
 				</p>
 			</div>
 
-			<script>
-			(function(){
-				var sel = document.querySelector('select[name="_ms_player_endscreen"]');
-				var fields = document.getElementById('ms-endscreen-fields');
-				if (sel && fields) {
-					sel.addEventListener('change', function(){ fields.style.display = this.value === 'on' ? '' : 'none'; });
-				}
-			})();
-			</script>
+			<?php
+			// End-screen field toggle lives in assets/js/admin-video.js.
+			?>
 		</div>
 		<?php
 	}
