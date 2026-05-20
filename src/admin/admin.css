@@ -108,7 +108,7 @@
 
 /* ── Full-Width Layout (remove WP chrome margins) ─── */
 .toplevel_page_mediashield #wpcontent {
-	padding-left: 0;
+	padding-inline-start: 0;
 }
 .toplevel_page_mediashield #wpbody-content {
 	padding-bottom: 0;
@@ -282,7 +282,7 @@
 	letter-spacing: 0.06em;
 	background: linear-gradient( 135deg, #7c3aed, #a855f7 );
 	color: #fff;
-	margin-left: auto;
+	margin-inline-start: auto;
 	line-height: 1.6;
 }
 
@@ -312,7 +312,7 @@
 	font-size: 13px;
 	color: var( --ms-color-text-secondary );
 	font-weight: 400;
-	margin-left: 12px;
+	margin-inline-start: 12px;
 }
 
 .mediashield-page__header .components-select-control {
@@ -628,7 +628,7 @@
 	border-radius: 3px;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	margin-left: auto;
+	margin-inline-start: auto;
 }
 
 /* Platform badges */
@@ -934,7 +934,7 @@
 }
 
 .mediashield-search-bar .components-text-control__input {
-	padding-left: 12px;
+	padding-inline-start: 12px;
 	border-radius: var( --ms-radius );
 	border-color: var( --ms-color-border );
 	transition: border-color var( --ms-transition ), box-shadow var( --ms-transition );
@@ -993,7 +993,7 @@
 }
 
 .mediashield-back-btn .dashicons {
-	margin-right: 4px;
+	margin-inline-end: 4px;
 }
 
 /* ── Settings Sections ─────────────────────────────── */
@@ -1424,7 +1424,7 @@
 .ms-upsell-feature {
 	font-size: 13px;
 	color: #374151;
-	padding-left: 16px;
+	padding-inline-start: 16px;
 	position: relative;
 }
 
@@ -1490,7 +1490,7 @@
 
 .ms-teaser-box ul {
 	margin: 8px 0;
-	padding-left: 18px;
+	padding-inline-start: 18px;
 }
 
 .ms-teaser-box li {
@@ -1513,7 +1513,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 	vertical-align: middle;
-	margin-left: 4px;
+	margin-inline-start: 4px;
 }
 
 /* ── Reduced Motion ───────────────────────────────── */
@@ -1733,7 +1733,7 @@
 	background: #fafbfc;
 }
 .ms-preview-modal__info strong {
-	margin-right: 4px;
+	margin-inline-end: 4px;
 }
 .components-modal__frame.ms-preview-modal {
 	width: 800px;
