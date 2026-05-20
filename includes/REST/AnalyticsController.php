@@ -225,7 +225,7 @@ class AnalyticsController extends WP_REST_Controller {
 			$wpdb->prepare(
 				"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
 				 FROM {$sessions} s
-				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID
+				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_status = 'publish'
 				 WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval})
 				 GROUP BY s.video_id
 				 ORDER BY session_count DESC

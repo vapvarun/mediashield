@@ -146,14 +146,36 @@ class Cleanup {
 		global $wpdb;
 
 		$video_tags             = "{$wpdb->prefix}ms_video_tags";
+		$tags                   = "{$wpdb->prefix}ms_tags";
 		$watch_sessions         = "{$wpdb->prefix}ms_watch_sessions";
 		$watch_sessions_archive = "{$wpdb->prefix}ms_watch_sessions_archive";
 		$milestones             = "{$wpdb->prefix}ms_milestones";
 		$playlist_items         = "{$wpdb->prefix}ms_playlist_items";
 
-		// Delete video tags.
+		// Capture the tag IDs linked to this video before removing the links, so
+		// we can drop any tag that becomes orphaned (no remaining video) below.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		$linked_tag_ids = $wpdb->get_col( $wpdb->prepare( "SELECT tag_id FROM {$video_tags} WHERE video_id = %d", $post_id ) );
+
+		// Delete video tags (the video↔tag links).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table delete.
 		$wpdb->delete( $video_tags, array( 'video_id' => $post_id ), array( '%d' ) );
+
+		// Drop tag-dictionary rows that no longer reference any video (orphans).
+		$linked_tag_ids = array_values( array_unique( array_map( 'intval', (array) $linked_tag_ids ) ) );
+		if ( ! empty( $linked_tag_ids ) ) {
+			$placeholders = implode( ',', array_fill( 0, count( $linked_tag_ids ), '%d' ) );
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Custom tables with dynamic IN clause.
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE t FROM {$tags} t
+					 WHERE t.id IN ({$placeholders})
+					 AND NOT EXISTS ( SELECT 1 FROM {$video_tags} vt WHERE vt.tag_id = t.id )",
+					...$linked_tag_ids
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		}
 
 		// Collect session IDs before deleting (needed for pro tables).
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
