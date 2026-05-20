@@ -207,7 +207,11 @@ class SessionController extends WP_REST_Controller {
 			'opacity'       => (float) get_option( 'ms_watermark_opacity', 0.3 ),
 			'color'         => get_option( 'ms_watermark_color', '#ffffff' ),
 			'swap_interval' => (int) get_option( 'ms_watermark_swap_interval', 20 ),
-			'username'      => wp_get_current_user()->display_name,
+			// Key is `text` (not `username`) to match Watermark::get_config() and
+			// what assets/js/watermark.js reads; otherwise the overlay renders the
+			// IP only on desktop and is blank on mobile. Pro's AdvancedConfig filter
+			// overwrites `text` when active.
+			'text'          => wp_get_current_user()->display_name,
 			'ip'            => $ip,
 		);
 
