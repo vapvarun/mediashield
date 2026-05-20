@@ -269,6 +269,49 @@
 		},
 	};
 
+	// ─── Iframe Adapter (Bunny Stream embed pages & generic embeds) ──
+	//
+	// Bunny Stream "embed" URLs (iframe.mediadelivery.net / player.mediadelivery.net)
+	// are HTML player pages, NOT video files — a <video> element cannot render them.
+	// This adapter loads them in an <iframe>. Cross-origin iframes expose no
+	// playback position/duration, so tracking + watermark are best-effort (0).
+
+	var IframeAdapter = {
+		create: function ( target, sourceUrl, options ) {
+			options = options || {};
+			var adapter = {
+				_video: null, _iframe: null,
+				_readyCb: null, _endedCb: null,
+				getPosition: function () { return 0; },
+				getDuration: function () { return 0; },
+				isPlaying: function () { return false; },
+				seekTo: function () {},
+				play: function () {},
+				pause: function () {},
+				onReady: function ( cb ) { adapter._readyCb = cb; },
+				onEnded: function ( cb ) { adapter._endedCb = cb; },
+				destroy: function () { if ( adapter._iframe ) adapter._iframe.remove(); },
+			};
+
+			var iframe = document.createElement( 'iframe' );
+			iframe.src = sourceUrl;
+			iframe.setAttribute( 'frameborder', '0' );
+			iframe.setAttribute( 'allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media' );
+			iframe.setAttribute( 'allowfullscreen', '' );
+			iframe.style.width = '100%';
+			iframe.style.height = '100%';
+			iframe.style.border = '0';
+			iframe.style.display = 'block';
+			iframe.addEventListener( 'load', function () {
+				if ( adapter._readyCb ) adapter._readyCb();
+			} );
+			target.appendChild( iframe );
+			adapter._iframe = iframe;
+
+			return adapter;
+		},
+	};
+
 	// ─── Adapter Factory ─────────────────────────────────────────
 
 	function createAdapter( el ) {
@@ -302,7 +345,8 @@
 			case 'wistia':
 				return platformVideoId ? WistiaAdapter.create( target, platformVideoId, options ) : null;
 			case 'bunny':
-				return NativeAdapter.create( target, sourceUrl, streamUrl, options );
+				// Bunny embed URLs are HTML player pages → must use an <iframe>.
+				return sourceUrl ? IframeAdapter.create( target, sourceUrl, options ) : null;
 			case 'self':
 				return NativeAdapter.create( target, sourceUrl, streamUrl, options );
 			default:
@@ -716,13 +760,15 @@
 		var message = document.createElement( 'div' );
 		message.className = 'ms-login-message';
 
+		var messages = config.messages || {};
+
 		var text = document.createElement( 'p' );
-		text.textContent = config.loginMessage || 'Please log in to watch this video.';
+		text.textContent = messages.loginOverlay || 'Please log in to watch this video.';
 
 		var link = document.createElement( 'a' );
 		link.href = config.loginUrl || '/wp-login.php';
 		link.className = 'ms-login-button';
-		link.textContent = 'Log In';
+		link.textContent = messages.loginButton || 'Log In';
 
 		message.appendChild( text );
 		message.appendChild( link );
