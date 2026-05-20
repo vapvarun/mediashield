@@ -37,9 +37,25 @@
 	--ms-overlay-surface-soft: rgba(0, 0, 0, 0.5);
 	--ms-overlay-text: rgba(255, 255, 255, 0.6);
 
+	/* Accent — bridges to the active theme's primary colour (theme.json),
+	 * falling back to the WP admin blue so buttons/links/focus match the site. */
+	--ms-accent: var(--wp--preset--color--primary, var(--ms-accent));
+	--ms-accent-hover: #135e96; /* hex fallback before color-mix() */
+	--ms-accent-hover: color-mix(in srgb, var(--ms-accent) 82%, #000);
+
+	/* Fixed control colours — player chrome sits on dark video, so white text
+	 * and the letterbox black are intentional constants, not theme-driven. */
+	--ms-on-overlay: #ffffff;
+	--ms-on-overlay-muted: #aaaaaa;
+	--ms-player-bg: #000000;
+	--ms-danger: #d63638;
+
+	/* Minimum touch target for primary controls (Rule 13). */
+	--ms-tap-min: 40px;
+
 	position: relative;
 	overflow: hidden;
-	background: #000;
+	background: var(--ms-player-bg);
 	line-height: 0;
 }
 
@@ -49,7 +65,7 @@
 	width: 100%;
 	z-index: 1;
 	aspect-ratio: 16 / 9;
-	background: #000;
+	background: var(--ms-player-bg);
 }
 
 .ms-player-target iframe,
@@ -110,7 +126,7 @@
 
 .ms-error-message {
 	text-align: center;
-	color: #fff;
+	color: var(--ms-on-overlay);
 	line-height: 1.6;
 	padding: var(--ms-space-8);
 	max-width: 32rem;
@@ -137,7 +153,7 @@
 
 .ms-login-message {
 	text-align: center;
-	color: #fff;
+	color: var(--ms-on-overlay);
 	line-height: 1.6;
 	padding: 2rem;
 }
@@ -150,7 +166,7 @@
 .ms-login-button {
 	display: inline-block;
 	padding: 0.75rem 2rem;
-	background: #2271b1;
+	background: var(--ms-accent);
 	color: #fff !important;
 	text-decoration: none;
 	border-radius: 4px;
@@ -160,7 +176,7 @@
 }
 
 .ms-login-button:hover {
-	background: #135e96;
+	background: var(--ms-accent-hover);
 }
 
 /* Resume toast */
@@ -171,7 +187,7 @@
 	transform: translateX(-50%);
 	z-index: 25;
 	background: rgba(0, 0, 0, 0.9);
-	color: #fff;
+	color: var(--ms-on-overlay);
 	padding: 0.75rem 1.25rem;
 	border-radius: 8px;
 	display: flex;
@@ -184,7 +200,7 @@
 }
 
 .ms-resume-toast span {
-	color: #fff;
+	color: var(--ms-on-overlay);
 }
 
 .ms-resume-yes,
@@ -198,22 +214,22 @@
 }
 
 .ms-resume-yes {
-	background: #2271b1;
-	color: #fff;
+	background: var(--ms-accent);
+	color: var(--ms-on-overlay);
 }
 
 .ms-resume-yes:hover {
-	background: #135e96;
+	background: var(--ms-accent-hover);
 }
 
 .ms-resume-no {
 	background: transparent;
-	color: #aaa;
+	color: var(--ms-on-overlay-muted);
 	text-decoration: underline;
 }
 
 .ms-resume-no:hover {
-	color: #fff;
+	color: var(--ms-on-overlay);
 }
 
 /* Protected by MediaShield badge — moved to top-left so it doesn't sit on
@@ -240,12 +256,12 @@
 	bottom: 10px;
 	right: 10px;
 	z-index: 15;
-	background: rgba(0, 0, 0, 0.6);
+	background: var(--ms-overlay-surface);
 	border: none;
-	color: #fff;
-	width: 32px;
-	height: 32px;
-	border-radius: 4px;
+	color: var(--ms-on-overlay);
+	width: var(--ms-tap-min);
+	height: var(--ms-tap-min);
+	border-radius: var(--ms-radius-sm);
 	cursor: pointer;
 	display: flex;
 	align-items: center;
@@ -269,7 +285,7 @@
 .ms-protected-player:fullscreen {
 	width: 100vw;
 	height: 100vh;
-	background: #000;
+	background: var(--ms-player-bg);
 }
 
 .ms-protected-player:fullscreen .ms-player-target {
@@ -306,11 +322,15 @@
 }
 
 .ms-speed-btn {
-	background: rgba(0, 0, 0, 0.6);
-	color: #fff;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--ms-tap-min);
+	background: var(--ms-overlay-surface);
+	color: var(--ms-on-overlay);
 	border: none;
-	padding: 4px 8px;
-	border-radius: 4px;
+	padding: 4px 12px;
+	border-radius: var(--ms-radius-sm);
 	cursor: pointer;
 	font-size: 12px;
 	font-weight: 600;
@@ -340,7 +360,7 @@
 	width: 100%;
 	background: none;
 	border: none;
-	color: #fff;
+	color: var(--ms-on-overlay);
 	padding: 6px 16px;
 	font-size: 13px;
 	cursor: pointer;
@@ -353,7 +373,7 @@
 }
 
 .ms-speed-option.is-active {
-	color: #2271b1;
+	color: var(--ms-accent);
 	font-weight: 600;
 }
 
@@ -383,18 +403,19 @@
 	top: -10px;
 	right: -10px;
 	z-index: 100000;
-	background: #d63638;
-	color: #fff;
-	border: 2px solid #fff;
+	background: var(--ms-danger);
+	color: var(--ms-on-overlay);
+	border: 2px solid var(--ms-on-overlay);
 	border-radius: 50%;
 	/* min-width:0 + padding:0 stop theme <button> styles from widening it into
-	   an oval; box-sizing keeps the 2px border inside the 24px circle. */
+	   an oval; box-sizing keeps the 2px border inside the circle. 32px keeps the
+	   floating close compact (player-chrome convention) while staying tappable. */
 	box-sizing: border-box;
 	min-width: 0;
-	width: 24px;
-	height: 24px;
+	width: 32px;
+	height: 32px;
 	padding: 0;
-	font-size: 14px;
+	font-size: 16px;
 	line-height: 1;
 	cursor: pointer;
 	display: flex;
@@ -418,7 +439,7 @@
 
 .ms-endscreen__content {
 	text-align: center;
-	color: #fff;
+	color: var(--ms-on-overlay);
 	padding: 2rem;
 }
 
@@ -431,8 +452,8 @@
 .ms-endscreen__cta {
 	display: inline-block;
 	padding: 0.75rem 2rem;
-	background: #2271b1;
-	color: #fff;
+	background: var(--ms-accent);
+	color: var(--ms-on-overlay);
 	text-decoration: none;
 	border-radius: 6px;
 	font-weight: 600;
@@ -440,8 +461,8 @@
 }
 
 .ms-endscreen__cta:hover {
-	background: #135e96;
-	color: #fff;
+	background: var(--ms-accent-hover);
+	color: var(--ms-on-overlay);
 }
 
 .ms-endscreen__replay {
@@ -449,24 +470,37 @@
 	margin: 1rem auto 0;
 	background: none;
 	border: none;
-	color: #aaa;
+	color: var(--ms-on-overlay-muted);
 	cursor: pointer;
 	font-size: 0.875rem;
 	text-decoration: underline;
 }
 
 .ms-endscreen__replay:hover {
-	color: #fff;
+	color: var(--ms-on-overlay);
 }
 
 /* Keyboard focus ring */
 .ms-protected-player:focus-visible {
-	outline: 2px solid #2271b1;
+	outline: 2px solid var(--ms-accent);
 	outline-offset: 2px;
 }
 
 .ms-protected-player:focus:not(:focus-visible) {
 	outline: none;
+}
+
+/* Keyboard focus ring for every interactive player control (Rule 14). */
+.ms-fullscreen-btn:focus-visible,
+.ms-speed-btn:focus-visible,
+.ms-speed-option:focus-visible,
+.ms-sticky-close:focus-visible,
+.ms-login-button:focus-visible,
+.ms-playlist-item:focus-visible,
+.ms-resume-btn:focus-visible,
+.ms-endscreen__replay:focus-visible {
+	outline: 2px solid var(--ms-accent);
+	outline-offset: 2px;
 }
 
 /* Responsive adjustments */
