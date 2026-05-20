@@ -5,6 +5,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
+import Icon from './Icon';
 
 const config = window.mediashieldAdmin || {};
 
@@ -34,7 +35,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 		<nav className="mediashield-sidebar" aria-label={ __( 'Admin navigation', 'mediashield' ) }>
 			<div className="mediashield-sidebar__brand">
 				<span className="ms-brand-icon">
-					<span className="dashicons dashicons-shield" aria-hidden="true" />
+					<Icon name="shield" />
 				</span>
 				<strong>{ __( 'MediaShield', 'mediashield' ) }</strong>
 				<span className="mediashield-sidebar__version">
@@ -54,7 +55,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 								}
 								aria-current={ isActive ? 'page' : undefined }
 							>
-								<span className={ `dashicons dashicons-${ route.icon }` } aria-hidden="true" />
+								<Icon name={ route.icon } />
 								<span className="mediashield-sidebar__label">
 									{ route.label }
 								</span>
@@ -73,7 +74,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 							className="mediashield-sidebar__item mediashield-sidebar__item--locked"
 							title={ __( 'Upgrade to MediaShield Pro', 'mediashield' ) }
 						>
-							<span className={ `dashicons dashicons-${ item.icon }` } aria-hidden="true" />
+							<Icon name={ item.icon } />
 							<span className="mediashield-sidebar__label">
 								{ item.label }
 							</span>
@@ -95,7 +96,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 							}
 							aria-current={ currentHash === settingsRoute.hash ? 'page' : undefined }
 						>
-							<span className={ `dashicons dashicons-${ settingsRoute.icon }` } aria-hidden="true" />
+							<Icon name={ settingsRoute.icon } />
 							<span className="mediashield-sidebar__label">
 								{ settingsRoute.label }
 							</span>

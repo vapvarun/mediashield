@@ -4,6 +4,7 @@
 import { __ } from '@wordpress/i18n';
 import { ToggleControl, SelectControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import Icon from '../../components/Icon';
 
 export default function GeneralStep( { onSave, initialData } ) {
 	const [ enabled, setEnabled ] = useState( initialData?.ms_enabled ?? true );
@@ -17,7 +18,7 @@ export default function GeneralStep( { onSave, initialData } ) {
 	return (
 		<div className="ms-wizard__step">
 			<div className="ms-wizard__step-header">
-				<span className="ms-wizard__step-icon dashicons dashicons-admin-generic" />
+				<Icon name="admin-generic" className="ms-wizard__step-icon" />
 				<div>
 					<h2>{ __( 'General Settings', 'mediashield' ) }</h2>
 					<p>{ __( 'Configure the basic protection settings for your videos.', 'mediashield' ) }</p>

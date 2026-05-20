@@ -21,6 +21,7 @@ import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import VideoPickerModal from '../../admin/components/VideoPickerModal';
 import { detectPlatform, extractVideoId } from '../../admin/utils/platform';
+import { Video } from 'lucide-react';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { videoId, url } = attributes;
@@ -246,7 +247,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							/>
 						) : (
 							<div className="ms-block-placeholder-preview">
-								<span className="dashicons dashicons-video-alt3" />
+								<Video size={ 48 } strokeWidth={ 1.75 } className="ms-icon" />
 								<span>{ video.title?.rendered || __( 'Video', 'mediashield' ) }</span>
 							</div>
 						) }

@@ -11,6 +11,7 @@ import { Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { decodeEntities } from '@wordpress/html-entities';
+import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 
@@ -91,7 +92,7 @@ const Playlists = () => {
 							{ playlists.length === 0 && (
 								<tr>
 									<td colSpan="4" className="mediashield-table__empty">
-										<span className="mediashield-table__empty-icon dashicons dashicons-playlist-audio" />
+										<Icon name="playlist-audio" className="mediashield-table__empty-icon" />
 										{ __( 'No playlists yet. Create one to group your videos.', 'mediashield' ) }
 									</td>
 								</tr>

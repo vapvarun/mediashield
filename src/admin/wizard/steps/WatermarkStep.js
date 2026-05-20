@@ -4,6 +4,7 @@
 import { __ } from '@wordpress/i18n';
 import { RangeControl, ColorPicker, TextControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import Icon from '../../components/Icon';
 
 export default function WatermarkStep( { onSave, initialData } ) {
 	const [ opacity, setOpacity ] = useState( initialData?.ms_watermark_opacity ?? 0.5 );
@@ -13,7 +14,7 @@ export default function WatermarkStep( { onSave, initialData } ) {
 	return (
 		<div className="ms-wizard__step">
 			<div className="ms-wizard__step-header">
-				<span className="ms-wizard__step-icon dashicons dashicons-art" />
+				<Icon name="art" className="ms-wizard__step-icon" />
 				<div>
 					<h2>{ __( 'Watermark Settings', 'mediashield' ) }</h2>
 					<p>{ __( 'Configure how the watermark appears on your videos. It shows the viewer\'s username and IP address.', 'mediashield' ) }</p>

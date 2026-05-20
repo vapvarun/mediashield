@@ -13,6 +13,7 @@ import { __ } from '@wordpress/i18n';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
+import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 
@@ -163,7 +164,7 @@ const Tags = () => {
 							{ tags.length === 0 && (
 								<tr>
 									<td colSpan="4" className="mediashield-table__empty">
-										<span className="mediashield-table__empty-icon dashicons dashicons-tag" />
+										<Icon name="tag" className="mediashield-table__empty-icon" />
 										{ __( 'No tags yet. Create one above to organize your videos.', 'mediashield' ) }
 									</td>
 								</tr>

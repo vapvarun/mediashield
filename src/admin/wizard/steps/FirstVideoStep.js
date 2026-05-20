@@ -8,6 +8,7 @@ import { TextControl, Button, Spinner } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import { detectPlatform, extractVideoId } from '../../utils/platform';
+import Icon from '../../components/Icon';
 
 export default function FirstVideoStep( { initialData } ) { // eslint-disable-line no-unused-vars
 	const [ url, setUrl ] = useState( '' );
@@ -51,7 +52,7 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 	return (
 		<div className="ms-wizard__step">
 			<div className="ms-wizard__step-header">
-				<span className="ms-wizard__step-icon dashicons dashicons-video-alt3" />
+				<Icon name="video-alt3" className="ms-wizard__step-icon" />
 				<div>
 					<h2>{ __( 'Protect Your First Video', 'mediashield' ) }</h2>
 					<p>{ __( 'Paste a video URL to see protection in action. You can skip this and add videos later.', 'mediashield' ) }</p>
@@ -75,7 +76,7 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 						>
 							{ creating ? <Spinner /> : (
 								<>
-									<span className="dashicons dashicons-shield" />
+									<Icon name="shield" />
 									{ __( 'Protect', 'mediashield' ) }
 								</>
 							) }
@@ -83,7 +84,7 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 					</div>
 				) : (
 					<div className="ms-wizard__success-banner">
-						<span className="dashicons dashicons-yes-alt" />
+						<Icon name="yes-alt" />
 						<div>
 							<strong>{ __( 'Video protected successfully!', 'mediashield' ) }</strong>
 							<span>

@@ -12,6 +12,7 @@ import { SelectControl, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import Chart from 'chart.js/auto';
+import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 
@@ -242,7 +243,7 @@ const Dashboard = () => {
 			{ ! loading && ! error && data?.total_videos === 0 && (
 				<div className="mediashield-onboarding-hero">
 					<div className="mediashield-onboarding-hero__icon">
-						<span className="dashicons dashicons-video-alt3" />
+						<Icon name="video-alt3" />
 					</div>
 					<h2 className="mediashield-onboarding-hero__title">
 						{ __( 'Welcome to MediaShield!', 'mediashield' ) }
@@ -282,7 +283,7 @@ const Dashboard = () => {
 						{ STAT_CARDS.map( ( card ) => (
 							<div key={ card.key } className="mediashield-stat-card">
 								<div className={ `mediashield-stat-card__icon mediashield-stat-card__icon--${ card.iconClass }` }>
-									<span className={ `dashicons dashicons-${ card.icon }` } />
+									<Icon name={ card.icon } />
 								</div>
 								<div className="mediashield-stat-card__body">
 									<span className="mediashield-stat-card__label">{ card.label }</span>
@@ -360,22 +361,22 @@ const Dashboard = () => {
 						<>
 							<div className="ms-upsell-grid">
 								<div className="ms-upsell-card">
-									<span className="dashicons dashicons-chart-area ms-upsell-card__icon" />
+									<Icon name="chart-area" className="ms-upsell-card__icon" />
 									<h3>{ __( 'Playback Heatmaps', 'mediashield' ) }</h3>
 									<p>{ __( 'See exactly where viewers watch, rewatch, and drop off with 10-second precision heatmaps.', 'mediashield' ) }</p>
 								</div>
 								<div className="ms-upsell-card">
-									<span className="dashicons dashicons-controls-play ms-upsell-card__icon" />
+									<Icon name="controls-play" className="ms-upsell-card__icon" />
 									<h3>{ __( 'Realtime Viewers', 'mediashield' ) }</h3>
 									<p>{ __( 'Live dashboard showing who\'s watching right now with 15-second auto-refresh.', 'mediashield' ) }</p>
 								</div>
 								<div className="ms-upsell-card">
-									<span className="dashicons dashicons-warning ms-upsell-card__icon" />
+									<Icon name="warning" className="ms-upsell-card__icon" />
 									<h3>{ __( 'Suspicious Activity', 'mediashield' ) }</h3>
 									<p>{ __( 'Detect multi-IP usage, VPN, devtools, and rapid seeking with automatic alerts.', 'mediashield' ) }</p>
 								</div>
 								<div className="ms-upsell-card">
-									<span className="dashicons dashicons-download ms-upsell-card__icon" />
+									<Icon name="download" className="ms-upsell-card__icon" />
 									<h3>{ __( 'CSV & PDF Export', 'mediashield' ) }</h3>
 									<p>{ __( 'Export watch sessions, milestones, and user data as CSV or formatted PDF reports.', 'mediashield' ) }</p>
 								</div>

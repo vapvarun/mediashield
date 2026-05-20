@@ -11,6 +11,7 @@ import { useState, useEffect } from '@wordpress/element';
 import { Button, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 const PER_PAGE = 20;
@@ -136,7 +137,7 @@ const Milestones = () => {
 							{ milestones.length === 0 && (
 								<tr>
 									<td colSpan="4" className="mediashield-table__empty">
-										<span className="mediashield-table__empty-icon dashicons dashicons-flag" />
+										<Icon name="flag" className="mediashield-table__empty-icon" />
 										{ __( 'No milestones recorded yet. They appear as students watch videos.', 'mediashield' ) }
 									</td>
 								</tr>
@@ -197,7 +198,7 @@ const Milestones = () => {
 
 			{ ! config.isProActive && (
 				<div className="ms-upsell-inline">
-					<span className="dashicons dashicons-megaphone" />
+					<Icon name="megaphone" />
 					<span>
 						{ __( 'With', 'mediashield' ) } <strong>{ __( 'Pro', 'mediashield' ) }</strong>{ __( ', trigger actions on milestones: tag users, send emails, fire webhooks to CRMs.', 'mediashield' ) }
 					</span>

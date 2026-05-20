@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from '@wordpress/element';
 import { Button, TextControl, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 
@@ -104,7 +105,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 				className="mediashield-back-btn"
 				onClick={ onBack }
 			>
-				<span className="dashicons dashicons-arrow-left-alt2" />
+				<Icon name="arrow-left-alt2" />
 				{ __( 'Back to Viewers', 'mediashield' ) }
 			</Button>
 
@@ -153,7 +154,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 								{ ( detail.videos || [] ).length === 0 && (
 									<tr>
 										<td colSpan="3" className="mediashield-table__empty">
-											<span className="mediashield-table__empty-icon dashicons dashicons-video-alt3" />
+											<Icon name="video-alt3" className="mediashield-table__empty-icon" />
 											{ __( 'No watch history recorded.', 'mediashield' ) }
 										</td>
 									</tr>
@@ -263,7 +264,7 @@ const Students = () => {
 							{ users.length === 0 && (
 								<tr>
 									<td colSpan="4" className="mediashield-table__empty">
-										<span className="mediashield-table__empty-icon dashicons dashicons-groups" />
+										<Icon name="groups" className="mediashield-table__empty-icon" />
 										{ search
 											? __( 'No viewers match your search.', 'mediashield' )
 											: __( 'No viewer activity recorded yet.', 'mediashield' ) }

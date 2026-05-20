@@ -183,7 +183,7 @@
 	justify-content: center;
 }
 
-.mediashield-sidebar__brand .ms-brand-icon .dashicons {
+.mediashield-sidebar__brand .ms-brand-icon .ms-icon {
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
@@ -244,7 +244,7 @@
 	font-weight: 600;
 }
 
-.mediashield-sidebar__item .dashicons {
+.mediashield-sidebar__item .ms-icon {
 	font-size: 18px;
 	width: 18px;
 	height: 18px;
@@ -252,8 +252,8 @@
 	transition: opacity var( --ms-transition );
 }
 
-.mediashield-sidebar__item:hover .dashicons,
-.mediashield-sidebar__item.is-active .dashicons {
+.mediashield-sidebar__item:hover .ms-icon,
+.mediashield-sidebar__item.is-active .ms-icon {
 	opacity: 1;
 }
 
@@ -354,7 +354,7 @@
 	flex-shrink: 0;
 }
 
-.mediashield-stat-card__icon .dashicons {
+.mediashield-stat-card__icon .ms-icon {
 	font-size: 22px;
 	width: 22px;
 	height: 22px;
@@ -992,7 +992,7 @@
 	margin-bottom: 16px;
 }
 
-.mediashield-back-btn .dashicons {
+.mediashield-back-btn .ms-icon {
 	margin-inline-end: 4px;
 }
 
@@ -1037,7 +1037,7 @@
 	color: var( --ms-color-primary );
 }
 
-.mediashield-settings__section-icon .dashicons {
+.mediashield-settings__section-icon .ms-icon {
 	font-size: 18px;
 	width: 18px;
 	height: 18px;
@@ -1280,8 +1280,8 @@
 	display: block;
 }
 
-.ms-empty-state__icon .dashicons,
-.ms-empty-state__icon.dashicons {
+.ms-empty-state__icon .ms-icon,
+.ms-empty-state__icon.ms-icon {
 	font-size: 40px;
 	width: 40px;
 	height: 40px;
@@ -1398,7 +1398,7 @@
 	margin-bottom: 14px;
 }
 
-.ms-upsell-section__header .dashicons {
+.ms-upsell-section__header .ms-icon {
 	color: #6366f1;
 	font-size: 20px;
 }
@@ -1471,7 +1471,7 @@
 	color: #374151;
 }
 
-.ms-upsell-inline .dashicons {
+.ms-upsell-inline .ms-icon {
 	color: #6366f1;
 	font-size: 18px;
 	flex-shrink: 0;
@@ -1783,7 +1783,7 @@
 	margin-bottom: 20px;
 }
 
-.ms-wizard__logo .dashicons {
+.ms-wizard__logo .ms-icon {
 	font-size: 28px;
 	width: 28px;
 	height: 28px;
@@ -1869,7 +1869,7 @@
 	color: #fff;
 }
 
-.ms-wizard__stepper-item.is-complete .ms-wizard__stepper-circle .dashicons {
+.ms-wizard__stepper-item.is-complete .ms-wizard__stepper-circle .ms-icon {
 	font-size: 20px;
 	width: 20px;
 	height: 20px;
@@ -2003,7 +2003,7 @@
 	margin-bottom: 12px;
 }
 
-.ms-wizard__pro-notice .dashicons {
+.ms-wizard__pro-notice .ms-icon {
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
@@ -2037,7 +2037,7 @@
 	white-space: nowrap;
 }
 
-.ms-wizard__btn--protect .dashicons {
+.ms-wizard__btn--protect .ms-icon {
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
@@ -2053,7 +2053,7 @@
 	border-radius: 10px;
 }
 
-.ms-wizard__success-banner > .dashicons {
+.ms-wizard__success-banner > .ms-icon {
 	font-size: 28px;
 	width: 28px;
 	height: 28px;
@@ -2150,7 +2150,7 @@
 	transition: all 0.15s ease;
 }
 
-.ms-wizard__btn .dashicons {
+.ms-wizard__btn .ms-icon {
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
@@ -2276,7 +2276,7 @@
 	box-shadow: 0 8px 24px rgba(56, 88, 233, 0.25);
 }
 
-.mediashield-onboarding-hero__icon .dashicons {
+.mediashield-onboarding-hero__icon .ms-icon {
 	font-size: 36px;
 	width: 36px;
 	height: 36px;

@@ -24,6 +24,7 @@
     },
     "dependencies": {
         "chart.js": "^4.4",
+        "lucide-react": "^1.16.0",
         "shaka-player": "^4.8"
     }
 }

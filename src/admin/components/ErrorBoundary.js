@@ -9,6 +9,7 @@
 
 import { Component } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import Icon from './Icon';
 
 class ErrorBoundary extends Component {
 	constructor( props ) {
@@ -24,10 +25,7 @@ class ErrorBoundary extends Component {
 		if ( this.state.hasError ) {
 			return (
 				<div style={ { padding: '40px', textAlign: 'center' } }>
-					<span
-						className="dashicons dashicons-warning"
-						style={ { fontSize: 48, color: '#d63638', display: 'block', marginBottom: 16 } }
-					/>
+					<Icon name="warning" size={ 48 } style={ { color: '#d63638', display: 'block', marginBottom: 16 } } />
 					<h2>{ __( 'Something went wrong', 'mediashield' ) }</h2>
 					<p style={ { color: '#757575' } }>
 						{ __( 'An error occurred while loading this page.', 'mediashield' ) }

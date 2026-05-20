@@ -11,6 +11,7 @@ import { Modal, TextControl, Button, Spinner } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { decodeEntities } from '@wordpress/html-entities';
 import apiFetch from '@wordpress/api-fetch';
+import Icon from './Icon';
 
 export default function VideoPickerModal( { onSelect, onClose } ) {
 	const [ videos, setVideos ] = useState( [] );
@@ -89,10 +90,7 @@ export default function VideoPickerModal( { onSelect, onClose } ) {
 								role="button"
 								tabIndex={ 0 }
 							>
-								<span
-									className="dashicons dashicons-video-alt3"
-									style={ { marginRight: '12px', color: '#2271b1' } }
-								/>
+								<Icon name="video-alt3" style={ { marginInlineEnd: '12px', color: '#2271b1' } } />
 								<div style={ { flex: 1 } }>
 									<strong>{ title }</strong>
 									<br />

@@ -14,6 +14,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { decodeEntities } from '@wordpress/html-entities';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
+import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 const PER_PAGE = 20;
@@ -266,11 +267,11 @@ const Videos = () => {
 							{ videos.length === 0 && (
 								<tr>
 									<td colSpan="5" className="mediashield-table__empty">
-										<span className="mediashield-table__empty-icon dashicons dashicons-format-video" />
+										<Icon name="format-video" className="mediashield-table__empty-icon" />
 										{ __( 'No videos yet. Create your first protected video.', 'mediashield' ) }
 										{ ! config.isProActive && (
 											<div className="ms-upsell-inline" style={ { marginTop: '16px', justifyContent: 'center' } }>
-												<span className="dashicons dashicons-cloud" />
+												<Icon name="cloud" />
 												<span>
 													{ __( 'With', 'mediashield' ) } <strong>{ __( 'Pro', 'mediashield' ) }</strong>{ __( ', browse & import videos directly from Bunny Stream, YouTube, Vimeo, or Wistia.', 'mediashield' ) }
 												</span>

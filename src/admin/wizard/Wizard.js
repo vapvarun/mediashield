@@ -15,6 +15,7 @@ import GeneralStep from './steps/GeneralStep';
 import WatermarkStep from './steps/WatermarkStep';
 import PlatformStep from './steps/PlatformStep';
 import FirstVideoStep from './steps/FirstVideoStep';
+import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 
@@ -137,7 +138,7 @@ export default function Wizard() {
 		<div className="ms-wizard">
 			<div className="ms-wizard__header">
 				<div className="ms-wizard__logo">
-					<span className="dashicons dashicons-shield" />
+					<Icon name="shield" />
 				</div>
 				<h1>{ __( 'Welcome to MediaShield', 'mediashield' ) }</h1>
 				<p>{ __( 'Let\'s set up video protection for your site.', 'mediashield' ) }</p>
@@ -155,7 +156,7 @@ export default function Wizard() {
 						<div key={ s.key } className={ `ms-wizard__stepper-item ${ state }` }>
 							<div className="ms-wizard__stepper-circle">
 								{ idx < currentStep ? (
-									<span className="dashicons dashicons-yes-alt" />
+									<Icon name="yes-alt" />
 								) : (
 									<span>{ idx + 1 }</span>
 								) }
@@ -178,7 +179,7 @@ export default function Wizard() {
 							onClick={ handleBack }
 							disabled={ saving }
 						>
-							<span className="dashicons dashicons-arrow-left-alt2" />
+							<Icon name="arrow-left-alt2" />
 							{ __( 'Back', 'mediashield' ) }
 						</Button>
 					) }
@@ -198,7 +199,7 @@ export default function Wizard() {
 						isBusy={ saving }
 					>
 						{ isLast ? __( 'Finish Setup', 'mediashield' ) : __( 'Save & Continue', 'mediashield' ) }
-						{ ! isLast && <span className="dashicons dashicons-arrow-right-alt2" /> }
+						{ ! isLast && <Icon name="arrow-right-alt2" /> }
 					</Button>
 				</div>
 			</div>

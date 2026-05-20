@@ -5,21 +5,22 @@
  * Pro users can enter API keys here.
  */
 import { __ } from '@wordpress/i18n';
+import Icon from '../../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 
 export default function PlatformStep( { initialData } ) { // eslint-disable-line no-unused-vars
 	const platforms = [
-		{ name: 'YouTube', icon: 'dashicons-youtube', desc: __( 'Protect YouTube embeds', 'mediashield' ) },
-		{ name: 'Vimeo', icon: 'dashicons-video-alt', desc: __( 'Protect Vimeo embeds', 'mediashield' ) },
-		{ name: 'Bunny Stream', icon: 'dashicons-cloud', desc: __( 'Direct upload & DRM', 'mediashield' ) },
-		{ name: 'Wistia', icon: 'dashicons-format-video', desc: __( 'Wistia integration', 'mediashield' ) },
+		{ name: 'YouTube', icon: 'youtube', desc: __( 'Protect YouTube embeds', 'mediashield' ) },
+		{ name: 'Vimeo', icon: 'video-alt', desc: __( 'Protect Vimeo embeds', 'mediashield' ) },
+		{ name: 'Bunny Stream', icon: 'cloud', desc: __( 'Direct upload & DRM', 'mediashield' ) },
+		{ name: 'Wistia', icon: 'format-video', desc: __( 'Wistia integration', 'mediashield' ) },
 	];
 
 	return (
 		<div className="ms-wizard__step">
 			<div className="ms-wizard__step-header">
-				<span className="ms-wizard__step-icon dashicons dashicons-networking" />
+				<Icon name="networking" className="ms-wizard__step-icon" />
 				<div>
 					<h2>{ __( 'Connect a Platform', 'mediashield' ) }</h2>
 					<p>{ __( 'MediaShield works with all major video platforms. You can always set this up later.', 'mediashield' ) }</p>
@@ -29,7 +30,7 @@ export default function PlatformStep( { initialData } ) { // eslint-disable-line
 			<div className="ms-wizard__platform-grid">
 				{ platforms.map( ( p ) => (
 					<div key={ p.name } className="ms-wizard__platform-card">
-						<span className={ `ms-wizard__platform-icon dashicons ${ p.icon }` } />
+						<Icon name={ p.icon } className="ms-wizard__platform-icon" />
 						<strong>{ p.name }</strong>
 						<span className="ms-wizard__platform-desc">{ p.desc }</span>
 					</div>
@@ -38,7 +39,7 @@ export default function PlatformStep( { initialData } ) { // eslint-disable-line
 
 			{ ! config.isProActive && (
 				<div className="ms-wizard__pro-notice">
-					<span className="dashicons dashicons-lock" />
+					<Icon name="lock" />
 					<span>{ __( 'Direct platform uploads (Bunny, Vimeo, YouTube, Wistia) are available with MediaShield Pro.', 'mediashield' ) }</span>
 				</div>
 			) }

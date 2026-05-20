@@ -21,6 +21,7 @@ import { __ } from '@wordpress/i18n';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
+import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 const lmsConfig = window.mediashieldProLMS || {};
@@ -45,7 +46,7 @@ const SectionCard = ( { icon, title, description, children } ) => (
 	<div className="mediashield-settings__section">
 		<div className="mediashield-settings__section-header">
 			<div className="mediashield-settings__section-icon">
-				<span className={ `dashicons dashicons-${ icon }` } />
+				<Icon name={ icon } />
 			</div>
 			<div>
 				<div className="mediashield-settings__section-title">{ title }</div>
@@ -530,7 +531,7 @@ const Settings = () => {
 			{ ! config.isProActive && (
 				<div className="ms-upsell-section">
 					<div className="ms-upsell-section__header">
-						<span className="dashicons dashicons-lock" />
+						<Icon name="lock" />
 						<div>
 							<strong>{ __( 'Pro Features', 'mediashield' ) }</strong>
 							<span>{ __( 'Available with MediaShield Pro', 'mediashield' ) }</span>

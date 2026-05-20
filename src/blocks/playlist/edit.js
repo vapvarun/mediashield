@@ -9,6 +9,7 @@ import { Placeholder, Button, Spinner, SelectControl } from '@wordpress/componen
 import { useState, useEffect } from '@wordpress/element';
 import { decodeEntities } from '@wordpress/html-entities';
 import apiFetch from '@wordpress/api-fetch';
+import { ListVideo, Video } from 'lucide-react';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { playlistId } = attributes;
@@ -113,7 +114,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			<div className="ms-playlist-preview">
 				<div className="ms-playlist-header">
-					<span className="dashicons dashicons-playlist-video" />
+					<ListVideo size={ 48 } strokeWidth={ 1.75 } className="ms-icon" />
 					<strong>{ title }</strong>
 					<span className="ms-playlist-count">
 						{ items.length } { __( 'videos', 'mediashield' ) }
@@ -126,7 +127,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							{ item.thumbnail ? (
 								<img src={ item.thumbnail } alt="" className="ms-playlist-item-thumb" />
 							) : (
-								<span className="dashicons dashicons-video-alt3 ms-playlist-item-thumb-placeholder" />
+								<Video size={ 24 } strokeWidth={ 1.75 } className="ms-icon ms-playlist-item-thumb-placeholder" />
 							) }
 							<span className="ms-playlist-item-title">{ item.title }</span>
 							<span className="ms-playlist-item-platform">{ item.platform }</span>
