@@ -27,10 +27,23 @@ define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );
 
-// Composer autoloader.
-if ( file_exists( MEDIASHIELD_PATH . 'vendor/autoload.php' ) ) {
-	require_once MEDIASHIELD_PATH . 'vendor/autoload.php';
+// Composer autoloader. Without it, none of the MediaShield\ classes can load —
+// including the Activator referenced by the activation hook below. Bail early
+// with a clear admin notice instead of fatally erroring on activation when the
+// vendor directory is missing (e.g. an incomplete install or a bad build).
+if ( ! file_exists( MEDIASHIELD_PATH . 'vendor/autoload.php' ) ) {
+	add_action(
+		'admin_notices',
+		function () {
+			echo '<div class="notice notice-error"><p>';
+			echo esc_html__( 'MediaShield is missing its Composer dependencies (vendor/autoload.php). Please reinstall the plugin or run “composer install” in the plugin directory.', 'mediashield' );
+			echo '</p></div>';
+		}
+	);
+	return;
 }
+
+require_once MEDIASHIELD_PATH . 'vendor/autoload.php';
 
 // Activation / Deactivation hooks.
 register_activation_hook( __FILE__, array( 'MediaShield\\Core\\Activator', 'activate' ) );
