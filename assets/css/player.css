@@ -416,12 +416,12 @@
 	border: 2px solid var(--ms-on-overlay);
 	border-radius: 50%;
 	/* min-width:0 + padding:0 stop theme <button> styles from widening it into
-	   an oval; box-sizing keeps the 2px border inside the circle. 32px keeps the
-	   floating close compact (player-chrome convention) while staying tappable. */
+	   an oval; box-sizing keeps the 2px border inside the circle. Sized to the
+	   40px tap-target minimum (--ms-tap-min) for touch a11y (WCAG 2.5.5). */
 	box-sizing: border-box;
 	min-width: 0;
-	width: 32px;
-	height: 32px;
+	width: var(--ms-tap-min);
+	height: var(--ms-tap-min);
 	padding: 0;
 	font-size: 16px;
 	line-height: 1;
