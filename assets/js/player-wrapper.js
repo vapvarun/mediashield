@@ -593,6 +593,25 @@
 		}
 	}
 
+	/**
+	 * Resolve whether the Resume Playback prompt is enabled for a player.
+	 *
+	 * Reads the per-video `data-player-overrides` JSON `resume` flag first
+	 * (true/false), falling back to the global `config.player.resume` setting —
+	 * the same precedence `applyPlayerFeatures()` uses for every other feature.
+	 */
+	function resumeEnabled( el ) {
+		var target = el.querySelector( '.ms-player-target' );
+		var overridesJson = target ? target.dataset.playerOverrides : '';
+		if ( overridesJson ) {
+			try {
+				var overrides = JSON.parse( overridesJson );
+				if ( typeof overrides.resume !== 'undefined' ) return !! overrides.resume;
+			} catch ( e ) { /* ignore malformed JSON, fall through to global */ }
+		}
+		return !! ( config.player && config.player.resume );
+	}
+
 	// ─── Player Init ─────────────────────────────────────────────
 
 	function init() {
@@ -608,6 +627,17 @@
 		var protectionLevel = el.dataset.protectionLevel || 'standard';
 		var videoId = parseInt( el.dataset.videoId, 10 ) || 0;
 
+		// Protection tiers (per-video `_ms_protection_level`):
+		//   none     — free preview: adapter + player features, no gate.
+		//   basic    — login gate + right-click block (protection.js); NO watermark,
+		//              NO session tracking, NO milestones (we never start a session,
+		//              so no token is issued and the watermark/tracker scripts — both
+		//              keyed off the `player-ready` token event — stay dormant).
+		//   standard — login gate + watermark + session tracking + milestones.
+		//   strict   — everything in `standard` plus devtools detection + source
+		//              hiding forced on regardless of the global toggles
+		//              (protection.js reads data-protection-level for this).
+
 		// No protection — free preview.
 		if ( protectionLevel === 'none' ) {
 			var adapter = createAdapter( el );
@@ -620,7 +650,7 @@
 			return;
 		}
 
-		// Login gate.
+		// Login gate (all non-none tiers).
 		if ( ! config.isLoggedIn ) {
 			showLoginOverlay( el );
 			return;
@@ -631,7 +661,16 @@
 		if ( ! playerAdapter ) return;
 		el._msAdapter = playerAdapter;
 
-		// Start session and apply player features after adapter is ready.
+		// Basic tier: player features only, no session/tracking/watermark/milestones.
+		if ( protectionLevel === 'basic' ) {
+			playerAdapter.onReady( function () {
+				applyPlayerFeatures( el, playerAdapter );
+			} );
+			return;
+		}
+
+		// Standard / strict: full treatment — start session (tracking + watermark
+		// + milestones) and apply player features after the adapter is ready.
 		playerAdapter.onReady( function () {
 			applyPlayerFeatures( el, playerAdapter );
 			startSession( el, videoId, playerAdapter );
@@ -706,8 +745,12 @@
 				if ( data.session_token ) {
 					el.dataset.sessionToken = data.session_token;
 
-					// Resume position via adapter.
-					if ( data.resume_position > 0 ) {
+					// Resume position via adapter — only when Resume Playback is
+					// enabled for this video. Server already gates the position
+					// (returns 0 when disabled); this is the matching client guard
+					// so the prompt respects the per-video override / global setting
+					// consistently with the other player features.
+					if ( data.resume_position > 0 && resumeEnabled( el ) ) {
 						showResumePrompt( el, data.resume_position, adapter );
 					}
 

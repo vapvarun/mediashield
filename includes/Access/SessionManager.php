@@ -109,18 +109,25 @@ class SessionManager {
 			return false;
 		}
 
-		// Get resume position from most recent session (active or not).
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
-		$resume_position = (float) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT max_position FROM {$table}
-			 WHERE video_id = %d AND user_id = %d
-			 ORDER BY last_heartbeat DESC LIMIT 1",
-				$video_id,
-				$user_id
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// Get resume position from most recent session (active or not), but only
+		// when Resume Playback is enabled. The per-video override (`_ms_player_resume`
+		// meta: 'on'/'off') wins; an empty override falls back to the global
+		// `ms_player_resume` setting. When disabled, skip the query entirely so the
+		// client never receives a position to prompt with (and we save a DB read).
+		$resume_position = 0.0;
+		if ( self::resume_enabled( $video_id ) ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
+			$resume_position = (float) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT max_position FROM {$table}
+				 WHERE video_id = %d AND user_id = %d
+				 ORDER BY last_heartbeat DESC LIMIT 1",
+					$video_id,
+					$user_id
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		}
 
 		// Parse device info from user agent.
 		$device_type = self::parse_device_type( $ua );
@@ -184,6 +191,28 @@ class SessionManager {
 	}
 
 	/**
+	 * Whether Resume Playback should offer a previous position for a video.
+	 *
+	 * Per-video override (`_ms_player_resume` meta) is tri-state: 'on'/'off' force
+	 * the behaviour; anything else (empty/pristine) defers to the global
+	 * `ms_player_resume` setting. Mirrors the override resolution the player JS
+	 * uses for the other feature toggles.
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return bool True if a resume prompt may be shown.
+	 */
+	private static function resume_enabled( int $video_id ): bool {
+		$override = get_post_meta( $video_id, '_ms_player_resume', true );
+		if ( 'on' === $override ) {
+			return true;
+		}
+		if ( 'off' === $override ) {
+			return false;
+		}
+		return (bool) \MediaShield\Core\Settings::get( 'ms_player_resume' );
+	}
+
+	/**
 	 * Process a heartbeat from the client.
 	 *
 	 * @param string $token    HMAC session token.
@@ -204,7 +233,18 @@ class SessionManager {
 		$table = "{$wpdb->prefix}ms_watch_sessions";
 		$now   = current_time( 'mysql', true );
 
-		$completion_pct = $duration > 0 ? min( 100, ( $position / $duration ) * 100 ) : 0;
+		// Cross-reference the client-reported duration against the stored
+		// `_ms_duration` meta. The client value is read from the player API and is
+		// trivially spoofable — a tiny `duration` would inflate completion_pct to
+		// 100% and trigger false milestones. When an operator has recorded a real
+		// duration on the video, treat it as the authoritative lower bound for the
+		// denominator so completion can never be over-reported. (If no stored
+		// duration exists we fall back to the client value, preserving behaviour
+		// for videos whose length is unknown.)
+		$stored_duration = (float) get_post_meta( $parsed['video_id'], '_ms_duration', true );
+		$effective_duration = $stored_duration > 0 ? max( $stored_duration, $duration ) : $duration;
+
+		$completion_pct = $effective_duration > 0 ? min( 100, ( $position / $effective_duration ) * 100 ) : 0;
 
 		// Single atomic update with GREATEST for max_position.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table update.
