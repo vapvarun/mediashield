@@ -40,6 +40,15 @@ Yes. The watermark overlay, player wrapping, session tracking, and playback all 
 * **iOS Safari** falls back to native HLS for encrypted Pro DRM content. Playback works. The key exchange goes through our license endpoint.
 * **Mobile screen recording** (iOS and Android built-in) cannot be prevented by any web plugin. The watermark stays visible in any recording, which is the forensic deterrent.
 
+### How do I set a video thumbnail (poster image)?
+
+It depends on where the video is hosted:
+
+* **Platform videos (YouTube, Vimeo, Wistia, Bunny):** the thumbnail is fetched automatically. MediaShield pulls the poster the platform already generated for that video and sets it as the WordPress **Featured Image** when the video is saved. Nothing to do.
+* **Self-hosted videos (`.mp4` you upload yourself):** there is no platform poster to fetch, so MediaShield does **not** auto-generate one. Set the **Featured Image** on the video manually (Video edit screen, Featured Image box) and it will be used as the poster in lists, blocks, and playlists.
+
+MediaShield does not extract a frame from your uploaded file to build a thumbnail — that requires server-side video processing (ffmpeg) that most WordPress hosts don't provide. A manually chosen Featured Image gives you full control over how the video looks in listings.
+
 ### Does it work with page caching plugins (WP Rocket, LiteSpeed, W3TC, WP Super Cache)?
 
 Yes, with one configuration step: **exclude REST API endpoints from cache**. Most caching plugins do this by default. If you use full-page caching, make sure the nonce in your page isn't being served to multiple users from the same cache. That breaks session start for anyone after the first viewer.
