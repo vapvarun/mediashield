@@ -314,18 +314,18 @@ const Videos = () => {
 							) }
 							{ videos.map( ( video ) => (
 								<tr key={ video.id }>
-									<td>
+									<td data-label={ __( 'Title', 'mediashield' ) }>
 										<strong>
 											{ decodeEntities( video.title?.rendered || '' ) }
 										</strong>
 									</td>
-									<td>
+									<td data-label={ __( 'Platform', 'mediashield' ) }>
 										<PlatformLabel platform={ video.meta?._ms_platform } />
 									</td>
-									<td>
+									<td data-label={ __( 'Protection', 'mediashield' ) }>
 										<ProtectionBadge level={ video.meta?._ms_protection_level } />
 									</td>
-									<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
+									<td data-label={ __( 'Date', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 										{ video.date
 											? new Date( video.date ).toLocaleDateString( undefined, {
 												year: 'numeric',
@@ -334,7 +334,7 @@ const Videos = () => {
 											} )
 											: '\u2014' }
 									</td>
-									<td className="mediashield-table__actions">
+									<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
 										<a
 											href={ `${ config.adminUrl }post.php?post=${ video.id }&action=edit` }
 											className="mediashield-action-btn mediashield-action-btn--edit"
