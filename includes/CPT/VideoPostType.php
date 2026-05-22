@@ -273,7 +273,7 @@ class VideoPostType {
 						<input type="number" id="ms-duration" name="_ms_duration"
 							value="<?php echo esc_attr( $duration ); ?>" class="small-text" min="0"
 							autocomplete="off" data-form-type="other" />
-						<span class="description"><?php esc_html_e( 'seconds (auto-filled on import)', 'mediashield' ); ?></span>
+						<span class="description"><?php esc_html_e( 'Length in seconds. Used to validate watch progress; leave 0 if unknown.', 'mediashield' ); ?></span>
 					</td>
 				</tr>
 			</table>
