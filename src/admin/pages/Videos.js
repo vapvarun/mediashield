@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from '@wordpress/element';
-import { Button, Modal, Spinner } from '@wordpress/components';
+import { Button, Modal, Spinner, TextControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { decodeEntities } from '@wordpress/html-entities';
@@ -144,6 +144,8 @@ const Videos = () => {
 	const [ videos, setVideos ] = useState( [] );
 	const [ total, setTotal ] = useState( 0 );
 	const [ page, setPage ] = useState( 1 );
+	const [ search, setSearch ] = useState( '' );
+	const [ debouncedSearch, setDebouncedSearch ] = useState( '' );
 	const [ totalPages, setTotalPages ] = useState( 1 );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
@@ -182,13 +184,31 @@ const Videos = () => {
 		}
 	};
 
+	// Debounce the search box so we don't hit the REST API on every keystroke,
+	// and reset to page 1 whenever the term changes (a filtered result set has
+	// its own page count).
+	useEffect( () => {
+		const timer = setTimeout( () => {
+			setDebouncedSearch( search.trim() );
+			setPage( 1 );
+		}, 400 );
+		return () => clearTimeout( timer );
+	}, [ search ] );
+
 	useEffect( () => {
 		let cancelled = false;
 		setLoading( true );
 		setError( '' );
 
+		// Search is served by the core WP REST API `search` param (server-side,
+		// uses the indexed post-title/content search) — pagination + total counts
+		// come back in the X-WP-Total* headers exactly as for the unfiltered list.
+		const searchParam = debouncedSearch
+			? `&search=${ encodeURIComponent( debouncedSearch ) }`
+			: '';
+
 		apiFetch( {
-			path: `/wp/v2/mediashield-videos?per_page=${ PER_PAGE }&page=${ page }&_locale=user`,
+			path: `/wp/v2/mediashield-videos?per_page=${ PER_PAGE }&page=${ page }${ searchParam }&_locale=user`,
 			parse: false,
 		} )
 			.then( async ( res ) => {
@@ -215,7 +235,7 @@ const Videos = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [ page ] );
+	}, [ page, debouncedSearch ] );
 
 	return (
 		<div className="mediashield-page mediashield-videos">
@@ -235,6 +255,15 @@ const Videos = () => {
 					{ __( 'Add New Video', 'mediashield' ) }
 				</a>
 			</header>
+
+			<div className="mediashield-search-bar">
+				<TextControl
+					placeholder={ __( 'Search videos by title…', 'mediashield' ) }
+					value={ search }
+					onChange={ setSearch }
+					__nextHasNoMarginBottom
+				/>
+			</div>
 
 			{ loading && (
 				<div className="mediashield-loader">
@@ -268,8 +297,10 @@ const Videos = () => {
 								<tr>
 									<td colSpan="5" className="mediashield-table__empty">
 										<Icon name="format-video" className="mediashield-table__empty-icon" />
-										{ __( 'No videos yet. Create your first protected video.', 'mediashield' ) }
-										{ ! config.isProActive && (
+										{ debouncedSearch
+											? __( 'No videos match your search.', 'mediashield' )
+											: __( 'No videos yet. Create your first protected video.', 'mediashield' ) }
+										{ ! debouncedSearch && ! config.isProActive && (
 											<div className="ms-upsell-inline" style={ { marginTop: '16px', justifyContent: 'center' } }>
 												<Icon name="cloud" />
 												<span>
@@ -322,7 +353,9 @@ const Videos = () => {
 										className="mediashield-action-btn mediashield-action-btn--copy"
 										onClick={ () => copyShortcode( video.id ) }
 										title={ __( 'Copy [mediashield id=…] shortcode', 'mediashield' ) }
+										aria-label={ __( 'Copy shortcode to clipboard', 'mediashield' ) }
 									>
+										<Icon name="clipboard" className="mediashield-action-btn__icon" />
 										{ __( 'Copy shortcode', 'mediashield' ) }
 									</button>
 									</td>

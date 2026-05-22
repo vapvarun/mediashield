@@ -771,6 +771,44 @@
 	color: #fff;
 }
 
+.mediashield-action-btn--copy {
+	color: var( --ms-color-primary );
+	border-color: var( --ms-color-border );
+	background: var( --ms-color-surface-alt, #f6f7f9 );
+}
+
+.mediashield-action-btn--copy:hover {
+	background: var( --ms-color-primary );
+	color: #fff;
+	border-color: var( --ms-color-primary );
+}
+
+.mediashield-action-btn--copy:focus-visible {
+	outline: 2px solid var( --ms-color-primary );
+	outline-offset: 2px;
+}
+
+.mediashield-action-btn .mediashield-action-btn__icon {
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+}
+
+/* Responsive: on narrow viewports let row actions wrap instead of overflowing,
+   and grow each button to the 40px tap-target minimum for touch. */
+@media ( max-width: 782px ) {
+	.mediashield-table__actions {
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.mediashield-action-btn {
+		min-height: 40px;
+		padding: 8px 12px;
+		font-size: 13px;
+	}
+}
+
 /* ── User / Avatar ─────────────────────────────────── */
 .mediashield-user {
 	display: flex;
@@ -1125,6 +1163,23 @@
 
 .mediashield-quick-stat__item + .mediashield-quick-stat__item {
 	border-top: 1px solid var( --ms-color-border-light );
+}
+
+/* Recent Milestones: stack the username over the video title so the two
+   never run together ("user2youtube1"). The wrapper keeps them in a column;
+   the meta line is muted + smaller and truncates on overflow. */
+.mediashield-quick-stat__item-main {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.mediashield-quick-stat__item-meta {
+	font-size: 11px;
+	color: var( --ms-color-text-secondary );
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /* ── Generic Card (wbcom-standard) ────────────────── */

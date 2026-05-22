@@ -61,6 +61,8 @@ const MAP = {
 	cloud: Cloud,
 	warning: AlertTriangle,
 	youtube: MonitorPlay,
+	clipboard: Clipboard,
+	'admin-page': Clipboard,
 };
 
 const Icon = ( { name, size = 20, className = '', ...rest } ) => {
