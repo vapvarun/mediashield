@@ -1,5 +1,11 @@
 node_modules/
+# Commit the Composer RUNTIME closure so a fresh clone activates without `composer install`.
+# Dev-only deps (phpunit, phpstan, wpcs, …) stay ignored; `composer install --no-dev` leaves
+# exactly these dirs, which is also what the dist build ships.
 vendor/*
+!vendor/autoload.php
+!vendor/composer/
+!vendor/woocommerce/
 !vendor/easy-digital-downloads/
 dist/
 *.zip

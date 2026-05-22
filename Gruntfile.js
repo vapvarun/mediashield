@@ -20,7 +20,10 @@ module.exports = function(grunt) {
                     src: [
                         '**',
                         '!node_modules/**',
-                        '!vendor/**',
+                        // vendor/ IS shipped — shell:composer_no_dev runs first, so vendor
+                        // holds only the runtime closure (autoload + action-scheduler + edd-sl-sdk).
+                        // Excluding it ships a zip that fatals on activation (missing autoload.php).
+                        '!vendor/bin/**',
                         '!src/**',
                         '!plan/**',
                         '!dist/**',
