@@ -48,11 +48,28 @@ const ProgressBar = ( { value } ) => {
 };
 
 /**
+ * Parse a server timestamp into a Date.
+ *
+ * The analytics REST API returns UTC timestamps suffixed with ` UTC`
+ * (e.g. `2026-05-21 10:00:00 UTC`). Normalise the space-separated form to an
+ * ISO-8601 UTC string so every browser (incl. Safari) parses the same instant;
+ * already-ISO strings pass straight through.
+ */
+function parseServerDate( dateStr ) {
+	if ( ! dateStr ) return null;
+	const iso = String( dateStr )
+		.replace( ' UTC', 'Z' )
+		.replace( ' ', 'T' );
+	const date = new Date( iso );
+	return isNaN( date.getTime() ) ? new Date( dateStr ) : date;
+}
+
+/**
  * Relative time display.
  */
 function timeAgo( dateStr ) {
 	if ( ! dateStr ) return '\u2014';
-	const date = new Date( dateStr );
+	const date = parseServerDate( dateStr );
 	const now = new Date();
 	const diffMs = now - date;
 	const diffMin = Math.floor( diffMs / 60000 );
@@ -165,7 +182,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 										<td><ProgressBar value={ v.progress } /></td>
 										<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 											{ v.last_watched
-												? new Date( v.last_watched ).toLocaleString()
+												? parseServerDate( v.last_watched ).toLocaleString()
 												: '\u2014' }
 										</td>
 									</tr>

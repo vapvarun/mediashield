@@ -25,9 +25,25 @@ function getInitials( name ) {
 	return name.substring( 0, 2 ).toUpperCase();
 }
 
+/**
+ * Parse a server timestamp into a Date.
+ *
+ * Analytics REST timestamps are UTC suffixed with ` UTC`
+ * (e.g. `2026-05-21 10:00:00 UTC`); normalise to ISO-8601 UTC so all browsers
+ * parse the same instant. Already-ISO strings pass straight through.
+ */
+function parseServerDate( dateStr ) {
+	if ( ! dateStr ) return null;
+	const iso = String( dateStr )
+		.replace( ' UTC', 'Z' )
+		.replace( ' ', 'T' );
+	const date = new Date( iso );
+	return isNaN( date.getTime() ) ? new Date( dateStr ) : date;
+}
+
 function timeAgo( dateStr ) {
 	if ( ! dateStr ) return '\u2014';
-	const date = new Date( dateStr );
+	const date = parseServerDate( dateStr );
 	const now = new Date();
 	const diffMs = now - date;
 	const diffMin = Math.floor( diffMs / 60000 );

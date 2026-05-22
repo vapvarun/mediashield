@@ -306,7 +306,7 @@ class AnalyticsController extends WP_REST_Controller {
 				'unique_viewers'   => (int) $stats->unique_viewers,
 				'avg_completion'   => round( (float) $stats->avg_completion, 1 ),
 				'total_watch_time' => (int) $stats->total_watch_time,
-				'last_watched'     => $stats->last_watched,
+				'last_watched'     => self::utc_marked( $stats->last_watched ),
 			)
 		);
 	}
@@ -358,7 +358,7 @@ class AnalyticsController extends WP_REST_Controller {
 					'user_id'       => (int) $row->user_id,
 					'user_name'     => sanitize_text_field( ! empty( $row->user_name ) ? $row->user_name : '' ),
 					'milestone_pct' => (int) $row->milestone_pct,
-					'reached_at'    => $row->reached_at,
+					'reached_at'    => self::utc_marked( $row->reached_at ),
 				);
 			},
 			! empty( $rows ) ? $rows : array()
@@ -425,7 +425,7 @@ class AnalyticsController extends WP_REST_Controller {
 					'email'          => sanitize_email( $row->user_email ),
 					'videos_watched' => (int) $row->videos_watched,
 					'avg_completion' => round( (float) $row->avg_completion, 1 ),
-					'last_active'    => $row->last_active,
+					'last_active'    => self::utc_marked( $row->last_active ),
 				);
 			},
 			! empty( $rows ) ? $rows : array()
@@ -480,8 +480,8 @@ class AnalyticsController extends WP_REST_Controller {
 							'completion_pct' => round( (float) $row->completion_pct, 1 ),
 							'total_seconds'  => (int) $row->total_seconds,
 							'max_position'   => (float) $row->max_position,
-							'last_watched'   => $row->last_heartbeat,
-							'started_at'     => $row->started_at,
+							'last_watched'   => self::utc_marked( $row->last_heartbeat ),
+							'started_at'     => self::utc_marked( $row->started_at ),
 						);
 					},
 					! empty( $sessions ) ? $sessions : array()
@@ -541,7 +541,7 @@ class AnalyticsController extends WP_REST_Controller {
 					'completion_pct' => round( (float) $row->completion_pct, 1 ),
 					'max_position'   => (float) $row->max_position,
 					'total_seconds'  => (int) $row->total_seconds,
-					'last_watched'   => $row->last_watched,
+					'last_watched'   => self::utc_marked( $row->last_watched ),
 				);
 			},
 			! empty( $rows ) ? $rows : array()
@@ -588,6 +588,28 @@ class AnalyticsController extends WP_REST_Controller {
 	 * @param string $format       PHP date format, defaults to combined site format.
 	 * @return string Formatted, or empty string if the input was empty.
 	 */
+	/**
+	 * Mark a stored UTC datetime string so JavaScript parses it as UTC.
+	 *
+	 * The watch-session + milestone tables store timestamps in UTC via
+	 * `current_time('mysql', true)` (e.g. `2026-05-21 10:00:00`). That string
+	 * carries no timezone indicator, so the browser's `new Date()` interprets it
+	 * as *local* time, producing an offset equal to the site's UTC offset in any
+	 * relative-time ("5h ago") display. Appending ` UTC` makes the instant
+	 * unambiguous while preserving the millisecond precision that the admin
+	 * `timeAgo()` helpers rely on (unlike a pre-formatted site-tz string, which
+	 * would round to the minute and break relative math).
+	 *
+	 * @param string|null $utc_datetime MySQL datetime string in UTC, or null/empty.
+	 * @return string|null Same instant suffixed with ' UTC', or the original null/empty value.
+	 */
+	private static function utc_marked( ?string $utc_datetime ): ?string {
+		if ( null === $utc_datetime || '' === $utc_datetime ) {
+			return $utc_datetime;
+		}
+		return $utc_datetime . ' UTC';
+	}
+
 	private static function local_datetime( string $utc_datetime, string $format = '' ): string {
 		if ( '' === $utc_datetime ) {
 			return '';
