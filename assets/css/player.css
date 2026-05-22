@@ -394,8 +394,8 @@
 	z-index: 99999;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 	border-radius: 8px;
-	/* overflow:visible so the floating close button (positioned at top/right:-10px)
-	   is not clipped. Corner-rounding moves to the media child below. */
+	/* Corner-rounding lives on the media child so the player can clip the video
+	   to rounded corners while still letting the close button sit on top. */
 	overflow: visible;
 	transition: all 0.3s ease;
 }
@@ -408,8 +408,13 @@
 
 .ms-sticky-close {
 	position: absolute;
-	top: -10px;
-	right: -10px;
+	/* Positioned just INSIDE the top-right corner (positive offsets) rather than
+	   floating outside with negative offsets. The old top/right:-10px combined
+	   with the player's right:10px on mobile pushed the 40px button to (or past)
+	   the viewport edge, clipping it. Inside-the-corner positioning is fully
+	   visible at every breakpoint. RTL-safe via inset-inline-end. */
+	top: var(--ms-space-2, 8px);
+	inset-inline-end: var(--ms-space-2, 8px);
 	z-index: 100000;
 	background: var(--ms-danger);
 	color: var(--ms-on-overlay);
