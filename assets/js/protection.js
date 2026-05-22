@@ -20,8 +20,10 @@
 	 */
 	function init() {
 		var players = document.querySelectorAll('.ms-protected-player');
+		var hasStrict = false;
 		players.forEach(function (el) {
 			if (el.dataset.protectionLevel === 'none') return;
+			if (el.dataset.protectionLevel === 'strict') hasStrict = true;
 			initProtection(el);
 		});
 
@@ -32,7 +34,15 @@
 			}
 		});
 
-		if (protConfig.detect_devtools !== false) {
+		// DevTools detection runs when the global toggle is on OR any player on
+		// the page is set to the per-video `strict` tier (which forces it on
+		// regardless of the global setting). Likewise `strict` forces the
+		// pause-on-devtools response so the tier's promise ("source hiding +
+		// devtools detection") holds even when the operator left the globals off.
+		if (hasStrict) {
+			protConfig.pause_on_devtools = true;
+		}
+		if (protConfig.detect_devtools !== false || hasStrict) {
 			initDevtoolsDetection();
 		}
 	}
@@ -45,6 +55,10 @@
 	function initProtection(el) {
 		if (el.dataset.msProtected) return;
 		el.dataset.msProtected = '1';
+
+		// `strict` per-video tier forces source hiding on even when the global
+		// `hide_source` toggle is off (the tier's documented behaviour).
+		var isStrict = el.dataset.protectionLevel === 'strict';
 
 		// Block right-click.
 		if (protConfig.block_right_click !== false) {
@@ -60,7 +74,7 @@
 			video.setAttribute('controlsList', 'nodownload');
 
 			// Hide source: move src to data attribute, load via JS.
-			if (protConfig.hide_source !== false) {
+			if (protConfig.hide_source !== false || isStrict) {
 				var src = video.getAttribute('src');
 				if (src) {
 					video.removeAttribute('src');

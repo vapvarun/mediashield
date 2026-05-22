@@ -184,14 +184,50 @@ export default function Edit( { attributes, setAttributes } ) {
 						label={ __( 'Protection Level', 'mediashield' ) }
 						value={ video.meta?._ms_protection_level || 'standard' }
 						options={ [
-							{ label: __( 'Standard (Watermark + Tracking)', 'mediashield' ), value: 'standard' },
-							{ label: __( 'None (Free Preview)', 'mediashield' ), value: 'none' },
+							{ label: __( 'None — Free preview', 'mediashield' ), value: 'none' },
+							{ label: __( 'Basic — Login + right-click block', 'mediashield' ), value: 'basic' },
+							{ label: __( 'Standard — Watermark + tracking', 'mediashield' ), value: 'standard' },
+							{ label: __( 'Strict — Devtools detection + source hiding', 'mediashield' ), value: 'strict' },
 						] }
 						onChange={ ( value ) => {
 							apiFetch( {
 								path: `/wp/v2/mediashield-videos/${ videoId }`,
 								method: 'POST',
 								data: { meta: { _ms_protection_level: value } },
+							} );
+							setVideo( {
+								...video,
+								meta: { ...video.meta, _ms_protection_level: value },
+							} );
+						} }
+					/>
+
+					<TextControl
+						type="number"
+						min={ 0 }
+						label={ __( 'Duration (seconds)', 'mediashield' ) }
+						help={ __(
+							'Used to validate watch progress. Leave 0 if unknown.',
+							'mediashield'
+						) }
+						value={ video.meta?._ms_duration ?? 0 }
+						onChange={ ( value ) => {
+							const seconds = Math.max( 0, parseInt( value, 10 ) || 0 );
+							setVideo( {
+								...video,
+								meta: { ...video.meta, _ms_duration: seconds },
+							} );
+						} }
+						onBlur={ () => {
+							apiFetch( {
+								path: `/wp/v2/mediashield-videos/${ videoId }`,
+								method: 'POST',
+								data: {
+									meta: {
+										_ms_duration:
+											video.meta?._ms_duration ?? 0,
+									},
+								},
 							} );
 						} }
 					/>
