@@ -45,6 +45,18 @@ if ( ! file_exists( MEDIASHIELD_PATH . 'vendor/autoload.php' ) ) {
 
 require_once MEDIASHIELD_PATH . 'vendor/autoload.php';
 
+// Action Scheduler is a runtime dependency but registers its as_*() functions
+// only when its entry file is explicitly required — Composer does NOT autoload
+// it. Load it here, before plugins_loaded fires (Action Scheduler hooks that
+// action at priority 0/1 to initialise). The bundled library carries its own
+// version registry, so requiring it again from another plugin is harmless —
+// the highest registered version wins. Because the free plugin is mandatory for
+// Pro (Requires Plugins: mediashield), loading it once here makes the scheduler
+// available to Pro's cron features too, with no duplicate copy bundled in Pro.
+if ( file_exists( MEDIASHIELD_PATH . 'vendor/woocommerce/action-scheduler/action-scheduler.php' ) ) {
+	require_once MEDIASHIELD_PATH . 'vendor/woocommerce/action-scheduler/action-scheduler.php';
+}
+
 // Activation / Deactivation hooks.
 register_activation_hook( __FILE__, array( 'MediaShield\\Core\\Activator', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'MediaShield\\Core\\Deactivator', 'deactivate' ) );
