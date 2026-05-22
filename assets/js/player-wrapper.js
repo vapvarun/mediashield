@@ -801,16 +801,18 @@
 	// ─── Login Overlay ───────────────────────────────────────────
 
 	function showLoginOverlay( el ) {
+		var messages = config.messages || {};
+
 		var overlay = document.createElement( 'div' );
 		overlay.className = 'ms-login-overlay';
 		overlay.setAttribute( 'role', 'dialog' );
 		overlay.setAttribute( 'aria-modal', 'true' );
-		overlay.setAttribute( 'aria-label', config.loginOverlayLabel || 'Login required' );
+		// Screen-reader label mirrors the admin-configured overlay text so it
+		// stays in sync with the visible message (not a separate hardcoded key).
+		overlay.setAttribute( 'aria-label', messages.loginOverlay || 'Login required' );
 
 		var message = document.createElement( 'div' );
 		message.className = 'ms-login-message';
-
-		var messages = config.messages || {};
 
 		var text = document.createElement( 'p' );
 		text.textContent = messages.loginOverlay || 'Please log in to watch this video.';
