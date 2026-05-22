@@ -100,13 +100,25 @@ class SelfHosted implements DriverInterface {
 			return self::error( __( 'Failed to move uploaded file.', 'mediashield' ) );
 		}
 
-		// Create CPT post.
+		// Use REST streaming endpoint instead of direct file URL (blocked by .htaccess).
+		// Build the post ID first via a placeholder is not possible, so derive the
+		// stream URL after insert; but pass the platform meta via `meta_input` so
+		// it is present BEFORE `save_post` fires (Thumbnail::maybe_fetch_thumbnail()
+		// runs at save_post priority 20 and reads `_ms_platform`). For self-hosted
+		// the thumbnail fetcher early-returns on the 'self' platform, so this is
+		// belt-and-suspenders here — but it keeps every driver's insert shape
+		// identical and future-proof. See Basecamp card 9915014554.
 		$title   = $options['title'] ?? pathinfo( $filename, PATHINFO_FILENAME );
 		$post_id = wp_insert_post(
 			array(
 				'post_type'   => 'mediashield_video',
 				'post_title'  => sanitize_text_field( $title ),
 				'post_status' => 'publish',
+				'meta_input'  => array(
+					'_ms_platform'          => 'self',
+					'_ms_platform_video_id' => $filename,
+					'_ms_protection_level'  => 'standard',
+				),
 			)
 		);
 
@@ -115,13 +127,10 @@ class SelfHosted implements DriverInterface {
 			return self::error( $post_id->get_error_message() );
 		}
 
-		// Use REST streaming endpoint instead of direct file URL (blocked by .htaccess).
+		// The streaming URL depends on the new post ID, so it must be set after
+		// insert. It is not consumed by the thumbnail fetcher, so the timing is fine.
 		$stream_url = rest_url( "mediashield/v1/stream/{$post_id}" );
-
-		update_post_meta( $post_id, '_ms_platform', 'self' );
-		update_post_meta( $post_id, '_ms_platform_video_id', $filename );
 		update_post_meta( $post_id, '_ms_source_url', $stream_url );
-		update_post_meta( $post_id, '_ms_protection_level', 'standard' );
 
 		return array(
 			'success'           => true,
