@@ -35,19 +35,19 @@ class Settings {
 	public static function schema(): array {
 		// Validator helpers — declared inline so the schema entries read as a
 		// single decision table.
-		$enum = static fn( array $allowed ) => static function ( $value ) use ( $allowed ) {
+		$enum         = static fn( array $allowed ) => static function ( $value ) use ( $allowed ) {
 			return in_array( $value, $allowed, true ) ? $value : null;
 		};
-		$hex_color = static function ( $value ) {
+		$hex_color    = static function ( $value ) {
 			return preg_match( '/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/', (string) $value )
 				? strtolower( (string) $value )
 				: null;
 		};
-		$clamp = static fn( float $min, float $max ) => static function ( $value ) use ( $min, $max ) {
+		$clamp        = static fn( float $min, float $max ) => static function ( $value ) use ( $min, $max ) {
 			$num = is_numeric( $value ) ? (float) $value : $min;
 			return max( $min, min( $max, $num ) );
 		};
-		$min_int = static fn( int $min ) => static function ( $value ) use ( $min ) {
+		$min_int      = static fn( int $min ) => static function ( $value ) use ( $min ) {
 			$num = is_numeric( $value ) ? (int) $value : $min;
 			return max( $min, $num );
 		};
@@ -62,25 +62,64 @@ class Settings {
 
 		return array(
 			// Core.
-			'ms_enabled'                 => array( 'type' => 'boolean', 'default' => true ),
-			'ms_default_protection'      => array( 'type' => 'string',  'default' => 'standard', 'validate' => $enum( array( 'none', 'basic', 'standard', 'strict' ) ) ),
-			'ms_require_login'           => array( 'type' => 'boolean', 'default' => true ),
+			'ms_enabled'                 => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			'ms_default_protection'      => array(
+				'type'     => 'string',
+				'default'  => 'standard',
+				'validate' => $enum( array( 'none', 'basic', 'standard', 'strict' ) ),
+			),
+			'ms_require_login'           => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
 
 			// Watermark.
-			'ms_watermark_opacity'       => array( 'type' => 'float',   'default' => 0.5, 'validate' => $clamp( 0.0, 1.0 ) ),
-			'ms_watermark_color'         => array( 'type' => 'string',  'default' => '#ffffff', 'validate' => $hex_color ),
-			'ms_watermark_swap_interval' => array( 'type' => 'integer', 'default' => 30, 'validate' => $min_int( 1 ) ),
+			'ms_watermark_opacity'       => array(
+				'type'     => 'float',
+				'default'  => 0.5,
+				'validate' => $clamp( 0.0, 1.0 ),
+			),
+			'ms_watermark_color'         => array(
+				'type'     => 'string',
+				'default'  => '#ffffff',
+				'validate' => $hex_color,
+			),
+			'ms_watermark_swap_interval' => array(
+				'type'     => 'integer',
+				'default'  => 30,
+				'validate' => $min_int( 1 ),
+			),
 
 			// Access.
-			'ms_allowed_domains'         => array( 'type' => 'string',  'default' => '' ),
-			'ms_max_concurrent_streams'  => array( 'type' => 'integer', 'default' => 2, 'validate' => $min_int( 1 ) ),
+			'ms_allowed_domains'         => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'ms_max_concurrent_streams'  => array(
+				'type'     => 'integer',
+				'default'  => 2,
+				'validate' => $min_int( 1 ),
+			),
 
 			// Upload.
-			'ms_max_upload_size'         => array( 'type' => 'integer', 'default' => 500, 'validate' => $min_int( 1 ) ),
-			'ms_custom_url_patterns'     => array( 'type' => 'string',  'default' => '' ),
+			'ms_max_upload_size'         => array(
+				'type'     => 'integer',
+				'default'  => 500,
+				'validate' => $min_int( 1 ),
+			),
+			'ms_custom_url_patterns'     => array(
+				'type'    => 'string',
+				'default' => '',
+			),
 
 			// Badge.
-			'ms_show_badge'              => array( 'type' => 'boolean', 'default' => true ),
+			'ms_show_badge'              => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
 
 			// Login & access messages.
 			// Defaults are plain strings, not __(): schema() is read by
@@ -88,29 +127,81 @@ class Settings {
 			// there triggers the WP 6.7+ "translation loaded too early" notice.
 			// These are admin-editable message defaults (a seeded translation would
 			// freeze the locale at activation time anyway), so literals are correct.
-			'ms_login_overlay_text'      => array( 'type' => 'string',  'default' => 'Please log in to watch this video' ),
-			'ms_login_button_text'       => array( 'type' => 'string',  'default' => 'Log In' ),
-			'ms_access_denied_text'      => array( 'type' => 'string',  'default' => 'You do not have access to this video' ),
+			'ms_login_overlay_text'      => array(
+				'type'    => 'string',
+				'default' => 'Please log in to watch this video',
+			),
+			'ms_login_button_text'       => array(
+				'type'    => 'string',
+				'default' => 'Log In',
+			),
+			'ms_access_denied_text'      => array(
+				'type'    => 'string',
+				'default' => 'You do not have access to this video',
+			),
 
 			// Player controls.
-			'ms_player_speed_control'    => array( 'type' => 'boolean', 'default' => true ),
-			'ms_player_sticky'           => array( 'type' => 'boolean', 'default' => false ),
-			'ms_player_keyboard'         => array( 'type' => 'boolean', 'default' => true ),
-			'ms_player_resume'           => array( 'type' => 'boolean', 'default' => true ),
-			'ms_player_endscreen'        => array( 'type' => 'boolean', 'default' => false ),
-			'ms_player_endscreen_text'   => array( 'type' => 'string',  'default' => '' ),
-			'ms_player_endscreen_url'    => array( 'type' => 'string',  'default' => '', 'validate' => $url_or_empty ),
+			'ms_player_speed_control'    => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			'ms_player_sticky'           => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'ms_player_keyboard'         => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			'ms_player_resume'           => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			'ms_player_endscreen'        => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'ms_player_endscreen_text'   => array(
+				'type'    => 'string',
+				'default' => '',
+			),
+			'ms_player_endscreen_url'    => array(
+				'type'     => 'string',
+				'default'  => '',
+				'validate' => $url_or_empty,
+			),
 
 			// Protection controls (right-click, keyboard, devtools).
-			'ms_block_right_click'       => array( 'type' => 'boolean', 'default' => true ),
-			'ms_block_keyboard'          => array( 'type' => 'boolean', 'default' => false ),
-			'ms_hide_source'             => array( 'type' => 'boolean', 'default' => true ),
-			'ms_detect_devtools'         => array( 'type' => 'boolean', 'default' => true ),
-			'ms_pause_on_devtools'       => array( 'type' => 'boolean', 'default' => false ),
+			'ms_block_right_click'       => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			'ms_block_keyboard'          => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			'ms_hide_source'             => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			'ms_detect_devtools'         => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			'ms_pause_on_devtools'       => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
 			// Plain-string defaults (see the login-message note above re: __() and
 			// the early-translation notice).
-			'ms_devtools_title'          => array( 'type' => 'string',  'default' => 'Developer Tools Detected' ),
-			'ms_devtools_message'        => array( 'type' => 'string',  'default' => 'Please close developer tools to continue watching this video.' ),
+			'ms_devtools_title'          => array(
+				'type'    => 'string',
+				'default' => 'Developer Tools Detected',
+			),
+			'ms_devtools_message'        => array(
+				'type'    => 'string',
+				'default' => 'Please close developer tools to continue watching this video.',
+			),
 		);
 	}
 

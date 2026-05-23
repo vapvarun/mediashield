@@ -92,10 +92,10 @@ class PrivacyEraser {
 					$user->ID
 				)
 			);
-			$items_removed += $sessions_updated;
+			$items_removed   += $sessions_updated;
 
 			// Sessions themselves are retained (anonymized, not deleted) for aggregate analytics.
-			$total_sessions = (int) $wpdb->get_var(
+			$total_sessions  = (int) $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM {$sessions_table} WHERE user_id = %d",
 					$user->ID
@@ -106,14 +106,14 @@ class PrivacyEraser {
 			// Remove milestone rows (the per-user reached_at timestamps for
 			// 25/50/75/100% completion). Built on the Free side by the
 			// MilestoneTracker; no need to gate on Pro.
-			$milestones_table = "{$wpdb->prefix}ms_milestones";
+			$milestones_table   = "{$wpdb->prefix}ms_milestones";
 			$milestones_deleted = (int) $wpdb->query(
 				$wpdb->prepare(
 					"DELETE FROM {$milestones_table} WHERE user_id = %d",
 					$user->ID
 				)
 			);
-			$items_removed += $milestones_deleted;
+			$items_removed     += $milestones_deleted;
 			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 			// Delete the milestone-earned-tags blob (Free MilestoneTracker

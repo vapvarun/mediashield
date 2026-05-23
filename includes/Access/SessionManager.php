@@ -241,7 +241,7 @@ class SessionManager {
 		// denominator so completion can never be over-reported. (If no stored
 		// duration exists we fall back to the client value, preserving behaviour
 		// for videos whose length is unknown.)
-		$stored_duration = (float) get_post_meta( $parsed['video_id'], '_ms_duration', true );
+		$stored_duration    = (float) get_post_meta( $parsed['video_id'], '_ms_duration', true );
 		$effective_duration = $stored_duration > 0 ? max( $stored_duration, $duration ) : $duration;
 
 		$completion_pct = $effective_duration > 0 ? min( 100, ( $position / $effective_duration ) * 100 ) : 0;

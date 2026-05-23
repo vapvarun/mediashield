@@ -50,14 +50,14 @@ class Renderer {
 		// last-resort 'standard' so the Settings → Default Protection Level
 		// toggle actually has an effect on videos that don't carry a per-video
 		// override.
-		$protection_level  = ! empty( $protection_raw )
+		$protection_level = ! empty( $protection_raw )
 			? $protection_raw
 			: \MediaShield\Core\Settings::get( 'ms_default_protection' );
 		if ( empty( $protection_level ) ) {
 			$protection_level = 'standard';
 		}
-		$duration          = (int) get_post_meta( $video_id, '_ms_duration', true );
-		$player_type       = apply_filters( 'mediashield_player_type', 'standard', $video_id );
+		$duration    = (int) get_post_meta( $video_id, '_ms_duration', true );
+		$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 
 		if ( empty( $source_url ) && empty( $stream_url ) && empty( $platform_video_id ) ) {
 			return '';
@@ -132,7 +132,7 @@ class Renderer {
 			// Binary playback options stored on the video CPT. Meta is tri-state:
 			// '1' = explicit on, '0' = explicit off, '' = pristine (never saved —
 			// treat as adapter default so older videos keep working unchanged).
-			$playback_keys = array(
+			$playback_keys  = array(
 				'_ms_autoplay'      => 'autoplay',
 				'_ms_loop'          => 'loop',
 				'_ms_muted'         => 'muted',

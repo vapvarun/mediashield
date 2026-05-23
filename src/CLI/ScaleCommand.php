@@ -47,15 +47,15 @@ final class ScaleCommand {
 	 */
 	private const BUDGETS_MS = array(
 		// Heartbeat — single-row UPDATE on PK (id, session_token).
-		'session_heartbeat'        => 5.0,
+		'session_heartbeat'    => 5.0,
 		// can_watch — concurrent-stream count (indexed scan on user_id + is_active).
-		'access_can_watch'         => 5.0,
+		'access_can_watch'     => 5.0,
 		// Stream handoff — HMAC verify + session lookup (indexed scan).
-		'stream_signed_lookup'     => 30.0,
+		'stream_signed_lookup' => 30.0,
 		// Milestone record — INSERT with UNIQUE (video_id, user_id, milestone_pct) idempotency.
-		'milestone_record'         => 20.0,
+		'milestone_record'     => 20.0,
 		// Analytics overview — total sessions/users/milestones aggregation.
-		'analytics_overview'       => 30.0,
+		'analytics_overview'   => 30.0,
 	);
 
 	/**
@@ -159,11 +159,11 @@ final class ScaleCommand {
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
 		for ( $u = 0; $u < $user_count; $u++ ) {
-			$uid = self::BASE_UID + $u;
+			$uid     = self::BASE_UID + $u;
 			$values  = array();
 			$mvalues = array();
 			for ( $s = 0; $s < $sessions_per_u; $s++ ) {
-				$token   = bin2hex( random_bytes( 16 ) );
+				$token    = bin2hex( random_bytes( 16 ) );
 				$values[] = $wpdb->prepare(
 					'(%d,%d,%s,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d)',
 					$video_id,
@@ -427,7 +427,7 @@ final class ScaleCommand {
 			$budget = self::BUDGETS_MS[ $key ] ?? 100.0;
 			$pass   = $ms <= $budget;
 			if ( ! $pass ) {
-				$failures++;
+				++$failures;
 			}
 			\WP_CLI::line(
 				sprintf(

@@ -33,19 +33,22 @@ class Migrator {
 	public static function run(): void {
 		$installed = (int) get_option( 'ms_db_version', 0 );
 
-		if ( $installed < MEDIASHIELD_DB_VERSION ) {
-			Schema::create_tables();
-			Settings::seed_defaults();
-
-			// v3 — promote legacy free-form milestone tags into the unified
-			// `ms_tags` dictionary and record the canonical `tag_id` alongside
-			// the display string in each user's `_ms_video_tags` meta entry.
-			if ( $installed < 3 ) {
-				self::backfill_milestone_tags();
-			}
-
-			update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+		if ( $installed >= MEDIASHIELD_DB_VERSION ) {
+			return;
 		}
+
+		Schema::create_tables();
+		Settings::seed_defaults();
+
+		// v3 — promote legacy free-form milestone tags into the unified
+		// `ms_tags` dictionary and record the canonical `tag_id` alongside
+		// the display string in each user's `_ms_video_tags` meta entry.
+		// The per-version gate lives inside the helper itself so each
+		// migration step is independently idempotent and PHPStan can't
+		// narrow the comparison via the outer version-bump branch.
+		self::backfill_milestone_tags();
+
+		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
 	}
 
 	/**
@@ -54,9 +57,14 @@ class Migrator {
 	 * meta entry and links the originating video to the tag via `ms_video_tags`.
 	 *
 	 * Idempotent: a re-run only touches entries that don't already carry a
-	 * non-zero `tag_id`.
+	 * non-zero `tag_id`. Self-gates by reading `ms_db_version` so installs
+	 * already at v3+ short-circuit before any usermeta scan.
 	 */
 	private static function backfill_milestone_tags(): void {
+		if ( (int) get_option( 'ms_db_version', 0 ) >= 3 ) {
+			return;
+		}
+
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-shot migration of legacy user meta records.
@@ -68,8 +76,8 @@ class Migrator {
 		}
 
 		foreach ( $rows as $row ) {
-			$user_id    = (int) $row->user_id;
-			$user_tags  = maybe_unserialize( $row->meta_value );
+			$user_id   = (int) $row->user_id;
+			$user_tags = maybe_unserialize( $row->meta_value );
 			if ( ! is_array( $user_tags ) ) {
 				continue;
 			}

@@ -101,7 +101,7 @@ class PlaylistRenderer {
 
 		<div class="ms-playlist-countdown" style="display:none;">
 			<span class="ms-countdown-text"><?php esc_html_e( 'Next video in', 'mediashield' ); ?></span>
-			<span class="ms-countdown-timer"><?php echo esc_html( $countdown ); ?></span>
+			<span class="ms-countdown-timer"><?php echo esc_html( (string) $countdown ); ?></span>
 		</div>
 	</div>
 
@@ -117,12 +117,20 @@ class PlaylistRenderer {
 					data-source-url="<?php echo esc_url( $item->source_url ? $item->source_url : '' ); ?>"
 					data-platform="<?php echo esc_attr( $item->platform ? $item->platform : 'self' ); ?>"
 					data-protection-level="<?php echo esc_attr( $item->protection_level ? $item->protection_level : 'standard' ); ?>"
-					data-index="<?php echo esc_attr( $idx ); ?>">
-					<span class="ms-playlist-item-num"><?php echo esc_html( $idx + 1 ); ?></span>
+					data-index="<?php echo esc_attr( (string) $idx ); ?>">
+					<span class="ms-playlist-item-num"><?php echo esc_html( (string) ( $idx + 1 ) ); ?></span>
 					<?php if ( $thumb ) : ?>
 						<img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $item->video_title ); ?>" class="ms-playlist-item-thumb" loading="lazy" />
 					<?php else : ?>
-						<?php echo \MediaShield\Support\Icons::svg( 'video', array( 'size' => 24, 'class' => 'ms-playlist-item-thumb-placeholder' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. ?>
+						<?php
+						echo \MediaShield\Support\Icons::svg(
+							'video',
+							array(
+								'size'  => 24,
+								'class' => 'ms-playlist-item-thumb-placeholder',
+							)
+						); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. 
+						?>
 					<?php endif; ?>
 					<div class="ms-playlist-item-info">
 						<span class="ms-playlist-item-title"><?php echo esc_html( $item->video_title ); ?></span>
