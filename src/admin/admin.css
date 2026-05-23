@@ -143,7 +143,7 @@
 
 .mediashield-admin__content {
 	flex: 1;
-	padding: 28px 32px;
+	padding: 28px var( --ms-space-8 );
 	overflow-x: auto;
 	min-width: 0;
 }
@@ -159,7 +159,7 @@
 }
 
 .mediashield-sidebar__brand {
-	padding: 24px 20px;
+	padding: var( --ms-space-6 ) var( --ms-space-5 );
 	border-bottom: 1px solid var( --ms-color-border );
 	display: flex;
 	align-items: center;
@@ -187,7 +187,7 @@
 	font-size: 16px;
 	width: 16px;
 	height: 16px;
-	color: #fff;
+	color: var( --ms-color-surface );
 }
 
 .mediashield-sidebar__version {
@@ -202,7 +202,7 @@
 .mediashield-sidebar__menu {
 	list-style: none;
 	margin: 0;
-	padding: 12px 8px;
+	padding: var( --ms-space-3 ) var( --ms-space-2 );
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
@@ -212,7 +212,7 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	padding: 10px 12px;
+	padding: 10px var( --ms-space-3 );
 	color: var( --ms-color-text-secondary );
 	text-decoration: none;
 	font-size: 13.5px;
@@ -281,7 +281,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
 	background: linear-gradient( 135deg, #7c3aed, #a855f7 );
-	color: #fff;
+	color: var( --ms-color-surface );
 	margin-inline-start: auto;
 	line-height: 1.6;
 }
@@ -292,8 +292,8 @@
 	align-items: center;
 	justify-content: space-between;
 	flex-wrap: wrap;
-	gap: 16px;
-	margin-bottom: 24px;
+	gap: var( --ms-space-4 );
+	margin-bottom: var( --ms-space-6 );
 }
 
 .mediashield-page__header h1 {
@@ -304,7 +304,7 @@
 	letter-spacing: -0.02em;
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var( --ms-space-2 );
 	flex-wrap: wrap;
 }
 
@@ -312,7 +312,7 @@
 	font-size: 13px;
 	color: var( --ms-color-text-secondary );
 	font-weight: 400;
-	margin-inline-start: 12px;
+	margin-inline-start: var( --ms-space-3 );
 }
 
 .mediashield-page__header .components-select-control {
@@ -323,15 +323,15 @@
 .mediashield-stats {
 	display: grid;
 	grid-template-columns: repeat( 4, 1fr );
-	gap: 16px;
-	margin-bottom: 24px;
+	gap: var( --ms-space-4 );
+	margin-bottom: var( --ms-space-6 );
 }
 
 .mediashield-stat-card {
 	background: var( --ms-color-surface );
 	border: 1px solid var( --ms-color-border );
 	border-radius: var( --ms-radius-lg );
-	padding: 20px 22px;
+	padding: var( --ms-space-5 ) 22px;
 	display: flex;
 	align-items: flex-start;
 	gap: 14px;
@@ -410,7 +410,7 @@
 	border: 1px solid var( --ms-color-border );
 	border-radius: var( --ms-radius-lg );
 	box-shadow: var( --ms-shadow-sm );
-	margin-bottom: 24px;
+	margin-bottom: var( --ms-space-6 );
 	overflow: hidden;
 }
 
@@ -429,7 +429,7 @@
 }
 
 .mediashield-chart-card__body {
-	padding: 20px 22px 16px;
+	padding: var( --ms-space-5 ) 22px var( --ms-space-4 );
 	position: relative;
 	min-height: 280px;
 }
@@ -452,7 +452,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 16px 22px;
+	padding: var( --ms-space-4 ) 22px;
 	border-bottom: 1px solid var( --ms-color-border-light );
 }
 
@@ -508,7 +508,7 @@
 
 .mediashield-table th,
 .mediashield-table td {
-	padding: 12px 22px;
+	padding: var( --ms-space-3 ) 22px;
 	text-align: left;
 	border-bottom: 1px solid var( --ms-color-border-light );
 	overflow: hidden;
@@ -539,14 +539,14 @@
 
 .mediashield-table__actions {
 	display: flex;
-	gap: 4px;
+	gap: var( --ms-space-1 );
 	white-space: nowrap;
 }
 
 .mediashield-table__empty {
 	text-align: center;
 	color: var( --ms-color-text-tertiary );
-	padding: 48px 22px !important;
+	padding: var( --ms-space-12 ) 22px !important;
 }
 
 .mediashield-table__empty-icon {
@@ -555,7 +555,7 @@
 	width: 36px;
 	height: 36px;
 	line-height: 36px;
-	margin: 0 auto 8px;
+	margin: 0 auto var( --ms-space-2 );
 	opacity: 0.4;
 }
 
@@ -573,7 +573,7 @@
 }
 
 .mediashield-badge--none {
-	background: #f0f0f1;
+	background: var( --ms-color-border-light );
 	color: var( --ms-color-text-secondary );
 }
 
@@ -609,19 +609,19 @@
 }
 
 .mediashield-badge--default {
-	background: #f0f0f1;
+	background: var( --ms-color-border-light );
 	color: #50575e;
 }
 
 .mediashield-badge--muted {
-	background: #f0f0f1;
+	background: var( --ms-color-border-light );
 	color: #9ca3af;
 }
 
 .mediashield-badge--pro,
 .ms-pro-badge {
-	background: linear-gradient( 135deg, #6366f1, #8b5cf6 );
-	color: #fff;
+	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), #8b5cf6 );
+	color: var( --ms-color-surface );
 	font-size: 9px;
 	font-weight: 700;
 	padding: 1px 6px;
@@ -651,7 +651,7 @@
 .mediashield-platform--vimeo .mediashield-platform__dot { background: #1ab7ea; }
 .mediashield-platform--bunny .mediashield-platform__dot { background: #ff8c00; }
 .mediashield-platform--wistia .mediashield-platform__dot { background: #54bbff; }
-.mediashield-platform--self .mediashield-platform__dot { background: #6366f1; }
+.mediashield-platform--self .mediashield-platform__dot { background: var( --ms-color-pro-accent ); }
 
 /* Milestone badge */
 .mediashield-milestone-badge {
@@ -671,7 +671,7 @@
 	justify-content: center;
 	font-size: 10px;
 	font-weight: 800;
-	color: #fff;
+	color: var( --ms-color-surface );
 }
 
 .mediashield-milestone-badge__ring--25 {
@@ -728,8 +728,12 @@
 .mediashield-action-btn {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
-	padding: 4px 10px;
+	gap: var( --ms-space-1 );
+	/* Density-exception floor (34px) for admin list-row actions. The previous
+	 * 4px padding produced ~28px buttons, below ux-foundation's touch target.
+	 * Slice 2 of the 1.1.1 a11y/touch fix. */
+	min-height: 34px;
+	padding: 6px var( --ms-space-3 );
 	border-radius: var( --ms-radius-sm );
 	font-size: 12px;
 	font-weight: 600;
@@ -747,7 +751,7 @@
 
 .mediashield-action-btn--edit:hover {
 	background: var( --ms-color-primary );
-	color: #fff;
+	color: var( --ms-color-surface );
 }
 
 .mediashield-action-btn--view {
@@ -757,7 +761,7 @@
 
 .mediashield-action-btn--view:hover {
 	background: var( --ms-color-text );
-	color: #fff;
+	color: var( --ms-color-surface );
 	border-color: var( --ms-color-text );
 }
 
@@ -768,7 +772,7 @@
 
 .mediashield-action-btn--delete:hover {
 	background: var( --ms-color-error );
-	color: #fff;
+	color: var( --ms-color-surface );
 }
 
 .mediashield-action-btn--copy {
@@ -779,7 +783,7 @@
 
 .mediashield-action-btn--copy:hover {
 	background: var( --ms-color-primary );
-	color: #fff;
+	color: var( --ms-color-surface );
 	border-color: var( --ms-color-primary );
 }
 
@@ -929,7 +933,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	color: #fff;
+	color: var( --ms-color-surface );
 	font-size: 13px;
 	font-weight: 700;
 	flex-shrink: 0;
@@ -1005,7 +1009,7 @@
 	align-items: center;
 	justify-content: center;
 	padding: 64px 0;
-	gap: 12px;
+	gap: var( --ms-space-3 );
 }
 
 .mediashield-loader__text {
@@ -1015,13 +1019,13 @@
 
 /* ── Notices ───────────────────────────────────────── */
 .mediashield-notice {
-	padding: 12px 16px;
+	padding: var( --ms-space-3 ) var( --ms-space-4 );
 	border-radius: var( --ms-radius );
-	margin-bottom: 16px;
+	margin-bottom: var( --ms-space-4 );
 	font-size: 13px;
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var( --ms-space-2 );
 }
 
 .mediashield-notice--error {
@@ -1050,9 +1054,9 @@
 .mediashield-tags__create {
 	display: flex;
 	align-items: flex-end;
-	gap: 12px;
-	margin-bottom: 20px;
-	padding: 16px 20px;
+	gap: var( --ms-space-3 );
+	margin-bottom: var( --ms-space-5 );
+	padding: var( --ms-space-4 ) var( --ms-space-5 );
 	background: var( --ms-color-surface );
 	border: 1px solid var( --ms-color-border );
 	border-radius: var( --ms-radius-lg );
@@ -1068,7 +1072,7 @@
 /* ── Students Search ───────────────────────────────── */
 .mediashield-search-bar {
 	max-width: 420px;
-	margin-bottom: 20px;
+	margin-bottom: var( --ms-space-5 );
 	position: relative;
 }
 
@@ -1077,7 +1081,7 @@
 }
 
 .mediashield-search-bar .components-text-control__input {
-	padding-inline-start: 12px;
+	padding-inline-start: var( --ms-space-3 );
 	border-radius: var( --ms-radius );
 	border-color: var( --ms-color-border );
 	transition: border-color var( --ms-transition ), box-shadow var( --ms-transition );
@@ -1096,9 +1100,9 @@
 .mediashield-student-detail__header {
 	display: flex;
 	align-items: center;
-	gap: 16px;
-	margin-bottom: 24px;
-	padding: 20px;
+	gap: var( --ms-space-4 );
+	margin-bottom: var( --ms-space-6 );
+	padding: var( --ms-space-5 );
 	background: var( --ms-color-surface );
 	border: 1px solid var( --ms-color-border );
 	border-radius: var( --ms-radius-lg );
@@ -1113,7 +1117,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	color: #fff;
+	color: var( --ms-color-surface );
 	font-size: 22px;
 	font-weight: 700;
 	flex-shrink: 0;
@@ -1132,11 +1136,11 @@
 }
 
 .mediashield-back-btn {
-	margin-bottom: 16px;
+	margin-bottom: var( --ms-space-4 );
 }
 
 .mediashield-back-btn .ms-icon {
-	margin-inline-end: 4px;
+	margin-inline-end: var( --ms-space-1 );
 }
 
 /* ── Settings Sections ─────────────────────────────── */
@@ -1155,7 +1159,7 @@
 	border: 1px solid var( --ms-color-border );
 	border-radius: var( --ms-radius-lg );
 	box-shadow: var( --ms-shadow-sm );
-	margin-bottom: 16px;
+	margin-bottom: var( --ms-space-4 );
 	overflow: hidden;
 	width: 100%;
 }
@@ -1164,7 +1168,7 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	padding: 16px 22px;
+	padding: var( --ms-space-4 ) 22px;
 	border-bottom: 1px solid var( --ms-color-border-light );
 	background: #fafbfc;
 }
@@ -1192,7 +1196,7 @@
 	color: var( --ms-color-text );
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var( --ms-space-2 );
 	flex-wrap: wrap;
 }
 
@@ -1202,11 +1206,11 @@
 }
 
 .mediashield-settings__section-body {
-	padding: 20px 22px;
+	padding: var( --ms-space-5 ) 22px;
 }
 
 .mediashield-settings__section-body .components-base-control {
-	margin-bottom: 20px;
+	margin-bottom: var( --ms-space-5 );
 }
 
 .mediashield-settings__section-body .components-base-control:last-child {
@@ -1214,7 +1218,7 @@
 }
 
 .mediashield-settings__color-field {
-	margin-bottom: 20px;
+	margin-bottom: var( --ms-space-5 );
 }
 
 .mediashield-settings__color-field > label {
@@ -1231,8 +1235,8 @@
 .mediashield-quick-stats {
 	display: grid;
 	grid-template-columns: repeat( 2, 1fr );
-	gap: 16px;
-	margin-bottom: 24px;
+	gap: var( --ms-space-4 );
+	margin-bottom: var( --ms-space-6 );
 }
 
 .mediashield-quick-stat {
@@ -1249,7 +1253,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var( --ms-color-text-secondary );
-	margin-bottom: 12px;
+	margin-bottom: var( --ms-space-3 );
 }
 
 .mediashield-quick-stat__list {
@@ -1293,12 +1297,12 @@
 	border: 1px solid var( --ms-color-border );
 	border-radius: var( --ms-radius-lg );
 	box-shadow: var( --ms-shadow-sm );
-	margin-bottom: 16px;
+	margin-bottom: var( --ms-space-4 );
 	overflow: hidden;
 }
 
 .ms-card__head {
-	padding: 14px 20px 12px;
+	padding: 14px var( --ms-space-5 ) var( --ms-space-3 );
 	border-bottom: 1px solid var( --ms-color-border );
 	background: #fafafa;
 }
@@ -1319,7 +1323,7 @@
 }
 
 .ms-card__body {
-	padding: 20px;
+	padding: var( --ms-space-5 );
 }
 
 /* ── Buttons (wbcom-standard) ─────────────────────── */
@@ -1354,13 +1358,13 @@
 
 .ms-btn--primary {
 	background: var( --ms-color-primary );
-	color: #fff;
+	color: var( --ms-color-surface );
 	border-color: var( --ms-color-primary );
 }
 
 .ms-btn--primary:hover {
 	background: var( --ms-color-primary-hover );
-	color: #fff;
+	color: var( --ms-color-surface );
 }
 
 .ms-btn--danger {
@@ -1370,7 +1374,7 @@
 
 .ms-btn--danger:hover {
 	background: var( --ms-color-error );
-	color: #fff;
+	color: var( --ms-color-surface );
 }
 
 .ms-btn--sm {
@@ -1390,14 +1394,14 @@
 	align-items: center;
 	justify-content: space-between;
 	flex-wrap: wrap;
-	gap: 16px;
-	margin-bottom: 24px;
+	gap: var( --ms-space-4 );
+	margin-bottom: var( --ms-space-6 );
 }
 
 .ms-page-header__left {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: var( --ms-space-1 );
 }
 
 .ms-page-header__title {
@@ -1408,7 +1412,7 @@
 	letter-spacing: -0.02em;
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var( --ms-space-2 );
 }
 
 .ms-page-header__desc {
@@ -1420,13 +1424,13 @@
 .ms-page-header__actions {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var( --ms-space-2 );
 }
 
 /* ── Empty State (wbcom-standard) ─────────────────── */
 .ms-empty-state {
 	text-align: center;
-	padding: 48px 24px;
+	padding: var( --ms-space-12 ) var( --ms-space-6 );
 	color: var( --ms-color-text-tertiary );
 }
 
@@ -1435,7 +1439,7 @@
 	width: 40px;
 	height: 40px;
 	line-height: 40px;
-	margin: 0 auto 12px;
+	margin: 0 auto var( --ms-space-3 );
 	opacity: 0.4;
 	display: block;
 }
@@ -1451,29 +1455,29 @@
 	font-size: 16px;
 	font-weight: 600;
 	color: var( --ms-color-text );
-	margin: 0 0 8px;
+	margin: 0 0 var( --ms-space-2 );
 }
 
 .ms-empty-state__text,
 .ms-empty-state__desc {
 	font-size: 14px;
 	color: var( --ms-color-text-secondary );
-	margin: 0 0 16px;
+	margin: 0 0 var( --ms-space-4 );
 }
 
 /* ── Upsell Grid ──────────────────────────────────── */
 .ms-upsell-grid {
 	display: grid;
 	grid-template-columns: repeat( auto-fill, minmax( 220px, 1fr ) );
-	gap: 16px;
-	margin: 24px 0;
+	gap: var( --ms-space-4 );
+	margin: var( --ms-space-6 ) 0;
 }
 
 .ms-upsell-card {
-	background: #fff;
+	background: var( --ms-color-surface );
 	border: 1px solid #e2e8f0;
 	border-radius: 8px;
-	padding: 20px;
+	padding: var( --ms-space-5 );
 	text-align: center;
 }
 
@@ -1504,17 +1508,17 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	background: linear-gradient( 135deg, #6366f1, #8b5cf6 );
-	color: #fff;
+	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), #8b5cf6 );
+	color: var( --ms-color-surface );
 	border-radius: 8px;
-	padding: 20px 24px;
-	margin-bottom: 20px;
+	padding: var( --ms-space-5 ) var( --ms-space-6 );
+	margin-bottom: var( --ms-space-5 );
 }
 
 .ms-upsell-banner__content h3 {
 	font-size: 16px;
-	margin: 0 0 4px;
-	color: #fff;
+	margin: 0 0 var( --ms-space-1 );
+	color: var( --ms-color-surface );
 }
 
 .ms-upsell-banner__content p {
@@ -1526,9 +1530,9 @@
 .ms-upsell-banner__btn {
 	display: inline-flex;
 	align-items: center;
-	background: #fff;
-	color: #6366f1;
-	padding: 8px 20px;
+	background: var( --ms-color-surface );
+	color: var( --ms-color-pro-accent );
+	padding: var( --ms-space-2 ) var( --ms-space-5 );
 	border-radius: 6px;
 	font-weight: 600;
 	font-size: 13px;
@@ -1547,8 +1551,8 @@
 	background: #fafbff;
 	border: 1px dashed #c7d2fe;
 	border-radius: 8px;
-	padding: 20px;
-	margin-bottom: 16px;
+	padding: var( --ms-space-5 );
+	margin-bottom: var( --ms-space-4 );
 }
 
 .ms-upsell-section__header {
@@ -1559,7 +1563,7 @@
 }
 
 .ms-upsell-section__header .ms-icon {
-	color: #6366f1;
+	color: var( --ms-color-pro-accent );
 	font-size: 20px;
 }
 
@@ -1577,14 +1581,14 @@
 .ms-upsell-section__features {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: var( --ms-space-2 );
 	margin-bottom: 14px;
 }
 
 .ms-upsell-feature {
 	font-size: 13px;
 	color: #374151;
-	padding-inline-start: 16px;
+	padding-inline-start: var( --ms-space-4 );
 	position: relative;
 }
 
@@ -1595,16 +1599,16 @@
 	top: 7px;
 	width: 6px;
 	height: 6px;
-	background: #6366f1;
+	background: var( --ms-color-pro-accent );
 	border-radius: 50%;
 }
 
 .ms-upsell-section__btn {
 	display: inline-flex;
 	align-items: center;
-	background: #6366f1;
-	color: #fff;
-	padding: 8px 16px;
+	background: var( --ms-color-pro-accent );
+	color: var( --ms-color-surface );
+	padding: var( --ms-space-2 ) var( --ms-space-4 );
 	border-radius: 6px;
 	font-weight: 600;
 	font-size: 13px;
@@ -1613,7 +1617,7 @@
 
 .ms-upsell-section__btn:hover {
 	background: #4f46e5;
-	color: #fff;
+	color: var( --ms-color-surface );
 	text-decoration: none;
 }
 
@@ -1621,51 +1625,51 @@
 .ms-upsell-inline {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 12px 16px;
+	gap: var( --ms-space-2 );
+	padding: var( --ms-space-3 ) var( --ms-space-4 );
 	background: #f5f3ff;
 	border: 1px solid #e0e7ff;
 	border-radius: 6px;
-	margin-top: 16px;
+	margin-top: var( --ms-space-4 );
 	font-size: 13px;
 	color: #374151;
 }
 
 .ms-upsell-inline .ms-icon {
-	color: #6366f1;
+	color: var( --ms-color-pro-accent );
 	font-size: 18px;
 	flex-shrink: 0;
 }
 
 .ms-upsell-inline a {
-	color: #6366f1;
+	color: var( --ms-color-pro-accent );
 	font-weight: 600;
 	white-space: nowrap;
 }
 
 /* ── Teaser Box (video edit meta boxes) ───────────── */
 .ms-teaser-box {
-	padding: 4px 0;
+	padding: var( --ms-space-1 ) 0;
 }
 
 .ms-teaser-box ul {
-	margin: 8px 0;
+	margin: var( --ms-space-2 ) 0;
 	padding-inline-start: 18px;
 }
 
 .ms-teaser-box li {
 	font-size: 12px;
 	color: #374151;
-	margin-bottom: 4px;
+	margin-bottom: var( --ms-space-1 );
 }
 
 .ms-teaser-box .button {
-	margin-top: 4px;
+	margin-top: var( --ms-space-1 );
 }
 
 .ms-pro-badge-small {
-	background: linear-gradient( 135deg, #6366f1, #8b5cf6 );
-	color: #fff;
+	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), #8b5cf6 );
+	color: var( --ms-color-surface );
 	font-size: 9px;
 	font-weight: 700;
 	padding: 1px 5px;
@@ -1673,7 +1677,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 	vertical-align: middle;
-	margin-inline-start: 4px;
+	margin-inline-start: var( --ms-space-1 );
 }
 
 /* ── Reduced Motion ───────────────────────────────── */
@@ -1727,18 +1731,18 @@
 	}
 
 	.mediashield-sidebar__brand {
-		padding: 16px 12px;
+		padding: var( --ms-space-4 ) var( --ms-space-3 );
 	}
 
 	.mediashield-sidebar__menu {
 		flex-direction: row;
 		flex-wrap: wrap;
-		padding: 8px;
-		gap: 4px;
+		padding: var( --ms-space-2 );
+		gap: var( --ms-space-1 );
 	}
 
 	.mediashield-sidebar__item {
-		padding: 8px 12px;
+		padding: var( --ms-space-2 ) var( --ms-space-3 );
 		font-size: 12px;
 	}
 
@@ -1751,19 +1755,19 @@
 	}
 
 	.mediashield-admin__content {
-		padding: 16px;
+		padding: var( --ms-space-4 );
 	}
 
 	.mediashield-page__header {
 		flex-direction: column;
 		align-items: flex-start;
-		gap: 12px;
+		gap: var( --ms-space-3 );
 	}
 
 	.ms-page-header {
 		flex-direction: column;
 		align-items: flex-start;
-		gap: 12px;
+		gap: var( --ms-space-3 );
 	}
 
 	.mediashield-stats {
@@ -1775,7 +1779,7 @@
 	}
 
 	.mediashield-stat-card {
-		padding: 16px;
+		padding: var( --ms-space-4 );
 	}
 
 	.mediashield-stat-card__value {
@@ -1783,7 +1787,7 @@
 	}
 
 	.mediashield-chart-card__body {
-		padding: 12px;
+		padding: var( --ms-space-3 );
 		min-height: 200px;
 	}
 
@@ -1801,11 +1805,11 @@
 	}
 
 	.mediashield-settings__section-header {
-		padding: 12px 16px;
+		padding: var( --ms-space-3 ) var( --ms-space-4 );
 	}
 
 	.mediashield-settings__section-body {
-		padding: 16px;
+		padding: var( --ms-space-4 );
 	}
 
 	.mediashield-student-detail__header {
@@ -1818,11 +1822,11 @@
 	}
 
 	.ms-card__head {
-		padding: 12px 16px;
+		padding: var( --ms-space-3 ) var( --ms-space-4 );
 	}
 
 	.ms-card__body {
-		padding: 16px;
+		padding: var( --ms-space-4 );
 	}
 
 	.ms-upsell-grid {
@@ -1831,7 +1835,7 @@
 
 	.ms-upsell-banner {
 		flex-direction: column;
-		gap: 12px;
+		gap: var( --ms-space-3 );
 		text-align: center;
 	}
 
@@ -1852,7 +1856,7 @@
 
 	.mediashield-pagination {
 		flex-direction: column;
-		gap: 8px;
+		gap: var( --ms-space-2 );
 		align-items: center;
 	}
 
@@ -1885,15 +1889,15 @@
 }
 .ms-preview-modal__info {
 	display: flex;
-	gap: 20px;
-	padding: 12px 20px;
+	gap: var( --ms-space-5 );
+	padding: var( --ms-space-3 ) var( --ms-space-5 );
 	font-size: 13px;
 	color: #757575;
 	border-top: 1px solid var( --ms-color-border, #e2e8f0 );
 	background: #fafbfc;
 }
 .ms-preview-modal__info strong {
-	margin-inline-end: 4px;
+	margin-inline-end: var( --ms-space-1 );
 }
 .components-modal__frame.ms-preview-modal {
 	width: 800px;
@@ -1903,7 +1907,7 @@
 /* ── Setup Wizard ────────────────────────────────── */
 
 .mediashield-wizard {
-	background: #f0f2f5;
+	background: var( --ms-color-bg );
 	min-height: 100vh;
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -1911,7 +1915,7 @@
 .ms-wizard {
 	max-width: 640px;
 	margin: 0 auto;
-	padding: 48px 24px 32px;
+	padding: var( --ms-space-12 ) var( --ms-space-6 ) var( --ms-space-8 );
 }
 
 /* Loader */
@@ -1919,9 +1923,9 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 12px;
+	gap: var( --ms-space-3 );
 	padding: 120px 0;
-	color: #646970;
+	color: var( --ms-color-text-secondary );
 	font-size: 14px;
 }
 
@@ -1938,29 +1942,29 @@
 	width: 56px;
 	height: 56px;
 	border-radius: 16px;
-	background: linear-gradient( 135deg, #3858e9 0%, #6c5ce7 100% );
+	background: linear-gradient( 135deg, var( --ms-color-primary ) 0%, #6c5ce7 100% );
 	box-shadow: 0 4px 12px rgba( 56, 88, 233, 0.3 );
-	margin-bottom: 20px;
+	margin-bottom: var( --ms-space-5 );
 }
 
 .ms-wizard__logo .ms-icon {
 	font-size: 28px;
 	width: 28px;
 	height: 28px;
-	color: #fff;
+	color: var( --ms-color-surface );
 }
 
 .ms-wizard__header h1 {
 	font-size: 26px;
 	font-weight: 700;
-	color: #1d2327;
-	margin: 0 0 8px;
+	color: var( --ms-color-text );
+	margin: 0 0 var( --ms-space-2 );
 	letter-spacing: -0.02em;
 }
 
 .ms-wizard__header p {
 	font-size: 15px;
-	color: #646970;
+	color: var( --ms-color-text-secondary );
 	margin: 0;
 }
 
@@ -1969,7 +1973,7 @@
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
-	margin-bottom: 32px;
+	margin-bottom: var( --ms-space-8 );
 	position: relative;
 }
 
@@ -1977,7 +1981,7 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 8px;
+	gap: var( --ms-space-2 );
 	flex: 1;
 	position: relative;
 	z-index: 1;
@@ -1991,12 +1995,12 @@
 	left: calc( 50% + 18px );
 	width: calc( 100% - 36px );
 	height: 2px;
-	background: #e0e2e6;
+	background: var( --ms-color-border );
 	z-index: 0;
 }
 
 .ms-wizard__stepper-item.is-complete:not(:last-child)::after {
-	background: #00a32a;
+	background: var( --ms-color-success );
 }
 
 .ms-wizard__stepper-circle {
@@ -2008,25 +2012,25 @@
 	justify-content: center;
 	font-size: 14px;
 	font-weight: 600;
-	background: #fff;
-	border: 2px solid #e0e2e6;
-	color: #a7aaad;
+	background: var( --ms-color-surface );
+	border: 2px solid var( --ms-color-border );
+	color: var( --ms-color-text-tertiary );
 	transition: all 0.25s cubic-bezier( 0.4, 0, 0.2, 1 );
 	position: relative;
 	z-index: 2;
 }
 
 .ms-wizard__stepper-item.is-active .ms-wizard__stepper-circle {
-	border-color: var( --wp-admin-theme-color, #3858e9 );
-	background: var( --wp-admin-theme-color, #3858e9 );
-	color: #fff;
+	border-color: var( --wp-admin-theme-color, var( --ms-color-primary ) );
+	background: var( --wp-admin-theme-color, var( --ms-color-primary ) );
+	color: var( --ms-color-surface );
 	box-shadow: 0 0 0 4px rgba( 56, 88, 233, 0.15 );
 }
 
 .ms-wizard__stepper-item.is-complete .ms-wizard__stepper-circle {
-	border-color: #00a32a;
-	background: #00a32a;
-	color: #fff;
+	border-color: var( --ms-color-success );
+	background: var( --ms-color-success );
+	color: var( --ms-color-surface );
 }
 
 .ms-wizard__stepper-item.is-complete .ms-wizard__stepper-circle .ms-icon {
@@ -2038,28 +2042,28 @@
 .ms-wizard__stepper-label {
 	font-size: 12px;
 	font-weight: 500;
-	color: #a7aaad;
+	color: var( --ms-color-text-tertiary );
 	text-align: center;
 	white-space: nowrap;
 }
 
 .ms-wizard__stepper-item.is-active .ms-wizard__stepper-label {
-	color: #1d2327;
+	color: var( --ms-color-text );
 	font-weight: 600;
 }
 
 .ms-wizard__stepper-item.is-complete .ms-wizard__stepper-label {
-	color: #00a32a;
+	color: var( --ms-color-success );
 }
 
 /* ── Card ────────────────────────────────────────── */
 .ms-wizard__card {
-	background: #fff;
-	border: 1px solid #e0e2e6;
+	background: var( --ms-color-surface );
+	border: 1px solid var( --ms-color-border );
 	border-radius: 12px;
 	box-shadow: 0 1px 3px rgba( 0, 0, 0, 0.06 ), 0 1px 2px rgba( 0, 0, 0, 0.04 );
-	padding: 32px;
-	margin-bottom: 20px;
+	padding: var( --ms-space-8 );
+	margin-bottom: var( --ms-space-5 );
 }
 
 /* Step internals */
@@ -2067,9 +2071,9 @@
 	display: flex;
 	align-items: flex-start;
 	gap: 14px;
-	margin-bottom: 24px;
-	padding-bottom: 20px;
-	border-bottom: 1px solid #f0f0f1;
+	margin-bottom: var( --ms-space-6 );
+	padding-bottom: var( --ms-space-5 );
+	border-bottom: 1px solid var( --ms-color-border-light );
 }
 
 .ms-wizard__step-icon {
@@ -2080,8 +2084,8 @@
 	height: 40px;
 	min-width: 40px;
 	border-radius: 10px;
-	background: #eef1fd;
-	color: var( --wp-admin-theme-color, #3858e9 );
+	background: var( --ms-color-primary-light );
+	color: var( --wp-admin-theme-color, var( --ms-color-primary ) );
 	font-size: 20px;
 	line-height: 40px;
 }
@@ -2089,14 +2093,14 @@
 .ms-wizard__step-header h2 {
 	font-size: 18px;
 	font-weight: 600;
-	color: #1d2327;
-	margin: 0 0 4px;
+	color: var( --ms-color-text );
+	margin: 0 0 var( --ms-space-1 );
 	letter-spacing: -0.01em;
 }
 
 .ms-wizard__step-header p {
 	font-size: 13px;
-	color: #646970;
+	color: var( --ms-color-text-secondary );
 	margin: 0;
 	line-height: 1.5;
 }
@@ -2104,15 +2108,15 @@
 .ms-wizard__step-fields {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: var( --ms-space-1 );
 }
 
 /* ── Platform grid ───────────────────────────────── */
 .ms-wizard__platform-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 12px;
-	margin-bottom: 16px;
+	gap: var( --ms-space-3 );
+	margin-bottom: var( --ms-space-4 );
 }
 
 .ms-wizard__platform-card {
@@ -2120,8 +2124,8 @@
 	flex-direction: column;
 	align-items: center;
 	gap: 6px;
-	padding: 20px 12px;
-	border: 1px solid #e0e2e6;
+	padding: var( --ms-space-5 ) var( --ms-space-3 );
+	border: 1px solid var( --ms-color-border );
 	border-radius: 10px;
 	background: #fafbfc;
 	text-align: center;
@@ -2129,38 +2133,38 @@
 }
 
 .ms-wizard__platform-card:hover {
-	border-color: var( --wp-admin-theme-color, #3858e9 );
-	box-shadow: 0 0 0 1px var( --wp-admin-theme-color, #3858e9 );
+	border-color: var( --wp-admin-theme-color, var( --ms-color-primary ) );
+	box-shadow: 0 0 0 1px var( --wp-admin-theme-color, var( --ms-color-primary ) );
 }
 
 .ms-wizard__platform-icon {
 	font-size: 28px;
 	width: 28px;
 	height: 28px;
-	color: var( --wp-admin-theme-color, #3858e9 );
+	color: var( --wp-admin-theme-color, var( --ms-color-primary ) );
 }
 
 .ms-wizard__platform-card strong {
 	font-size: 13px;
-	color: #1d2327;
+	color: var( --ms-color-text );
 }
 
 .ms-wizard__platform-desc {
 	font-size: 12px;
-	color: #a7aaad;
+	color: var( --ms-color-text-tertiary );
 }
 
 .ms-wizard__pro-notice {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var( --ms-space-2 );
 	padding: 10px 14px;
 	border-radius: 8px;
-	background: #fef8e7;
+	background: var( --ms-color-warning-light );
 	border: 1px solid #f0d97e;
 	font-size: 13px;
 	color: #6e5a00;
-	margin-bottom: 12px;
+	margin-bottom: var( --ms-space-3 );
 }
 
 .ms-wizard__pro-notice .ms-icon {
@@ -2168,13 +2172,13 @@
 	width: 16px;
 	height: 16px;
 	flex-shrink: 0;
-	color: #dba617;
+	color: var( --ms-color-warning );
 }
 
 .ms-wizard__hint {
 	font-size: 12px;
-	color: #a7aaad;
-	margin: 12px 0 0;
+	color: var( --ms-color-text-tertiary );
+	margin: var( --ms-space-3 ) 0 0;
 }
 
 /* ── First Video URL input ───────────────────────── */
@@ -2192,7 +2196,7 @@
 .ms-wizard__btn--protect {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: var( --ms-space-1 );
 	height: 36px;
 	white-space: nowrap;
 }
@@ -2206,9 +2210,9 @@
 .ms-wizard__success-banner {
 	display: flex;
 	align-items: center;
-	gap: 12px;
-	padding: 16px;
-	background: #ecf7ed;
+	gap: var( --ms-space-3 );
+	padding: var( --ms-space-4 );
+	background: var( --ms-color-success-light );
 	border: 1px solid #b8e6be;
 	border-radius: 10px;
 }
@@ -2217,25 +2221,25 @@
 	font-size: 28px;
 	width: 28px;
 	height: 28px;
-	color: #00a32a;
+	color: var( --ms-color-success );
 	flex-shrink: 0;
 }
 
 .ms-wizard__success-banner strong {
 	display: block;
-	color: #1d2327;
+	color: var( --ms-color-text );
 	font-size: 14px;
 	margin-bottom: 2px;
 }
 
 .ms-wizard__success-banner span {
 	font-size: 13px;
-	color: #646970;
+	color: var( --ms-color-text-secondary );
 }
 
 /* ── Watermark fields ────────────────────────────── */
 .ms-wizard__color-field {
-	margin-bottom: 16px;
+	margin-bottom: var( --ms-space-4 );
 }
 
 .ms-wizard__field-label {
@@ -2244,12 +2248,12 @@
 	font-weight: 500;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	color: #1d2327;
-	margin-bottom: 8px;
+	color: var( --ms-color-text );
+	margin-bottom: var( --ms-space-2 );
 }
 
 .ms-wizard__watermark-preview {
-	margin-top: 20px;
+	margin-top: var( --ms-space-5 );
 }
 
 .ms-wizard__watermark-preview-label {
@@ -2257,14 +2261,14 @@
 	font-weight: 500;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	color: #646970;
-	margin-bottom: 8px;
+	color: var( --ms-color-text-secondary );
+	margin-bottom: var( --ms-space-2 );
 }
 
 .ms-wizard__watermark-preview-box {
 	background: #111;
 	border-radius: 10px;
-	padding: 32px 24px;
+	padding: var( --ms-space-8 ) var( --ms-space-6 );
 	position: relative;
 	overflow: hidden;
 }
@@ -2275,7 +2279,7 @@
 	left: 0;
 	right: 0;
 	height: 4px;
-	background: linear-gradient( 90deg, var( --wp-admin-theme-color, #3858e9 ) 40%, #333 40% );
+	background: linear-gradient( 90deg, var( --wp-admin-theme-color, var( --ms-color-primary ) ) 40%, #333 40% );
 	border-radius: 0 0 10px 10px;
 }
 
@@ -2289,7 +2293,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 24px;
+	margin-bottom: var( --ms-space-6 );
 }
 
 .ms-wizard__actions-left,
@@ -2302,7 +2306,7 @@
 .ms-wizard__btn {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
+	gap: var( --ms-space-1 );
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: 8px;
@@ -2318,8 +2322,8 @@
 
 .ms-wizard__btn--back {
 	background: none !important;
-	border: 1px solid #e0e2e6 !important;
-	color: #646970 !important;
+	border: 1px solid var( --ms-color-border ) !important;
+	color: var( --ms-color-text-secondary ) !important;
 	padding: 6px 14px !important;
 	height: auto !important;
 	box-shadow: none !important;
@@ -2328,24 +2332,24 @@
 .ms-wizard__btn--back:hover {
 	background: #f7f7f7 !important;
 	border-color: #c3c4c7 !important;
-	color: #1d2327 !important;
+	color: var( --ms-color-text ) !important;
 }
 
 .ms-wizard__btn--skip {
 	background: none !important;
 	border: none !important;
-	color: #a7aaad !important;
+	color: var( --ms-color-text-tertiary ) !important;
 	padding: 6px 10px !important;
 	height: auto !important;
 	box-shadow: none !important;
 }
 
 .ms-wizard__btn--skip:hover {
-	color: #646970 !important;
+	color: var( --ms-color-text-secondary ) !important;
 }
 
 .ms-wizard__btn--next {
-	padding: 8px 20px !important;
+	padding: var( --ms-space-2 ) var( --ms-space-5 ) !important;
 	height: auto !important;
 	border-radius: 8px !important;
 	font-weight: 600 !important;
@@ -2359,14 +2363,14 @@
 
 .ms-wizard__footer p {
 	font-size: 12px;
-	color: #a7aaad;
+	color: var( --ms-color-text-tertiary );
 	margin: 0;
 }
 
 /* ── Responsive ──────────────────────────────────── */
 @media ( max-width: 640px ) {
 	.ms-wizard {
-		padding: 24px 16px;
+		padding: var( --ms-space-6 ) var( --ms-space-4 );
 	}
 
 	.ms-wizard__header h1 {
@@ -2378,7 +2382,7 @@
 	}
 
 	.ms-wizard__card {
-		padding: 20px 16px;
+		padding: var( --ms-space-5 ) var( --ms-space-4 );
 	}
 
 	.ms-wizard__step-header {
@@ -2397,7 +2401,7 @@
 
 	.ms-wizard__actions {
 		flex-direction: column-reverse;
-		gap: 12px;
+		gap: var( --ms-space-3 );
 	}
 
 	.ms-wizard__actions-left,
@@ -2414,13 +2418,13 @@
 
 /* Onboarding hero — shown on Dashboard when total_videos === 0 */
 .mediashield-onboarding-hero {
-	background: linear-gradient(135deg, #fff 0%, #f6f7ff 100%);
+	background: linear-gradient(135deg, var( --ms-color-surface ) 0%, #f6f7ff 100%);
 	border: 1px solid #e5e7eb;
 	border-radius: 16px;
-	padding: 48px 40px;
+	padding: var( --ms-space-12 ) var( --ms-space-10 );
 	text-align: center;
 	max-width: 780px;
-	margin: 24px auto;
+	margin: var( --ms-space-6 ) auto;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -2428,11 +2432,11 @@
 	width: 72px;
 	height: 72px;
 	border-radius: 16px;
-	background: linear-gradient(135deg, #3858e9 0%, #6d28d9 100%);
+	background: linear-gradient(135deg, var( --ms-color-primary ) 0%, #6d28d9 100%);
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	margin-bottom: 24px;
+	margin-bottom: var( --ms-space-6 );
 	box-shadow: 0 8px 24px rgba(56, 88, 233, 0.25);
 }
 
@@ -2440,14 +2444,14 @@
 	font-size: 36px;
 	width: 36px;
 	height: 36px;
-	color: #fff;
+	color: var( --ms-color-surface );
 }
 
 .mediashield-onboarding-hero__title {
 	font-size: 28px;
 	font-weight: 700;
 	color: #0f172a;
-	margin: 0 0 12px;
+	margin: 0 0 var( --ms-space-3 );
 	line-height: 1.2;
 }
 
@@ -2455,14 +2459,14 @@
 	font-size: 15px;
 	color: #475569;
 	line-height: 1.6;
-	margin: 0 auto 32px;
+	margin: 0 auto var( --ms-space-8 );
 	max-width: 560px;
 }
 
 .mediashield-onboarding-hero__steps {
 	list-style: none;
 	padding: 0;
-	margin: 0 auto 32px;
+	margin: 0 auto var( --ms-space-8 );
 	max-width: 560px;
 	counter-reset: ms-onboard-step;
 	text-align: left;
@@ -2471,12 +2475,12 @@
 .mediashield-onboarding-hero__steps li {
 	display: flex;
 	flex-direction: column;
-	padding: 14px 16px;
-	margin: 0 0 8px;
-	background: #fff;
+	padding: 14px var( --ms-space-4 );
+	margin: 0 0 var( --ms-space-2 );
+	background: var( --ms-color-surface );
 	border: 1px solid #e5e7eb;
 	border-radius: 10px;
-	gap: 4px;
+	gap: var( --ms-space-1 );
 }
 
 .mediashield-onboarding-hero__steps li strong {
@@ -2493,22 +2497,47 @@
 
 .mediashield-onboarding-hero__actions {
 	display: flex;
-	gap: 12px;
+	gap: var( --ms-space-3 );
 	justify-content: center;
 	flex-wrap: wrap;
 }
 
 .mediashield-onboarding-hero__actions .components-button {
 	min-height: 44px;
-	padding: 0 24px;
+	padding: 0 var( --ms-space-6 );
 	font-weight: 600;
 }
 
 @media (max-width: 640px) {
 	.mediashield-onboarding-hero {
-		padding: 32px 20px;
+		padding: var( --ms-space-8 ) var( --ms-space-5 );
 	}
 	.mediashield-onboarding-hero__title {
 		font-size: 22px;
 	}
+}
+
+/* ── A11y: keyboard focus ring (Rule 14) ──────────────────────────────
+ *
+ * The WP Components TextControl/SelectControl etc. ship transparent
+ * outlines by default; the MediaShield SPA inherits them. This block
+ * makes keyboard focus visible across every interactive surface in the
+ * SPA without affecting mouse interactions (`:focus-visible` only fires
+ * on keyboard / programmatic focus, not mouse clicks). Pointer-focus
+ * state is suppressed via the `:focus:not(:focus-visible)` companion.
+ */
+.mediashield-admin :focus-visible,
+.mediashield-admin .components-button:focus-visible,
+.mediashield-admin .components-text-control__input:focus-visible,
+.mediashield-admin .components-select-control__input:focus-visible,
+.mediashield-admin .components-textarea-control__input:focus-visible,
+.mediashield-admin .components-checkbox-control__input:focus-visible,
+.mediashield-admin .components-form-toggle__input:focus-visible + .components-form-toggle__track {
+	outline: 2px solid var( --ms-color-primary );
+	outline-offset: 2px;
+	border-radius: var( --ms-radius-sm, 4px );
+}
+
+.mediashield-admin :focus:not(:focus-visible) {
+	outline: none;
 }
