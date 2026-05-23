@@ -7,6 +7,9 @@ vendor/*
 !vendor/composer/
 !vendor/woocommerce/
 !vendor/easy-digital-downloads/
+# symfony/yaml — runtime dep used by the architecture-invariants gate; must ship
+# so a fresh clone can run `composer arch-checks` without `composer install`.
+!vendor/symfony/
 dist/
 *.zip
 

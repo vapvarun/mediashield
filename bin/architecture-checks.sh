@@ -99,12 +99,14 @@ yaml_to_json() {
 check_U1() {
     # Zero raw $wpdb outside the DB layer (includes/DB/, includes/Access/SessionManager,
     # includes/Milestones/, includes/Cron/, includes/Tags/) or inside activate().
+    # Core/Migrator is also exempt — by job description it runs one-off schema/
+    # data upgrades on version bumps; same conceptual category as activate().
     # MediaShield doesn't have a single Models/ folder — DB writes are co-located
     # with the feature that owns them. We still want a gate that flags ad-hoc
     # $wpdb in REST controllers, blocks, and template renderers.
     local hits
     hits=$(grep -rEn '\$wpdb->' "$PLUGIN_DIR/includes/" 2>/dev/null \
-        | grep -vE "/DB/|/Access/SessionManager|/Milestones/|/Cron/|/Tags/|/Privacy/|/Upload/|/CPT/" \
+        | grep -vE "/DB/|/Access/SessionManager|/Milestones/|/Cron/|/Tags/|/Privacy/|/Upload/|/CPT/|/Core/Migrator" \
         | grep -v "vendor/\|node_modules/\|tests/" \
         | grep -v "^[^:]*\.php:[0-9]*: *\* " \
         | grep -v "^[^:]*\.php:[0-9]*: *// " \
