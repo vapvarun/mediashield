@@ -123,13 +123,14 @@ class PlaylistRenderer {
 						<img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $item->video_title ); ?>" class="ms-playlist-item-thumb" loading="lazy" />
 					<?php else : ?>
 						<?php
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons::svg returns inline SVG built from a vendored Lucide path map; no user input.
 						echo \MediaShield\Support\Icons::svg(
 							'video',
 							array(
 								'size'  => 24,
 								'class' => 'ms-playlist-item-thumb-placeholder',
 							)
-						); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- trusted static SVG. 
+						);
 						?>
 					<?php endif; ?>
 					<div class="ms-playlist-item-info">

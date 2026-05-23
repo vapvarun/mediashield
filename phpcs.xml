@@ -16,6 +16,17 @@
 	<exclude-pattern>dist/*</exclude-pattern>
 	<exclude-pattern>tests/*</exclude-pattern>
 	<exclude-pattern>plan/*</exclude-pattern>
+	<!-- bin/ contains CLI-only QA / coverage / stub-gen helpers; they are
+	     not loaded by WordPress, never shipped in the dist zip (composer dist
+	     scripts produce includes/+main file only), and intentionally use
+	     direct stdout + non-prefixed helpers. Linting them under the WP
+	     ruleset produces noise, not signal. -->
+	<exclude-pattern>bin/*</exclude-pattern>
+	<!-- phpstan-bootstrap.php is loaded only by PHPStan (static analysis);
+	     it declares global function stubs for vendor-loaded libraries (Action
+	     Scheduler) so PHPStan can typecheck the call sites. Never loaded by
+	     WordPress. -->
+	<exclude-pattern>phpstan-bootstrap.php</exclude-pattern>
 
 	<!-- WordPress standard -->
 	<rule ref="WordPress">
@@ -58,6 +69,11 @@
 		<!-- Translators comment not required -->
 		<exclude name="WordPress.WP.I18n.MissingTranslatorsComment"/>
 	</rule>
+
+	<!-- Note: customAutoEscapedFunctions only supports function-style calls,
+	     not static method calls. Inline `Icons::svg` output sites carry a
+	     per-call phpcs:ignore with the same justification. -->
+
 
 	<!-- KEEP all security sniffs enforced:
 	     WordPress.Security.EscapeOutput
