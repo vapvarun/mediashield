@@ -50,7 +50,7 @@ while IFS= read -r -d '' f; do
     [ "$actual_priority" = "$PRIORITY" ] || continue
   fi
   JOURNEYS+=("$rel")
-done < <(find audit/journeys -type f -name '*.md' -not -name 'README.md' -print0 | sort -z)
+done < <(find audit/journeys -type f -name '*.md' -not -name 'README.md' -not -name '.template.md' -print0 | sort -z)
 
 if [ ${#JOURNEYS[@]} -eq 0 ]; then
   echo "No journeys matched filter (only=$ONLY priority=$PRIORITY)"

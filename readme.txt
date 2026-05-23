@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -147,6 +147,43 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 == Changelog ==
 
+= 1.1.0 =
+
+**Frontend & UX**
+* Generic-platform embed URLs now route through an `<iframe>` adapter (only `bunny` was rerouted in 1.0.0) — any unknown platform serving an embed-page URL plays correctly instead of rendering a broken `<video>`.
+* Login overlay `aria-label` reads the admin-configured Login Overlay Text so screen readers announce the same message that's visible.
+* Resume Playback per-video override is now honored at the frontend.
+* "Last Active" and "Reached At" relative times use UTC consistently — no more "5h ago" drift when the site timezone differs.
+* Protection Level tiers (basic / standard / strict) behave differently again: `basic` skips session/watermark/tracker, `strict` forces devtools detection and source hiding.
+* Recent Milestones list no longer renders username and video title as one concatenated string.
+
+**Admin SPA**
+* Videos admin table responsive at ≤782px so action buttons no longer clip.
+* Videos list search/filter by title.
+* Copy-shortcode button polished against the UX guideline (40px tap target).
+* Sticky-player close button uses a 40px tap target and is no longer clipped by `overflow:hidden` on the parent.
+* Migration from Dashicons to inline Lucide SVGs across admin SPA, blocks, and meta-box icons.
+
+**Data integrity & analytics**
+* Permanent video delete now drops orphan `ms_tags` rows (only-video case) and purges every user's `_ms_video_tags` meta entry keyed to the deleted video.
+* Trashed videos are excluded from Top Videos / Milestones / User Detail analytics queries.
+* Duration field: honest "leave 0 if unknown" label, block-editor input, server-side validation against stored `_ms_duration` meta.
+
+**Setup, build, and infrastructure**
+* Composer runtime closure (Action Scheduler) shipped in `vendor/` so a fresh clone activates without `composer install`. Missing-autoloader path now degrades gracefully with an admin notice.
+* `symfony/yaml ^6.4` bundled at runtime so `composer arch-checks` runs out of the box.
+* Architecture-invariants gate (`bin/architecture-checks.sh`) actually parses `plan/INVARIANTS.yaml` (was silently failing on missing YAML parser).
+* PHPStan level 5 errors cleared (Migrator narrowing, PlaylistRenderer int→string casts, Action Scheduler stubs in `phpstan-bootstrap.php`).
+* WPCS gate green: 62 lint errors reduced to 0; `bin/` and `phpstan-bootstrap.php` excluded as non-runtime tooling; `Icons::svg` echo sites carry per-call annotations with a justification.
+
+**QA**
+* 3 new critical customer journeys: `customer/playlist-render-and-empty-state.md`, `admin/video-delete-cascade.md`, `system/gdpr-export-and-erase.md`. Each is the regression sentinel for a recurring QA cluster.
+* `audit/journey-runs/` gitignored (per-run output is local-only).
+
+**Internals**
+* `_ms_milestone_tags` registered in the REST schema so the admin SPA can save milestone-tag configurations through `POST /wp/v2/mediashield-videos/{id}`.
+* `Core/Migrator` lifts per-version migration steps into self-gating helpers so each step's idempotency guarantee is local and PHPStan can't narrow the comparison via the outer version branch.
+
 = 1.0.0 =
 * Initial release.
 * Video and Playlist custom post types with REST API support.
@@ -170,6 +207,9 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * 8 actions and 8 filters for developer integrations.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Bug fixes and UX polish — login-overlay accessibility, generic embed-URL iframe fallback, resume-playback override, timezone-correct "Last Active" times, responsive Videos admin table, orphan-tag cleanup on video delete, and 3 new regression journey specs. Safe upgrade — no schema bump beyond the v3 milestone-tags migration shipped in 1.0.0.
 
 = 1.0.0 =
 Initial release of MediaShield.
