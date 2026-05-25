@@ -24,7 +24,30 @@ class Thumbnail {
 	 * Register hooks.
 	 */
 	public static function register(): void {
+		// Classic editor / programmatic save: meta is written by save_meta_box at
+		// priority 10, so reading platform meta at priority 20 sees the freshly
+		// written values.
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'maybe_fetch_thumbnail' ), 20, 2 );
+		// REST create path (card #9924901405): WP_REST_Posts_Controller calls
+		// wp_insert_post() WITHOUT the meta_input arg, so save_post fires while
+		// _ms_platform / _ms_platform_video_id are still empty and the thumbnail
+		// fetch above no-ops. The REST controller then writes meta and fires
+		// rest_after_insert_{$post_type}, at which point we can safely re-run the
+		// thumbnail logic (idempotent — guarded by has_post_thumbnail).
+		add_action( 'rest_after_insert_mediashield_video', array( __CLASS__, 'maybe_fetch_thumbnail_rest' ), 10, 1 );
+	}
+
+	/**
+	 * REST-side bridge into maybe_fetch_thumbnail().
+	 *
+	 * The rest_after_insert_* action passes the WP_Post directly (no separate
+	 * $post_id arg), so we wrap the signature here rather than overloading the
+	 * save_post handler.
+	 *
+	 * @param \WP_Post $post Post object inserted/updated via REST.
+	 */
+	public static function maybe_fetch_thumbnail_rest( \WP_Post $post ): void {
+		self::maybe_fetch_thumbnail( (int) $post->ID, $post );
 	}
 
 	/**
