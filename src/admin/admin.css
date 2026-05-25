@@ -1041,13 +1041,75 @@
 }
 
 /* ── Toast ─────────────────────────────────────────── */
+/* The wrapper is fixed at the viewport's bottom-center. Without explicit
+   stacking, SnackbarList paints its children top-down from the wrapper's
+   anchor — the wrapper has 0x0 size, so the snackbar bleeds 80px+ BELOW
+   the viewport on common laptop heights (card #9901220999 regression).
+   `flex-direction: column-reverse` lets the wrapper grow UP from `bottom`
+   instead of down, keeping the visible snackbar(s) fully on screen. */
 .mediashield-toast {
 	position: fixed;
 	bottom: 24px;
 	left: 50%;
 	transform: translateX( -50% );
 	z-index: 100000;
-	max-width: 600px;
+	display: flex;
+	flex-direction: column-reverse;
+	align-items: center;
+	gap: var( --ms-space-2 );
+	max-width: min( 600px, calc( 100vw - var( --ms-space-4 ) * 2 ) );
+	pointer-events: none;
+}
+
+.mediashield-toast .components-snackbar-list,
+.mediashield-toast .components-snackbar {
+	/* SnackbarList may apply its own top offset — neutralise so flex layout
+	   from the bottom anchor stays in control. */
+	pointer-events: auto;
+	margin: 0;
+}
+
+.mediashield-toast .components-snackbar {
+	box-shadow: 0 12px 32px rgba( 0, 0, 0, 0.22 );
+	border-radius: var( --ms-radius );
+}
+
+/* Auto-dismiss after 3s, but give the snackbar an entry animation so it
+   reads as a deliberate notification (the @wordpress/components default
+   appears with no transition, which contributed to the “not properly
+   visible” feedback). */
+@keyframes mediashield-toast-in {
+	from {
+		opacity: 0;
+		transform: translateY( 12px );
+	}
+	to {
+		opacity: 1;
+		transform: translateY( 0 );
+	}
+}
+
+.mediashield-toast .components-snackbar {
+	animation: mediashield-toast-in 0.18s ease-out;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.mediashield-toast .components-snackbar {
+		animation: none;
+	}
+}
+
+/* Mobile: park the toast above the bottom edge so it doesn't collide with
+   the on-screen keyboard or admin bar reflow at narrow widths. */
+@media ( max-width: 600px ) {
+	.mediashield-toast {
+		bottom: var( --ms-space-3 );
+		left: var( --ms-space-3 );
+		right: var( --ms-space-3 );
+		transform: none;
+		max-width: none;
+		align-items: stretch;
+	}
 }
 
 /* ── Tags Create ───────────────────────────────────── */
