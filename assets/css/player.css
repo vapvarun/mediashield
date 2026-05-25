@@ -410,8 +410,8 @@
 	position: absolute;
 	/* Positioned just INSIDE the top-right corner (positive offsets) rather than
 	   floating outside with negative offsets. The old top/right:-10px combined
-	   with the player's right:10px on mobile pushed the 40px button to (or past)
-	   the viewport edge, clipping it. Inside-the-corner positioning is fully
+	   with the player's right:10px on mobile pushed the button to (or past) the
+	   viewport edge, clipping it. Inside-the-corner positioning is fully
 	   visible at every breakpoint. RTL-safe via inset-inline-end. */
 	top: var(--ms-space-2, 8px);
 	inset-inline-end: var(--ms-space-2, 8px);
@@ -421,19 +421,32 @@
 	border: 2px solid var(--ms-on-overlay);
 	border-radius: 50%;
 	/* min-width:0 + padding:0 stop theme <button> styles from widening it into
-	   an oval; box-sizing keeps the 2px border inside the circle. Sized to the
-	   40px tap-target minimum (--ms-tap-min) for touch a11y (WCAG 2.5.5). */
+	   an oval; box-sizing keeps the 2px border inside the circle. Compact 28px
+	   default keeps the close affordance visually subtle against the 320-wide
+	   sticky player; touch devices below get bumped to the 40px WCAG 2.5.5
+	   tap-target minimum so it stays comfortable for thumbs. */
 	box-sizing: border-box;
 	min-width: 0;
-	width: var(--ms-tap-min);
-	height: var(--ms-tap-min);
+	width: 28px;
+	height: 28px;
 	padding: 0;
-	font-size: 16px;
+	font-size: 14px;
 	line-height: 1;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+}
+
+/* Touch / coarse-pointer devices: restore the 40px tap-target minimum so
+   thumb taps land comfortably (WCAG 2.5.5). Pointer-feature query is
+   widely supported and falls back gracefully where unsupported. */
+@media (pointer: coarse) {
+	.ms-sticky-close {
+		width: var(--ms-tap-min);
+		height: var(--ms-tap-min);
+		font-size: 16px;
+	}
 }
 
 /* End screen overlay */
