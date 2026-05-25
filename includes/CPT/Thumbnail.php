@@ -83,18 +83,119 @@ class Thumbnail {
 			return;
 		}
 
-		// Require media functions for sideloading.
-		if ( ! function_exists( 'media_sideload_image' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/media.php';
+		$attachment_id = self::sideload_thumbnail( $thumbnail_url, $post_id, (string) $platform, (string) $video_id, $post->post_title );
+
+		if ( ! is_wp_error( $attachment_id ) && $attachment_id > 0 ) {
+			set_post_thumbnail( $post_id, $attachment_id );
+		}
+	}
+
+	/**
+	 * Download a remote image and attach it to the post.
+	 *
+	 * Wraps download_url() + wp_handle_sideload() instead of
+	 * media_sideload_image() because the WP core helper infers the filename
+	 * from the URL via a regex that requires `.jpg`/`.png`/etc. BEFORE any
+	 * query string. Vimeo and Wistia serve thumbnails from CDN URLs that have
+	 * no extension at all (e.g. `i.vimeocdn.com/video/…_d_640?region=us`), so
+	 * media_sideload_image() rejects them with "Invalid image URL.". We build
+	 * an explicit filename from the platform + video ID + content-type-derived
+	 * extension instead, so every supported platform's thumbnail can be
+	 * sideloaded regardless of URL shape.
+	 *
+	 * @param string $url       Remote image URL.
+	 * @param int    $post_id   Parent post.
+	 * @param string $platform  Platform slug (youtube/vimeo/wistia/bunny).
+	 * @param string $video_id  Platform video ID — used in the filename.
+	 * @param string $title     Post title — used for the attachment title.
+	 * @return int|\WP_Error    Attachment ID on success, WP_Error on failure.
+	 */
+	private static function sideload_thumbnail( string $url, int $post_id, string $platform, string $video_id, string $title ) {
+		// Require the sideload helpers (these aren't loaded on frontend / REST).
+		if ( ! function_exists( 'download_url' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		if ( ! function_exists( 'wp_handle_sideload' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+		}
+		if ( ! function_exists( 'wp_read_image_metadata' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/image.php';
 		}
 
-		$attachment_id = media_sideload_image( $thumbnail_url, $post_id, $post->post_title, 'id' );
-
-		if ( ! is_wp_error( $attachment_id ) ) {
-			set_post_thumbnail( $post_id, $attachment_id );
+		$tmp = download_url( $url, 30 );
+		if ( is_wp_error( $tmp ) ) {
+			return $tmp;
 		}
+
+		// Read the downloaded file's MIME via WP's image checker; this also
+		// confirms the payload is a real image, not (say) an HTML error page.
+		$probe = wp_check_filetype_and_ext( $tmp, basename( $tmp ) );
+		$mime  = $probe['type'] ?? '';
+		if ( '' === $mime ) {
+			// Fall back to finfo for URLs that don't pass WP's name-based hints.
+			if ( function_exists( 'mime_content_type' ) ) {
+				$mime = (string) @mime_content_type( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			}
+		}
+		if ( '' === $mime || 0 !== strpos( $mime, 'image/' ) ) {
+			@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.unlink_unlink
+			return new \WP_Error( 'mediashield_thumbnail_not_image', sprintf( 'Downloaded payload is not an image (mime=%s).', $mime ) );
+		}
+
+		$ext_map = array(
+			'image/jpeg' => 'jpg',
+			'image/jpg'  => 'jpg',
+			'image/png'  => 'png',
+			'image/gif'  => 'gif',
+			'image/webp' => 'webp',
+		);
+		$ext = $ext_map[ $mime ] ?? 'jpg';
+
+		$filename = sprintf( 'mediashield-%s-%s.%s', sanitize_key( $platform ), sanitize_file_name( $video_id ), $ext );
+
+		$file_array = array(
+			'name'     => $filename,
+			'tmp_name' => $tmp,
+		);
+
+		// wp_handle_sideload moves the file into uploads/ and returns its
+		// final URL + path; test_form=false skips the form-data check that
+		// would otherwise reject a programmatic upload.
+		$sideloaded = wp_handle_sideload(
+			$file_array,
+			array(
+				'test_form' => false,
+				'mimes'     => array(
+					'jpg|jpeg' => 'image/jpeg',
+					'png'      => 'image/png',
+					'gif'      => 'image/gif',
+					'webp'     => 'image/webp',
+				),
+			)
+		);
+
+		if ( isset( $sideloaded['error'] ) ) {
+			@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.unlink_unlink
+			return new \WP_Error( 'mediashield_thumbnail_sideload_failed', (string) $sideloaded['error'] );
+		}
+
+		$attachment    = array(
+			'post_mime_type' => $sideloaded['type'],
+			'post_title'     => $title !== '' ? $title : $filename,
+			'post_content'   => '',
+			'post_status'    => 'inherit',
+		);
+		$attachment_id = wp_insert_attachment( $attachment, $sideloaded['file'], $post_id );
+		if ( is_wp_error( $attachment_id ) || 0 === $attachment_id ) {
+			return is_wp_error( $attachment_id ) ? $attachment_id : new \WP_Error( 'mediashield_thumbnail_attach_failed', 'wp_insert_attachment returned 0' );
+		}
+
+		// Generate metadata + intermediate sizes so the thumbnail renders at
+		// the size the theme requests (e.g. post grids ask for medium).
+		$metadata = wp_generate_attachment_metadata( $attachment_id, $sideloaded['file'] );
+		wp_update_attachment_metadata( $attachment_id, $metadata );
+
+		return (int) $attachment_id;
 	}
 
 	/**
