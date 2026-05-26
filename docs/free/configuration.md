@@ -72,6 +72,24 @@ Use this to match custom video embed URLs that MediaShield doesn't detect automa
 
 ## Player Controls
 
+The **Player Controls** section of the settings page (`#/settings`) tunes how the video player behaves for the people watching. Each control is a global default that you can override per-video on the Video CPT metabox -- so you can keep speed control off site-wide and turn it on for one specific course.
+
+### What each control does (and when to enable it)
+
+**Show playback speed control.** Adds a 0.5×-2× speed selector to the player so viewers can speed lectures up or slow tutorials down. Turn this on for course / training / lecture content -- students will reach for it on day one. Self-hosted and Bunny videos only; YouTube / Vimeo / Wistia embeds use the host player's built-in speed menu, so this toggle has no effect there.
+
+**Sticky player.** When the viewer scrolls past the video, the player shrinks into a corner overlay so they can keep watching while reading transcripts, notes, or comments below. Great for long-form tutorial pages and webinar replays. Skip it on short videos or galleries with multiple players on one page -- the floating overlay can feel intrusive when the video is only 30 seconds long.
+
+**Keyboard shortcuts.** Lets viewers use the keyboard while the player is focused -- **Space** to play / pause, **left / right arrows** to seek five seconds, **up / down** for volume, **M** to mute, **F** for fullscreen. Turn it on if you have a power-user audience (developers, designers, course completers); leave it off if your audience is non-technical and you're worried about accidental key presses.
+
+**Resume playback.** Remembers where each viewer left off and shows a "Resume from X:XX?" prompt the next time they open the same video. This is the single highest-impact control for course content -- students rarely finish a 40-minute lesson in one sitting, and forcing them to scrub back is a guaranteed drop-off point.
+
+**End-screen message + URL.** When the video finishes, MediaShield can show a short call-to-action overlay with a message and a clickable button. Use it to push viewers to the next lesson ("Continue to Module 2"), an upsell ("Get the full course"), or a related video. Leave both fields blank to fall back to the global default, or fill them in per video to customise per topic. The URL is sanity-checked, so `javascript:` and other unsafe URLs are rejected.
+
+**Hide source URL.** When on, MediaShield moves the raw video URL into a `data-` attribute on the player container so it doesn't appear in the rendered `<video src=...>` element when someone clicks "View Source". This is not a real DRM boundary -- a determined user can still find the URL with browser devtools -- but it stops the most casual scraping (right-click "Copy video address", AI-generated curl scripts, scraper bots that read raw HTML). Leave it on unless you have a specific need to expose the URL.
+
+### Settings reference
+
 Global defaults for the player UI surface. Each can be overridden per video via the Video CPT metabox (tri-state: on / off / inherit).
 
 | Setting | Option Key | Default | Description |
@@ -85,6 +103,8 @@ Global defaults for the player UI surface. Each can be overridden per video via 
 | End Screen URL | `ms_player_endscreen_url` | `''` | CTA URL. Empty allowed; otherwise must survive `esc_url_raw` (rejects `javascript:` URLs) |
 
 Per-video meta keys mirror these names with the `_` prefix, e.g. `_ms_player_endscreen_text` overrides the global.
+
+> **Hide source URL** lives under **Protection Controls** below (`ms_hide_source`) since it's a protection / anti-scraping control rather than a player-behaviour control.
 
 ---
 
