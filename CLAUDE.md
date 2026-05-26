@@ -2,7 +2,7 @@
 
 > **Product Scope (read before triaging any feature / UX / QA card):** [`plan/PRODUCT_SCOPE.md`](plan/PRODUCT_SCOPE.md). MediaShield is a **player** for cloud video in member-gated courses/lessons — admin sees all analytics, member sees only their own watch experience. Share buttons, public view-count badges, and other distribution affordances are **wontfix** because they actively work against the gated-content model. Confirmed by the 2026-05-23 audit.
 
-> **READ FIRST:** Load [`audit/manifest.summary.json`](audit/manifest.summary.json) first (~1.4 KB index) — drill into [`audit/manifest.json`](audit/manifest.json) only when a task touches a specific category. Manifest v2.2 — 22 REST routes (`mediashield/v1`), 1 AJAX (`ms_dismiss_pro_notice`), 2 admin pages, 6 tables, 3 blocks, **3 shortcodes** (added `mediashield_playlist` in 1.1.0), 2 cron jobs, 2 CPTs, 25 hooks (12 actions + 13 filters), 33 services, 24 settings, 1 capability (`upload_mediashield`). 🚫 **Release blocked** by wppqa baseline 2026-05-11 — see [`audit/wppqa-baseline-2026-05-11/SUMMARY.md`](audit/wppqa-baseline-2026-05-11/SUMMARY.md) (1 HIGH: nonce-no-cap at `Menu.php:174`). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
+> **READ FIRST:** Load [`audit/manifest.summary.json`](audit/manifest.summary.json) first (~1.4 KB index) — drill into [`audit/manifest.json`](audit/manifest.json) only when a task touches a specific category. Manifest v2.2 — 23 REST routes (`mediashield/v1`, +`/wizard/complete`), 1 AJAX (`ms_dismiss_pro_notice`), 2 admin pages, 6 tables, 3 blocks, **3 shortcodes**, 2 cron jobs, 2 CPTs, 31 hooks (14 actions + 17 filters), 34 services, 24 settings, 1 capability (`upload_mediashield`), 1 WP-CLI command (`mediashield scale`). ✅ **Release-ready** per wppqa baseline 2026-05-26 — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
 
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
@@ -265,7 +265,10 @@ Both video and playlist shortcodes return empty output and skip asset enqueue fo
 | `mediashield_user_access_revoked` | $user_id, $count | All sessions killed for user |
 | `mediashield_milestone_reached` | $user_id, $video_id, $pct, $session_id | Any milestone hit |
 | `mediashield_milestone_{pct}` | $user_id, $video_id | Specific milestone (25/50/75/100) |
-| `mediashield_upload_complete` | $video_id, $driver_name, $result | Upload finished |
+| `mediashield_upload_started` | $driver, $file_path, $options | Upload driver invoked, before upload runs |
+| `mediashield_upload_complete` | $video_id, $driver_name, $result | Upload finished successfully |
+| `mediashield_upload_failed` | $driver, $error, $options | Upload driver returned an error |
+| `mediashield_privacy_before_erase` | $email, $user, $page, $counters | Fired before per-user GDPR erase begins so extensions can log/cleanup adjacent data |
 
 ### Filters
 | Hook | Parameters | Description |
@@ -280,6 +283,7 @@ Both video and playlist shortcodes return empty output and skip asset enqueue fo
 | `mediashield_trusted_ip_headers` | $headers | IP detection header names |
 | `mediashield_allow_empty_referer` | $allow | When the allowed-domain whitelist is active, decides whether to permit playback for requests with no Referer header. Default `false` (deny). |
 | `mediashield_frontend_config` | $config | Frontend localized config payload emitted as `window.mediashieldConfig`. Pro hooks this to inject premium player options. |
+| `mediashield_privacy_erase_result` | $result, $email, $user, $page | Final GDPR erase report shape — extensions can append `items_removed` or `messages` before WordPress consumes the result |
 
 ---
 

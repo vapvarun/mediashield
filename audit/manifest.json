@@ -217,6 +217,15 @@
         "handler": "ProtectionController::log_devtools_event",
         "permission": "is_user_logged_in",
         "purpose": "Log a devtools-detection event for analytics + rate limiting"
+      },
+      {
+        "route": "/wizard/complete",
+        "methods": [
+          "POST"
+        ],
+        "handler": "SetupWizard.php:39 (inline closure)",
+        "permission": "manage_options",
+        "purpose": "Mark setup wizard as completed (sets ms_wizard_completed option to true)"
       }
     ]
   },
@@ -885,6 +894,48 @@
       "args": "$config",
       "where": "includes/Player/Protection.php:52",
       "consumed_by": null
+    },
+    {
+      "name": "mediashield_allow_empty_referer",
+      "type": "filter",
+      "args": "(bool $allow)",
+      "where": "includes/Access/AccessControl.php:138",
+      "consumed_by": null
+    },
+    {
+      "name": "mediashield_frontend_config",
+      "type": "filter",
+      "args": "(array $config)",
+      "where": "includes/Core/Settings.php:372",
+      "consumed_by": "PRO player config injection"
+    },
+    {
+      "name": "mediashield_privacy_before_erase",
+      "type": "action",
+      "args": "(string $email, WP_User|null $user, int $page, array $counters)",
+      "where": "includes/Privacy/PrivacyEraser.php:83",
+      "consumed_by": null
+    },
+    {
+      "name": "mediashield_privacy_erase_result",
+      "type": "filter",
+      "args": "(array $result, string $email, WP_User|null $user, int $page)",
+      "where": "includes/Privacy/PrivacyEraser.php:182",
+      "consumed_by": null
+    },
+    {
+      "name": "mediashield_upload_started",
+      "type": "action",
+      "args": "(string $driver, string $file_path, array $options)",
+      "where": "includes/Upload/UploadManager.php:113",
+      "consumed_by": null
+    },
+    {
+      "name": "mediashield_upload_failed",
+      "type": "action",
+      "args": "(string $driver, string $error, array $options)",
+      "where": "includes/Upload/UploadManager.php:127",
+      "consumed_by": null
     }
   ],
   "buddypress_integration": {
@@ -946,7 +997,19 @@
       "purpose": "Mark sessions whose last_heartbeat is stale as inactive"
     }
   ],
-  "wp_cli": [],
+  "wp_cli": [
+    {
+      "command": "mediashield scale",
+      "class": "MediaShield\\CLI\\ScaleCommand",
+      "registered_at": "mediashield.php:107",
+      "subcommands": [
+        "seed",
+        "benchmark",
+        "teardown"
+      ],
+      "purpose": "Production-readiness gate: seed (10k users x 10 sessions x 4 milestones), benchmark hot-path query budgets, teardown synthetic rows"
+    }
+  ],
   "storage_drivers": [
     {
       "key": "self",
@@ -1017,7 +1080,7 @@
     "wppqa baseline flagged 1 HIGH (nonce-no-cap at Menu.php:174) — release blocker per Phase 0 hard rule."
   ],
   "generated": {
-    "at": "2026-05-11T00:00:00Z",
+    "at": "2026-05-26T00:00:00Z",
     "from": "wp-plugin-onboard skill (v2.2 refresh)",
     "branch": "main",
     "schema_version": "v2.2",

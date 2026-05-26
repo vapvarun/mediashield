@@ -46,6 +46,13 @@ living:
     owner: TBD
     format: markdown
 
+  - id: PRODUCT_SCOPE
+    path: PRODUCT_SCOPE.md
+    title: Product scope — what MediaShield is (and isn't)
+    scope: Authoritative scope contract — MediaShield is a player for cloud video in member-gated courses/lessons. Share buttons, public view-count badges, and other distribution affordances are wontfix. Mirrored in mediashield-pro/plan/PRODUCT_SCOPE.md. Confirmed by the 2026-05-23 audit.
+    owner: TBD
+    format: markdown
+
   - id: ARCHITECTURE
     path: architecture
     title: Architecture documents folder

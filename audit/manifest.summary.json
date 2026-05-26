@@ -12,7 +12,7 @@
     "extension_hook_fired": "mediashield_loaded"
   },
   "counts": {
-    "rest_endpoints": 22,
+    "rest_endpoints": 23,
     "ajax": 1,
     "admin_pages": 2,
     "settings": 24,
@@ -23,9 +23,9 @@
     "tables": 6,
     "capabilities": 1,
     "services": 34,
-    "hooks_fired": 25,
+    "hooks_fired": 31,
     "cron": 2,
-    "wp_cli": 0,
+    "wp_cli": 1,
     "storage_drivers": 1
   },
   "detail_files": {
@@ -37,21 +37,29 @@
     "static_analysis": "manifest.json#/static_analysis"
   },
   "release_readiness": {
-    "status": "BLOCKED",
-    "blockers": [
+    "status": "READY",
+    "verified_at": "2026-05-26",
+    "wppqa_baseline": "audit/wppqa-baseline-2026-05-26/SUMMARY.md",
+    "prior_blockers_resolved": [
       {
         "code": "nonce-no-cap",
-        "where": "includes/Admin/Menu.php:174"
+        "where": "includes/Admin/Menu.php:174",
+        "resolved": "current_user_can(manage_options) now follows check_ajax_referer (Menu.php:181-184)"
+      },
+      {
+        "code": "inline-onclick",
+        "where": "includes/CPT/VideoPostType.php:382,396",
+        "resolved": "no inline onclick attributes remain in the plugin"
       }
     ]
   },
   "generated": {
-    "at": "2026-05-11T00:00:00Z",
+    "at": "2026-05-26T00:00:00Z",
     "from": "wp-plugin-onboard skill (v2.2 refresh)",
     "branch": "main",
     "schema_version": "v2.2",
     "scan_scope": "gruntfile",
     "scan_path": ".",
-    "php_file_count": 52
+    "php_file_count": 53
   }
 }
