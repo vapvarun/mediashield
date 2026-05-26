@@ -254,7 +254,7 @@ class AnalyticsController extends WP_REST_Controller {
 					},
 					! empty( $top_videos ) ? $top_videos : array()
 				),
-				'recent_milestones' => self::recent_milestones(),
+				'recent_milestones' => self::recent_milestones( $interval, $now_utc ),
 				'site_timezone'     => wp_timezone_string(),
 			)
 		);
@@ -627,16 +627,20 @@ class AnalyticsController extends WP_REST_Controller {
 	 * Joins ms_milestones with ms_watch_sessions + posts so the UI can show
 	 * "<user> hit <pct>% on <video>" with a site-timezone timestamp.
 	 *
-	 * @param int $limit Max rows to return.
+	 * @param string $interval SQL INTERVAL value (e.g. '7 DAY') — hardcoded allowlist
+	 *                         from period_to_interval(); safe to interpolate.
+	 * @param string $now_utc  UTC datetime string from current_time('mysql', true) so
+	 *                         every overview widget shares one clock.
+	 * @param int    $limit    Max rows to return.
 	 * @return array<int, array<string, mixed>>
 	 */
-	private static function recent_milestones( int $limit = 10 ): array {
+	private static function recent_milestones( string $interval, string $now_utc, int $limit = 10 ): array {
 		global $wpdb;
 
 		$milestones = "{$wpdb->prefix}ms_milestones";
 		$sessions   = "{$wpdb->prefix}ms_watch_sessions";
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom analytics tables joined with core posts; aggregated read-only feed for the admin dashboard.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Custom analytics tables joined with core posts; aggregated read-only feed for the admin dashboard. $interval is a hardcoded-allowlist value from period_to_interval().
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT m.id, m.video_id, m.user_id, m.milestone_pct, m.reached_at,
@@ -645,8 +649,10 @@ class AnalyticsController extends WP_REST_Controller {
 				 FROM {$milestones} m
 				 INNER JOIN {$wpdb->posts} p ON m.video_id = p.ID AND p.post_status = 'publish'
 				 LEFT JOIN {$wpdb->users} u ON m.user_id = u.ID
+				 WHERE m.reached_at >= DATE_SUB(%s, INTERVAL {$interval})
 				 ORDER BY m.reached_at DESC
 				 LIMIT %d",
+				$now_utc,
 				$limit
 			)
 		);
