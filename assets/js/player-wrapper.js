@@ -651,7 +651,10 @@
 		}
 
 		// Login gate (all non-none tiers).
-		if ( ! config.isLoggedIn ) {
+		// Skip the client-side shortcut when the video opts into an alternative
+		// access path (e.g. data-access-type="email_gate") so /session/start can
+		// run and return the proper reason for Pro's matching listener.
+		if ( ! config.isLoggedIn && ! el.dataset.accessType ) {
 			showLoginOverlay( el );
 			return;
 		}
@@ -731,14 +734,22 @@
 						return;
 					}
 
-					// Show access-denied overlay when no upstream listener handles
-					// the event (Pro can call preventDefault to suppress this).
-					var msg = data.message || ( config.messages && config.messages.accessDenied ) || 'You do not have access to this video.';
-					showErrorOverlay( el, msg );
-					window.dispatchEvent( new CustomEvent( 'mediashield:access-denied', {
+					// Give upstream listeners (Pro's email gate, custom integrations)
+					// the chance to handle the denial BEFORE the generic error
+					// overlay paints — otherwise the email form renders on top of
+					// a redundant "email_gate_required" overlay. Listeners suppress
+					// the fallback by calling event.preventDefault().
+					var ev = new CustomEvent( 'mediashield:access-denied', {
 						bubbles: true,
+						cancelable: true,
 						detail: { el: el, videoId: videoId, reason: reason },
-					} ) );
+					} );
+					var handled = ! window.dispatchEvent( ev );
+
+					if ( ! handled ) {
+						var msg = data.message || ( config.messages && config.messages.accessDenied ) || 'You do not have access to this video.';
+						showErrorOverlay( el, msg );
+					}
 					return;
 				}
 

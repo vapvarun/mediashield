@@ -145,7 +145,47 @@ class SessionController extends WP_REST_Controller {
 	 * @return bool
 	 */
 	public function session_permissions_check( WP_REST_Request $request ): bool {
-		return is_user_logged_in();
+		if ( is_user_logged_in() ) {
+			return true;
+		}
+
+		// Allow anonymous /session/start when the targeted video opts into an
+		// alternative access path (e.g. Pro's email gate). The downstream
+		// AccessControl::can_watch() still enforces the actual gate; this just
+		// lets the request reach the handler so it can return the right reason
+		// to the client. Heartbeat / end / revoke remain logged-in-only because
+		// they never originate from an anonymous viewer.
+		if ( 'POST' !== $request->get_method() || false === strpos( $request->get_route(), '/session/start' ) ) {
+			return false;
+		}
+
+		$video_id = (int) $request->get_param( 'video_id' );
+		if ( $video_id <= 0 ) {
+			return false;
+		}
+
+		$access_type = (string) get_post_meta( $video_id, '_ms_access_type', true );
+
+		/**
+		 * Filter whether to allow an anonymous /session/start for this video.
+		 *
+		 * Defaults to allow when `_ms_access_type` is set (Pro's email-gate
+		 * meta). Extensions can opt additional anon-allowable access types in.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param bool             $allow       Whether to allow anonymous start.
+		 * @param int              $video_id    Video CPT post ID.
+		 * @param string           $access_type Stored `_ms_access_type` value.
+		 * @param WP_REST_Request  $request     Current REST request.
+		 */
+		return (bool) apply_filters(
+			'mediashield_session_allow_anonymous_start',
+			'' !== $access_type,
+			$video_id,
+			$access_type,
+			$request
+		);
 	}
 
 	/**
@@ -185,7 +225,12 @@ class SessionController extends WP_REST_Controller {
 		// Access control check.
 		$access = AccessControl::can_watch( $video_id, $user_id );
 		if ( ! $access['allowed'] ) {
-			return new WP_Error( 'access_denied', $access['reason'], array( 'status' => 403 ) );
+			// Promote the access reason to the WP_Error code so the client sees
+			// `data.code === 'email_gate_required'` (or similar) and can route to
+			// the right overlay. Falls back to the legacy 'access_denied' so any
+			// integrator listening for the old code still works.
+			$code = ! empty( $access['reason'] ) ? sanitize_key( $access['reason'] ) : 'access_denied';
+			return new WP_Error( $code, $access['reason'], array( 'status' => 403 ) );
 		}
 
 		// Start session.

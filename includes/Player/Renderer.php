@@ -90,6 +90,20 @@ class Renderer {
 		 */
 		$classes = apply_filters( 'mediashield_player_classes', array( 'ms-protected-player' ), $video_id );
 
+		/**
+		 * Filter the per-video access type (e.g. 'email_gate' for Pro's email gate).
+		 *
+		 * Pro registers a callback that returns the `_ms_access_type` meta value so
+		 * the client can route gated videos to the right overlay (email form, etc.)
+		 * instead of the default login shortcut. Empty string means no special gate.
+		 *
+		 * @since 1.1.0
+		 *
+		 * @param string $access_type Access type slug, '' when not gated.
+		 * @param int    $video_id    Video CPT post ID.
+		 */
+		$access_type = (string) apply_filters( 'mediashield_player_access_type', '', $video_id );
+
 		ob_start();
 		?>
 		<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
@@ -97,6 +111,7 @@ class Renderer {
 			data-platform="<?php echo esc_attr( $platform ); ?>"
 			data-protection-level="<?php echo esc_attr( $protection_level ); ?>"
 			data-player-type="<?php echo esc_attr( $player_type ); ?>"
+			<?php if ( '' !== $access_type ) : ?>data-access-type="<?php echo esc_attr( $access_type ); ?>"<?php endif; ?>
 			<?php
 			if ( $wrapper_attrs ) {
 				echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
