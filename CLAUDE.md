@@ -468,6 +468,7 @@ Tighten budgets when refactoring a hot path. Loosen only with a written rational
 
 | Document | Path | Description |
 |----------|------|-------------|
+| Getting Started | `docs/free/getting-started.md` | Day 1 walkthrough — activation, wizard, first video, embed, protection, analytics, milestones, playlists |
 | Installation | `docs/free/installation.md` | Requirements, install steps, first-time setup |
 | Configuration | `docs/free/configuration.md` | All settings explained with option keys |
 | Shortcodes & Blocks | `docs/free/shortcodes-blocks.md` | Shortcode attributes, block usage, PHP templates |
