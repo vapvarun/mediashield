@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-23T09:21:13+00:00\n"
+"POT-Creation-Date: 2026-05-26T10:47:59+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -582,7 +582,7 @@ msgid "Once Monthly"
 msgstr ""
 
 #: includes/Player/PlayerWrapper.php:203
-#: includes/Player/Renderer.php:162
+#: includes/Player/Renderer.php:177
 msgid "Fullscreen"
 msgstr ""
 
@@ -613,7 +613,7 @@ msgid "Please close developer tools to continue watching this video."
 msgstr ""
 
 #: includes/Player/Watermark.php:38
-#: includes/REST/AnalyticsController.php:661
+#: includes/REST/AnalyticsController.php:667
 msgid "Guest"
 msgstr ""
 
@@ -684,7 +684,7 @@ msgid "Playlist not found."
 msgstr ""
 
 #: includes/REST/PlaylistController.php:224
-#: includes/REST/SessionController.php:178
+#: includes/REST/SessionController.php:218
 #: includes/REST/StreamController.php:111
 #: includes/REST/TagController.php:320
 #: includes/REST/TagController.php:337
@@ -703,25 +703,25 @@ msgstr ""
 msgid "Order must be an array."
 msgstr ""
 
-#: includes/REST/SessionController.php:173
+#: includes/REST/SessionController.php:213
 msgid "Invalid video ID."
 msgstr ""
 
-#: includes/REST/SessionController.php:182
+#: includes/REST/SessionController.php:222
 #: includes/REST/StreamController.php:115
 msgid "Video is not available."
 msgstr ""
 
-#: includes/REST/SessionController.php:199
+#: includes/REST/SessionController.php:244
 msgid "Too many active streams. Please close another video first."
 msgstr ""
 
-#: includes/REST/SessionController.php:265
+#: includes/REST/SessionController.php:310
 msgid "Too many requests."
 msgstr ""
 
-#: includes/REST/SessionController.php:279
-#: includes/REST/SessionController.php:300
+#: includes/REST/SessionController.php:324
+#: includes/REST/SessionController.php:345
 msgid "Invalid session token."
 msgstr ""
 
