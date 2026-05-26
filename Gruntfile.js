@@ -52,7 +52,22 @@ module.exports = function(grunt) {
                         '!bin/**',
                         '!**/*.sh',
                         '!**/*.md',
-                        '!docs/**'
+                        '!docs/**',
+                        // Recursive variants so vendor-nested dev files (e.g.
+                        // vendor/easy-digital-downloads/edd-sl-sdk/composer.lock)
+                        // don't ship in the dist zip. The non-prefixed variants
+                        // above only match repo-root files.
+                        '!**/.editorconfig',
+                        '!**/.eslintrc*',
+                        '!**/.prettierrc*',
+                        '!**/.gitignore',
+                        '!**/.gitattributes',
+                        '!**/phpunit.xml*',
+                        '!**/phpcs.xml*',
+                        '!**/webpack.config.js',
+                        '!**/package.json',
+                        '!**/package-lock.json',
+                        '!**/composer.lock'
                     ],
                     dest: 'dist/mediashield/'
                 }]
