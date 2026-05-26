@@ -156,6 +156,10 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * "Last Active" and "Reached At" relative times use UTC consistently — no more "5h ago" drift when the site timezone differs.
 * Protection Level tiers (basic / standard / strict) behave differently again: `basic` skips session/watermark/tracker, `strict` forces devtools detection and source hiding.
 * Recent Milestones list no longer renders username and video title as one concatenated string.
+* Per-video Email Gate (Pro feature) now fully works for anonymous visitors. The admin toggle saves AND the gate actually fires, captures the email, sets the cookie, and unlocks playback. Three coordinated fixes shipped on the Free side: `/session/start` no longer 401s anonymous viewers when the target video opts into an alternative access type; the access-denial WP_Error promotes the reason to `data.code` so the client distinguishes `email_gate_required`; the player-wrapper client-side login shortcut steps aside when `data-access-type` is present on the player container.
+* Admin success/error toasts render fully above the WordPress admin-bar edge instead of slipping behind it.
+* Thumbnail sideload handles extensionless CDN URLs (Vimeo / Wistia / self-hosted) — previously thumbnails for those platforms silently failed to attach because `media_sideload_image()` didn't recognize the URL as an image.
+* `POST /wp/v2/mediashield-videos` now auto-fetches the platform thumbnail on the FIRST save. `featured_media` was 0 on create and only populated on the second update; both the Gutenberg "Paste URL" block flow and external REST clients now get the thumbnail attached immediately.
 
 **Admin SPA**
 * Videos admin table responsive at ≤782px so action buttons no longer clip.
@@ -168,6 +172,7 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Permanent video delete now drops orphan `ms_tags` rows (only-video case) and purges every user's `_ms_video_tags` meta entry keyed to the deleted video.
 * Trashed videos are excluded from Top Videos / Milestones / User Detail analytics queries.
 * Duration field: honest "leave 0 if unknown" label, block-editor input, server-side validation against stored `_ms_duration` meta.
+* Dashboard period selector (7d / 30d / 90d) now also filters the "Recent Milestones" panel. The sibling metric cards already respected the filter; the activity feed was returning all-time data and silently contradicting them — e.g. "Last 7 days" could display milestones from months ago.
 
 **Setup, build, and infrastructure**
 * Composer runtime closure (Action Scheduler) shipped in `vendor/` so a fresh clone activates without `composer install`. Missing-autoloader path now degrades gracefully with an admin notice.
@@ -183,6 +188,8 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 **Internals**
 * `_ms_milestone_tags` registered in the REST schema so the admin SPA can save milestone-tag configurations through `POST /wp/v2/mediashield-videos/{id}`.
 * `Core/Migrator` lifts per-version migration steps into self-gating helpers so each step's idempotency guarantee is local and PHPStan can't narrow the comparison via the outer version branch.
+* New extension points: filters `mediashield_player_access_type` (lets extensions declare alternative gate flows the player container respects via `data-access-type`), `mediashield_session_allow_anonymous_start` (per-video opt-in for anonymous `/session/start`). New action / filter hooks fired by the core: `mediashield_allow_empty_referer`, `mediashield_frontend_config`, `mediashield_privacy_before_erase`, `mediashield_privacy_erase_result`, `mediashield_upload_started`, `mediashield_upload_failed`.
+* `mediashield:access-denied` DOM CustomEvent is now `cancelable: true` — listeners can call `event.preventDefault()` to suppress the generic error overlay before rendering an alternative gate UI (Pro's email gate uses this).
 
 = 1.0.0 =
 * Initial release.
