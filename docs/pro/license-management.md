@@ -54,7 +54,7 @@ The activation slot frees within seconds. You don't need to contact support.
 
 ## Using Pro on staging or development sites
 
-The EDD Software Licensing layer detects these patterns and treats them as non-counting activations:
+MediaShield's licensing system detects these patterns and treats them as non-counting activations:
 
 * Hostnames containing `staging`, `dev`, `test`, or `local`.
 * Hostnames ending in `.local`, `.test`, or `.localhost`.
@@ -129,7 +129,7 @@ Each subsite counts as one activation unless you purchase the network license op
 Features pause. Data stays in the database. Re-activate to resume. The license slot stays consumed until you explicitly deactivate the license itself.
 
 **What happens if I delete the plugin entirely?**
-All Pro database tables and options are removed (see `uninstall.php`). The free plugin's data is preserved. The license slot frees automatically.
+All Pro database tables and settings are removed. The free plugin's data is preserved. The license slot frees automatically.
 
 **I run the free plugin and I'm thinking about upgrading. Will I lose my free data?**
 No. Pro extends the free plugin. All your videos, sessions, milestones, and tags stay the same. Pro adds new features and new tables alongside the existing free data.

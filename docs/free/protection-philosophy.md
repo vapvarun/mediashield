@@ -36,9 +36,9 @@ Be honest with yourself and with your customers.
 | Attack | MediaShield's response |
 |---|---|
 | Screen recording (OBS, macOS screen capture, phone camera) | Cannot be blocked. The watermark makes the recording traceable. |
-| Saving the video URL from browser DevTools | Free hides the URL from View Source. Pro encrypts the self-hosted video with ClearKey. YouTube and Vimeo iframe URLs stay visible because the platforms publish them. |
+| Saving the video URL from browser developer tools | Free hides the URL from View Source. Pro encrypts the self-hosted video with ClearKey. YouTube and Vimeo iframe URLs stay visible because the platforms publish them. |
 | Stream Recorder or Video DownloadHelper browser extensions | Effective against unencrypted streams. Pro's ClearKey blocks them for encrypted self-hosted video. |
-| Professional piracy (yt-dlp plus ffmpeg plus key extraction) | No software DRM stops a determined attacker. Only hardware Widevine L1 does that, and MediaShield does not ship it. |
+| Professional piracy (yt-dlp -- a command-line tool for downloading videos from web platforms -- plus ffmpeg plus key extraction) | No software DRM stops a determined attacker. Only hardware Widevine L1 does that, and MediaShield does not ship it. |
 
 If any of those attacks are your main concern, you need:
 
@@ -80,8 +80,8 @@ That's honest, enforceable, and legally clean. It deters 90 percent of casual sh
 * **Dynamic watermark.** User identity rendered on a canvas over every frame. Swaps position every X seconds. Survives fullscreen. Re-renders if the DOM is tampered. A MutationObserver pauses the video on tamper.
 * **HMAC session tokens.** Cryptographically validated without a database lookup per heartbeat.
 * **Concurrent stream limit.** Server-enforced with row locking so race conditions can't slip through.
-* **Suspicious activity detection (Pro).** Multi-IP, rapid seek, DevTools open, VPN or proxy. Admin sees alerts in real time.
-* **Revoke all sessions.** One REST call kills every active session for a user caught leaking.
+* **Suspicious activity detection (Pro).** Multi-IP, rapid seek, developer-tools open, VPN or proxy. Admin sees alerts in real time.
+* **Revoke all sessions.** One admin action kills every active session for a user caught leaking.
 * **Audit trail.** Every session logs IP, user agent, device, duration, and completion. Export it via WordPress privacy tools.
 
 You get enough forensic data to act decisively when something leaks. That's what WordPress-native video protection at this price point should do.
@@ -95,7 +95,7 @@ Either lying or using a proprietary codec that locks you into their ecosystem. S
 Yes. Bunny Stream MediaCage Enterprise gives you Widevine L1 plus FairPlay. MediaShield adds watermarks, access control, analytics, and audit trail on top. Use Bunny for hosting and DRM, MediaShield for the WordPress layer.
 
 **Is software DRM (ClearKey) worth paying for?**
-For the $99 per year Pro price, yes. It stops yt-dlp and casual download tools. For high-value IP like films or live sports, no. Use Widevine L1.
+For the $99 per year Pro price, yes. It stops casual download tools. For high-value IP like films or live sports, no. Use Widevine L1.
 
 **What about the watermark. Can't someone just crop it out?**
 In theory, yes. In practice, the watermark moves position every 20 seconds by default, survives fullscreen, covers multiple areas over time, and anti-tamper pauses the video if someone removes the canvas. Cropping would also crop the video content. Most leakers don't bother. They just don't share rather than risk it.

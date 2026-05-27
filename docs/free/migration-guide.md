@@ -61,9 +61,9 @@ If those are critical, keep Presto for specific videos and run them without Medi
 
 **What changes:**
 
-* VdoCipher's Widevine L1 hardware DRM is replaced by MediaShield Pro's ClearKey DRM (software-based). This is a downgrade in cryptographic strength. It's usually a 90 percent cost reduction ($350+ per year down to $99 per year).
+* VdoCipher's Widevine L1 hardware DRM (hardware-backed encryption that prevents screen capture on supported devices) is replaced by MediaShield Pro's ClearKey DRM (software-based). This is a downgrade in cryptographic strength. It's usually a 90 percent cost reduction ($350+ per year down to $99 per year).
 * If your threat model strictly requires Widevine L1, do not migrate. Use VdoCipher or Bunny Stream MediaCage Enterprise instead.
-* VdoCipher's player is replaced by MediaShield's Shaka Player wrapper.
+* VdoCipher's player is replaced by MediaShield's player wrapper.
 
 **Migration steps:**
 
@@ -116,7 +116,7 @@ MediaShield does all three, plus dynamic watermark, session tracking, access con
 
 ## From no protection (naive YouTube, Vimeo, or self-hosted embeds)
 
-The easiest migration. You've been embedding videos with raw iframe code or Gutenberg's YouTube / Vimeo blocks.
+The easiest migration. You've been embedding videos with raw iframe code or the block editor's YouTube / Vimeo blocks.
 
 1. Install MediaShield (free).
 2. Run the setup wizard.

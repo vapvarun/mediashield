@@ -6,103 +6,67 @@ MediaShield Pro extends the free plugin's basic analytics with heatmaps, realtim
 
 ## Playback Heatmaps
 
-Heatmaps show where in a video users are watching, rewatching, or dropping off.
-
-### How It Works
-
-1. The frontend tracker logs granular playback events (play, pause, seek, buffer, complete) to `ms_playback_events`.
-2. A scheduled cron job (`ms_heatmap_aggregation`, hourly) aggregates events into 10-second position buckets in `ms_heatmap_cache`.
-3. The admin page renders a Chart.js bar chart with a retention line overlay.
+Heatmaps show where in a video viewers are watching, rewatching, or dropping off. MediaShield watches what your viewers do -- every play, pause, seek, and buffer -- and shows it back to you as a position-by-position bar chart so you can see exactly which moments hold attention and which ones lose it.
 
 ### Reading the Heatmap
 
-- **High bars** indicate frequently watched segments (hot spots).
-- **Retention line** shows the percentage of viewers who reached that point.
-- **Steep drops** indicate where viewers lose interest.
-- **Spikes after drops** indicate sections viewers seek to (e.g., key content, Q&A).
+- **High bars** indicate frequently watched segments (hot spots). These are your most valuable moments.
+- **Retention line** shows the percentage of viewers who reached that point in the video.
+- **Steep drops** indicate where viewers lose interest and stop watching.
+- **Spikes after drops** indicate sections viewers seek back to (e.g., key content, Q&A, demos).
+
+Use this to cut weak openings, shorten slow sections, and move the most-rewatched content earlier.
 
 ### Device Breakdown
 
 The heatmap page also shows a device type distribution chart:
-- Desktop, mobile, tablet breakdown with percentages
-- Useful for optimizing video format and player layout
-
-### REST Endpoint
-
-```
-GET /mediashield-pro/v1/analytics/heatmap/{video_id}
-```
-
-Returns position bucket data with view counts and average duration per bucket.
-
-### Playlist Funnel
-
-For playlists, a funnel view shows drop-off between videos:
-
-```
-GET /mediashield-pro/v1/analytics/playlist-funnel/{playlist_id}
-```
+- Desktop, mobile, tablet breakdown with percentages.
+- Useful for optimizing video format and player layout (e.g., if 70% of your audience is on mobile, keep your talking-head videos portrait-friendly).
 
 ---
 
 ## Realtime Dashboard
 
-Monitor currently active viewers across all videos.
+Monitor who's watching right now across all your videos.
 
 ### Features
 
-- Live viewer count with 15-second auto-refresh
-- Per-session details: user, video, device type, browser, duration, completion
-- Active session identification (heartbeat within last 5 minutes)
-
-### REST Endpoint
-
-```
-GET /mediashield-pro/v1/realtime/viewers
-```
-
-Returns all sessions with `last_heartbeat` within the past 5 minutes.
+- Live viewer count with 15-second auto-refresh.
+- Per-session details: user, video, device type, browser, how long they've been watching, completion percentage.
+- Sessions are "active" if a heartbeat was received in the last 5 minutes.
 
 ---
 
 ## Suspicious Activity Detection
 
-MediaShield Pro monitors for suspicious viewing patterns and generates alerts.
+MediaShield Pro monitors for viewing patterns that suggest credential sharing, scraping, or suspicious behavior, and generates alerts you can review from the **Alerts** page.
 
 ### Alert Types
 
-| Type | Description | Trigger |
-|------|-------------|---------|
-| `multi_ip` | User watching from multiple IPs | Same user, different IPs within session window |
-| `devtools` | Developer tools opened | Devtools detection event fired |
-| `rapid_seek` | Rapid seeking through video | Multiple seek events in short window |
-| `concurrent_stream` | Too many simultaneous streams | Exceeds configured limit |
-| `vpn_detected` | VPN/proxy detected | IP reputation check |
+| Type | What it means | What triggers it |
+|------|-------------|-----------------|
+| Multi-device | One account watching from multiple locations | Same user, different IPs within the session window |
+| Developer tools | Viewer opened browser developer tools | Detection event received |
+| Rapid seeking | Viewer scrubbing rapidly through the video | Multiple seek events in a short window |
+| Concurrent stream limit | Too many simultaneous streams | Exceeds your configured maximum |
+| VPN / proxy detected | Viewer may be masking their location | IP reputation check |
 
 ### Sensitivity Levels
 
-| Level | Option Value | Behavior |
-|-------|-------------|----------|
-| Low | `low` | Only flag multi_ip with 3+ IPs |
-| Medium | `medium` | Flag multi_ip with 2+ IPs, rapid_seek |
-| High | `high` | Flag all types aggressively |
+Control how aggressively MediaShield flags activity in **MediaShield > Settings > Suspicious Activity**:
 
-Configure via `ms_suspicious_sensitivity` option.
+| Level | Behavior |
+|-------|---------|
+| Low | Only flags multi-device with 3 or more different IPs |
+| Medium | Flags multi-device with 2 or more IPs, plus rapid seeking |
+| High | Flags all types aggressively |
 
 ### Managing Alerts
 
 From the **Alerts** admin page:
 
-- **Dismiss** -- Mark an alert as reviewed (dismissed alerts are pruned after 90 days)
-- **Safe User** -- Whitelist a user to suppress future alerts (stored in `ms_safe_users` option)
-
-### REST Endpoints
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET | `/analytics/suspicious` | List alerts (paginated) |
-| PATCH | `/analytics/suspicious/{id}/dismiss` | Dismiss an alert |
-| POST | `/analytics/suspicious/safe-user` | Mark user as safe |
+- **Dismiss** -- Mark an alert as reviewed. Dismissed alerts are removed after 90 days.
+- **Safe User** -- Whitelist a user to suppress future alerts (e.g., an admin doing testing).
 
 ---
 
@@ -110,75 +74,56 @@ From the **Alerts** admin page:
 
 ### CSV Export
 
-Stream watch data as CSV downloads with date and filter support.
+Download your watch data as spreadsheets with date range filters.
 
 **Available exports:**
-- `watch_sessions` -- All session data (excludes `session_token` for security)
-- `milestones` -- Milestone completion records
-- `users` -- Per-user aggregated stats
+- **Watch sessions** -- all session data.
+- **Milestones** -- every completion record.
+- **Users** -- per-user aggregated stats.
 
 **Limits:** 50,000 rows per export.
 
-**Endpoint:**
-```
-GET /mediashield-pro/v1/export/csv/{type}?from=2026-01-01&to=2026-03-31
-```
+Go to **MediaShield > Export**, choose the export type, set a date range, and click Download.
 
 ### PDF Reports
 
-Generate comprehensive analytics PDF reports asynchronously.
+Generate a comprehensive analytics report as a PDF.
 
 **Report contents:**
-- Overview stats (total views, unique viewers, avg completion)
-- Top 10 videos by views
-- Completion rate chart
-- User engagement summary
-- Activity alerts summary
+- Overview stats (total views, unique viewers, avg completion).
+- Top 10 videos by views.
+- Completion rate chart.
+- User engagement summary.
+- Activity alerts summary.
 
-**Process:**
-1. Admin clicks "Generate PDF Report" in the Export page.
-2. `POST /mediashield-pro/v1/export/pdf/report` queues an Action Scheduler job.
-3. Dompdf generates an A4 PDF.
-4. A download URL (24-hour transient) is created.
-5. Admin receives an email notification with the download link.
+To generate:
 
-**Check status:**
-```
-GET /mediashield-pro/v1/export/status/{job_id}
-```
+1. Go to **MediaShield > Export**.
+2. Click **Generate PDF Report**.
+3. MediaShield queues the report in the background.
+4. You'll receive an email with a download link when it's ready (usually within a few minutes). The link is valid for 24 hours.
 
 ---
 
 ## Weekly Digest
 
-An automated weekly HTML email summarizing your video analytics.
+An automated weekly email summarising your video analytics.
 
-### Contents
+### What's in the digest
 
-- Total views this week
-- Total completions
-- Average completion rate
-- Top 5 videos by views
-- Alert count
+- Total views this week.
+- Total completions.
+- Average completion rate.
+- Top 5 videos by views.
+- Number of unresolved alerts.
 
 ### Configuration
 
-| Setting | Option Key | Default |
-|---------|-----------|---------|
-| Enable Digest | `ms_weekly_digest_enabled` | `true` |
-| Recipient Email | `ms_weekly_digest_email` | Site admin email |
+Go to **MediaShield > Settings > Weekly Digest**:
 
-The digest is scheduled via Action Scheduler with the `ms_weekly_digest` hook.
+- **Enable Digest** -- On by default. Turn off if you don't want the weekly email.
+- **Recipient Email** -- Defaults to the site admin email. Enter any address you prefer.
 
 ---
 
-## Cron Jobs
-
-All Pro analytics cron jobs use Action Scheduler in the `mediashield-pro` group:
-
-| Hook | Frequency | Description |
-|------|-----------|-------------|
-| `ms_heatmap_aggregation` | Hourly | Aggregate playback events into heatmap buckets |
-| `ms_alert_pruning` | Daily | Delete dismissed alerts older than 90 days |
-| `ms_email_capture_retention` | Daily | Delete expired email captures |
-| `ms_weekly_digest` | Weekly | Send analytics digest email |
+For developers: REST endpoints, cron job hooks, and the database tables behind analytics are documented in [`docs/developer/`](../developer/README.md).

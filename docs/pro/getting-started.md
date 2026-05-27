@@ -17,23 +17,19 @@ If the free plugin is not active, you will see an admin notice prompting you to 
 
 ## License Activation
 
-1. Navigate to **MediaShield > Settings** (or the license tab if shown).
+1. Navigate to **MediaShield > Settings** and open the **License** tab.
 2. Enter your license key (found in your purchase confirmation email).
 3. Click **Activate License**.
 
-A valid license is required for automatic updates and support. The license status is stored in the `mediashield-pro_license` option.
+A valid license is required for automatic updates and support. The license status is shown in the License tab.
 
-**Developer override:** You can bypass the license check with:
-
-```php
-add_filter( 'mediashield_pro_license_valid', '__return_true' );
-```
+For developers: if you need to bypass the license check in a local development environment, see [`docs/developer/hooks-filters-pro.md`](../developer/hooks-filters-pro.md#mediashield_pro_license_valid).
 
 ## What Pro Adds
 
-MediaShield Pro extends the free plugin through WordPress hooks -- it never replaces core behavior. Here's what activating Pro unlocks:
+MediaShield Pro extends the free plugin through WordPress hooks -- it never replaces free behavior. Here's what activating Pro unlocks:
 
-### Admin SPA Pages (6 new routes)
+### Admin pages (6 new sections)
 
 | Page | Description |
 |------|-------------|
@@ -44,40 +40,40 @@ MediaShield Pro extends the free plugin through WordPress hooks -- it never repl
 | DRM | DRM configuration and license management |
 | Export | CSV and PDF data export |
 
-### New Features
+### New features
 
 - **Advanced Watermark** -- 7 configurable text fields (username, email, IP, user ID, timestamp, site name, custom text)
 - **Platform Connections** -- Browse and import videos from Bunny, YouTube, Vimeo, Wistia
-- **DRM Encryption** -- Widevine ClearKey via Bunny Stream or local Shaka Packager
+- **DRM Encryption** -- ClearKey DRM via Bunny Stream or local packager
 - **Email Gate** -- Capture emails before video access with webhook integration
 - **Heatmap Analytics** -- Per-video playback heatmaps with position buckets
 - **Realtime Dashboard** -- Live viewer count with auto-refresh
-- **Suspicious Activity** -- Multi-IP, devtools, rapid seek detection with alerts
+- **Suspicious Activity** -- Multi-device, developer-tools, rapid seek detection with alerts
 - **Milestone Actions** -- Tag user, send email, fire webhook at milestones
-- **Data Export** -- CSV streaming and async PDF reports
+- **Data Export** -- CSV and PDF reports
 - **Weekly Digest** -- Automated analytics summary email
 - **Role-Based Access** -- Per-video role restriction
-- **Frontend Upload** -- `[mediashield_upload]` shortcode
+- **Frontend Upload** -- Upload shortcode for authorized users
 
 ## Database
 
-Pro creates 8 additional database tables on activation:
+Pro stores its data in 8 additional tables (you don't need to manage these -- they're created automatically when Pro activates and cleaned up if you uninstall):
 
-| Table | Purpose |
-|-------|---------|
-| `ms_playback_events` | Granular playback event log |
-| `ms_platform_connections` | Encrypted API credentials |
-| `ms_upload_queue` | Upload job tracking |
-| `ms_activity_alerts` | Suspicious activity alerts |
-| `ms_drm_licenses` | DRM license records |
-| `ms_heatmap_cache` | Aggregated heatmap data |
-| `ms_drm_keys` | Encrypted content keys |
-| `ms_email_captures` | Email gate submissions |
+| Table | What it stores |
+|-------|---------------|
+| Playback events | Granular viewer playback events (for heatmaps) |
+| Platform connections | Your encrypted API credentials |
+| Upload queue | Upload job progress tracking |
+| Activity alerts | Suspicious viewing pattern flags |
+| DRM licenses | Issued content licenses |
+| Heatmap cache | Aggregated heatmap display data |
+| DRM keys | Encrypted content keys |
+| Email captures | Email gate submissions |
 
 ## Deactivation vs Deletion
 
-- **Deactivation** clears Pro cron jobs but preserves all data. Free plugin features continue working normally.
-- **Deletion** drops all 8 Pro tables and removes 17 Pro-specific options.
+- **Deactivation** clears Pro background jobs but preserves all data. Free plugin features continue working normally.
+- **Deletion** drops all Pro tables and removes all Pro settings.
 
 ## Next Steps
 

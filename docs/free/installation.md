@@ -54,21 +54,23 @@ On first activation, MediaShield redirects you to a setup wizard with four steps
 
 ## Database Tables
 
-MediaShield creates 6 database tables on activation:
+MediaShield creates 6 database tables on activation (you don't need to manage these -- they're created automatically and cleaned up if you uninstall):
 
 | Table | Purpose |
 |-------|---------|
-| `ms_tags` | Video tag taxonomy |
-| `ms_video_tags` | Video-to-tag relationships |
-| `ms_watch_sessions` | Active watch session tracking |
-| `ms_watch_sessions_archive` | Archived completed sessions |
-| `ms_milestones` | Completion milestone records |
-| `ms_playlist_items` | Playlist video ordering |
+| Video tags | Tag taxonomy for milestone and manual tags |
+| Video-to-tag relationships | Links tags to videos |
+| Watch sessions | Active session tracking |
+| Session archive | Completed session history |
+| Milestone records | Completion percentage tracking |
+| Playlist items | Playlist video ordering |
+
+For the full schema including column names and indexes, see the [developer database reference](../developer/database-tables.md).
 
 ## Uninstalling
 
-- **Deactivation** clears scheduled cron jobs but preserves all data.
-- **Deletion** (via Plugins > Delete) drops all 6 tables, removes all `ms_*` options, and cleans up role capabilities. If MediaShield Pro is still active, Pro options are preserved.
+- **Deactivation** clears scheduled background jobs but preserves all data.
+- **Deletion** (via Plugins > Delete) drops all 6 tables, removes all MediaShield settings, and cleans up role capabilities. If MediaShield Pro is still active, Pro data is preserved.
 
 ## Upgrading
 

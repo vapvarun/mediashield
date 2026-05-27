@@ -464,22 +464,44 @@ Tighten budgets when refactoring a hot path. Loosen only with a written rational
 
 ## Documentation
 
-### User-Facing Docs (`docs/`)
+> **Doc audience split (1.1.0):** Customer-facing docs live in `docs/free/` and `docs/pro/` — UI labels, plain language, no option keys / class names / REST paths. Developer reference lives in `docs/developer/` — option keys, REST endpoints, hooks/filters, DB schema, post meta, cron, DRM internals, extension architecture. **Never leak developer content into customer docs.** When extracting new dev reference, add it under `docs/developer/` and link from the relevant customer doc's footer.
+
+### Customer-Facing Docs (`docs/free/`, `docs/pro/`)
 
 | Document | Path | Description |
 |----------|------|-------------|
 | Getting Started | `docs/free/getting-started.md` | Day 1 walkthrough — activation, wizard, first video, embed, protection, analytics, milestones, playlists |
 | Installation | `docs/free/installation.md` | Requirements, install steps, first-time setup |
-| Configuration | `docs/free/configuration.md` | All settings explained with option keys |
-| Shortcodes & Blocks | `docs/free/shortcodes-blocks.md` | Shortcode attributes, block usage, PHP templates |
-| Hooks & Filters | `docs/free/hooks-filters.md` | Every hook with params, example, and use case |
+| Configuration | `docs/free/configuration.md` | Every settings page explained with UI labels, defaults, and when to change |
+| Shortcodes & Blocks | `docs/free/shortcodes-blocks.md` | Shortcode attributes + Gutenberg block usage |
 | FAQ | `docs/free/faq.md` | Common questions and troubleshooting |
+| Troubleshooting | `docs/free/troubleshooting.md` | Symptom-first triage for playback, tracking, cache issues |
+| Migration Guide | `docs/free/migration-guide.md` | Moving from Presto, WP-Vimeo, Easy Video Player, etc. |
+| Protection Philosophy | `docs/free/protection-philosophy.md` | Honest threat model — what protection can and can't do |
+| Hooks & Filters | `docs/free/hooks-filters.md` | Redirect stub → `docs/developer/hooks-filters-free.md` |
 | Pro: Getting Started | `docs/pro/getting-started.md` | Pro activation, license, first steps |
-| Pro: Platform Connections | `docs/pro/platform-connections.md` | How to connect Bunny, YouTube, Vimeo, Wistia |
-| Pro: DRM Setup | `docs/pro/drm-setup.md` | DRM configuration guide (Bunny/Shaka) |
-| Pro: Analytics | `docs/pro/analytics.md` | Heatmaps, realtime, alerts, export |
-| Pro: Email Gate | `docs/pro/email-gate.md` | Email gate setup, webhook integration |
-| Pro: Hooks & Filters | `docs/pro/hooks-filters-pro.md` | Pro-specific hooks and consumed hooks |
+| Pro: Platform Connections | `docs/pro/platform-connections.md` | Connect Bunny, YouTube, Vimeo, Wistia (customer setup) |
+| Pro: DRM Setup | `docs/pro/drm-setup.md` | Three DRM methods, when to use each, glossary |
+| Pro: DRM Types Explained | `docs/pro/drm-types-explained.md` | ClearKey vs Widevine L1 vs FairPlay — buyer-facing tradeoffs |
+| Pro: Analytics | `docs/pro/analytics.md` | Heatmaps, realtime, alerts, export — what you see and how to read it |
+| Pro: License Management | `docs/pro/license-management.md` | License unlocks updates + support; never gates features |
+| Pro: Email Gate | `docs/pro/email-gate.md` | Email-capture gate setup, scopes, integrations |
+| Pro: Hooks & Filters | `docs/pro/hooks-filters-pro.md` | Redirect stub → `docs/developer/hooks-filters-pro.md` |
+
+### Developer Reference (`docs/developer/`)
+
+| Document | Path | Description |
+|----------|------|-------------|
+| Developer README | `docs/developer/README.md` | Entry point — explains who these docs are for, links each reference |
+| Hooks & Filters (Free) | `docs/developer/hooks-filters-free.md` | Every free-plugin hook: params, example, use case, priority chain |
+| Hooks & Filters (Pro) | `docs/developer/hooks-filters-pro.md` | Pro hooks fired + free hooks Pro consumes; deprecation shims documented |
+| Settings Reference | `docs/developer/settings-reference.md` | Every `ms_*` option key — type, default, validator, sanitizer, where used |
+| REST API | `docs/developer/rest-api.md` | All `mediashield/v1` + `mediashield-pro/v1` endpoints — method, auth, request, response |
+| Database Tables | `docs/developer/database-tables.md` | Schema for all 14 tables (6 free + 8 pro) — columns, indexes, cleanup behaviour |
+| Post Meta Reference | `docs/developer/post-meta-reference.md` | Every `_ms_*` post meta key on the `mediashield_video` + `mediashield_playlist` CPTs |
+| Extension Architecture | `docs/developer/extension-architecture.md` | Filter chain order, priorities, `mediashield_lms_adapters`, SlotFill, upload drivers, Free/Pro boot |
+| Cron & Background Jobs | `docs/developer/cron-and-background-jobs.md` | Every cron hook + Action Scheduler job — interval, purpose, debug |
+| DRM Internals | `docs/developer/drm-internals.md` | `DRM\KeyServer` + `DRM\Packager` mechanics; key storage; ClearKey license flow |
 
 ### Planning Docs (`plan/`)
 

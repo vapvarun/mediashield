@@ -11,7 +11,7 @@ Run these first. They cover 70 percent of reports.
 - [ ] Protection level is not set to "None" (page or per-video).
 - [ ] You're viewing a page that contains a video shortcode, block, or embed.
 - [ ] Browser cache cleared (Cmd or Ctrl + Shift + R).
-- [ ] No JS errors in the browser DevTools console.
+- [ ] No JS errors in the browser DevTools console (browser developer tools, accessible with F12 or right-click > Inspect).
 - [ ] WordPress debug log at `wp-content/debug.log` has no MediaShield-tagged errors.
 
 If all 7 pass and you still have an issue, the sections below probably cover it.
@@ -28,7 +28,7 @@ Fixes in order of likelihood:
 
 3. **Custom embed format.** Settings, Auto-Detection, Custom URL Patterns. Add a regex that matches your iframe src.
 
-4. **Output buffer disabled by a theme or plugin.** Rare, but some performance plugins call `ob_end_clean()` early. Filter override:
+4. **Output buffer disabled by a theme or plugin.** Rare, but some performance plugins clear the buffer early. Filter override:
    ```php
    add_filter( 'mediashield_enable_output_buffer', '__return_true' );
    ```
@@ -45,7 +45,7 @@ Video plays but no username or IP overlay.
 
 3. **User is anonymous.** Without a logged-in user, the watermark shows "Guest" plus IP. If `Require Login` is off and you expected "Guest," this is working as designed. If you want the watermark to show only for logged-in users, that's the default behavior in login-required mode.
 
-4. **Canvas blocked by theme CSS.** Inspect the video container in DevTools for a `.ms-watermark-canvas` element. If it's there but invisible, your theme has `canvas { display: none }` or an overflow clip. Add:
+4. **Canvas blocked by theme CSS.** Inspect the video container in DevTools (browser developer tools, opened with F12) for a `.ms-watermark-canvas` element. If it's there but invisible, your theme has `canvas { display: none }` or an overflow clip. Add:
    ```css
    .ms-protected-player .ms-watermark-canvas {
        display: block !important;
@@ -61,16 +61,16 @@ Videos play but the Dashboard shows zero sessions, and milestones never fire.
 
 1. **REST API is blocked.** Test by visiting `/wp-json/mediashield/v1/` in your browser. You should see a JSON route list. If you see a 404, a security plugin (iThemes Security, Wordfence) is blocking `/wp-json/`. Whitelist it.
 
-2. **Caching is caching nonces.** This is the number one cause. Full-page caching serves the same nonce to every visitor. Each new visitor can't start a session.
+2. **Caching is caching nonces (the one-time security tokens in the page).** This is the number one cause. Full-page caching serves the same token to every visitor. Each new visitor can't start a session.
    * **LiteSpeed Cache:** Settings, Cache, Do Not Cache URIs. Add `/wp-json/mediashield/`.
    * **WP Rocket:** already excludes REST API by default. Verify in Advanced Rules.
    * **W3 Total Cache:** Performance, Page Cache, Reject URIs. Add `/wp-json/`.
    * **WP Super Cache:** Advanced, Rejected URL Strings. Add `/wp-json/`.
    * **Cloudflare APO or Full Page Cache:** add a Page Rule `*yoursite.com/wp-json/*` set to Cache Level: Bypass.
 
-3. **Nonce expired in cached pages.** If your page cache TTL is longer than 12 hours, nonces in those pages expire. Two fixes:
+3. **Nonce expired in cached pages.** If your page cache TTL is longer than 12 hours, the security tokens in those pages expire. Two fixes:
    * Reduce page cache TTL to 12 hours or less.
-   * Use MediaShield Pro, which re-issues nonces via JS on page load.
+   * Use MediaShield Pro, which re-issues tokens via JS on page load.
 
 4. **Ad blocker blocking `/wp-json/` on the user's browser.** Rare but happens with strict privacy-focused browsers. Advise users to whitelist your domain.
 
@@ -98,13 +98,13 @@ Anonymous visitors see the login gate even when the page is public.
 
 1. **Settings, Protection, Block Right-Click is off.** Turn it on.
 2. **Protection level is "None" or "Basic".** "Basic" is the minimum that enables right-click blocking. Set to "Basic" or higher per-video or globally.
-3. **Right-click works OUTSIDE the video container.** By design. We block right-click only within `.ms-protected-player`. Right-clicking on the page background still works.
+3. **Right-click works OUTSIDE the video container.** By design. We block right-click only within the player container. Right-clicking on the page background still works.
 
 ## Self-hosted video returns 403 or won't play
 
 Uploaded MP4 plays in some browsers but 403s in others.
 
-1. **Session not started.** Self-hosted streaming requires an active session. Make sure the player-wrapper JS loaded and `POST /session/start` succeeded (check the Network tab for 200).
+1. **Session not started.** Self-hosted streaming requires an active session. Make sure the player JS loaded and the session start request succeeded (check the Network tab in DevTools).
 
 2. **`.htaccess` misconfigured.** Our upload directory has an `.htaccess` that only allows proxy-served access. If you moved the uploads directory, re-run activation to regenerate `.htaccess`.
 
@@ -128,7 +128,7 @@ Pro features activate, Pro menu items appear, but clicking one shows a blank whi
 
 3. **Browser cache.** Hard reload (Cmd or Ctrl + Shift + R). The Pro admin bundle is versioned, but a stale cache can leave old code running.
 
-4. **Console errors.** Open browser DevTools, Console. Any red errors? Send them to support.
+4. **Console errors.** Open browser DevTools (F12), Console. Any red errors? Send them to support.
 
 ## License activation problems
 
@@ -156,7 +156,7 @@ Known clean-compatibility list:
 Known caveats:
 
 * Some "Disable REST API" security plugins block our endpoints. Whitelist `/wp-json/mediashield/` or switch plugins.
-* Full-page JS-caching plugins that freeze nonces break session start. Use a less aggressive caching level.
+* Full-page JS-caching plugins that freeze security tokens break session start. Use a less aggressive caching level.
 
 ## Still stuck?
 

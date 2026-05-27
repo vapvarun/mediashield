@@ -30,13 +30,13 @@ add_action( 'mediashield_milestone_100', function( $user_id, $video_id ) {
 
 ### Will MediaShield slow down my site?
 
-No. MediaShield only loads its CSS and JavaScript on pages that contain video content. Pages without videos have zero performance impact. Session validation uses HMAC cryptography with no database lookup per heartbeat, so even high-traffic sites scale cleanly.
+No. MediaShield only loads its CSS and JavaScript on pages that contain video content. Pages without videos have zero performance impact. Session validation uses signed tokens (so your site doesn't query the database on every check), so even high-traffic sites scale cleanly.
 
 ### Does it work on mobile?
 
 Yes. The watermark overlay, player wrapping, session tracking, and playback all work on iOS Safari, Android Chrome, and every modern mobile browser. Notes:
 
-* **DevTools detection is intentionally disabled on touch or small-screen devices** (under 1024 px wide) to avoid false positives from on-screen keyboards and orientation changes.
+* **Developer-tools detection is intentionally disabled on touch or small-screen devices** (under 1024 px wide) to avoid false positives from on-screen keyboards and orientation changes.
 * **iOS Safari** falls back to native HLS for encrypted Pro DRM content. Playback works. The key exchange goes through our license endpoint.
 * **Mobile screen recording** (iOS and Android built-in) cannot be prevented by any web plugin. The watermark stays visible in any recording, which is the forensic deterrent.
 
@@ -47,16 +47,16 @@ It depends on where the video is hosted:
 * **Platform videos (YouTube, Vimeo, Wistia, Bunny):** the thumbnail is fetched automatically. MediaShield pulls the poster the platform already generated for that video and sets it as the WordPress **Featured Image** when the video is saved. Nothing to do.
 * **Self-hosted videos (`.mp4` you upload yourself):** there is no platform poster to fetch, so MediaShield does **not** auto-generate one. Set the **Featured Image** on the video manually (Video edit screen, Featured Image box) and it will be used as the poster in lists, blocks, and playlists.
 
-MediaShield does not extract a frame from your uploaded file to build a thumbnail — that requires server-side video processing (ffmpeg) that most WordPress hosts don't provide. A manually chosen Featured Image gives you full control over how the video looks in listings.
+MediaShield does not extract a frame from your uploaded file to build a thumbnail -- that requires server-side video processing (ffmpeg) that most WordPress hosts don't provide. A manually chosen Featured Image gives you full control over how the video looks in listings.
 
 ### Does it work with page caching plugins (WP Rocket, LiteSpeed, W3TC, WP Super Cache)?
 
-Yes, with one configuration step: **exclude REST API endpoints from cache**. Most caching plugins do this by default. If you use full-page caching, make sure the nonce in your page isn't being served to multiple users from the same cache. That breaks session start for anyone after the first viewer.
+Yes, with one configuration step: **exclude REST API endpoints from cache**. Most caching plugins do this by default. If you use full-page caching, make sure a signed session token in your page isn't being served to multiple users from the same cache. That breaks session start for anyone after the first viewer.
 
 Quick checklist:
 
 * Don't cache `/wp-json/mediashield/v1/*` responses.
-* Don't cache pages with a session-started nonce for anonymous visitors if you require login.
+* Don't cache pages with a session-started token for anonymous visitors if you require login.
 * **LiteSpeed:** add `/wp-json/mediashield/` to "Do Not Cache URIs".
 * **WP Rocket:** covered by default. REST API is never cached.
 * **W3TC:** "Reject URIs" should already include `/wp-json/`.
@@ -67,7 +67,7 @@ See `docs/free/troubleshooting.md` for caching-specific debug steps.
 
 Yes. MediaShield is CDN-friendly by default:
 
-* Admin SPA and REST endpoints use standard WordPress nonces. Cloudflare does not cache these.
+* Admin and REST endpoints use standard WordPress authentication. Cloudflare does not cache these.
 * Frontend JS and CSS assets are versioned and cacheable.
 * Video playback for YouTube, Vimeo, Wistia, and Bunny uses the platform's own CDN. Cloudflare doesn't touch it.
 * Self-hosted video streaming uses a PHP proxy endpoint that should NOT be cached. Add a Cloudflare Page Rule if needed: `yoursite.com/wp-json/mediashield/v1/stream/*` set to Bypass Cache.
@@ -78,7 +78,7 @@ For session heartbeats, if you use Cloudflare's Full Page Cache or APO, make sur
 
 **Free:** no. Videos can only be played online. The player wrapper and watermark require a live network connection.
 
-**Pro:** optionally yes, via PWA offline playback with DRM. Admins enable this per-video. Viewers click "Save for Offline" and a persistent DRM license is issued (default 30 days). The browser caches encrypted segments via Service Worker. Licenses can be revoked by admin at any time. This is opt-in. By default, offline is off.
+**Pro:** optionally yes, via PWA offline playback with DRM. Admins enable this per-video. Viewers click "Save for Offline" and a persistent DRM license is issued (default 30 days). The browser caches encrypted segments. Licenses can be revoked by admin at any time. This is opt-in. By default, offline is off.
 
 ### What happens if my Pro license expires?
 
@@ -106,7 +106,7 @@ Yes. MediaShield doesn't replace these plugins. It works on top of them.
 * **Restrict Content Pro:** same pattern via `rcp_user_has_active_membership()`.
 * **LearnDash, Tutor LMS, LifterLMS:** milestone actions fire completion hooks automatically (Pro). Free users wire via the `mediashield_milestone_reached` action.
 
-For custom membership logic, the `mediashield_can_watch` filter is the single extension point. See `docs/free/hooks-filters.md`.
+For custom membership logic, the `mediashield_can_watch` filter is the single extension point. See `docs/developer/hooks-filters-free.md`.
 
 ### How do I migrate from Presto Player, VdoCipher, or another video plugin?
 
@@ -136,7 +136,7 @@ MediaShield renders a dynamic canvas overlay on top of the video player showing 
 
 * Swaps position at configurable intervals (default 30 seconds).
 * Stays visible in fullscreen mode.
-* Cannot be removed via browser dev tools. It re-renders on DOM change.
+* Cannot be removed via browser developer tools. It re-renders on DOM change.
 * Is purely client-side. No video re-encoding required.
 
 Pro extends the watermark to include email, user ID, timestamp, site name, and custom text.
@@ -145,11 +145,11 @@ Pro extends the watermark to include email, user ID, timestamp, site name, and c
 
 MediaShield makes screen recording traceable, not impossible. The dynamic watermark with the viewer's identity (name, IP, email in Pro) means any leaked recording can be traced back to the source. Combined with DRM (Pro), content protection is significantly stronger.
 
-### What does "devtools detection" do?
+### What does "developer-tools detection" do?
 
 When a user opens browser developer tools while watching a video, MediaShield:
 
-1. Detects the devtools panel opening (via timing and size heuristics).
+1. Detects the panel opening (via timing and size heuristics).
 2. Pauses video playback if configured to do so.
 3. Logs the event as a suspicious activity alert (Pro).
 
@@ -173,7 +173,7 @@ MediaShield uses `sendBeacon` on page unload to end the session. If the beacon f
 
 ### Can I revoke a user's access?
 
-Yes. Admins can revoke all active sessions for a user via the REST API endpoint `POST /mediashield/v1/session/revoke-user`. This immediately terminates all their video streams.
+Yes. Admins can revoke all active sessions for a user from the **Students** admin page. This immediately terminates all their active video streams.
 
 ---
 
@@ -184,7 +184,7 @@ Yes. Admins can revoke all active sessions for a user via the REST API endpoint 
 Yes. MediaShield registers with WordPress's built-in privacy tools:
 
 * **Personal Data Export:** exports all watch sessions, milestones, and tags associated with a user.
-* **Personal Data Erasure:** anonymizes PII (IP address, user agent) in watch sessions while aggregate analytics are retained. Deletes milestones and tag assignments.
+* **Personal Data Erasure:** anonymizes personal information (IP address, user agent) in watch sessions while aggregate analytics are retained. Deletes milestones and tag assignments.
 
 ### What data does MediaShield collect?
 
@@ -206,7 +206,7 @@ All data is stored in your own WordPress database. Nothing is sent to external s
 1. Check that MediaShield is enabled in Settings.
 2. Verify the video URL matches a supported platform pattern.
 3. If using a custom embed format, add the URL pattern to Settings, Custom URL Patterns.
-4. Check that output buffering is not disabled on the page (see the `mediashield_enable_output_buffer` filter).
+4. Check that output buffering is not disabled on the page (see the `mediashield_enable_output_buffer` filter in the developer docs).
 
 ### Watermark isn't showing
 
@@ -217,9 +217,9 @@ All data is stored in your own WordPress database. Nothing is sent to external s
 
 ### Session tracking isn't working
 
-1. Verify the REST API is accessible (`/wp-json/mediashield/v1/session/start`).
+1. Verify the REST API is accessible. Visit `/wp-json/mediashield/v1/` in your browser -- you should see a JSON response.
 2. Check that your caching plugin isn't caching REST API responses.
-3. Make sure nonces are not being cached (common with full-page caching plugins).
+3. Make sure your site's session tokens are not being cached and served to multiple users (common with full-page caching plugins).
 
 ### Admin dashboard shows no data
 

@@ -8,6 +8,18 @@ MediaShield Pro ships with **ClearKey DRM**, which is software-based AES-128 enc
 
 If you need hardware-backed DRM that can block screen recording on supported devices, you need **Widevine L1** (Google) or **FairPlay** (Apple). These require licensed partners and cost an order of magnitude more.
 
+---
+
+## Glossary
+
+| Term | What it means |
+|------|--------------|
+| **TEE** | Trusted Execution Environment -- a secure, isolated area of a device's processor. Hardware DRM like Widevine L1 runs key operations in the TEE so software (including the browser) can't read the key. |
+| **CDM** | Content Decryption Module -- the browser component that handles DRM. Software CDMs (Widevine L3 / ClearKey) run in the browser process. Hardware CDMs use the TEE. |
+| **AES** | Advanced Encryption Standard -- the symmetric encryption algorithm used for video content encryption. AES-128 is the standard across all DRM tiers. |
+
+---
+
 ## DRM tiers compared
 
 | Feature | ClearKey (MediaShield Pro) | Widevine L3 | Widevine L1 | FairPlay |
@@ -22,6 +34,8 @@ If you need hardware-backed DRM that can block screen recording on supported dev
 | Typical pricing | Included | $0.005 per playback via service | $$$ | Apple Developer ($99/yr) |
 | Who provides it | Shaka Player (open source) | Google Widevine | Google Widevine | Apple |
 
+---
+
 ## What ClearKey actually does
 
 1. Your video file is encrypted with an AES-128 key before delivery.
@@ -33,7 +47,7 @@ If you need hardware-backed DRM that can block screen recording on supported dev
 **What this stops:**
 
 * Direct download of the `.mp4` or segment files. They're encrypted, so they're useless without the key.
-* URL scraping tools like yt-dlp that grab unencrypted HLS streams.
+* URL scraping tools that grab unencrypted HLS streams.
 * Sharing a download link with a non-authorized user.
 * Casual View Source, Save As.
 
@@ -44,12 +58,16 @@ If you need hardware-backed DRM that can block screen recording on supported dev
 * Someone pointing a phone camera at their monitor.
 * Re-encoding the decrypted playback stream via browser extensions.
 
+---
+
 ## When ClearKey is enough
 
 * Course creators protecting educational content where casual sharing is the risk.
 * Membership sites where videos are part of the paid benefit.
 * Internal training videos within an organization.
 * Any scenario where forensic traceability (watermark plus session logs) matters more than absolute prevention.
+
+---
 
 ## When you need more than ClearKey
 
@@ -59,12 +77,14 @@ If you're distributing content worth thousands of dollars per leak (film premier
 * **VdoCipher** at roughly $350+ per year. Hosted service with Widevine L1 plus FairPlay.
 * **Custom Widevine partnership.** Requires signing agreements with Google plus a CDN that supports it.
 
+---
+
 ## Configuring ClearKey DRM
 
 1. Go to MediaShield, Settings, DRM.
 2. Choose your method:
    * **Bunny Stream (cloud)**, the easiest. Bunny handles packaging.
-   * **Local Shaka Packager.** You run the Shaka Packager CLI on your server.
+   * **Local packager.** You run the packager tool on your server.
 3. Set license duration (streaming vs. persistent).
 4. Enable it on a per-video basis via the video edit screen.
 
@@ -75,6 +95,8 @@ The license endpoint automatically verifies:
 * Concurrent stream limit not exceeded.
 * Domain is whitelisted, if configured.
 
+---
+
 ## Honest positioning for your customers
 
 When explaining video protection to your own customers, use something like:
@@ -82,6 +104,8 @@ When explaining video protection to your own customers, use something like:
 > We encrypt the video so it can't be downloaded directly, and we watermark every playback with the viewer's identity. If the video leaks on Telegram or a forum, the watermark tells us who did it. We can't stop someone from pointing a camera at their screen. No technology can. But we can make ripping impractical and make leakers traceable.
 
 This sets expectations honestly and positions the product correctly.
+
+---
 
 ## FAQ
 
@@ -92,7 +116,7 @@ True Widevine L1 requires a license from Google and hardware-level access on the
 Yes. MediaShield Pro's player abstraction supports swapping DRM backends. If you move to Bunny MediaCage Enterprise or integrate a Widevine service, our watermark plus session plus access control layer keeps applying.
 
 **What happens on iOS or Safari?**
-Shaka Player falls back to native HLS with AES-128 encryption. Your video is still encrypted in transit. The key exchange flows through our license endpoint with session validation. FairPlay (Apple's DRM) is not used. That would require an Apple certificate plus separate packaging.
+The player falls back to native HLS with AES-128 encryption. Your video is still encrypted in transit. The key exchange flows through our license endpoint with session validation. FairPlay (Apple's DRM) is not used. That would require an Apple certificate plus separate packaging.
 
 **Is the license key visible in DevTools?**
 Yes, with effort. ClearKey's keys are visible in the JS debugger if the user knows where to look. This is the tradeoff of software DRM. For most course and membership use cases, this threat model is acceptable because the forensic watermark plus user-level access revocation are the primary deterrents.
