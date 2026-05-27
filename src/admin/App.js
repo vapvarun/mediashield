@@ -72,12 +72,30 @@ const defaultRoutes = [
 ];
 
 /**
- * Return the current hash or the default route hash.
+ * Map of legacy hash aliases → current route hash. Keeps older bookmarks,
+ * support-doc URLs, and external links working when a route gets renamed.
+ *
+ * @type {Object<string,string>}
+ */
+const HASH_ALIASES = {
+	'#/students': '#/viewers', // Sidebar label changed Students → Viewers
+};
+
+/**
+ * Return the current hash, resolving any legacy aliases, falling back to
+ * the default route when nothing is set.
  *
  * @return {string} Current location hash.
  */
 function getCurrentHash() {
-	return window.location.hash || '#/dashboard';
+	const raw = window.location.hash || '#/dashboard';
+	const resolved = HASH_ALIASES[ raw ] || raw;
+	if ( resolved !== raw ) {
+		// Rewrite the URL to the canonical hash so the active-state in the
+		// sidebar matches and the user sees the right URL after reload.
+		window.history.replaceState( null, '', resolved );
+	}
+	return resolved;
 }
 
 const App = () => {

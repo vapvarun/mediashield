@@ -26,6 +26,97 @@ class PlaylistPostType {
 	public static function register(): void {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
+		add_action( 'add_meta_boxes_mediashield_playlist', array( __CLASS__, 'register_items_meta_box' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_items_assets' ) );
+	}
+
+	/**
+	 * Register the "Playlist Items" meta box on the playlist CPT edit screen.
+	 *
+	 * Until this shipped, the only way to manage playlist items was via the
+	 * MediaShield admin SPA (Playlists page → "Manage items"). Users who
+	 * arrived at the playlist via the WP-native Edit link saw a blank
+	 * Gutenberg page with no items UI — confirmed gap during UX sweep
+	 * 2026-05-27.
+	 *
+	 * The meta box renders a React mount point; the existing admin SPA
+	 * bundle picks it up and mounts the same PlaylistItemsModal content
+	 * inline (no modal chrome).
+	 */
+	public static function register_items_meta_box(): void {
+		add_meta_box(
+			'mediashield-playlist-items',
+			__( 'Playlist Items', 'mediashield' ),
+			array( __CLASS__, 'render_items_meta_box' ),
+			'mediashield_playlist',
+			'normal',
+			'high'
+		);
+	}
+
+	/**
+	 * Output the React mount point + small label for the items meta box.
+	 *
+	 * @param \WP_Post $post Current playlist post.
+	 */
+	public static function render_items_meta_box( \WP_Post $post ): void {
+		printf(
+			'<div id="mediashield-playlist-items-root" data-playlist-id="%d" data-playlist-title="%s"></div>',
+			(int) $post->ID,
+			esc_attr( $post->post_title )
+		);
+		printf(
+			'<noscript><p>%s</p></noscript>',
+			esc_html__( 'JavaScript is required to manage playlist items.', 'mediashield' )
+		);
+	}
+
+	/**
+	 * Enqueue the admin SPA bundle on the playlist edit screen so the React
+	 * mount point in the items meta box has something to attach to.
+	 *
+	 * @param string $hook_suffix Current admin page hook.
+	 */
+	public static function enqueue_items_assets( string $hook_suffix ): void {
+		if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
+			return;
+		}
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || 'mediashield_playlist' !== $screen->post_type ) {
+			return;
+		}
+
+		$build_dir = MEDIASHIELD_PATH . 'build/admin/';
+		$build_url = MEDIASHIELD_URL . 'build/admin/';
+		$asset_file = $build_dir . 'index.asset.php';
+		$asset      = file_exists( $asset_file ) ? require $asset_file : array(
+			'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'wp-data', 'wp-notices' ),
+			'version'      => MEDIASHIELD_VERSION,
+		);
+
+		wp_enqueue_script(
+			'mediashield-playlist-items',
+			$build_url . 'index.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+		wp_enqueue_style(
+			'mediashield-playlist-items',
+			$build_url . 'index.css',
+			array( 'wp-components' ),
+			$asset['version']
+		);
+		wp_localize_script(
+			'mediashield-playlist-items',
+			'mediashieldAdmin',
+			array(
+				'restUrl'   => rest_url( 'mediashield/v1/' ),
+				'wpRestUrl' => rest_url( 'wp/v2/' ),
+				'nonce'     => wp_create_nonce( 'wp_rest' ),
+				'adminUrl'  => admin_url(),
+			)
+		);
 	}
 
 	/**

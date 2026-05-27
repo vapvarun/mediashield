@@ -15,6 +15,11 @@ module.exports = {
 		// Gutenberg playlist block.
 		'blocks/playlist/index': path.resolve( __dirname, 'src/blocks/playlist/index.js' ),
 		'blocks/playlist/view': path.resolve( __dirname, 'src/blocks/playlist/view.js' ),
+		// Gutenberg my-videos block (dynamic — render.php). Without an
+		// index.js entry that calls registerBlockType client-side,
+		// Gutenberg shows "block support missing" in the editor.
+		'blocks/my-videos/index': path.resolve( __dirname, 'src/blocks/my-videos/index.js' ),
+		'blocks/my-videos/view': path.resolve( __dirname, 'src/blocks/my-videos/view.js' ),
 		// Admin SPA.
 		'admin/index': path.resolve( __dirname, 'src/admin/index.js' ),
 	},

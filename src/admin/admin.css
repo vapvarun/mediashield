@@ -2776,3 +2776,22 @@
 	padding-top: var( --ms-space-4 );
 	border-top: 1px solid var( --ms-color-border-light );
 }
+
+/* ── Playlist Items Panel (meta box on CPT edit screen) ─────── */
+.ms-playlist-items-panel {
+	padding: var( --ms-space-2 ) 0;
+}
+
+.ms-playlist-items__panel-actions {
+	display: flex;
+	align-items: center;
+	gap: var( --ms-space-4 );
+	margin-top: var( --ms-space-4 );
+	padding-top: var( --ms-space-4 );
+	border-top: 1px solid var( --ms-color-border-light );
+}
+
+.ms-playlist-items__panel-caption {
+	font-size: 12px;
+	color: var( --ms-color-text-tertiary );
+}
