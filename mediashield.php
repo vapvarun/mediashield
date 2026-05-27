@@ -89,7 +89,7 @@ add_action(
 				'item_id' => 1661218,
 				'version' => MEDIASHIELD_VERSION,
 				'file'    => MEDIASHIELD_FILE,
-				'license' => 'wbcomfreec7e2a9b45d8f1c3e6a0b9d2f7c4e8a11',
+				'license' => 'mediasheild7c2a9e5d1f8b4c6a3e0d9b2f7c1a8e12',
 			)
 		);
 	}
@@ -115,9 +115,10 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 add_action(
 	'admin_init',
 	function () {
-		$preset_key = 'wbcomfreec7e2a9b45d8f1c3e6a0b9d2f7c4e8a11';
-		$option     = 'mediashield_license_key';
-		$activated  = 'mediashield_preset_activated';
+		$preset_key      = 'mediasheild7c2a9e5d1f8b4c6a3e0d9b2f7c1a8e12';
+		$option          = 'mediashield_license_key';
+		$status_option   = 'mediashield_license';
+		$activated       = 'mediashield_preset_activated';
 
 		if ( get_option( $activated ) ) {
 			return;
@@ -138,11 +139,24 @@ add_action(
 			)
 		);
 
-		if ( ! is_wp_error( $response ) ) {
-			$body = json_decode( wp_remote_retrieve_body( $response ), true );
-			if ( 'valid' === ( $body['license'] ?? '' ) ) {
-				update_option( $activated, 1, false );
-			}
+		if ( is_wp_error( $response ) ) {
+			return;
 		}
+
+		$raw = wp_remote_retrieve_body( $response );
+		$body = json_decode( $raw, true );
+
+		if ( 'valid' !== ( $body['license'] ?? '' ) ) {
+			return;
+		}
+
+		update_option( $activated, 1, false );
+
+		// Sync the SDK's expected status-object option so the "Manage License"
+		// modal shows the valid customer + expiry immediately, instead of
+		// waiting for the SDK's daily get_version cron to re-check. Stored as
+		// an object (stdClass) to match what the SDK writes when the user
+		// activates manually through its own overlay.
+		update_option( $status_option, json_decode( $raw ), false );
 	}
 );
