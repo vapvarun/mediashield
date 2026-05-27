@@ -2170,7 +2170,9 @@
 .ms-wizard__step-fields {
 	display: flex;
 	flex-direction: column;
-	gap: var( --ms-space-1 );
+	/* 16px between form rows. The previous --ms-space-1 (4px) squashed
+	   toggles + selects so tightly they read as one stacked control. */
+	gap: var( --ms-space-4 );
 }
 
 /* ── Platform grid ───────────────────────────────── */
