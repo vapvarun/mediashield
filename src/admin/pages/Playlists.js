@@ -7,11 +7,12 @@
  */
 
 import { useState, useEffect } from '@wordpress/element';
-import { Spinner } from '@wordpress/components';
+import { Spinner, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { decodeEntities } from '@wordpress/html-entities';
 import Icon from '../components/Icon';
+import PlaylistItemsModal from '../components/PlaylistItemsModal';
 
 const config = window.mediashieldAdmin || {};
 
@@ -19,6 +20,7 @@ const Playlists = () => {
 	const [ playlists, setPlaylists ] = useState( [] );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
+	const [ itemsModal, setItemsModal ] = useState( null );
 
 	useEffect( () => {
 		let cancelled = false;
@@ -138,6 +140,17 @@ const Playlists = () => {
 												: '\u2014' }
 										</td>
 										<td className="mediashield-table__actions">
+											<Button
+												variant="secondary"
+												onClick={ () => setItemsModal( {
+													id: playlist.id,
+													title: playlist.title?.rendered || '',
+												} ) }
+												__next40pxDefaultSize
+												className="mediashield-action-btn"
+											>
+												{ __( 'Manage items', 'mediashield' ) }
+											</Button>
 											<a
 												href={ `${ config.adminUrl }post.php?post=${ playlist.id }&action=edit` }
 												className="mediashield-action-btn mediashield-action-btn--edit"
@@ -161,6 +174,14 @@ const Playlists = () => {
 						</tbody>
 					</table>
 				</div>
+			) }
+
+			{ itemsModal && (
+				<PlaylistItemsModal
+					playlistId={ itemsModal.id }
+					playlistTitle={ itemsModal.title }
+					onClose={ () => setItemsModal( null ) }
+				/>
 			) }
 		</div>
 	);
