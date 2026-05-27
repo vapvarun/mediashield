@@ -95,8 +95,11 @@ add_action(
 	}
 );
 
-if ( file_exists( MEDIASHIELD_PATH . 'vendor/easy-digital-downloads/edd-sl-sdk/edd-sl-sdk.php' ) ) {
-	require_once MEDIASHIELD_PATH . 'vendor/easy-digital-downloads/edd-sl-sdk/edd-sl-sdk.php';
+// SDK lives at libs/ (committed, ships in the free zip). Pro reads it via
+// the same path — see mediashield-pro.php. Keep the file_exists() guard so
+// a partial / corrupted install degrades to an admin notice instead of fatal.
+if ( file_exists( MEDIASHIELD_PATH . 'libs/edd-sl-sdk/edd-sl-sdk.php' ) ) {
+	require_once MEDIASHIELD_PATH . 'libs/edd-sl-sdk/edd-sl-sdk.php';
 }
 
 // WP-CLI commands.
