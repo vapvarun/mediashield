@@ -29,6 +29,20 @@ class VideoPostType {
 		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_boxes' ) );
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'save_meta_box' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_edit_assets' ) );
+		// Hide WP's default Custom Fields meta box on the video edit screen —
+		// it surfaces raw post-meta key/value pairs and confuses site owners
+		// who only need the structured fields we already render. Users who
+		// want it back can flip it on via Screen Options at any time.
+		add_action( 'add_meta_boxes_mediashield_video', array( __CLASS__, 'hide_default_meta_boxes' ), 100 );
+	}
+
+	/**
+	 * Remove WP-default meta boxes that aren't useful on the video edit
+	 * screen by default. Fires late (priority 100) so it removes WP's box
+	 * after WP-core has registered it.
+	 */
+	public static function hide_default_meta_boxes(): void {
+		remove_meta_box( 'postcustom', 'mediashield_video', 'normal' );
 	}
 
 	/**

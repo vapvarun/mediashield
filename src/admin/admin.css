@@ -765,13 +765,18 @@
 	border-color: var( --ms-color-text );
 }
 
+/* Delete is destructive but should not scream from a list of 9+ rows —
+   neutral at rest, full-destructive only on hover/focus. Matches the
+   pattern used in PlaylistItemsPanel and the Pro Alerts row actions. */
 .mediashield-action-btn--delete {
-	color: var( --ms-color-error );
-	border-color: var( --ms-color-error );
+	color: var( --ms-color-text-secondary );
+	border-color: var( --ms-color-border );
 }
 
-.mediashield-action-btn--delete:hover {
+.mediashield-action-btn--delete:hover,
+.mediashield-action-btn--delete:focus-visible {
 	background: var( --ms-color-error );
+	border-color: var( --ms-color-error );
 	color: var( --ms-color-surface );
 }
 
