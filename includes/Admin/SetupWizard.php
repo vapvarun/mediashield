@@ -117,7 +117,13 @@ class SetupWizard {
 	 */
 	public static function render_page(): void {
 		// Hardcoded HTML containers — no dynamic content, safe to output directly.
-		echo '<div id="mediashield-wizard-root" class="mediashield-wizard"></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
+		// Both classes intentional: `mediashield-admin` brings in the design
+		// tokens (`--ms-color-*`, `--ms-space-*`) that the rest of admin.css
+		// references via `var(--ms-*)`; `mediashield-wizard` keeps the wizard-
+		// page chrome (bg, min-height, font). Without the first class the
+		// tokens resolve to empty strings and every padding/border/color in
+		// the wizard collapses (regression observed 2026-05-27).
+		echo '<div id="mediashield-wizard-root" class="mediashield-admin mediashield-wizard"></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
 		echo '<noscript><p style="padding:20px;">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
 		echo esc_html__( 'JavaScript is required for the setup wizard.', 'mediashield' );
 		echo '</p></noscript>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
