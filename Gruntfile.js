@@ -39,6 +39,7 @@ module.exports = function(grunt) {
                         '!phpcs.xml.dist',
                         '!phpunit.xml*',
                         '!phpstan.neon*',
+                        '!phpstan-baseline.neon',
                         '!phpstan-bootstrap.php',
                         '!webpack.config.js',
                         '!Gruntfile.js',
@@ -64,10 +65,16 @@ module.exports = function(grunt) {
                         '!**/.gitattributes',
                         '!**/phpunit.xml*',
                         '!**/phpcs.xml*',
+                        '!**/phpstan-baseline.neon',
                         '!**/webpack.config.js',
                         '!**/package.json',
                         '!**/package-lock.json',
-                        '!**/composer.lock'
+                        '!**/composer.lock',
+                        // EDD SL SDK source assets (.scss / ES-module .js) —
+                        // dead weight in the zip since the SDK's compiled
+                        // build/ isn't shipped (Pro shims it via
+                        // assets/edd-sl-sdk-shim/).
+                        '!vendor/**/assets/src/**'
                     ],
                     dest: 'dist/mediashield/'
                 }]

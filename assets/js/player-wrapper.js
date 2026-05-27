@@ -145,6 +145,26 @@
 						} );
 						if ( adapter._readyCb ) adapter._readyCb();
 					} );
+				} )
+				.catch( function ( err ) {
+					// SDK load failed (ad-blocker, CSP, offline CDN). Fall back to a
+					// raw <iframe> so the video still plays — adapter._player stays
+					// null so heartbeat/milestone tracking is silently disabled, but
+					// every adapter method is null-guarded so nothing throws.
+					if ( target && ! target.querySelector( 'iframe' ) ) {
+						var iframe = document.createElement( 'iframe' );
+						iframe.src = 'https://player.vimeo.com/video/' + encodeURIComponent( videoId );
+						iframe.style.width = '100%';
+						iframe.style.aspectRatio = '16/9';
+						iframe.style.border = '0';
+						iframe.setAttribute( 'allow', 'autoplay; fullscreen; picture-in-picture' );
+						iframe.setAttribute( 'allowfullscreen', 'true' );
+						target.appendChild( iframe );
+					}
+					if ( typeof console !== 'undefined' && console.warn ) {
+						console.warn( 'MediaShield: Vimeo Player SDK failed to load — falling back to raw iframe, watch tracking is disabled.', err );
+					}
+					if ( adapter._readyCb ) adapter._readyCb();
 				} );
 
 			return adapter;

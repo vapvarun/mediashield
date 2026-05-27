@@ -3,7 +3,7 @@
         'name' => 'mediashield/mediashield',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '5db6d54b158492b647bfb5c797b2f221f7afab46',
+        'reference' => '3e0c38cf61ee09b8c10b6efef4f0effe17979d45',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'mediashield/mediashield' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '5db6d54b158492b647bfb5c797b2f221f7afab46',
+            'reference' => '3e0c38cf61ee09b8c10b6efef4f0effe17979d45',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

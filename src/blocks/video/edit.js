@@ -145,19 +145,12 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// Resolve a preview thumbnail:
 	// 1. WP featured image when the editor has set one.
-	// 2. Otherwise derive a free CDN URL for known platforms so the block has a
-	//    real preview without an extra API call.
+	// 2. Otherwise derive a free CDN URL for YouTube — its `hqdefault.jpg` is
+	//    reliably reachable. Bunny/Vimeo/Wistia fall through to the iframe
+	//    embed branch below so the actual player renders in the editor.
 	const derivedThumbnail = ( () => {
 		if ( platform === 'youtube' && platformVideoId ) {
 			return `https://i.ytimg.com/vi/${ platformVideoId }/hqdefault.jpg`;
-		}
-		if ( platform === 'bunny' && platformVideoId ) {
-			// Bunny thumbnail convention — first segment of the platformVideoId
-			// is the library, second is the video GUID; bail if it doesn't match.
-			const parts = platformVideoId.split( '/' );
-			if ( parts.length === 2 ) {
-				return `https://vz-${ parts[ 0 ] }.b-cdn.net/${ parts[ 1 ] }/thumbnail.jpg`;
-			}
 		}
 		return '';
 	} )();

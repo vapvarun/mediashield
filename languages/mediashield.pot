@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-26T10:47:59+00:00\n"
+"POT-Creation-Date: 2026-05-27T07:47:51+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -216,7 +216,7 @@ msgid "Videos list"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:84
-#: src/blocks/video/edit.js:173
+#: src/blocks/video/edit.js:166
 msgid "Video Settings"
 msgstr ""
 
@@ -343,12 +343,12 @@ msgid "Standard — Watermark + session tracking"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:344
-#: src/blocks/video/edit.js:190
+#: src/blocks/video/edit.js:183
 msgid "Strict — Devtools detection + source hiding"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:351
-#: src/blocks/video/edit.js:184
+#: src/blocks/video/edit.js:177
 msgid "Protection Level"
 msgstr ""
 
@@ -631,7 +631,7 @@ msgstr ""
 #: includes/Privacy/PrivacyExporter.php:284
 #: src/admin/pages/Milestones.js:147
 #: src/admin/pages/Students.js:165
-#: src/blocks/video/edit.js:287
+#: src/blocks/video/edit.js:280
 msgid "Video"
 msgstr ""
 
@@ -1805,7 +1805,7 @@ msgstr ""
 
 #: src/admin/pages/Videos.js:108
 #: src/admin/wizard/steps/FirstVideoStep.js:91
-#: src/blocks/video/edit.js:175
+#: src/blocks/video/edit.js:168
 msgid "Platform:"
 msgstr ""
 
@@ -1887,7 +1887,7 @@ msgstr ""
 
 #: src/admin/wizard/steps/FirstVideoStep.js:92
 #: src/blocks/playlist/edit.js:96
-#: src/blocks/video/edit.js:179
+#: src/blocks/video/edit.js:172
 msgid "ID:"
 msgstr ""
 
@@ -2083,27 +2083,27 @@ msgstr ""
 msgid "Embed"
 msgstr ""
 
-#: src/blocks/video/edit.js:187
+#: src/blocks/video/edit.js:180
 msgid "None — Free preview"
 msgstr ""
 
-#: src/blocks/video/edit.js:188
+#: src/blocks/video/edit.js:181
 msgid "Basic — Login + right-click block"
 msgstr ""
 
-#: src/blocks/video/edit.js:189
+#: src/blocks/video/edit.js:182
 msgid "Standard — Watermark + tracking"
 msgstr ""
 
-#: src/blocks/video/edit.js:208
+#: src/blocks/video/edit.js:201
 msgid "Duration (seconds)"
 msgstr ""
 
-#: src/blocks/video/edit.js:209
+#: src/blocks/video/edit.js:202
 msgid "Used to validate watch progress. Leave 0 if unknown."
 msgstr ""
 
-#: src/blocks/video/edit.js:247
+#: src/blocks/video/edit.js:240
 msgid "Remove Video"
 msgstr ""
 
