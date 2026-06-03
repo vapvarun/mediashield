@@ -6,7 +6,7 @@
 
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
-- **Version:** 1.0.0
+- **Version:** 1.1.0
 - **Requires:** PHP 8.1, WordPress 6.5
 - **Text Domain:** mediashield
 - **Namespace:** `MediaShield\`

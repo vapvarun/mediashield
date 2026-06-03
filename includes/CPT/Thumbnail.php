@@ -185,9 +185,9 @@ class Thumbnail {
 			'post_content'   => '',
 			'post_status'    => 'inherit',
 		);
-		$attachment_id = wp_insert_attachment( $attachment, $sideloaded['file'], $post_id );
-		if ( is_wp_error( $attachment_id ) || 0 === $attachment_id ) {
-			return is_wp_error( $attachment_id ) ? $attachment_id : new \WP_Error( 'mediashield_thumbnail_attach_failed', 'wp_insert_attachment returned 0' );
+		$attachment_id = wp_insert_attachment( $attachment, $sideloaded['file'], $post_id, true );
+		if ( is_wp_error( $attachment_id ) ) {
+			return $attachment_id;
 		}
 
 		// Generate metadata + intermediate sizes so the thumbnail renders at

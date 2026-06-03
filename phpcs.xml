@@ -11,6 +11,10 @@
 
 	<!-- Exclude non-source directories -->
 	<exclude-pattern>vendor/*</exclude-pattern>
+	<!-- libs/edd-sl-sdk is the bundled third-party EDD Software Licensing SDK
+	     (upstream code we vendor, not author). Same category as vendor/* — we
+	     do not lint upstream SDK source against the MediaShield WP ruleset. -->
+	<exclude-pattern>libs/*</exclude-pattern>
 	<exclude-pattern>node_modules/*</exclude-pattern>
 	<exclude-pattern>build/*</exclude-pattern>
 	<exclude-pattern>dist/*</exclude-pattern>

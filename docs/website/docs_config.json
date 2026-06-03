@@ -1,0 +1,48 @@
+{
+  "parent_category": "mediashield",
+  "subcategories": [
+    {
+      "slug": "getting-started-ms",
+      "name": "Getting Started",
+      "docs": [
+        "getting-started/01-introduction.md",
+        "getting-started/02-installation.md",
+        "getting-started/03-setup-wizard.md",
+        "getting-started/04-add-your-first-video.md"
+      ]
+    },
+    {
+      "slug": "configuration-ms",
+      "name": "Configuration",
+      "docs": [
+        "configuration/01-settings-overview.md",
+        "configuration/02-protection-settings.md",
+        "configuration/03-player-settings.md",
+        "configuration/04-access-control.md",
+        "configuration/05-shortcodes-and-blocks.md"
+      ]
+    },
+    {
+      "slug": "using-mediashield-ms",
+      "name": "Using MediaShield",
+      "docs": [
+        "using-mediashield/01-watermarks.md",
+        "using-mediashield/02-analytics-and-milestones.md",
+        "using-mediashield/03-playlists.md",
+        "using-mediashield/04-troubleshooting.md",
+        "using-mediashield/05-faq.md"
+      ]
+    },
+    {
+      "slug": "developer-guide-ms",
+      "name": "Developer Guide",
+      "docs": [
+        "developer-guide/01-overview.md",
+        "developer-guide/02-hooks-and-filters.md",
+        "developer-guide/03-rest-api.md",
+        "developer-guide/04-database-tables.md",
+        "developer-guide/05-extension-architecture.md"
+      ]
+    }
+  ]
+}

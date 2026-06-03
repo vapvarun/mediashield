@@ -147,49 +147,37 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 == Changelog ==
 
-= 1.1.0 =
+= 1.1.0 - June 2026 =
 
-**Frontend & UX**
-* Generic-platform embed URLs now route through an `<iframe>` adapter (only `bunny` was rerouted in 1.0.0) — any unknown platform serving an embed-page URL plays correctly instead of rendering a broken `<video>`.
-* Login overlay `aria-label` reads the admin-configured Login Overlay Text so screen readers announce the same message that's visible.
-* Resume Playback per-video override is now honored at the frontend.
-* "Last Active" and "Reached At" relative times use UTC consistently — no more "5h ago" drift when the site timezone differs.
-* Protection Level tiers (basic / standard / strict) behave differently again: `basic` skips session/watermark/tracker, `strict` forces devtools detection and source hiding.
-* Recent Milestones list no longer renders username and video title as one concatenated string.
-* Per-video Email Gate (Pro feature) now fully works for anonymous visitors. The admin toggle saves AND the gate actually fires, captures the email, sets the cookie, and unlocks playback. Three coordinated fixes shipped on the Free side: `/session/start` no longer 401s anonymous viewers when the target video opts into an alternative access type; the access-denial WP_Error promotes the reason to `data.code` so the client distinguishes `email_gate_required`; the player-wrapper client-side login shortcut steps aside when `data-access-type` is present on the player container.
-* Admin success/error toasts render fully above the WordPress admin-bar edge instead of slipping behind it.
-* Thumbnail sideload handles extensionless CDN URLs (Vimeo / Wistia / self-hosted) — previously thumbnails for those platforms silently failed to attach because `media_sideload_image()` didn't recognize the URL as an image.
-* `POST /wp/v2/mediashield-videos` now auto-fetches the platform thumbnail on the FIRST save. `featured_media` was 0 on create and only populated on the second update; both the Gutenberg "Paste URL" block flow and external REST clients now get the thumbnail attached immediately.
+Bug fixes, accessibility and UX polish, a complete documentation set, and new developer extension points. Safe upgrade with no schema change beyond the v3 migration shipped in 1.0.0.
 
-**Admin SPA**
-* Videos admin table responsive at ≤782px so action buttons no longer clip.
-* Videos list search/filter by title.
-* Copy-shortcode button polished against the UX guideline (40px tap target).
-* Sticky-player close button uses a 40px tap target and is no longer clipped by `overflow:hidden` on the parent.
-* Migration from Dashicons to inline Lucide SVGs across admin SPA, blocks, and meta-box icons.
-
-**Data integrity & analytics**
-* Permanent video delete now drops orphan `ms_tags` rows (only-video case) and purges every user's `_ms_video_tags` meta entry keyed to the deleted video.
-* Trashed videos are excluded from Top Videos / Milestones / User Detail analytics queries.
-* Duration field: honest "leave 0 if unknown" label, block-editor input, server-side validation against stored `_ms_duration` meta.
-* Dashboard period selector (7d / 30d / 90d) now also filters the "Recent Milestones" panel. The sibling metric cards already respected the filter; the activity feed was returning all-time data and silently contradicting them — e.g. "Last 7 days" could display milestones from months ago.
-
-**Setup, build, and infrastructure**
-* Composer runtime closure (Action Scheduler) shipped in `vendor/` so a fresh clone activates without `composer install`. Missing-autoloader path now degrades gracefully with an admin notice.
-* `symfony/yaml ^6.4` bundled at runtime so `composer arch-checks` runs out of the box.
-* Architecture-invariants gate (`bin/architecture-checks.sh`) actually parses `plan/INVARIANTS.yaml` (was silently failing on missing YAML parser).
-* PHPStan level 5 errors cleared (Migrator narrowing, PlaylistRenderer int→string casts, Action Scheduler stubs in `phpstan-bootstrap.php`).
-* WPCS gate green: 62 lint errors reduced to 0; `bin/` and `phpstan-bootstrap.php` excluded as non-runtime tooling; `Icons::svg` echo sites carry per-call annotations with a justification.
-
-**QA**
-* 3 new critical customer journeys: `customer/playlist-render-and-empty-state.md`, `admin/video-delete-cascade.md`, `system/gdpr-export-and-erase.md`. Each is the regression sentinel for a recurring QA cluster.
-* `audit/journey-runs/` gitignored (per-run output is local-only).
-
-**Internals**
-* `_ms_milestone_tags` registered in the REST schema so the admin SPA can save milestone-tag configurations through `POST /wp/v2/mediashield-videos/{id}`.
-* `Core/Migrator` lifts per-version migration steps into self-gating helpers so each step's idempotency guarantee is local and PHPStan can't narrow the comparison via the outer version branch.
-* New extension points: filters `mediashield_player_access_type` (lets extensions declare alternative gate flows the player container respects via `data-access-type`), `mediashield_session_allow_anonymous_start` (per-video opt-in for anonymous `/session/start`). New action / filter hooks fired by the core: `mediashield_allow_empty_referer`, `mediashield_frontend_config`, `mediashield_privacy_before_erase`, `mediashield_privacy_erase_result`, `mediashield_upload_started`, `mediashield_upload_failed`.
-* `mediashield:access-denied` DOM CustomEvent is now `cancelable: true` — listeners can call `event.preventDefault()` to suppress the generic error overlay before rendering an alternative gate UI (Pro's email gate uses this).
+* New      - Search and filter the Videos admin list by title.
+* New      - Complete customer and developer documentation set covering getting started, configuration, everyday use, and the developer guide.
+* New      - Player container honors a data-access-type attribute so extensions can declare alternative gate flows, which powers the Pro email gate.
+* Improve  - Login overlay aria-label now reads the configured Login Overlay Text so screen readers announce the visible message.
+* Improve  - Migrated all admin SPA, block, and meta-box icons from Dashicons to inline Lucide SVGs.
+* Improve  - Videos admin table is responsive at 782px and below so action buttons no longer clip.
+* Improve  - Copy-shortcode and sticky-player close buttons now meet the 40px tap-target minimum.
+* Improve  - Duration field has an honest "leave 0 if unknown" label with server-side validation.
+* Improve  - Admin success and error toasts render above the WordPress admin bar instead of behind it.
+* Fix      - Unknown-platform embed URLs now route through an iframe adapter instead of rendering a broken video element.
+* Fix      - Per-video email gate now works end to end for anonymous visitors: the toggle saves, the gate fires, captures the email, sets the cookie, and unlocks playback.
+* Fix      - Resume Playback per-video override is now honored on the frontend.
+* Fix      - "Last Active" and "Reached At" relative times use UTC consistently so they no longer drift with the site timezone.
+* Fix      - Protection Level tiers behave distinctly again: basic skips session, watermark, and tracker, while strict forces devtools detection and source hiding.
+* Fix      - Recent Milestones no longer renders the username and video title as one concatenated string.
+* Fix      - Thumbnail sideload now handles extensionless CDN URLs from Vimeo, Wistia, and self-hosted sources.
+* Fix      - Creating a video through the REST API now attaches the platform thumbnail on the first save instead of the second.
+* Fix      - Thumbnail attachment now surfaces a WP_Error on failure instead of silently continuing.
+* Fix      - Permanent video delete drops orphan tag rows and purges per-user milestone-tag meta for the deleted video.
+* Fix      - Trashed videos are excluded from Top Videos, Milestones, and User Detail analytics.
+* Fix      - The dashboard period selector now also filters the Recent Milestones panel.
+* Dev      - New filters mediashield_player_access_type and mediashield_session_allow_anonymous_start, plus new hooks for frontend config, empty-referer policy, privacy erase, and the upload lifecycle.
+* Dev      - The mediashield:access-denied DOM event is now cancelable so listeners can suppress the default overlay and render their own gate.
+* Dev      - Registered _ms_milestone_tags in the REST schema so the admin SPA can save milestone-tag configuration.
+* Dev      - Cleared all PHPStan level 5 errors and reduced WPCS to zero errors; the bundled EDD licensing SDK is excluded from linting.
+* Dev      - Bundled the Action Scheduler and symfony/yaml runtime dependencies so a fresh clone activates without composer install.
+* Dev      - Added three critical regression journeys for playlist rendering, video-delete cascade, and GDPR export and erase.
 
 = 1.0.0 =
 * Initial release.
@@ -216,7 +204,7 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 == Upgrade Notice ==
 
 = 1.1.0 =
-Bug fixes and UX polish — login-overlay accessibility, generic embed-URL iframe fallback, resume-playback override, timezone-correct "Last Active" times, responsive Videos admin table, orphan-tag cleanup on video delete, and 3 new regression journey specs. Safe upgrade — no schema bump beyond the v3 milestone-tags migration shipped in 1.0.0.
+Bug fixes, accessibility and UX polish, and a complete documentation set. Safe upgrade with no schema change beyond the v3 milestone-tags migration shipped in 1.0.0.
 
 = 1.0.0 =
 Initial release of MediaShield.

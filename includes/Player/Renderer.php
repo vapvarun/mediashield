@@ -111,7 +111,10 @@ class Renderer {
 			data-platform="<?php echo esc_attr( $platform ); ?>"
 			data-protection-level="<?php echo esc_attr( $protection_level ); ?>"
 			data-player-type="<?php echo esc_attr( $player_type ); ?>"
-			<?php if ( '' !== $access_type ) : ?>data-access-type="<?php echo esc_attr( $access_type ); ?>"<?php endif; ?>
+			<?php
+			if ( '' !== $access_type ) :
+				?>
+				data-access-type="<?php echo esc_attr( $access_type ); ?>"<?php endif; ?>
 			<?php
 			if ( $wrapper_attrs ) {
 				echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().

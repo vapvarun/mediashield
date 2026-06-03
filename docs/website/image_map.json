@@ -1,0 +1,8 @@
+{
+  "mediashield-dashboard.png": "Admin dashboard with analytics overview showing session counts, average completion, activity chart, Top Videos, and Recent Milestones",
+  "mediashield-frontend-player.png": "Frontend protected video player with dynamic watermark and Protected by MediaShield badge",
+  "mediashield-milestones.png": "Milestones admin page showing per-video completion counts at 25%, 50%, 75%, and 100% thresholds",
+  "mediashield-settings.png": "Plugin Settings page with General, Watermark, Access Control, and Player Controls sections",
+  "mediashield-videos-list.png": "Videos admin list showing 8 videos across YouTube, Vimeo, and self-hosted with Standard and Strict protection badges",
+  "mediashield-viewers.png": "Viewers page listing 12 students with completion progress bars and last-active timestamps"
+}
