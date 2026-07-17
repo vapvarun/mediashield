@@ -116,21 +116,6 @@ class PlayerWrapper {
 			'self'
 		);
 
-		// Custom admin-configured patterns.
-		$custom_patterns = get_option( 'ms_custom_url_patterns', '' );
-		if ( ! empty( $custom_patterns ) ) {
-			$patterns = array_filter( array_map( 'trim', explode( "\n", $custom_patterns ) ) );
-			foreach ( $patterns as $pattern ) {
-				if ( @preg_match( '/' . $pattern . '/', '' ) !== false ) {
-					$html = self::wrap_platform(
-						$html,
-						'/<iframe[^>]*\ssrc=["\']([^"\']*' . $pattern . '[^"\']*)["\'][^>]*><\/iframe>/i',
-						'iframe'
-					);
-				}
-			}
-		}
-
 		return $html;
 	}
 

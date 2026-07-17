@@ -312,13 +312,6 @@
       "controls": "Max concurrent stream sessions per user"
     },
     {
-      "key": "ms_custom_url_patterns",
-      "group": "ms_settings",
-      "type": "array",
-      "default": [],
-      "controls": "Custom URL patterns to detect+wrap as videos"
-    },
-    {
       "key": "ms_show_badge",
       "group": "ms_settings",
       "type": "bool",

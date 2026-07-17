@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'mediashield/mediashield',
-        'pretty_version' => 'dev-main',
-        'version' => 'dev-main',
-        'reference' => 'edcdc313ac893c26b643a6873c3f691037510ab4',
+        'pretty_version' => '1.2.0.x-dev',
+        'version' => '1.2.0.9999999-dev',
+        'reference' => '3c8e7d9fa82c496da1ddcfe990fac9a6985aedac',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'mediashield/mediashield' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
-            'reference' => 'edcdc313ac893c26b643a6873c3f691037510ab4',
+            'pretty_version' => '1.2.0.x-dev',
+            'version' => '1.2.0.9999999-dev',
+            'reference' => '3c8e7d9fa82c496da1ddcfe990fac9a6985aedac',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

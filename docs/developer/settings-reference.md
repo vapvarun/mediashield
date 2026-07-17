@@ -55,14 +55,6 @@ Self-hosted uploads are stored in `wp-content/uploads/mediashield/` with `.htacc
 
 ---
 
-## Custom URL patterns
-
-| Option Key | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `ms_custom_url_patterns` | string | `''` | Additional URL patterns for the output buffer video detector. One pattern per line. Supports wildcards. |
-
----
-
 ## Player controls
 
 Global defaults for the player UI. Each can be overridden per-video via the video editor sidebar (tri-state: on / off / inherit). Per-video meta keys mirror these names with the `_` prefix — see [post-meta-reference.md](post-meta-reference.md).

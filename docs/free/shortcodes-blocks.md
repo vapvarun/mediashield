@@ -159,6 +159,5 @@ MediaShield uses output buffering to detect and wrap video embeds that aren't pl
 - Vimeo iframes
 - Bunny Stream iframes
 - Wistia inline embeds
-- Custom URL patterns (configured in Settings)
 
 The output buffer can be disabled on specific pages via the `mediashield_enable_output_buffer` filter (see the [developer hooks reference](../developer/hooks-filters-free.md)).

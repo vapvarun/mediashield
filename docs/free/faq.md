@@ -205,7 +205,7 @@ All data is stored in your own WordPress database. Nothing is sent to external s
 
 1. Check that MediaShield is enabled in Settings.
 2. Verify the video URL matches a supported platform pattern.
-3. If using a custom embed format, add the URL pattern to Settings, Custom URL Patterns.
+3. Confirm the video was added to MediaShield. Embeds pasted directly into a post are not protected.
 4. Check that output buffering is not disabled on the page (see the `mediashield_enable_output_buffer` filter in the developer docs).
 
 ### Watermark isn't showing

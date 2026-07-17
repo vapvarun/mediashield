@@ -26,7 +26,7 @@ Fixes in order of likelihood:
 
 2. **Embed in an element the output buffer can't scan.** Some page builders render videos via JavaScript after the output buffer runs. Use the MediaShield Video block or `[mediashield id=X]` shortcode in the builder. Not a raw iframe or URL.
 
-3. **Custom embed format.** Settings, Auto-Detection, Custom URL Patterns. Add a regex that matches your iframe src.
+3. **The video is not in MediaShield.** Only videos added to MediaShield are protected. A raw embed pasted into a post is left alone by design. Add the video under MediaShield, then place it with the block or `[mediashield id=X]`.
 
 4. **Output buffer disabled by a theme or plugin.** Rare, but some performance plugins clear the buffer early. Filter override:
    ```php

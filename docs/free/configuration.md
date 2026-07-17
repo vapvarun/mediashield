@@ -52,17 +52,8 @@ The free watermark shows the viewer's display name and IP address. Pro adds 7 co
 
 | Setting | Default | What it does |
 |---------|---------|-------------|
-| Max Upload Size | 500 MB | The largest file a user with upload permission can upload in one go. |
 
 Self-hosted videos are stored in your WordPress uploads folder in a protected subfolder.
-
----
-
-## Custom URL Patterns
-
-| Setting | Default | What it does |
-|---------|---------|-------------|
-| Custom URL Patterns | Empty | Additional URL patterns for MediaShield's automatic video detection. Add one pattern per line. Use this when you embed videos from a host that MediaShield doesn't recognize automatically. |
 
 ---
 

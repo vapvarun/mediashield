@@ -22,7 +22,7 @@ Your video shows on the page but has no watermark, no badge, and no protection l
 
 2. **Page builder JavaScript timing.** Some builders render videos via JavaScript after the output buffer runs. In that case, use the MediaShield Video block or `[mediashield id=X]` shortcode in the builder, not a raw iframe or URL.
 
-3. **Custom embed format.** Go to Settings > Custom URL Patterns and add a pattern that matches your iframe's src URL.
+3. **The video is not in MediaShield.** Only videos added to MediaShield are protected. An embed pasted straight into a post is left alone by design. Add it under MediaShield first, then place it with the block or `[mediashield id=X]`.
 
 4. **Output buffer disabled.** Rare, but some performance plugins disable output buffering. Check your plugin list for anything that modifies output buffering.
 

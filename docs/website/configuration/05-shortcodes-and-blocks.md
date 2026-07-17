@@ -77,4 +77,4 @@ Assets are loaded when:
 2. A MediaShield block is present on the page
 3. The output buffer detects a video or iframe element matching a known pattern
 
-The output buffer detection covers standard `<video>` elements, YouTube iframes, Vimeo iframes, Bunny Stream iframes, Wistia inline embeds, and any custom URL patterns you've added in Settings.
+The output buffer detection covers standard `<video>` elements, YouTube iframes, Vimeo iframes, Bunny Stream iframes, and Wistia inline embeds. It only wraps a video that exists in MediaShield: embeds it does not manage are left untouched.

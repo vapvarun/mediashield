@@ -45,7 +45,7 @@ export default function PlatformStep( { initialData } ) { // eslint-disable-line
 			) }
 
 			<p className="ms-wizard__hint">
-				{ __( 'You can skip this step. Videos from all platforms are automatically protected when embedded on your site.', 'mediashield' ) }
+				{ __( 'You can skip this step. Only videos you add to MediaShield are protected — embeds pasted straight into a post are left alone.', 'mediashield' ) }
 			</p>
 		</div>
 	);

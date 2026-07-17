@@ -104,12 +104,6 @@ class Settings {
 				'validate' => $min_int( 1 ),
 			),
 
-			// Upload.
-			'ms_custom_url_patterns'     => array(
-				'type'    => 'string',
-				'default' => '',
-			),
-
 			// Badge.
 			'ms_show_badge'              => array(
 				'type'    => 'boolean',

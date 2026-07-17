@@ -13,7 +13,6 @@ Settings are divided into sections:
 | Watermark | Overlay opacity, color, and position swap interval |
 | Access Control | Concurrent streams, allowed domains, login overlay text |
 | Upload | Maximum upload file size for self-hosted videos |
-| Custom URL Patterns | Additional video embed patterns for auto-detection |
 | Player Controls | Speed control, sticky player, keyboard shortcuts, resume, end screen |
 | Protection Controls | Right-click blocking, keyboard blocking, source hiding, developer-tools detection |
 
@@ -58,11 +57,7 @@ The free watermark shows display name and IP. Pro extends this to 7 configurable
 
 ## Upload Settings
 
-**Max Upload Size** - The largest file a user with upload permission can upload in one go. Default is 500 MB. Self-hosted videos are stored in your WordPress uploads folder in a protected subfolder.
-
-## Custom URL Patterns
-
-Add extra URL patterns for MediaShield's automatic video detection. Use this when you embed videos from a host that MediaShield does not recognize automatically. Add one pattern per line.
+Self-hosted videos are stored in your WordPress uploads folder in a protected subfolder. Upload size is governed by your server's own limit, which WordPress enforces before MediaShield sees the file, so there is nothing to configure here.
 
 ## Player Controls and Protection Controls
 

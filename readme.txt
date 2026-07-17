@@ -156,6 +156,11 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Fix      - Self-hosted uploads no longer fail on a default install. The Max Upload Size setting was measured in megabytes everywhere except the check that enforced it, so a default install advertised a 500 MB limit and rejected anything over 500 bytes.
 * Improve  - Removed the Max Upload Size setting. WordPress already enforces the server upload limit before MediaShield sees the file, so the setting could only ever restrict uploads further, never allow more. Uploads now use whatever the site accepts, with no configuration.
 * Improve  - An upload that exceeds the server limit now names the actual limit instead of reporting a size nobody configured.
+* Improve  - A shortcode or block pointing at a missing, unpublished, or sourceless video now explains itself to anyone who can edit content, instead of rendering blank space. Visitors still see nothing.
+* Improve  - Corrected the setup wizard, which said embeds pasted into a post are protected automatically. Only videos added to MediaShield are protected.
+* Improve  - Removed the Custom URL Patterns setting. It asked for a regular expression, silently ignored any pattern containing a slash, and could not match a video in the first place.
+* Improve  - The watermark Position Swap Interval no longer offers "0 = static", which was never honoured and produced a watermark that moved every second. The field now explains what the interval is for.
+* Improve  - The Upload and Storage settings card is hidden when no cloud platform is connected, instead of rendering empty, and no longer claims that connecting a platform stops files being stored locally.
 * Dev      - Added the mediashield_unprotected_player_html filter for the markup used while MediaShield is switched off.
 * Dev      - Removed the unused data-ms-untracked attribute, which was written but never read.
 

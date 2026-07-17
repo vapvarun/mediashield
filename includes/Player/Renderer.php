@@ -27,6 +27,31 @@ use MediaShield\Core\Assets;
 class Renderer {
 
 	/**
+	 * Build an editor-only placeholder notice for a video that cannot render.
+	 *
+	 * A mistyped or unpublished ID otherwise produces silent blank space with
+	 * nothing to search for. Front-end visitors still get nothing (never expose
+	 * why a video is missing); users who can edit content get an explanation.
+	 *
+	 * Mirrors PlaylistRenderer::notice(), which has always done this.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string $message Already-translated, human-readable explanation.
+	 * @return string Notice HTML for editors, empty string otherwise.
+	 */
+	private static function notice( string $message ): string {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return '';
+		}
+
+		// Ensure the notice picks up player.css styling.
+		Assets::enqueue();
+
+		return '<p class="ms-playlist-notice">' . esc_html( $message ) . '</p>';
+	}
+
+	/**
 	 * Render a video with no protection applied.
 	 *
 	 * Used when MediaShield is switched off site-wide. The protected player is a
@@ -92,8 +117,24 @@ class Renderer {
 	public static function render( int $video_id, string $wrapper_attrs = '' ): string {
 		$video = get_post( $video_id );
 
-		if ( ! $video || 'mediashield_video' !== $video->post_type || 'publish' !== $video->post_status ) {
-			return '';
+		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
+			return self::notice(
+				sprintf(
+					/* translators: %d: video ID used in the shortcode or block. */
+					__( 'MediaShield: no video found with ID %d.', 'mediashield' ),
+					$video_id
+				)
+			);
+		}
+
+		if ( 'publish' !== $video->post_status ) {
+			return self::notice(
+				sprintf(
+					/* translators: %s: video title. */
+					__( 'MediaShield: the video "%s" is not published yet, so it is only visible to you.', 'mediashield' ),
+					$video->post_title
+				)
+			);
 		}
 
 		$platform_raw      = get_post_meta( $video_id, '_ms_platform', true );
@@ -116,7 +157,13 @@ class Renderer {
 		$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 
 		if ( empty( $source_url ) && empty( $stream_url ) && empty( $platform_video_id ) ) {
-			return '';
+			return self::notice(
+				sprintf(
+					/* translators: %s: video title. */
+					__( 'MediaShield: the video "%s" has no source file or URL yet. Edit it and add one.', 'mediashield' ),
+					$video->post_title
+				)
+			);
 		}
 
 		// MediaShield is switched off site-wide. Assets::register_frontend() bails

@@ -299,13 +299,13 @@ const Settings = () => {
 				</div>
 				<TextControl
 					label={ __( 'Position Swap Interval', 'mediashield' ) }
-					help={ __( 'Seconds between watermark position changes. 0 = static.', 'mediashield' ) }
+					help={ __( 'Seconds between watermark position changes. Moving the watermark stops a viewer cropping it out, so lower is safer and higher is less distracting.', 'mediashield' ) }
 					type="number"
 					value={ settings?.ms_watermark_swap_interval ?? 30 }
 					onChange={ ( val ) =>
-						updateSetting( 'ms_watermark_swap_interval', parseInt( val, 10 ) || 0 )
+						updateSetting( 'ms_watermark_swap_interval', parseInt( val, 10 ) || 30 )
 					}
-					min={ 0 }
+					min={ 1 }
 					__nextHasNoMarginBottom
 				/>
 				<ToggleControl
@@ -442,15 +442,15 @@ const Settings = () => {
 				) }
 			</SectionCard>
 
-			<SectionCard
-				icon="upload"
-				title={ __( 'Upload & Storage', 'mediashield' ) }
-				description={ __( 'Configure where videos are stored and upload limits.', 'mediashield' ) }
-			>
-				{ settings?.ms_connected_platforms && settings.ms_connected_platforms.length > 0 && (
+			{ settings?.ms_connected_platforms && settings.ms_connected_platforms.length > 0 && (
+				<SectionCard
+					icon="upload"
+					title={ __( 'Upload & Storage', 'mediashield' ) }
+					description={ __( 'Choose where new videos are stored.', 'mediashield' ) }
+				>
 					<SelectControl
 						label={ __( 'Default Upload Target', 'mediashield' ) }
-						help={ __( 'When set to "Auto", new uploads go to the first connected cloud platform. No video files are stored locally when a cloud service is connected.', 'mediashield' ) }
+						help={ __( 'Where new uploads go when you do not pick a platform yourself. "Auto" uses the first connected cloud platform.', 'mediashield' ) }
 						value={ settings?.ms_default_upload_target ?? 'auto' }
 						options={ [
 							{ label: __( 'Auto (use connected platform)', 'mediashield' ), value: 'auto' },
@@ -464,23 +464,8 @@ const Settings = () => {
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
 					/>
-				) }
-			</SectionCard>
-
-			<SectionCard
-				icon="search"
-				title={ __( 'Auto-Detection', 'mediashield' ) }
-				description={ __( 'Custom URL patterns for wrapping third-party embeds.', 'mediashield' ) }
-			>
-				<TextareaControl
-					label={ __( 'Custom URL Patterns', 'mediashield' ) }
-					help={ __( 'One regex pattern per line. Matches iframe src attributes for auto-wrapping.', 'mediashield' ) }
-					value={ settings?.ms_custom_url_patterns || '' }
-					onChange={ ( val ) => updateSetting( 'ms_custom_url_patterns', val ) }
-					rows={ 4 }
-					__nextHasNoMarginBottom
-				/>
-			</SectionCard>
+				</SectionCard>
+			) }
 
 			{ lmsConfig.isLMSActive && settings?.ms_lms_auto_complete !== undefined && (
 				<SectionCard
