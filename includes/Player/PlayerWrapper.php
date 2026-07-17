@@ -162,35 +162,23 @@ class PlayerWrapper {
 					}
 				}
 
-				// Extract platform video ID from the URL.
-				$src_url           = $matches[1] ?? '';
+				// Self-hosted <video> tags carry no platform ID, so identify them by
+				// their source URL — which is what the CPT stores for them.
+				$src_url           = ( 'self' === $platform )
+					? self::extract_source_url( $embed )
+					: ( $matches[1] ?? '' );
 				$platform_video_id = self::extract_video_id( $src_url, $platform );
 				$protection        = get_option( 'ms_default_protection', 'standard' );
 
-				// Look up mediashield_video CPT by platform video ID.
-				$video_post_id  = 0;
-				$untracked_attr = '';
-				if ( ! empty( $platform_video_id ) ) {
-					$found_posts = get_posts(
-						array(
-							'post_type'      => 'mediashield_video',
-							'posts_per_page' => 1,
-							'fields'         => 'ids',
-							'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-								array(
-									'key'   => '_ms_platform_video_id',
-									'value' => $platform_video_id,
-								),
-							),
-						)
-					);
-					if ( ! empty( $found_posts ) ) {
-						$video_post_id = (int) $found_posts[0];
-					}
-				}
+				$video_post_id = self::find_video_post_id( $platform, $platform_video_id, $src_url );
 
+				// Not a MediaShield-managed video. Leave the markup exactly as the
+				// theme or another plugin emitted it: wrapping a video we do not own
+				// would burn a viewer watermark onto someone else's embed, and for a
+				// self-hosted tag it would swap the element for a container whose
+				// source URL we never captured — destroying playback outright.
 				if ( 0 === $video_post_id ) {
-					$untracked_attr = ' data-ms-untracked="1"';
+					return $embed;
 				}
 
 				$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_post_id );
@@ -233,7 +221,7 @@ class PlayerWrapper {
 				}
 
 				return sprintf(
-					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s"%s>'
+					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s">'
 					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""%s></div>'
 					. '<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>'
 					. '<div class="ms-protection-overlay"></div>'
@@ -243,7 +231,6 @@ class PlayerWrapper {
 					esc_attr( $platform ),
 					esc_attr( $protection ),
 					esc_attr( $player_type ),
-					$untracked_attr,
 					esc_attr( $platform_video_id ),
 					esc_url( $src_url ),
 					$overrides_attr,
@@ -286,10 +273,89 @@ class PlayerWrapper {
 				return $url; // Already the hashed_id from regex capture.
 
 			case 'self':
-				return ''; // Self-hosted uses source URL directly.
+				return ''; // Self-hosted is matched on its source URL, not an ID.
 
 			default:
 				return '';
 		}
+	}
+
+	/**
+	 * Pull the source URL out of a matched self-hosted <video> element.
+	 *
+	 * Handles both `<video src="...">` and `<video><source src="..."></video>`.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string $embed The full matched <video> element.
+	 * @return string Source URL, or empty string when none is present.
+	 */
+	private static function extract_source_url( string $embed ): string {
+		if ( preg_match( '/<video[^>]*\ssrc=["\']([^"\']+)["\']/i', $embed, $m ) ) {
+			return $m[1];
+		}
+
+		if ( preg_match( '/<source[^>]*\ssrc=["\']([^"\']+)["\']/i', $embed, $m ) ) {
+			return $m[1];
+		}
+
+		return '';
+	}
+
+	/**
+	 * Resolve an embed to the mediashield_video CPT that manages it.
+	 *
+	 * Platform embeds are matched on their platform video ID; self-hosted videos
+	 * have no such ID and are matched on their source URL instead. A page can
+	 * carry many embeds, so results are memoised per request to keep this off the
+	 * N+1 path.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param string $platform          Platform identifier.
+	 * @param string $platform_video_id Platform video ID, empty for self-hosted.
+	 * @param string $src_url           Source URL.
+	 * @return int Video CPT post ID, or 0 when MediaShield does not manage it.
+	 */
+	private static function find_video_post_id( string $platform, string $platform_video_id, string $src_url ): int {
+		static $cache = array();
+
+		if ( 'self' === $platform ) {
+			$meta_key   = '_ms_source_url';
+			$meta_value = $src_url;
+		} else {
+			$meta_key   = '_ms_platform_video_id';
+			$meta_value = $platform_video_id;
+		}
+
+		if ( '' === $meta_value ) {
+			return 0;
+		}
+
+		$cache_key = $meta_key . '|' . $meta_value;
+		if ( isset( $cache[ $cache_key ] ) ) {
+			return $cache[ $cache_key ];
+		}
+
+		$found_posts = get_posts(
+			array(
+				'post_type'        => 'mediashield_video',
+				'post_status'      => 'publish',
+				'posts_per_page'   => 1,
+				'fields'           => 'ids',
+				'no_found_rows'    => true,
+				'suppress_filters' => false,
+				'meta_query'       => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					array(
+						'key'   => $meta_key,
+						'value' => $meta_value,
+					),
+				),
+			)
+		);
+
+		$cache[ $cache_key ] = ! empty( $found_posts ) ? (int) $found_posts[0] : 0;
+
+		return $cache[ $cache_key ];
 	}
 }

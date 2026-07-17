@@ -27,6 +27,62 @@ use MediaShield\Core\Assets;
 class Renderer {
 
 	/**
+	 * Render a video with no protection applied.
+	 *
+	 * Used when MediaShield is switched off site-wide. The protected player is a
+	 * JS-filled shell, and the player JS is not registered while the plugin is
+	 * off, so this emits self-sufficient native markup instead: an <iframe> for
+	 * platform embeds, a <video> for self-hosted files. No watermark, no session
+	 * tracking, no protection overlay — just the video.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param int    $video_id      Video CPT post ID.
+	 * @param string $platform      Platform identifier.
+	 * @param string $source_url    Source URL.
+	 * @param string $stream_url    Stream URL, used when no source URL is stored.
+	 * @param string $wrapper_attrs Pre-escaped block wrapper attributes.
+	 * @return string Player HTML, or empty string when there is nothing playable.
+	 */
+	public static function render_unprotected( int $video_id, string $platform, string $source_url, string $stream_url = '', string $wrapper_attrs = '' ): string {
+		$url = ! empty( $source_url ) ? $source_url : $stream_url;
+
+		if ( empty( $url ) ) {
+			return '';
+		}
+
+		if ( 'self' === $platform ) {
+			$player = sprintf(
+				'<video class="ms-unprotected-player" controls playsinline src="%s"></video>',
+				esc_url( $url )
+			);
+		} else {
+			$player = sprintf(
+				'<iframe class="ms-unprotected-player" src="%s" frameborder="0" allowfullscreen title="%s"></iframe>',
+				esc_url( $url ),
+				esc_attr( get_the_title( $video_id ) )
+			);
+		}
+
+		$html = sprintf(
+			'<div class="ms-player-unprotected"%s>%s</div>',
+			$wrapper_attrs ? ' ' . $wrapper_attrs : '', // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
+			$player
+		);
+
+		/**
+		 * Filter the unprotected player HTML used while MediaShield is switched off.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param string $html     The rendered unprotected player HTML.
+		 * @param int    $video_id Video CPT post ID.
+		 * @param string $platform Platform identifier.
+		 */
+		return apply_filters( 'mediashield_unprotected_player_html', $html, $video_id, $platform );
+	}
+
+	/**
 	 * Render the protected player container for a video CPT.
 	 *
 	 * @param int    $video_id        Video CPT post ID.
@@ -61,6 +117,14 @@ class Renderer {
 
 		if ( empty( $source_url ) && empty( $stream_url ) && empty( $platform_video_id ) ) {
 			return '';
+		}
+
+		// MediaShield is switched off site-wide. Assets::register_frontend() bails
+		// in that state, so the player JS that fills .ms-player-target never loads
+		// and the protected container would render as an empty box. Turning
+		// protection off must cost the viewer the protection, not the video.
+		if ( ! get_option( 'ms_enabled', true ) ) {
+			return self::render_unprotected( $video_id, $platform, $source_url, $stream_url, $wrapper_attrs );
 		}
 
 		// Enqueue frontend assets (only loads when video content exists).

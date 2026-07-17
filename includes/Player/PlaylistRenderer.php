@@ -45,6 +45,13 @@ class PlaylistRenderer {
 			return self::notice( __( 'This playlist has no videos yet.', 'mediashield' ) );
 		}
 
+		// MediaShield is switched off site-wide, so the playlist JS that drives the
+		// player never loads. Fall back to the plain videos in playlist order —
+		// the queue navigation is a protection-layer feature, the videos are not.
+		if ( ! get_option( 'ms_enabled', true ) ) {
+			return self::render_unprotected_items( $items, $wrapper_attrs );
+		}
+
 		// Only enqueue assets once we know we have something to render.
 		Assets::enqueue();
 
@@ -144,6 +151,40 @@ class PlaylistRenderer {
 </div>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Render playlist items as plain, unprotected players.
+	 *
+	 * Used when MediaShield is switched off site-wide. Items already carry their
+	 * platform and source URL from fetch_items(), so this needs no extra queries.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param array  $items         Playlist item rows from fetch_items().
+	 * @param string $wrapper_attrs Pre-escaped block wrapper attributes.
+	 * @return string Playlist HTML, or empty string when nothing is playable.
+	 */
+	private static function render_unprotected_items( array $items, string $wrapper_attrs = '' ): string {
+		$players = '';
+
+		foreach ( $items as $item ) {
+			$players .= Renderer::render_unprotected(
+				(int) $item->video_id,
+				$item->platform ? $item->platform : 'self',
+				$item->source_url ? $item->source_url : ''
+			);
+		}
+
+		if ( '' === $players ) {
+			return '';
+		}
+
+		return sprintf(
+			'<div class="ms-playlist-unprotected"%s>%s</div>',
+			$wrapper_attrs ? ' ' . $wrapper_attrs : '', // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
+			$players
+		);
 	}
 
 	/**

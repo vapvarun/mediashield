@@ -149,6 +149,13 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 = 1.2.0 - Unreleased =
 
+* Fix      - Videos that MediaShield does not manage are no longer wrapped in the protection player. Regular YouTube, Vimeo, Bunny and Wistia embeds now pass through untouched instead of receiving a watermark and protection overlay.
+* Fix      - Plain self-hosted video tags no longer lose their source and stop playing on pages where MediaShield is active.
+* Fix      - Turning off Enable MediaShield now renders videos unprotected instead of an empty player. Shortcodes, blocks and playlists all play normally with protection off.
+* New      - Self-hosted videos are matched to their MediaShield entry by source URL, so automatic detection protects them instead of skipping them.
+* Dev      - Added the mediashield_unprotected_player_html filter for the markup used while MediaShield is switched off.
+* Dev      - Removed the unused data-ms-untracked attribute, which was written but never read.
+
 = 1.1.0 - June 2026 =
 
 Bug fixes, accessibility and UX polish, a complete documentation set, and new developer extension points. Safe upgrade with no schema change beyond the v3 migration shipped in 1.0.0.
