@@ -465,17 +465,6 @@ const Settings = () => {
 						__next40pxDefaultSize
 					/>
 				) }
-				<TextControl
-					label={ __( 'Max Upload Size (MB)', 'mediashield' ) }
-					help={ __( 'Maximum file size for video uploads. Set to 0 for unlimited (server limit applies).', 'mediashield' ) }
-					type="number"
-					value={ settings?.ms_max_upload_size ?? 500 }
-					onChange={ ( val ) =>
-						updateSetting( 'ms_max_upload_size', parseInt( val, 10 ) || 0 )
-					}
-					min={ 0 }
-					__nextHasNoMarginBottom
-				/>
 			</SectionCard>
 
 			<SectionCard

@@ -296,7 +296,6 @@ All prefixed `ms_`. Managed by `SettingsController`.
 | `ms_max_concurrent_streams` | integer | `2` | Max simultaneous video streams per user |
 | `ms_custom_url_patterns` | string | `''` | Newline-separated regex patterns for custom embed detection |
 | `ms_show_badge` | boolean | `true` | Show "Protected by MediaShield" badge |
-| `ms_max_upload_size` | integer | `2 * GB_IN_BYTES` | Max upload file size |
 | `ms_login_overlay_text` | string | `''` | Custom login prompt text |
 | `ms_login_button_text` | string | `''` | Custom login button text |
 | `ms_access_denied_text` | string | `''` | Custom access denied message |

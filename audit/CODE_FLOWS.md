@@ -208,7 +208,7 @@ Admin SPA -> POST /mediashield/v1/upload/init (multipart/form-data)
   v (SelfHosted driver)
   SelfHosted::upload():
     |-- Validate MIME type (mp4, webm, mov, m4v)
-    |-- Check file size against ms_max_upload_size
+    |-- (size already enforced by PHP upload_max_filesize before this point)
     |-- wp_unique_filename() for conflict-free name
     |-- copy() to wp-content/uploads/mediashield/
     |-- wp_insert_post() -- create mediashield_video CPT

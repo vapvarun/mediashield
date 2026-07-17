@@ -50,7 +50,6 @@ When `ms_allowed_domains` is non-empty, the request's HTTP Referer must match th
 
 | Option Key | Type | Default | Validation |
 |-----------|------|---------|------------|
-| `ms_max_upload_size` | int | `500` | Minimum 1 (MB). |
 
 Self-hosted uploads are stored in `wp-content/uploads/mediashield/` with `.htaccess` protection. A REST proxy endpoint serves files after access verification.
 

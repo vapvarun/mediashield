@@ -78,17 +78,11 @@ class SelfHosted implements DriverInterface {
 			return self::error( $validation['error'] );
 		}
 
-		// Check file size.
-		$max_size = (int) get_option( 'ms_max_upload_size', 2 * GB_IN_BYTES );
-		if ( filesize( $file_path ) > $max_size ) {
-			return self::error(
-				sprintf(
-					/* translators: %s: max file size */
-					__( 'File exceeds maximum upload size of %s.', 'mediashield' ),
-					size_format( $max_size )
-				)
-			);
-		}
+		// No size check here. By the time a file reaches this driver it is already
+		// on disk: PHP enforced upload_max_filesize/post_max_size before any of our
+		// code ran, and UploadController reports that rejection. A second limit of
+		// our own could only ever be lower than the server's, so it would restrict
+		// the owner without protecting anything.
 
 		// Generate unique filename.
 		$ext      = pathinfo( $file_path, PATHINFO_EXTENSION );

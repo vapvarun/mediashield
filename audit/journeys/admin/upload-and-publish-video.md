@@ -6,7 +6,7 @@ roles: [administrator]
 covers: [upload-init, cpt-publish, shortcode-render, video-block-render]
 prerequisites:
   - "Site reachable at $SITE_URL"
-  - "MediaShield activated; ms_max_upload_size >= 10 (MB)"
+  - "MediaShield activated"
   - "Test fixture: small MP4 file at audit/fixtures/sample-5s.mp4 (~1MB)"
   - "Self-hosted upload driver registered (default — no Pro needed)"
 estimated_runtime_minutes: 6

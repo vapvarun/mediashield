@@ -144,7 +144,7 @@ Admin SPA (#/videos) → Upload button → FormData POST
       → get_drivers() → apply_filters('mediashield_upload_drivers', ...)  [UploadManager.php:48]
           PRO: adds Bunny, YouTube, Vimeo, Wistia
       → SelfHosted::upload():
-          → MIME + size validation vs ms_max_upload_size
+          → MIME validation (size is enforced by PHP upload_max_filesize)
           → move_uploaded_file → wp-content/uploads/mediashield/
           → wp_insert_post(post_type='mediashield_video', post_status='publish')
           → update_post_meta(_ms_platform='self', _ms_platform_video_id, _ms_source_url)

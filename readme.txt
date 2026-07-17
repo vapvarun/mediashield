@@ -153,6 +153,9 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Fix      - Plain self-hosted video tags no longer lose their source and stop playing on pages where MediaShield is active.
 * Fix      - Turning off Enable MediaShield now renders videos unprotected instead of an empty player. Shortcodes, blocks and playlists all play normally with protection off.
 * New      - Self-hosted videos are matched to their MediaShield entry by source URL, so automatic detection protects them instead of skipping them.
+* Fix      - Self-hosted uploads no longer fail on a default install. The Max Upload Size setting was measured in megabytes everywhere except the check that enforced it, so a default install advertised a 500 MB limit and rejected anything over 500 bytes.
+* Improve  - Removed the Max Upload Size setting. WordPress already enforces the server upload limit before MediaShield sees the file, so the setting could only ever restrict uploads further, never allow more. Uploads now use whatever the site accepts, with no configuration.
+* Improve  - An upload that exceeds the server limit now names the actual limit instead of reporting a size nobody configured.
 * Dev      - Added the mediashield_unprotected_player_html filter for the markup used while MediaShield is switched off.
 * Dev      - Removed the unused data-ms-untracked attribute, which was written but never read.
 

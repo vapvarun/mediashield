@@ -38,7 +38,7 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 		'ms_max_concurrent_streams',
 		'ms_custom_url_patterns',
 		'ms_show_badge',
-		'ms_max_upload_size',
+		'ms_max_upload_size', // Removed in 1.2.0; listed so upgraded installs still get the row cleaned up.
 		'ms_login_overlay_text',
 		'ms_login_button_text',
 		'ms_access_denied_text',

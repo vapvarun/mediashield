@@ -105,11 +105,6 @@ class Settings {
 			),
 
 			// Upload.
-			'ms_max_upload_size'         => array(
-				'type'     => 'integer',
-				'default'  => 500,
-				'validate' => $min_int( 1 ),
-			),
 			'ms_custom_url_patterns'     => array(
 				'type'    => 'string',
 				'default' => '',

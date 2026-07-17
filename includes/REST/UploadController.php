@@ -181,7 +181,11 @@ class UploadController extends WP_REST_Controller {
 	 */
 	private static function get_upload_error_message( int $error_code ): string {
 		$messages = array(
-			UPLOAD_ERR_INI_SIZE   => __( 'File exceeds the server upload size limit.', 'mediashield' ),
+			UPLOAD_ERR_INI_SIZE   => sprintf(
+				/* translators: %s: maximum upload size for this server, e.g. "64 MB" */
+				__( 'This file is larger than the maximum upload size for this server (%s).', 'mediashield' ),
+				size_format( wp_max_upload_size() )
+			),
 			UPLOAD_ERR_FORM_SIZE  => __( 'File exceeds the form upload size limit.', 'mediashield' ),
 			UPLOAD_ERR_PARTIAL    => __( 'File was only partially uploaded.', 'mediashield' ),
 			UPLOAD_ERR_NO_FILE    => __( 'No file was uploaded.', 'mediashield' ),

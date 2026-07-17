@@ -326,13 +326,6 @@
       "controls": "Show 'Protected by MediaShield' badge on player"
     },
     {
-      "key": "ms_max_upload_size",
-      "group": "ms_settings",
-      "type": "int",
-      "default": 524288000,
-      "controls": "Max upload size in bytes (default 500MB)"
-    },
-    {
       "key": "ms_login_overlay_text",
       "group": "ms_settings",
       "type": "string",
