@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "mediashield",
     "name": "MediaShield",
-    "version": "1.1.0-dev",
+    "version": "1.2.0",
     "namespace": "MediaShield",
     "main_file": "mediashield.php",
     "text_domain": "mediashield",
@@ -15,7 +15,7 @@
     "rest_endpoints": 23,
     "ajax": 1,
     "admin_pages": 2,
-    "settings": 24,
+    "settings": 23,
     "shortcodes": 3,
     "blocks": 3,
     "post_types": 2,
@@ -23,7 +23,7 @@
     "tables": 6,
     "capabilities": 1,
     "services": 34,
-    "hooks_fired": 31,
+    "hooks_fired": 32,
     "cron": 2,
     "wp_cli": 1,
     "storage_drivers": 1

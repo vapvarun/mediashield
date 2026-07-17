@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "mediashield",
     "name": "MediaShield",
-    "version": "1.1.0-dev",
+    "version": "1.2.0",
     "namespace": "MediaShield",
     "main_file": "mediashield.php",
     "text_domain": "mediashield",
@@ -649,7 +649,11 @@
     {
       "key": "player.renderer",
       "class": "MediaShield\\Player\\Renderer",
-      "added": "1.0.0"
+      "added": "1.0.0",
+      "public_api": [
+        "render()",
+        "render_unprotected() (1.2.0)"
+      ]
     },
     {
       "key": "privacy.eraser",
@@ -873,6 +877,15 @@
       "args": "$classes, $video_id",
       "where": "includes/Player/PlayerWrapper.php:82",
       "consumed_by": null
+    },
+    {
+      "name": "mediashield_unprotected_player_html",
+      "type": "filter",
+      "args": "(string $html, int $video_id, string $platform)",
+      "where": "includes/Player/Renderer.php",
+      "consumed_by": "(none yet)",
+      "added": "1.2.0",
+      "note": "Filters the plain iframe/video markup rendered while ms_enabled is off."
     },
     {
       "name": "mediashield_enable_output_buffer",
