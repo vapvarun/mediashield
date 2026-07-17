@@ -147,6 +147,8 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 == Changelog ==
 
+= 1.2.0 - Unreleased =
+
 = 1.1.0 - June 2026 =
 
 Bug fixes, accessibility and UX polish, a complete documentation set, and new developer extension points. Safe upgrade with no schema change beyond the v3 migration shipped in 1.0.0.
