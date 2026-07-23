@@ -40,11 +40,20 @@ class Assets {
 	public static function register(): void {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_frontend' ) );
 
-		// Listen for Shaka Player requests from Renderer/PlayerWrapper.
+		// Listen for adaptive-streaming requests from Renderer/PlayerWrapper.
+		//
+		// Renderer calls Assets::enqueue() *before* firing this, so setting the
+		// flag alone would always be one step too late — which is exactly why
+		// no streaming library ever loaded. Enqueue here as well; by this point
+		// the handle is registered, and WordPress ignores a repeat enqueue.
 		add_action(
 			'mediashield_needs_shaka',
 			function () {
 				self::$needs_shaka = true;
+
+				if ( wp_script_is( 'mediashield-hls', 'registered' ) ) {
+					wp_enqueue_script( 'mediashield-hls' );
+				}
 			}
 		);
 	}
@@ -130,6 +139,21 @@ class Assets {
 			true
 		);
 
+		// HLS playback library.
+		//
+		// Safari plays .m3u8 in a plain <video>; Chrome, Firefox and Edge do
+		// not, so without this an HLS source silently fails everywhere except
+		// Safari. Bundled rather than loaded from a CDN so the player keeps
+		// working behind a firewall and under a strict CSP, and registered
+		// separately so it only downloads on pages that actually stream HLS.
+		wp_register_script(
+			'mediashield-hls',
+			$url . 'assets/vendor/hls.min.js',
+			array(),
+			'1.5.20',
+			true
+		);
+
 		// Player styles. Versioned by its own filemtime in dev so CSS-only edits
 		// bust the browser cache (the shared $ver tracks player-wrapper.js and
 		// would not change on a style-only edit).
@@ -164,5 +188,12 @@ class Assets {
 		wp_enqueue_script( 'mediashield-tracker' );
 		wp_enqueue_script( 'mediashield-protection' );
 		wp_enqueue_style( 'mediashield-player' );
+
+		// Renderer and PlayerWrapper flag adaptive-streaming platforms before
+		// this runs. The flag previously set nothing loading, so an HLS source
+		// only ever played in Safari.
+		if ( self::$needs_shaka ) {
+			wp_enqueue_script( 'mediashield-hls' );
+		}
 	}
 }

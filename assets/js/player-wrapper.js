@@ -235,7 +235,7 @@
 		create: function ( target, sourceUrl, streamUrl, options ) {
 			options = options || {};
 			var adapter = {
-				_video: null, _shakaPlayer: null,
+				_video: null, _shakaPlayer: null, _hls: null,
 				_readyCb: null, _endedCb: null,
 				getPosition: function () { return adapter._video ? adapter._video.currentTime : 0; },
 				getDuration: function () { return adapter._video && isFinite( adapter._video.duration ) ? adapter._video.duration : 0; },
@@ -247,6 +247,12 @@
 				onEnded: function ( cb ) { adapter._endedCb = cb; },
 				destroy: function () {
 					if ( adapter._shakaPlayer ) adapter._shakaPlayer.destroy();
+					// hls.js keeps a worker and buffered segments alive; without
+					// this a playlist that swaps videos leaks one per switch.
+					if ( adapter._hls ) {
+						adapter._hls.destroy();
+						adapter._hls = null;
+					}
 				},
 			};
 
@@ -270,20 +276,57 @@
 				if ( adapter._endedCb ) adapter._endedCb();
 			} );
 
-			var url = streamUrl || sourceUrl;
+			var url        = streamUrl || sourceUrl;
+			var isAdaptive = !! url && ( url.indexOf( '.m3u8' ) > -1 || url.indexOf( '.mpd' ) > -1 );
 
-			// Use Shaka Player for HLS/DASH, native for MP4.
-			if ( url && ( url.indexOf( '.m3u8' ) > -1 || url.indexOf( '.mpd' ) > -1 ) && typeof shaka !== 'undefined' ) {
+			if ( ! isAdaptive ) {
+				video.src = url;
+				return adapter;
+			}
+
+			// Shaka first when a site supplies it — it is the only one of the
+			// three that also handles DASH and DRM.
+			if ( typeof shaka !== 'undefined' ) {
 				shaka.polyfill.installAll();
 				var player = new shaka.Player( video );
 				adapter._shakaPlayer = player;
 				player.load( url ).catch( function ( err ) {
 					console.warn( 'MediaShield: Shaka load error', err );
-					video.src = sourceUrl; // Fallback to direct URL.
+					video.src = sourceUrl || url;
 				} );
-			} else {
-				video.src = url;
+				return adapter;
 			}
+
+			// hls.js first wherever Media Source Extensions exist, falling back
+			// to the element only where they don't (iOS Safari). This is the
+			// order hls.js itself documents, and canPlayType cannot replace it:
+			// Chromium answers "maybe" for the HLS mime type while being unable
+			// to play it, so trusting canPlayType would hand Chrome a source it
+			// silently fails on — the exact browser this library is here for.
+			if ( url.indexOf( '.m3u8' ) > -1 && typeof Hls !== 'undefined' && Hls.isSupported() ) {
+				var hls = new Hls( { enableWorker: true } );
+				adapter._hls = hls;
+				hls.on( Hls.Events.ERROR, function ( event, data ) {
+					// Only fatal errors are worth acting on; hls.js recovers
+					// from the rest on its own.
+					if ( ! data || ! data.fatal ) {
+						return;
+					}
+					console.warn( 'MediaShield: HLS error', data.type );
+					hls.destroy();
+					adapter._hls = null;
+					video.src = sourceUrl || url;
+				} );
+				hls.loadSource( url );
+				hls.attachMedia( video );
+				return adapter;
+			}
+
+			// iOS Safari plays HLS natively and has no Media Source, so this is
+			// the correct path there rather than a fallback. On a browser with
+			// neither, the element surfaces a real error instead of failing
+			// silently.
+			video.src = url;
 
 			return adapter;
 		},
