@@ -114,6 +114,28 @@ living:
 
 dated:
 
+  - id: 1.2.0-IN-VIDEO-ADS-CODE-FLOW
+    path: 1.2.0-IN-VIDEO-ADS-CODE-FLOW.md
+    status: in-progress
+    started: 2026-06-16
+    scope: >-
+      Code flow for pre/mid/post-roll ad breaks inside the protected player:
+      the mediashield_video_ad_breaks filter, the data-ad-breaks payload, and
+      the ad-breaks.js pause/overlay/skip/resume cycle. Creative selection and
+      frequency capping stay in WB Ad Manager; this covers the player half.
+    owner: TBD
+    format: markdown
+
+  - id: 1.2.0-OPTIONS-MARKET-RESEARCH
+    path: 1.2.0-OPTIONS-MARKET-RESEARCH.md
+    status: in-progress
+    started: 2026-06-16
+    scope: >-
+      Comparison of in-video ad approaches against what competing video
+      plugins ship, used to scope the 1.2.0 ad work.
+    owner: TBD
+    format: markdown
+
   - id: DESIGN_SPEC
     path: DESIGN_SPEC.md
     status: superseded
