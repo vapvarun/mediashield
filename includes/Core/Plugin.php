@@ -85,6 +85,10 @@ class Plugin {
 		// Frontend assets (JS/CSS for player, watermark, tracker, protection).
 		Assets::register();
 
+		// In-video ad breaks: optional bridge that sources video creatives from
+		// WB Ad Manager (no-op when that plugin / its video ads are absent).
+		( new \MediaShield\Integrations\AdManagerBridge() )->register();
+
 		// Admin menu + SPA assets.
 		Menu::register();
 

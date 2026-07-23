@@ -215,6 +215,23 @@ class Renderer {
 		 */
 		$access_type = (string) apply_filters( 'mediashield_player_access_type', '', $video_id );
 
+		/**
+		 * In-video ad breaks (pre / mid / post-roll) for this video. Populated
+		 * by the WB Ad Manager bridge; empty when no ad source is active. When
+		 * present, the ad-breaks engine is enqueued and the list emitted on the
+		 * container for ad-breaks.js to consume.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param array $breaks   List of break descriptors.
+		 * @param int   $video_id Video CPT post ID.
+		 * @param int   $duration Video duration in seconds.
+		 */
+		$ad_breaks = apply_filters( 'mediashield_video_ad_breaks', array(), $video_id, (int) $duration );
+		if ( ! empty( $ad_breaks ) ) {
+			wp_enqueue_script( 'mediashield-ad-breaks' );
+		}
+
 		ob_start();
 		?>
 		<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
@@ -222,6 +239,9 @@ class Renderer {
 			data-platform="<?php echo esc_attr( $platform ); ?>"
 			data-protection-level="<?php echo esc_attr( $protection_level ); ?>"
 			data-player-type="<?php echo esc_attr( $player_type ); ?>"
+			<?php if ( ! empty( $ad_breaks ) ) : ?>
+				data-ad-breaks="<?php echo esc_attr( wp_json_encode( $ad_breaks ) ); ?>"
+			<?php endif; ?>
 			<?php
 			if ( '' !== $access_type ) :
 				?>

@@ -300,16 +300,18 @@
 		create: function ( target, sourceUrl, options ) {
 			options = options || {};
 			var adapter = {
-				_video: null, _iframe: null,
-				_readyCb: null, _endedCb: null,
-				getPosition: function () { return 0; },
-				getDuration: function () { return 0; },
-				isPlaying: function () { return false; },
-				seekTo: function () {},
-				play: function () {},
-				pause: function () {},
+				_video: null, _iframe: null, _pjs: null,
+				_position: 0, _duration: 0, _playing: false,
+				_readyCb: null, _endedCb: null, _seekedCb: null,
+				getPosition: function () { return adapter._position; },
+				getDuration: function () { return adapter._duration; },
+				isPlaying: function () { return adapter._playing; },
+				seekTo: function ( s ) { if ( adapter._pjs ) { try { adapter._pjs.setCurrentTime( s ); } catch ( e ) {} } },
+				play: function () { if ( adapter._pjs ) { try { adapter._pjs.play(); } catch ( e ) {} } },
+				pause: function () { if ( adapter._pjs ) { try { adapter._pjs.pause(); } catch ( e ) {} } },
 				onReady: function ( cb ) { adapter._readyCb = cb; },
 				onEnded: function ( cb ) { adapter._endedCb = cb; },
+				onSeeked: function ( cb ) { adapter._seekedCb = cb; },
 				destroy: function () { if ( adapter._iframe ) adapter._iframe.remove(); },
 			};
 
@@ -322,11 +324,50 @@
 			iframe.style.height = '100%';
 			iframe.style.border = '0';
 			iframe.style.display = 'block';
-			iframe.addEventListener( 'load', function () {
-				if ( adapter._readyCb ) adapter._readyCb();
-			} );
 			target.appendChild( iframe );
 			adapter._iframe = iframe;
+
+			// player.js gives a unified postMessage API for compatible embeds
+			// (Bunny Stream, Vimeo, Wistia). It unlocks real position + seek +
+			// play/pause on the otherwise-opaque cross-origin iframe — which is
+			// exactly what watch-tracking, prevent-forward-skip, and in-video ad
+			// breaks all need. If it fails to load or handshake, the iframe
+			// still plays; we fall back to onReady so the session/tracking path
+			// keeps running (degraded: position stays 0).
+			var readyFired = false;
+			var fireReady  = function () {
+				if ( ! readyFired ) {
+					readyFired = true;
+					if ( adapter._readyCb ) { adapter._readyCb(); }
+				}
+			};
+
+			loadSDK( 'https://cdn.embed.ly/player-0.1.0.min.js', function () { return window.playerjs; } )
+				.then( function () {
+					if ( ! window.playerjs ) { fireReady(); return; }
+					try {
+						var pjs = new window.playerjs.Player( iframe );
+						pjs.on( 'ready', function () {
+							adapter._pjs = pjs;
+							try { pjs.getDuration( function ( d ) { adapter._duration = d || 0; } ); } catch ( e ) {}
+							pjs.on( 'timeupdate', function ( d ) {
+								if ( d && typeof d.seconds === 'number' ) { adapter._position = d.seconds; }
+								if ( d && typeof d.duration === 'number' && d.duration ) { adapter._duration = d.duration; }
+							} );
+							pjs.on( 'play', function () { adapter._playing = true; } );
+							pjs.on( 'pause', function () { adapter._playing = false; } );
+							pjs.on( 'seeked', function ( d ) {
+								var s = ( d && typeof d.seconds === 'number' ) ? d.seconds : adapter._position;
+								if ( adapter._seekedCb ) { adapter._seekedCb( s ); }
+							} );
+							pjs.on( 'ended', function () { adapter._playing = false; if ( adapter._endedCb ) { adapter._endedCb(); } } );
+							fireReady();
+						} );
+						// Safety: if the handshake never resolves, still start the session.
+						setTimeout( fireReady, 4000 );
+					} catch ( e ) { fireReady(); }
+				} )
+				.catch( function () { fireReady(); } );
 
 			return adapter;
 		},
@@ -518,6 +559,45 @@
 			buildSpeedControl( el, container );
 		}
 
+		// ── Prevent forward skipping (watch enforcement / CLE compliance) ──
+		// Allows rewind; clamps any forward seek past the furthest point the
+		// learner has actually watched. Native <video> is controlled directly;
+		// cross-origin embeds (Bunny / Vimeo / Wistia) are driven through the
+		// player.js postMessage API. Additive — when the option is off nothing
+		// here runs and playback is untouched. Keyboard ArrowRight is also
+		// suppressed below so the 5s skip-forward can't bypass the clamp.
+		var msPreventSeek = feat( 'preventForwardSeek' );
+		if ( msPreventSeek ) {
+			var msMaxWatched = 0;
+			var MS_SEEK_TOL  = 1.5; // Slack so normal playback isn't clamped.
+
+			var msAdvance = function ( pos ) {
+				// Advance the high-water mark only in playback-sized steps so a
+				// forward jump never counts as "watched".
+				if ( pos > msMaxWatched && pos - msMaxWatched < 5 ) {
+					msMaxWatched = pos;
+				}
+			};
+
+			if ( adapter._video ) {
+				adapter._video.addEventListener( 'timeupdate', function () {
+					msAdvance( adapter._video.currentTime );
+				} );
+				adapter._video.addEventListener( 'seeking', function () {
+					if ( adapter._video.currentTime > msMaxWatched + MS_SEEK_TOL ) {
+						adapter._video.currentTime = msMaxWatched;
+					}
+				} );
+			} else if ( adapter.onSeeked ) {
+				// player.js-backed embed (Bunny etc.) — the adapter already owns
+				// the player.js handshake; reuse it instead of opening a second.
+				setInterval( function () { msAdvance( adapter.getPosition() ); }, 500 );
+				adapter.onSeeked( function ( s ) {
+					if ( s > msMaxWatched + MS_SEEK_TOL ) { adapter.seekTo( msMaxWatched ); }
+				} );
+			}
+		}
+
 		// ── Keyboard shortcuts (scoped to player focus — all platforms) ──
 		if ( feat( 'keyboard' ) ) {
 			container.setAttribute( 'tabindex', '0' );
@@ -535,7 +615,7 @@
 						break;
 					case 'ArrowRight':
 						e.preventDefault();
-						a.seekTo( a.getPosition() + 5 );
+						if ( ! msPreventSeek ) { a.seekTo( a.getPosition() + 5 ); }
 						break;
 					case 'ArrowUp':
 						e.preventDefault();

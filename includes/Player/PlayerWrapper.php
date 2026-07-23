@@ -138,6 +138,14 @@ class PlayerWrapper {
 					return $embed;
 				}
 
+				// Explicit opt-out: an embed carrying `data-ms-skip` (or the
+				// `ms-skip` class) is left untouched. Lets other contexts render
+				// a native <video>/<iframe> — e.g. an ad-creative preview in an
+				// advertiser dashboard — without MediaShield protection wrapping.
+				if ( preg_match( '/\bdata-ms-skip\b/i', $embed ) || preg_match( '/class=["\'][^"\']*\bms-skip\b/i', $embed ) ) {
+					return $embed;
+				}
+
 				// Check surrounding context for existing wrapper.
 				$pos = strpos( $html, $embed );
 				if ( false !== $pos ) {

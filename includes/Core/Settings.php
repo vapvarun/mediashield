@@ -134,6 +134,10 @@ class Settings {
 				'type'    => 'boolean',
 				'default' => true,
 			),
+			'ms_player_prevent_forward_seek' => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
 			'ms_player_sticky'           => array(
 				'type'    => 'boolean',
 				'default' => false,
@@ -158,6 +162,48 @@ class Settings {
 				'type'     => 'string',
 				'default'  => '',
 				'validate' => $url_or_empty,
+			),
+
+			// In-video ads (pre / mid / post-roll engine + WB Ad Manager bridge).
+			// These give the site owner plugin-level control over how sponsor
+			// ads run inside protected videos without touching any ad plugin.
+			'ms_ads_enabled'             => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			// Mandatory viewing: when on, the Skip button never appears and the
+			// viewer must watch each ad in full before the lesson continues
+			// (CLE / compliance use case). Overrides the per-ad skip delay.
+			'ms_ads_require_full_view'   => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
+			// Seconds before the Skip button unlocks (only when full-view is
+			// off). 0 = skippable immediately. Clamped 0-60.
+			'ms_ads_skip_after'          => array(
+				'type'     => 'integer',
+				'default'  => 5,
+				'validate' => static function ( $v ) {
+					return max( 0, min( 60, (int) $v ) );
+				},
+			),
+			// Play a pre-roll before the video starts.
+			'ms_ads_preroll'             => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
+			// How many mid-rolls to space across the video (0 disables). Clamped 0-10.
+			'ms_ads_midroll_count'       => array(
+				'type'     => 'integer',
+				'default'  => 3,
+				'validate' => static function ( $v ) {
+					return max( 0, min( 10, (int) $v ) );
+				},
+			),
+			// Show the ad-break marker ruler under the player.
+			'ms_ads_show_markers'        => array(
+				'type'    => 'boolean',
+				'default' => true,
 			),
 
 			// Protection controls (right-click, keyboard, devtools).
@@ -335,6 +381,7 @@ class Settings {
 			'interval'   => 30000,
 			'player'     => array(
 				'speedControl'  => self::get( 'ms_player_speed_control' ),
+				'preventForwardSeek' => self::get( 'ms_player_prevent_forward_seek' ),
 				'keyboard'      => self::get( 'ms_player_keyboard' ),
 				'resume'        => self::get( 'ms_player_resume' ),
 				'sticky'        => self::get( 'ms_player_sticky' ),

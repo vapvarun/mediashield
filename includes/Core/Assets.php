@@ -120,12 +120,24 @@ class Assets {
 			true
 		);
 
-		// Player styles.
+		// In-video ad breaks — pre/mid/post-roll engine (enqueued by the
+		// renderer only when a video actually has ad breaks).
+		wp_register_script(
+			'mediashield-ad-breaks',
+			$url . 'assets/js/ad-breaks.js',
+			array( 'mediashield-player-wrapper' ),
+			$dev ? (string) filemtime( MEDIASHIELD_PATH . 'assets/js/ad-breaks.js' ) : MEDIASHIELD_VERSION,
+			true
+		);
+
+		// Player styles. Versioned by its own filemtime in dev so CSS-only edits
+		// bust the browser cache (the shared $ver tracks player-wrapper.js and
+		// would not change on a style-only edit).
 		wp_register_style(
 			'mediashield-player',
 			$url . 'assets/css/player.css',
 			array(),
-			$ver
+			$dev ? (string) filemtime( MEDIASHIELD_PATH . 'assets/css/player.css' ) : MEDIASHIELD_VERSION
 		);
 
 		// Localize config for all scripts. Player options + messages come from
