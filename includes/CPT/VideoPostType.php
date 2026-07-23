@@ -591,19 +591,22 @@ class VideoPostType {
 				'_ms_player_sticky'    => __( 'Sticky Player', 'mediashield' ),
 				'_ms_player_endscreen' => __( 'End Screen', 'mediashield' ),
 			);
+			?>
+			<div class="ms-feature-overrides">
+			<?php
 			foreach ( $overrides as $key => $label ) :
 				$val = get_post_meta( $post->ID, $key, true );
 				?>
-				<p style="margin: 4px 0;">
-					<label><?php echo esc_html( $label ); ?>:
-						<select name="<?php echo esc_attr( $key ); ?>" style="margin-left: 4px;">
-							<option value="" <?php selected( $val, '' ); ?>><?php esc_html_e( 'Default (global)', 'mediashield' ); ?></option>
-							<option value="on" <?php selected( $val, 'on' ); ?>><?php esc_html_e( 'On', 'mediashield' ); ?></option>
-							<option value="off" <?php selected( $val, 'off' ); ?>><?php esc_html_e( 'Off', 'mediashield' ); ?></option>
-						</select>
-					</label>
-				</p>
+				<label class="ms-feature-overrides__row" for="<?php echo esc_attr( 'ms-override-' . $key ); ?>">
+					<span class="ms-feature-overrides__label"><?php echo esc_html( $label ); ?></span>
+					<select id="<?php echo esc_attr( 'ms-override-' . $key ); ?>" name="<?php echo esc_attr( $key ); ?>" class="ms-feature-overrides__select">
+						<option value="" <?php selected( $val, '' ); ?>><?php esc_html_e( 'Default (global)', 'mediashield' ); ?></option>
+						<option value="on" <?php selected( $val, 'on' ); ?>><?php esc_html_e( 'On', 'mediashield' ); ?></option>
+						<option value="off" <?php selected( $val, 'off' ); ?>><?php esc_html_e( 'Off', 'mediashield' ); ?></option>
+					</select>
+				</label>
 			<?php endforeach; ?>
+			</div>
 
 			<?php
 			$endscreen_text = get_post_meta( $post->ID, '_ms_player_endscreen_text', true );

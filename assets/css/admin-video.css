@@ -96,3 +96,40 @@
 .ms-embed-copy-btn.copied .ms-copy-done {
 	display: inline-block;
 }
+
+/* Feature Overrides
+   Each row was `<label>Text: <select>` inline, so every dropdown started
+   wherever its label text happened to end and the control column came out
+   ragged. A two-column grid gives the selects one shared left edge. */
+.ms-feature-overrides {
+	display: grid;
+	gap: 8px;
+	margin: 0 0 4px;
+}
+
+.ms-feature-overrides__row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 160px);
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+}
+
+.ms-feature-overrides__label {
+	overflow-wrap: anywhere;
+}
+
+.ms-feature-overrides__select {
+	width: 100%;
+	max-width: 100%;
+	margin: 0;
+}
+
+/* The side metabox column gets narrow before the viewport does, so stack on
+   the label instead of letting the select shrink to an unreadable width. */
+@media screen and (max-width: 782px) {
+	.ms-feature-overrides__row {
+		grid-template-columns: 1fr;
+		gap: 4px;
+	}
+}
