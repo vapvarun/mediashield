@@ -142,6 +142,27 @@ class Renderer {
 		$platform_video_id = get_post_meta( $video_id, '_ms_platform_video_id', true );
 		$source_url        = get_post_meta( $video_id, '_ms_source_url', true );
 		$stream_url        = get_post_meta( $video_id, '_ms_stream_url', true );
+
+		/**
+		 * Filter the direct stream URL for a video.
+		 *
+		 * A stream URL is what lets MediaShield play the video in a real
+		 * <video> element instead of an opaque provider iframe, which is the
+		 * difference between having a controllable player (watermark, speed,
+		 * accurate progress, in-video ad breaks) and not. Platform integrations
+		 * that can derive one — Pro knows each Bunny library's pull zone, so it
+		 * can build the HLS playlist URL from the video GUID — supply it here
+		 * for videos that were imported before the URL was recorded.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param string $stream_url        Stored stream URL, usually empty.
+		 * @param int    $video_id          Video CPT post ID.
+		 * @param string $platform          Platform slug (self, bunny, youtube…).
+		 * @param string $platform_video_id Provider-side video id / GUID.
+		 */
+		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
+
 		$protection_raw    = get_post_meta( $video_id, '_ms_protection_level', true );
 		// Fall back to the operator-configured global default before the
 		// last-resort 'standard' so the Settings → Default Protection Level

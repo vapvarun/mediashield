@@ -406,6 +406,14 @@
 			case 'wistia':
 				return platformVideoId ? WistiaAdapter.create( target, platformVideoId, options ) : null;
 			case 'bunny':
+				// Prefer a direct stream (HLS playlist / MP4) when one is known:
+				// it plays in a real <video>, which is what makes the watermark,
+				// speed control, accurate progress and in-video ad breaks work.
+				// The iframe embed is an opaque cross-origin player page — it
+				// cannot be paused or seeked, so a mid-roll would pause nothing.
+				if ( streamUrl ) {
+					return NativeAdapter.create( target, '', streamUrl, options );
+				}
 				// Bunny embed URLs are HTML player pages → must use an <iframe>.
 				return sourceUrl ? IframeAdapter.create( target, sourceUrl, options ) : null;
 			case 'self':
