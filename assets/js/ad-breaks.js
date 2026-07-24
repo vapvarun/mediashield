@@ -53,6 +53,62 @@
 		} catch ( e ) { /* tracking is best-effort */ }
 	}
 
+	/**
+	 * Ask the ad plugin whether this break may play its creative, right now.
+	 *
+	 * The break plan is built when the page renders; a mid-roll twenty minutes
+	 * in cannot rely on that decision still holding. The creative's total
+	 * impression cap may have been spent since — by this viewer's earlier
+	 * breaks, or by other people watching at the same time — or the viewer may
+	 * have hit the ad's per-session limit. The ad plugin answers and counts the
+	 * impression in the same call, so a grant can't be double-counted and two
+	 * concurrent viewers can't both win the last impression.
+	 *
+	 * Degrades open: an older Pro without the claim endpoint, or a failed
+	 * request, falls back to the previous behaviour of playing and reporting
+	 * the impression, rather than blanking every ad on the site.
+	 *
+	 * @param {number}   adId WB Ad Manager ad post ID.
+	 * @param {Function} cb   Receives true to play, false to skip this break.
+	 */
+	function claimAd( adId, cb ) {
+		var cfg = window.mediashieldAds;
+
+		if ( ! cfg || ! cfg.ajaxUrl || ! cfg.claimAction || ! adId ) {
+			trackAd( adId, 'impression' );
+			cb( true );
+			return;
+		}
+
+		var body = new URLSearchParams();
+		body.set( 'action', cfg.claimAction );
+		body.set( 'nonce', cfg.nonce || '' );
+		body.set( 'ad_id', adId );
+		body.set( 'placement', cfg.placement || 'mediashield_video' );
+
+		var fallback = function () {
+			trackAd( adId, 'impression' );
+			cb( true );
+		};
+
+		try {
+			fetch( cfg.ajaxUrl, { method: 'POST', body: body, credentials: 'same-origin' } )
+				.then( function ( r ) { return r.json(); } )
+				.then( function ( res ) {
+					if ( ! res || ! res.success || ! res.data ) {
+						fallback();
+						return;
+					}
+					// The claim already counted a granted impression — calling
+					// trackAd() here too would count it twice.
+					cb( !! res.data.granted );
+				} )
+				.catch( fallback );
+		} catch ( err ) {
+			fallback();
+		}
+	}
+
 	window.addEventListener( 'mediashield:player-ready', function ( e ) {
 		var detail  = e.detail || {};
 		var el      = detail.el;
@@ -335,9 +391,21 @@
 			return;
 		}
 		var b = queue.shift();
-		self.showAd( b, function () {
-			b.played = true;
-			self.playQueue( queue, done );
+
+		// Every break clears with the ad plugin before it is shown. A refused
+		// break is spent from the plan without playing, so the viewer sees the
+		// lesson continue rather than an ad the advertiser no longer paid for.
+		claimAd( b.adId, function ( granted ) {
+			if ( ! granted ) {
+				b.played = true;
+				self.playQueue( queue, done );
+				return;
+			}
+
+			self.showAd( b, function () {
+				b.played = true;
+				self.playQueue( queue, done );
+			} );
 		} );
 	};
 
@@ -378,9 +446,9 @@
 
 		self.el.appendChild( overlay );
 
-		// Record the impression the moment the ad actually plays (not at page
-		// render) so mid-roll counts reflect real views.
-		trackAd( b.adId, 'impression' );
+		// The impression was recorded by claimAd() in playQueue(), which counts
+		// it in the same call that grants it. Reporting it again here would
+		// double-count every in-video play.
 
 		// Resolve the ad's running length from its creative (a <video> ad) or a
 		// fixed display time for an HTML/image ad.

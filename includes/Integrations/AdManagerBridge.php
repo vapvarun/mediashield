@@ -51,6 +51,13 @@ class AdManagerBridge {
 			array(
 				'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
 				'action'          => 'wbam_track_event',
+				// Asked immediately before each break: the ad plugin either
+				// grants the impression (and counts it) or refuses because the
+				// creative's total cap or the viewer's session limit is spent,
+				// in which case the engine skips that break. The break plan is
+				// built at page render, so it cannot know what is still
+				// deliverable several minutes into playback.
+				'claimAction'     => 'wbam_claim_video_impression',
 				'nonce'           => wp_create_nonce( 'wbam_track' ),
 				'placement'       => 'mediashield_video',
 				// Mandatory viewing — engine hides the Skip button entirely.
@@ -120,37 +127,77 @@ class AdManagerBridge {
 			$duration
 		);
 
-		// Round-robin through the available creatives so breaks don't repeat
-		// the same ad back-to-back when several are configured.
-		$queue = $ads;
-		$pick  = function () use ( &$queue, $ads ) {
-			if ( empty( $queue ) ) {
-				$queue = $ads;
-			}
-			return array_shift( $queue );
-		};
+		// Work out the slots this video needs, then let the ad plugin decide
+		// which creative fills each one.
+		$mid   = ( $duration > 0 ) ? max( 0, (int) ( $plan['mid_count'] ?? 0 ) ) : 0;
+		$slots = array();
 
 		if ( ! empty( $plan['pre'] ) ) {
-			$breaks[] = $this->to_break( 'pre', 0, $pick() );
+			$slots[] = array(
+				'type' => 'pre',
+				'at'   => 0,
+			);
 		}
 
-		$mid = (int) ( $plan['mid_count'] ?? 0 );
-		if ( $mid > 0 && $duration > 0 ) {
+		if ( $mid > 0 ) {
 			// Spread mid-rolls across the watchable middle (10%-90%) so an ad
 			// never lands on the very first or last seconds.
 			$start = $duration * 0.1;
 			$span  = $duration * 0.8;
 			for ( $i = 1; $i <= $mid; $i++ ) {
-				$at       = (int) round( $start + ( $span * $i / ( $mid + 1 ) ) );
-				$breaks[] = $this->to_break( 'mid', $at, $pick() );
+				$slots[] = array(
+					'type' => 'mid',
+					'at'   => (int) round( $start + ( $span * $i / ( $mid + 1 ) ) ),
+				);
 			}
 		}
 
 		if ( ! empty( $plan['post'] ) ) {
-			$breaks[] = $this->to_break( 'post', 0, $pick() );
+			$slots[] = array(
+				'type' => 'post',
+				'at'   => 0,
+			);
+		}
+
+		$filled = $this->fill_slots( $ads, count( $slots ) );
+
+		foreach ( $slots as $i => $slot ) {
+			if ( ! isset( $filled[ $i ] ) ) {
+				break; // Fewer creatives than slots — the rest stay empty.
+			}
+			$breaks[] = $this->to_break( $slot['type'], $slot['at'], $filled[ $i ] );
 		}
 
 		return array_values( array_filter( $breaks ) );
+	}
+
+	/**
+	 * Ask WB Ad Manager which creative fills each break slot.
+	 *
+	 * MediaShield owns the player, not the inventory. Which creative goes in
+	 * which slot depends on the site's rotation model and on how much of each
+	 * ad's paid-for allowance is left — both of which are the ad plugin's to
+	 * answer. Deciding it here instead used to mean rotation settings were
+	 * ignored on this surface, and that one creative was repeated into every
+	 * slot regardless of whether its impression cap could cover them.
+	 *
+	 * @param array $ads   Ordered creative pool.
+	 * @param int   $count Slots to fill.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function fill_slots( array $ads, $count ) {
+		if ( $count < 1 || empty( $ads ) ) {
+			return array();
+		}
+
+		if ( method_exists( '\WBAM_Pro\Modules\AdTypes\Video_Ad_Resolver', 'fill_slots' ) ) {
+			return \WBAM_Pro\Modules\AdTypes\Video_Ad_Resolver::fill_slots( $ads, $count, 'mediashield_video' );
+		}
+
+		// Older WB Ad Manager Pro without slot filling: one creative per slot,
+		// no repeats. Under-filling is the safe direction — repeating without
+		// the ad plugin's allowance check is what over-delivers.
+		return array_slice( array_values( $ads ), 0, $count );
 	}
 
 	/**
