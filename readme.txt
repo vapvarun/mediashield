@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -146,8 +146,12 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 == Changelog ==
 
-= 1.2.0 - Unreleased =
+= 1.2.0 - July 2026 =
 
+* Fix      - In-video ads no longer play past their Total Impressions limit. The break plan is now filled by WB Ad Manager, and the player checks with it immediately before each break, so a creative that runs out mid-video stops there instead of at the next page load.
+* Fix      - In-video ads now count toward a visitor's per-ad Session Limit. That limit previously had no effect on this surface at any value.
+* Improve  - Ad rotation for in-video breaks is decided by WB Ad Manager instead of MediaShield, so the site's configured rotation model applies to video ads the same way it applies to banners.
+* Improve  - Removed the Pro email gate coupling. The gate itself is gone from MediaShield Pro 1.2.0; the generic access-type extension point it used remains for other integrations.
 * Fix      - Videos that MediaShield does not manage are no longer wrapped in the protection player. Regular YouTube, Vimeo, Bunny and Wistia embeds now pass through untouched instead of receiving a watermark and protection overlay.
 * Fix      - Plain self-hosted video tags no longer lose their source and stop playing on pages where MediaShield is active.
 * Fix      - Turning off Enable MediaShield now renders videos unprotected instead of an empty player. Shortcodes, blocks and playlists all play normally with protection off.
