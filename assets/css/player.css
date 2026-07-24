@@ -523,7 +523,8 @@
 .ms-sticky-close:focus-visible,
 .ms-login-button:focus-visible,
 .ms-playlist-item:focus-visible,
-.ms-resume-btn:focus-visible,
+.ms-resume-yes:focus-visible,
+.ms-resume-no:focus-visible,
 .ms-endscreen__replay:focus-visible {
 	outline: 2px solid var(--ms-accent);
 	outline-offset: 2px;

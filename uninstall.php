@@ -25,27 +25,42 @@ foreach ( $tables as $table ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall drop tables.
 }
 
-// Delete free plugin options — explicit list to avoid destroying Pro config.
+// Delete free plugin options — derived from the settings schema, never a
+// hand-maintained copy. The old static list drifted 14 options behind
+// Settings::schema() (every player-control and ad option added since 1.0 was
+// orphaned on uninstall), and because seed_defaults() skips existing keys, a
+// reinstall then resurrected the stale config instead of resetting. Deriving
+// the list from the single source of truth makes that class of drift
+// impossible. Scoped to Settings::schema() so it can only ever match
+// free-owned keys — never Pro's, which matters when Pro is deactivated but
+// still installed during a Free uninstall.
 if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
-	$free_options = array(
-		'ms_enabled',
-		'ms_default_protection',
-		'ms_require_login',
-		'ms_watermark_opacity',
-		'ms_watermark_color',
-		'ms_watermark_swap_interval',
-		'ms_allowed_domains',
-		'ms_max_concurrent_streams',
-		'ms_custom_url_patterns',
-		'ms_show_badge',
-		'ms_max_upload_size', // Removed in 1.2.0; listed so upgraded installs still get the row cleaned up.
-		'ms_login_overlay_text',
-		'ms_login_button_text',
-		'ms_access_denied_text',
-		'ms_db_version',
-		'ms_wizard_completed',
+	// The plugin is not bootstrapped during uninstall, so pull the autoloader
+	// in directly to reach Core\Settings.
+	$ms_autoload = __DIR__ . '/vendor/autoload.php';
+	if ( is_readable( $ms_autoload ) ) {
+		require_once $ms_autoload;
+	}
+
+	$free_options = class_exists( '\\MediaShield\\Core\\Settings' )
+		? array_keys( \MediaShield\Core\Settings::schema() )
+		: array();
+
+	// Free-owned runtime/state options that live outside the settings schema,
+	// plus keys removed from the schema in past releases (kept so upgraded
+	// installs still get the stale row cleaned up).
+	$free_options = array_merge(
+		$free_options,
+		array(
+			'ms_db_version',
+			'ms_wizard_completed',
+			'ms_activated_at',
+			'ms_custom_url_patterns', // Removed in 1.2.0.
+			'ms_max_upload_size',     // Removed in 1.2.0.
+		)
 	);
-	foreach ( $free_options as $option ) {
+
+	foreach ( array_unique( $free_options ) as $option ) {
 		delete_option( $option );
 	}
 }
