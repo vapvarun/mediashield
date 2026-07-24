@@ -715,7 +715,7 @@
       "type": "action",
       "args": "(none)",
       "where": "includes/Core/Plugin.php:110",
-      "consumed_by": "PRO bootstrap (mediashield-pro)"
+      "consumed_by": "NOBODY — zero subscribers. PRO does NOT consume this; it boots on plugins_loaded:20 + a defined('MEDIASHIELD_VERSION') guard (mediashield-pro.php:85). Kept as a public extension point for third-party add-ons, but load order does not depend on it."
     },
     {
       "name": "mediashield_concurrent_limit_reached",
@@ -905,8 +905,8 @@
       "name": "mediashield_frontend_config",
       "type": "filter",
       "args": "(array $config)",
-      "where": "includes/Core/Settings.php:372",
-      "consumed_by": "PRO player config injection"
+      "where": "includes/Core/Settings.php:408",
+      "consumed_by": "NOBODY — zero subscribers. PRO does not hook this. Fired by Free as a public extension point; the earlier 'PRO player config injection' claim was wrong."
     },
     {
       "name": "mediashield_privacy_before_erase",
@@ -1070,7 +1070,8 @@
     }
   ],
   "notes": [
-    "FREE plugin uses 'mediashield_loaded' as the extension hook PRO consumes for its bootstrap.",
+    "COVERAGE CAVEAT (2026-07-24): the settings[] and hooks_fired[] inventories in this file are STALE and UNDER-REPORT. Live Settings::schema() has 33 keys (this array lists 22 — every ms_ads_* and ms_player_prevent_forward_seek added after the 2026-05 gen is missing). The generator's apply_filters/do_action regex is single-line only, so multi-line hook calls (e.g. mediashield_session_allow_anonymous_start, mediashield_player_html) are skipped. Authoritative sources until a fixed --refresh runs: array_keys( Settings::schema() ) for settings, and a grep of apply_filters|do_action across includes/ for hooks. Do NOT trust the numeric counts here for a reuse-check; read the code. Tracked as generator tooling work (lives in the /wp-plugin-onboard skill, not this repo).",
+    "FREE fires 'mediashield_loaded' as a public extension hook, but it has ZERO subscribers — PRO does NOT consume it. PRO boots on plugins_loaded:20 (Free is at default :10) plus a defined('MEDIASHIELD_VERSION') guard (mediashield-pro.php:85). Load order is carried by the priority gap, not this action. Do not re-time Free's bootstrap expecting Pro to wait on an action.",
     "Multi-method REST routes (GET+PUT on /settings, GET+POST on /tags, GET+PUT+DELETE on /tags/{id}) are counted as one register_rest_route call each — total: 22 calls representing more logical endpoint × method combinations.",
     "ms_watch_sessions_archive table mirrors ms_watch_sessions but is populated by the daily archive cron — same schema, dynamic creation.",
     "Block source lives at src/blocks/<name>/ and is built to build/blocks/<name>/ via webpack. block.json appears in both — the build/ copy is the one register_block_type_from_metadata() actually loads.",
