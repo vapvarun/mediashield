@@ -190,8 +190,14 @@ class AdManagerBridge {
 			return array();
 		}
 
-		if ( method_exists( '\WBAM_Pro\Modules\AdTypes\Video_Ad_Resolver', 'fill_slots' ) ) {
-			return \WBAM_Pro\Modules\AdTypes\Video_Ad_Resolver::fill_slots( $ads, $count, 'mediashield_video' );
+		// Held in a variable rather than written inline: the ad plugin is an
+		// optional dependency that static analysis here cannot see, and the
+		// class_exists() guard is what makes the call safe at runtime. Same
+		// pattern as video_ads() above.
+		$resolver = '\WBAM_Pro\Modules\AdTypes\Video_Ad_Resolver';
+
+		if ( class_exists( $resolver ) && is_callable( array( $resolver, 'fill_slots' ) ) ) {
+			return $resolver::fill_slots( $ads, $count, 'mediashield_video' );
 		}
 
 		// Older WB Ad Manager Pro without slot filling: one creative per slot,
