@@ -148,15 +148,9 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 = 1.2.0 - July 2026 =
 
-* Fix      - In-video ads no longer play past their Total Impressions limit. The break plan is now filled by WB Ad Manager, and the player checks with it immediately before each break, so a creative that runs out mid-video stops there instead of at the next page load.
-* Fix      - In-video ads now count toward a visitor's per-ad Session Limit. That limit previously had no effect on this surface at any value.
+* New      - Self-hosted videos are matched to their MediaShield entry by source URL, so automatic detection protects them instead of skipping them.
 * Improve  - Ad rotation for in-video breaks is decided by WB Ad Manager instead of MediaShield, so the site's configured rotation model applies to video ads the same way it applies to banners.
 * Improve  - Removed the Pro email gate coupling. The gate itself is gone from MediaShield Pro 1.2.0; the generic access-type extension point it used remains for other integrations.
-* Fix      - Videos that MediaShield does not manage are no longer wrapped in the protection player. Regular YouTube, Vimeo, Bunny and Wistia embeds now pass through untouched instead of receiving a watermark and protection overlay.
-* Fix      - Plain self-hosted video tags no longer lose their source and stop playing on pages where MediaShield is active.
-* Fix      - Turning off Enable MediaShield now renders videos unprotected instead of an empty player. Shortcodes, blocks and playlists all play normally with protection off.
-* New      - Self-hosted videos are matched to their MediaShield entry by source URL, so automatic detection protects them instead of skipping them.
-* Fix      - Self-hosted uploads no longer fail on a default install. The Max Upload Size setting was measured in megabytes everywhere except the check that enforced it, so a default install advertised a 500 MB limit and rejected anything over 500 bytes.
 * Improve  - Removed the Max Upload Size setting. WordPress already enforces the server upload limit before MediaShield sees the file, so the setting could only ever restrict uploads further, never allow more. Uploads now use whatever the site accepts, with no configuration.
 * Improve  - An upload that exceeds the server limit now names the actual limit instead of reporting a size nobody configured.
 * Improve  - A shortcode or block pointing at a missing, unpublished, or sourceless video now explains itself to anyone who can edit content, instead of rendering blank space. Visitors still see nothing.
@@ -164,6 +158,12 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Improve  - Removed the Custom URL Patterns setting. It asked for a regular expression, silently ignored any pattern containing a slash, and could not match a video in the first place.
 * Improve  - The watermark Position Swap Interval no longer offers "0 = static", which was never honoured and produced a watermark that moved every second. The field now explains what the interval is for.
 * Improve  - The Upload and Storage settings card is hidden when no cloud platform is connected, instead of rendering empty, and no longer claims that connecting a platform stops files being stored locally.
+* Fix      - In-video ads no longer play past their Total Impressions limit. The break plan is now filled by WB Ad Manager, and the player checks with it immediately before each break, so a creative that runs out mid-video stops there instead of at the next page load.
+* Fix      - In-video ads now count toward a visitor's per-ad Session Limit. That limit previously had no effect on this surface at any value.
+* Fix      - Videos that MediaShield does not manage are no longer wrapped in the protection player. Regular YouTube, Vimeo, Bunny and Wistia embeds now pass through untouched instead of receiving a watermark and protection overlay.
+* Fix      - Plain self-hosted video tags no longer lose their source and stop playing on pages where MediaShield is active.
+* Fix      - Turning off Enable MediaShield now renders videos unprotected instead of an empty player. Shortcodes, blocks and playlists all play normally with protection off.
+* Fix      - Self-hosted uploads no longer fail on a default install. The Max Upload Size setting was measured in megabytes everywhere except the check that enforced it, so a default install advertised a 500 MB limit and rejected anything over 500 bytes.
 * Dev      - Added the mediashield_unprotected_player_html filter for the markup used while MediaShield is switched off.
 * Dev      - Removed the unused data-ms-untracked attribute, which was written but never read.
 
