@@ -95,11 +95,28 @@ add_action(
 	}
 );
 
-// SDK lives at libs/ (committed, ships in the free zip). Pro reads it via
-// the same path — see mediashield-pro.php. Keep the file_exists() guard so
-// a partial / corrupted install degrades to an admin notice instead of fatal.
-if ( file_exists( MEDIASHIELD_PATH . 'libs/edd-sl-sdk/edd-sl-sdk.php' ) ) {
+// Load the vendored EDD SL SDK only when the package is COMPLETE. A partial
+// build or extract that keeps the entry file but drops libs/edd-sl-sdk/src
+// fatals inside the SDK the moment it touches a src class — the SDK's own
+// bootstrap calls EasyDigitalDownloads\Updater\Utilities\Path immediately, so
+// the site white-screens on activation. That is exactly the reported failure
+// (BC#10111573949: "Class 'EasyDigitalDownloads\Updater\Utilities\Path' not
+// found"). Guarding on the entry file alone is not enough; check the source is
+// present too and degrade to "updates disabled" with a soft admin notice.
+// Licensing only authorises update downloads — it never gates features, so
+// video protection keeps working either way. Matches the BuddyNext pattern.
+if ( file_exists( MEDIASHIELD_PATH . 'libs/edd-sl-sdk/edd-sl-sdk.php' )
+	&& file_exists( MEDIASHIELD_PATH . 'libs/edd-sl-sdk/src/Versions.php' ) ) {
 	require_once MEDIASHIELD_PATH . 'libs/edd-sl-sdk/edd-sl-sdk.php';
+} elseif ( is_admin() ) {
+	add_action(
+		'admin_notices',
+		static function () {
+			echo '<div class="notice notice-warning"><p>'
+				. esc_html__( 'MediaShield: the bundled licensing and update SDK is incomplete, so automatic updates are turned off. Reinstall the plugin from a complete package to restore them. Every other feature works normally.', 'mediashield' )
+				. '</p></div>';
+		}
+	);
 }
 
 // WP-CLI commands.
