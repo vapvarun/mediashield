@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-17T09:31:25+00:00\n"
+"POT-Creation-Date: 2026-07-24T17:13:24+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -51,11 +51,11 @@ msgid "Unlock the full power of MediaShield"
 msgstr ""
 
 #: includes/Admin/Menu.php:165
-msgid "DRM encryption, heatmap analytics, LMS integration, email gate, and more."
+msgid "DRM encryption, heatmap analytics, LMS integration, and more."
 msgstr ""
 
 #: includes/Admin/Menu.php:166
-#: src/admin/pages/Settings.js:547
+#: src/admin/pages/Settings.js:532
 msgid "Get MediaShield Pro"
 msgstr ""
 
@@ -245,13 +245,13 @@ msgid "Player Options"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:145
-#: src/admin/pages/Settings.js:488
-#: src/admin/pages/Settings.js:540
+#: src/admin/pages/Settings.js:473
+#: src/admin/pages/Settings.js:525
 msgid "LMS Integration"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:153
-#: src/admin/pages/Settings.js:525
+#: src/admin/pages/Settings.js:510
 msgid "Pro Features"
 msgstr ""
 
@@ -500,88 +500,79 @@ msgstr ""
 msgid "End Screen"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:600
+#: includes/CPT/VideoPostType.php:603
 msgid "Default (global)"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:601
+#: includes/CPT/VideoPostType.php:604
 msgid "On"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:602
+#: includes/CPT/VideoPostType.php:605
 msgid "Off"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:614
+#: includes/CPT/VideoPostType.php:617
 msgid "End Screen Text:"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:615
-#: includes/CPT/VideoPostType.php:620
+#: includes/CPT/VideoPostType.php:618
+#: includes/CPT/VideoPostType.php:623
 msgid "Leave blank to use global default"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:619
+#: includes/CPT/VideoPostType.php:622
 msgid "End Screen URL:"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:640
+#: includes/CPT/VideoPostType.php:643
 msgid "Link this video to a LearnDash, Tutor LMS, or LifterLMS lesson."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:642
+#: includes/CPT/VideoPostType.php:645
 msgid "Auto-mark lesson complete on video finish"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:643
+#: includes/CPT/VideoPostType.php:646
 msgid "Require course enrollment to watch"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:644
+#: includes/CPT/VideoPostType.php:647
 msgid "Configurable completion threshold"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:646
+#: includes/CPT/VideoPostType.php:649
 msgid "Get Pro"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:660
-#: src/admin/pages/Settings.js:534
-msgid "Email Gate"
-msgstr ""
-
-#: includes/CPT/VideoPostType.php:660
-msgid "Require email before watching"
-msgstr ""
-
-#: includes/CPT/VideoPostType.php:661
-#: src/admin/pages/Settings.js:531
+#: includes/CPT/VideoPostType.php:663
+#: src/admin/pages/Settings.js:516
 msgid "Advanced Watermark"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:661
+#: includes/CPT/VideoPostType.php:663
 msgid "7 fields (email, IP, timestamp...)"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:662
+#: includes/CPT/VideoPostType.php:664
 #: src/admin/components/Sidebar.js:18
 msgid "DRM"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:662
+#: includes/CPT/VideoPostType.php:664
 msgid "Widevine encryption"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:663
+#: includes/CPT/VideoPostType.php:665
 #: src/admin/components/Sidebar.js:19
 msgid "Heatmaps"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:663
+#: includes/CPT/VideoPostType.php:665
 msgid "See where viewers watch"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:665
+#: includes/CPT/VideoPostType.php:667
 msgid "Upgrade"
 msgstr ""
 
@@ -589,8 +580,8 @@ msgstr ""
 msgid "Once Monthly"
 msgstr ""
 
-#: includes/Player/PlayerWrapper.php:191
-#: includes/Player/Renderer.php:244
+#: includes/Player/PlayerWrapper.php:184
+#: includes/Player/Renderer.php:332
 msgid "Fullscreen"
 msgstr ""
 
@@ -618,6 +609,24 @@ msgstr ""
 #: includes/Player/Protection.php:42
 #: src/admin/pages/Settings.js:267
 msgid "Please close developer tools to continue watching this video."
+msgstr ""
+
+#. translators: %d: video ID used in the shortcode or block.
+#: includes/Player/Renderer.php:124
+#, php-format
+msgid "MediaShield: no video found with ID %d."
+msgstr ""
+
+#. translators: %s: video title.
+#: includes/Player/Renderer.php:134
+#, php-format
+msgid "MediaShield: the video \"%s\" is not published yet, so it is only visible to you."
+msgstr ""
+
+#. translators: %s: video title.
+#: includes/Player/Renderer.php:184
+#, php-format
+msgid "MediaShield: the video \"%s\" has no source file or URL yet. Edit it and add one."
 msgstr ""
 
 #: includes/Player/Watermark.php:38
@@ -724,12 +733,12 @@ msgstr ""
 msgid "Too many active streams. Please close another video first."
 msgstr ""
 
-#: includes/REST/SessionController.php:310
+#: includes/REST/SessionController.php:360
 msgid "Too many requests."
 msgstr ""
 
-#: includes/REST/SessionController.php:324
-#: includes/REST/SessionController.php:345
+#: includes/REST/SessionController.php:374
+#: includes/REST/SessionController.php:395
 msgid "Invalid session token."
 msgstr ""
 
@@ -833,6 +842,10 @@ msgstr ""
 
 #: mediashield.php:39
 msgid "MediaShield is missing its Composer dependencies (vendor/autoload.php). Please reinstall the plugin or run “composer install” in the plugin directory."
+msgstr ""
+
+#: mediashield.php:116
+msgid "MediaShield: the bundled licensing and update SDK is incomplete, so automatic updates are turned off. Reinstall the plugin from a complete package to restore them. Every other feature works normally."
 msgstr ""
 
 #: src/blocks/my-videos/render.php:19
@@ -1521,7 +1534,7 @@ msgid "Position Swap Interval"
 msgstr ""
 
 #: src/admin/pages/Settings.js:302
-msgid "Seconds between watermark position changes. 0 = static."
+msgid "Seconds between watermark position changes. Moving the watermark stops a viewer cropping it out, so lower is safer and higher is less distracting."
 msgstr ""
 
 #: src/admin/pages/Settings.js:312
@@ -1641,12 +1654,12 @@ msgstr ""
 msgid "End Screen Button URL"
 msgstr ""
 
-#: src/admin/pages/Settings.js:447
+#: src/admin/pages/Settings.js:448
 msgid "Upload & Storage"
 msgstr ""
 
-#: src/admin/pages/Settings.js:448
-msgid "Configure where videos are stored and upload limits."
+#: src/admin/pages/Settings.js:449
+msgid "Choose where new videos are stored."
 msgstr ""
 
 #: src/admin/pages/Settings.js:452
@@ -1654,7 +1667,7 @@ msgid "Default Upload Target"
 msgstr ""
 
 #: src/admin/pages/Settings.js:453
-msgid "When set to \"Auto\", new uploads go to the first connected cloud platform. No video files are stored locally when a cloud service is connected."
+msgid "Where new uploads go when you do not pick a platform yourself. \"Auto\" uses the first connected cloud platform."
 msgstr ""
 
 #: src/admin/pages/Settings.js:456
@@ -1665,87 +1678,75 @@ msgstr ""
 msgid "Self-hosted (local server)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:472
-msgid "Auto-Detection"
-msgstr ""
-
-#: src/admin/pages/Settings.js:473
-msgid "Custom URL patterns for wrapping third-party embeds."
-msgstr ""
-
-#: src/admin/pages/Settings.js:476
-msgid "Custom URL Patterns"
-msgstr ""
-
-#: src/admin/pages/Settings.js:477
-msgid "One regex pattern per line. Matches iframe src attributes for auto-wrapping."
-msgstr ""
-
-#: src/admin/pages/Settings.js:490
+#: src/admin/pages/Settings.js:475
 msgid "Settings for"
 msgstr ""
 
-#: src/admin/pages/Settings.js:490
+#: src/admin/pages/Settings.js:475
 msgid "integration."
 msgstr ""
 
-#: src/admin/pages/Settings.js:491
+#: src/admin/pages/Settings.js:476
 msgid "Automatically complete lessons when students finish watching videos."
 msgstr ""
 
-#: src/admin/pages/Settings.js:495
+#: src/admin/pages/Settings.js:480
 msgid "Auto-complete lessons"
 msgstr ""
 
-#: src/admin/pages/Settings.js:496
+#: src/admin/pages/Settings.js:481
 msgid "Mark the associated LMS lesson as complete when a student finishes the video."
 msgstr ""
 
-#: src/admin/pages/Settings.js:502
+#: src/admin/pages/Settings.js:487
 msgid "Require enrollment"
 msgstr ""
 
-#: src/admin/pages/Settings.js:503
+#: src/admin/pages/Settings.js:488
 msgid "Only allow enrolled students to watch course videos."
 msgstr ""
 
-#: src/admin/pages/Settings.js:509
+#: src/admin/pages/Settings.js:494
 msgid "Global completion %"
 msgstr ""
 
-#: src/admin/pages/Settings.js:510
+#: src/admin/pages/Settings.js:495
 msgid "Minimum video watch percentage required to trigger lesson completion."
 msgstr ""
 
-#: src/admin/pages/Settings.js:526
+#: src/admin/pages/Settings.js:511
 msgid "Available with MediaShield Pro"
 msgstr ""
 
-#: src/admin/pages/Settings.js:531
+#: src/admin/pages/Settings.js:516
 msgid "7 configurable fields (username, email, IP, user ID, timestamp, site name, custom text)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:534
+#: src/admin/pages/Settings.js:519
+msgid "Email Gate"
+msgstr ""
+
+#: src/admin/pages/Settings.js:519
 msgid "Capture emails before video access with webhook integration for CRMs"
 msgstr ""
 
-#: src/admin/pages/Settings.js:537
+#: src/admin/pages/Settings.js:522
 msgid "DRM Encryption"
 msgstr ""
 
-#: src/admin/pages/Settings.js:537
+#: src/admin/pages/Settings.js:522
 msgid "Widevine ClearKey via Bunny Stream or Shaka Packager"
 msgstr ""
 
-#: src/admin/pages/Settings.js:540
+#: src/admin/pages/Settings.js:525
 msgid "Auto-complete LearnDash, Tutor LMS, or LifterLMS lessons on video completion"
 msgstr ""
 
-#: src/admin/pages/Settings.js:543
+#: src/admin/pages/Settings.js:528
 msgid "Platform Browsers"
 msgstr ""
 
-#: src/admin/pages/Settings.js:543
+#: src/admin/pages/Settings.js:528
 msgid "Browse & bulk import videos from Bunny, YouTube, Vimeo, Wistia"
 msgstr ""
 
@@ -2042,7 +2043,7 @@ msgid "Direct platform uploads (Bunny, Vimeo, YouTube, Wistia) are available wit
 msgstr ""
 
 #: src/admin/wizard/steps/PlatformStep.js:48
-msgid "You can skip this step. Videos from all platforms are automatically protected when embedded on your site."
+msgid "You can skip this step. Only videos you add to MediaShield are protected — embeds pasted straight into a post are left alone."
 msgstr ""
 
 #: src/admin/wizard/steps/WatermarkStep.js:19
