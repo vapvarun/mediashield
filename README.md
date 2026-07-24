@@ -50,8 +50,6 @@ Protect your video content with dynamic watermarking, session tracking, DRM encr
 | **Access Control** | | |
 | Require login | Yes | Yes |
 | Role-based restriction (per-video) | Yes | Yes |
-| Email gate (capture email before access) | -- | Yes |
-| Email gate webhook (Zapier, CRM integration) | -- | Yes |
 | LMS enrollment check (LearnDash, Tutor, Lifter) | -- | Yes |
 | | | |
 | **LMS Integration** | | |
@@ -132,7 +130,6 @@ Protect your video content with dynamic watermarking, session tracking, DRM encr
 - [Pro: Platform Connections](docs/pro/platform-connections.md)
 - [Pro: DRM Setup](docs/pro/drm-setup.md)
 - [Pro: Analytics](docs/pro/analytics.md)
-- [Pro: Email Gate](docs/pro/email-gate.md)
 - [Pro: Hooks & Filters](docs/pro/hooks-filters-pro.md)
 
 ## For Developers

@@ -48,7 +48,7 @@ These keys are written by the Pro plugin. They are listed here for completeness;
 
 | Meta Key | Set by | Description |
 |----------|--------|-------------|
-| `_ms_access_type` | Pro editor | Access gate type, e.g. `email_gate`. Read by `mediashield_player_access_type` filter. |
+| `_ms_access_type` | Pro editor | Access gate type slug. Read by `mediashield_player_access_type` filter. |
 | `_ms_library_id` | BunnyStream driver | Bunny library ID. |
 | `_ms_wistia_numeric_id` | WistiaApi driver | Wistia numeric ID. |
 | `_ms_drm_enabled` | Pro DRM packager | Whether DRM is enabled for this video. |

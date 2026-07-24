@@ -45,7 +45,6 @@ The free plugin ships a complete protection and analytics layer. MediaShield Pro
 | Platform API connections (Bunny, YouTube, Vimeo, Wistia) | No | Yes |
 | ClearKey DRM for self-hosted video | No | Yes |
 | LMS integrations (LearnDash, LifterLMS, TutorLMS) | No | Yes |
-| Email gate (capture email before play) | No | Yes |
 | Data export (CSV, PDF) | No | Yes |
 | Suspicious activity alerts | No | Yes |
 

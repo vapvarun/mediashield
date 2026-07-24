@@ -45,7 +45,6 @@ MediaShield Pro extends the free plugin through WordPress hooks -- it never repl
 - **Advanced Watermark** -- 7 configurable text fields (username, email, IP, user ID, timestamp, site name, custom text)
 - **Platform Connections** -- Browse and import videos from Bunny, YouTube, Vimeo, Wistia
 - **DRM Encryption** -- ClearKey DRM via Bunny Stream or local packager
-- **Email Gate** -- Capture emails before video access with webhook integration
 - **Heatmap Analytics** -- Per-video playback heatmaps with position buckets
 - **Realtime Dashboard** -- Live viewer count with auto-refresh
 - **Suspicious Activity** -- Multi-device, developer-tools, rapid seek detection with alerts
@@ -68,7 +67,6 @@ Pro stores its data in 8 additional tables (you don't need to manage these -- th
 | DRM licenses | Issued content licenses |
 | Heatmap cache | Aggregated heatmap display data |
 | DRM keys | Encrypted content keys |
-| Email captures | Email gate submissions |
 
 ## Deactivation vs Deletion
 
@@ -79,5 +77,4 @@ Pro stores its data in 8 additional tables (you don't need to manage these -- th
 
 - [Connect a video platform](platform-connections.md)
 - [Set up DRM](drm-setup.md)
-- [Configure the email gate](email-gate.md)
 - [Explore analytics](analytics.md)

@@ -119,7 +119,6 @@
 ### Pro Upsell (Free Only)
 - [ ] Dashboard shows 4 Pro feature cards when Pro not active
 - [ ] Dashboard shows gradient "Upgrade to Pro" banner
-- [ ] Settings shows Pro features section (watermark, email gate, DRM, LMS, platforms)
 - [ ] Videos empty state shows "Import from platforms" hint
 - [ ] Milestones page shows "Trigger actions" hint
 - [ ] Video edit sidebar shows LMS Integration teaser meta box

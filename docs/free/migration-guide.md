@@ -14,7 +14,7 @@ This guide covers migration from the common alternatives.
 
 * Presto's player UI is replaced by MediaShield's wrapped player with watermark overlay.
 * Presto's analytics (views, chapters) are replaced by MediaShield's session and milestone tracking.
-* Presto's email gating is replaced by MediaShield Pro's email gate if you use it.
+* Presto's email gating has no MediaShield equivalent; MediaShield gates on login and role instead.
 
 **Migration steps:**
 

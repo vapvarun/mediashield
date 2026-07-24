@@ -163,7 +163,7 @@ add_filter( 'mediashield_can_watch', function( $result, $video_id, $user_id ) {
 }, 10, 3 );
 ```
 
-Priority chain: Free core runs at 10. If you add your own gate, use a priority outside 10-25 to avoid colliding with Pro's gates (email gate at 15, role access at 20, LMS adapters at 25).
+Priority chain: Free core runs at 10. If you add your own gate, use a priority outside 10-25 to avoid colliding with Pro's gates (role access at 20, LMS adapters at 25).
 
 ---
 
@@ -297,7 +297,7 @@ Filter the final rendered player HTML.
 
 ### mediashield_player_access_type
 
-*Since 1.1.0.* Return a non-empty slug to emit as `data-access-type` on the player container. Pro uses this for the email gate.
+*Since 1.1.0.* Return a non-empty slug to emit as `data-access-type` on the player container, so the client can render an alternative gate UI instead of the login overlay.
 
 **Parameters:** `$access_type` (string), `$video_id` (int)
 
@@ -343,4 +343,4 @@ The frontend player wrapper dispatches DOM `CustomEvent`s on `window`. Listen wi
 
 *Since 1.1.0, this event is cancelable.* Dispatched when `POST /session/start` returns 403 or a denial code. Call `event.preventDefault()` to suppress the default error overlay if you're rendering your own gate UI.
 
-**Detail:** `el` (HTMLElement), `videoId` (number), `reason` (string - `access_denied`, `email_gate_required`, `login_required`, etc.)
+**Detail:** `el` (HTMLElement), `videoId` (number), `reason` (string - `access_denied`, `login_required`, etc.)

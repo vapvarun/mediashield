@@ -334,7 +334,7 @@ add_filter( 'mediashield_can_watch', function( $result, $video_id, $user_id ) {
 | `$video_id` | int | Video CPT post ID |
 | `$user_id` | int | WordPress user ID |
 
-**Priority chain:** Free plugin checks at priority 10. Pro adds email gate at 15 and role access at 20.
+**Priority chain:** Free plugin checks at priority 10. Pro adds role access at 20 and LMS adapters at 25.
 
 ---
 
@@ -609,7 +609,7 @@ add_filter( 'mediashield_privacy_erase_result', function( $result, $email, $user
 
 *Since 1.1.0*
 
-Return a non-empty slug to emit on the `.ms-protected-player` container as `data-access-type="..."`. Pro registers a callback that returns the `_ms_access_type` meta value so the client (e.g. Pro's `email-gate.js`) can step aside the player wrapper and render an alternative gate UI.
+Return a non-empty slug to emit on the `.ms-protected-player` container as `data-access-type="..."`. An extension returns the `_ms_access_type` meta value so its own client code can step aside the player wrapper and render an alternative gate UI.
 
 Source: `includes/Player/Renderer.php:105`
 
@@ -634,7 +634,7 @@ add_filter( 'mediashield_player_access_type', function( $access_type, $video_id 
 
 *Since 1.1.0*
 
-Gates whether `POST /session/start` is reachable by anonymous (logged-out) visitors for a given video. Defaults to `true` when the video's `_ms_access_type` meta is non-empty (Pro's email-gate path). Downstream `AccessControl::can_watch()` still enforces the actual gate — this filter only decides whether the controller is allowed to run for anonymous traffic. Heartbeat / end / revoke remain logged-in-only regardless.
+Gates whether `POST /session/start` is reachable by anonymous (logged-out) visitors for a given video. Defaults to `true` when the video's `_ms_access_type` meta is non-empty. Downstream `AccessControl::can_watch()` still enforces the actual gate — this filter only decides whether the controller is allowed to run for anonymous traffic. Heartbeat / end / revoke remain logged-in-only regardless.
 
 Source: `includes/REST/SessionController.php:182`
 
@@ -779,13 +779,13 @@ DOM `CustomEvent`s dispatched on `window` by the frontend player wrapper (`asset
 
 ### mediashield:access-denied
 
-Dispatched when `POST /session/start` returns 403 or a denied error code (`access_denied`, `email_gate_required`, `login_required`). **Since 1.1.0 the event is `cancelable: true`** — listeners that render an alternative gate UI (email form, paywall, etc.) should call `event.preventDefault()` to suppress the wrapper's generic error overlay.
+Dispatched when `POST /session/start` returns 403 or a denied error code (`access_denied`, `login_required`). **Since 1.1.0 the event is `cancelable: true`** — listeners that render an alternative gate UI (email form, paywall, etc.) should call `event.preventDefault()` to suppress the wrapper's generic error overlay.
 
 Source: `assets/js/player-wrapper.js:742`
 
 ```js
 window.addEventListener( 'mediashield:access-denied', function ( event ) {
-    if ( event.detail.reason !== 'email_gate_required' ) {
+    if ( event.detail.reason !== 'access_denied' ) {
         return;
     }
     // We are rendering our own gate — suppress the fallback overlay.
@@ -799,6 +799,5 @@ window.addEventListener( 'mediashield:access-denied', function ( event ) {
 |-----|------|-------------|
 | `el` | HTMLElement | The `.ms-protected-player` container |
 | `videoId` | number | Video CPT post ID |
-| `reason` | string | Denial code (`access_denied`, `email_gate_required`, `login_required`, ...) |
 
 `bubbles: true`, `cancelable: true`. `login_required` for logged-out users is handled by the wrapper directly (login overlay) and does not dispatch this event.

@@ -14,7 +14,7 @@ Pro hooks in at the following boundaries:
 2. **SlotFill** — the admin SPA uses `wp.hooks` for Pro to inject UI components into existing pages without forking the free SPA codebase.
 3. **Settings REST** — `mediashield_settings_response` (GET) and `mediashield_settings_update` (PUT) filters let Pro add and save settings. Pro callbacks `unset()` their own keys from `$data` so the free `SettingsController` loop ignores them.
 4. **Player type** — `mediashield_player_type` filter lets Pro override to `drm` for DRM-protected videos.
-5. **Access control** — `mediashield_can_watch` filter stacked at priorities 15 (email gate), 20 (role access), 25 (LMS adapters).
+5. **Access control** — `mediashield_can_watch` filter stacked at priorities 20 (role access) and 25 (LMS adapters).
 6. **Upload drivers** — `mediashield_upload_drivers` filter registers Bunny, YouTube, Vimeo, Wistia upload driver classes.
 
 ---
@@ -26,7 +26,6 @@ Pro hooks in at the following boundaries:
 | Priority | Subscriber | Decision |
 |----------|-----------|---------|
 | 10 | `Access\AccessControl` (free core) | Login gate, role check, domain whitelist |
-| 15 | `Access\EmailGate` (Pro) | Require email submission for `email_gate` access type |
 | 20 | `Access\RoleAccess` (Pro) | Per-video role restriction via `_ms_access_role` meta |
 | 25 | LMS adapters (Pro) | LearnDash / LifterLMS / TutorLMS enrolment + course-progress gates |
 

@@ -77,18 +77,6 @@ ORDER BY scheduled_date_gmt ASC;
 
 ---
 
-### `ms_email_capture_retention`
-
-| Property | Value |
-|----------|-------|
-| Hook name | `ms_email_capture_retention` |
-| Interval | Daily (recurring) |
-| Group | `mediashield-pro` |
-
-**What it does:** Deletes rows from `ms_email_captures` where `created_at < NOW() - INTERVAL {ms_email_retention_months} MONTH`. The retention period defaults to 12 months and is configurable in the Email Gate settings panel.
-
----
-
 ### `ms_weekly_digest`
 
 | Property | Value |

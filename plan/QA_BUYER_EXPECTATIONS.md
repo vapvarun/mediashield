@@ -56,7 +56,6 @@ Buyers WILL test these attacks on day 1. Our docs and support must answer honest
 | 9 | Domain embed theft (iframe on another site) | Referer-checked (2/5) | Same | Works vs casual, spoofable |
 | 10 | Account sharing (one login, 5 people) | Concurrent limit (4/5) | Concurrent limit + suspicious alerts (4/5) | Genuine strength |
 | 11 | Watermark removal via DOM inspector | MutationObserver pauses video if canvas removed (3/5) | Same | Genuine, well-implemented |
-| 12 | Email gate bypass via direct REST call | Rate-limited; session requires email | Same | Needs verification — run actual `curl` test |
 | 13 | HLS segment reconstruction via ffmpeg | Works on free (no encryption) | ClearKey keys recoverable via JS debugger | Partial |
 | 14 | Screen recording + audio → re-upload to YouTube | Watermark visible → traceable | Same | Forensic value only |
 
@@ -77,7 +76,7 @@ Action items:
 |---|---|---|
 | **VdoCipher** ($350+/yr) | Widevine L1 + FairPlay hardware DRM, piracy-detection ML | Cheaper, WP-native, multi-platform (YT/Vimeo/Bunny/Wistia unified) |
 | **Bunny Stream MediaCage Enterprise** ($99+/mo) | Widevine + FairPlay | No WP admin UI, no unified multi-platform, no LMS adapters |
-| **Presto Player Pro** ($79-399/yr) | Gutenberg polish, lifetime deal | We have DRM (ClearKey), heatmaps, realtime, email gate; they don't |
+| **Presto Player Pro** ($79-399/yr) | Gutenberg polish, lifetime deal | We have DRM (ClearKey), heatmaps, realtime; they don't |
 | **CopySafe / DRM-X** | Claims screen-recording block (proprietary codec, unverifiable) | Standards-based (HLS/DASH), no vendor lock-in |
 | **Teachable/Thinkific/Kajabi built-in** | All-in-one | Keep your WP site; we're an add-on, not a platform migration |
 

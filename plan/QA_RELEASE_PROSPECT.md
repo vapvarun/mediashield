@@ -90,7 +90,6 @@ For each admin page below, confirm:
 Free must clearly preview what Pro adds without feeling crippled.
 
 - [ ] Dashboard shows 4 Pro feature cards + gradient "Upgrade" banner
-- [ ] Settings shows Pro features section (watermark, email gate, DRM, LMS, platforms)
 - [ ] Videos empty state hints "Import from platforms" (Pro)
 - [ ] Milestones page shows "Trigger actions" teaser
 - [ ] Video edit sidebar: LMS Integration + Pro Features teaser meta boxes
@@ -138,7 +137,6 @@ Free must clearly preview what Pro adds without feeling crippled.
 
 ### E4. Pro Feature Smoke Tests (pick one per area)
 - [ ] **Platform Connect** — add a Bunny Stream connection, browse library, import one video
-- [ ] **Email Gate** — set one video to `email_gate`, log out, visit page → overlay appears, submit email → video plays
 - [ ] **Heatmap** — play a video past 25%, wait for aggregation cron, heatmap chart populates
 - [ ] **Realtime** — open video in logged-out window, admin Realtime page shows active viewer within 30s
 - [ ] **DRM** — set method to `cloud_bunny`, verify Shaka Player loads on a DRM video (check network for `.mpd`)

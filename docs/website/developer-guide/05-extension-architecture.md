@@ -25,7 +25,6 @@ This is the primary access gate. It runs at session start to decide whether a vi
 | Priority | Component | Decision |
 |----------|-----------|---------|
 | 10 | Free core (AccessControl) | Login requirement, role check, domain whitelist |
-| 15 | Pro: EmailGate | Require email submission for email_gate access type |
 | 20 | Pro: RoleAccess | Per-video role restriction |
 | 25 | Pro: LMS adapters | LearnDash / LifterLMS / TutorLMS enrollment checks |
 

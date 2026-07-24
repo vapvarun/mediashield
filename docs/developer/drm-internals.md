@@ -34,7 +34,7 @@ When Shaka Player encounters a ClearKey-protected manifest:
 
 1. Shaka Player sends a ClearKey license request to the configured license URL.
 2. MediaShield's license endpoint receives the request.
-3. The endpoint calls `Access\AccessControl::can_watch()` — which runs the full `mediashield_can_watch` filter chain including Pro's email gate, role check, and LMS gates.
+3. The endpoint calls `Access\AccessControl::can_watch()` — which runs the full `mediashield_can_watch` filter chain including Pro's role check and LMS gates.
 4. On approval, the endpoint decrypts the content key from `ms_drm_keys` and returns it in the ClearKey JSON format (`{ keys: [{ kty, k, kid }], type: 'temporary' }`).
 5. Shaka Player decrypts and plays the video.
 

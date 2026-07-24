@@ -158,7 +158,6 @@ If you outgrow the free protection-and-tracking layer, MediaShield Pro adds the 
 - **Real-time dashboard** -- live viewer count with auto-refresh
 - **Per-video heatmaps** -- playback position buckets so you can see where viewers drop off
 - **Suspicious activity alerts** -- multi-device usage, developer-tools opens, rapid-seek detection
-- **Email gate** -- capture an email before the video plays, with webhook integration
 - **Platform connections** -- API uploaders for Bunny, YouTube, Vimeo, Wistia
 - **LMS integrations** -- LearnDash, LifterLMS, TutorLMS lesson gating
 - **Data export** -- CSV and PDF reports

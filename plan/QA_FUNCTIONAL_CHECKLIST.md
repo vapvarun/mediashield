@@ -190,17 +190,13 @@ Organized by functional groups. Each group has **Backend** (PHP/REST/DB) and **F
 - [ ] `mediashield_can_watch` filter chain works (return WP_Error to deny)
 - [ ] Role restriction blocks unauthorized users
 - [ ] Domain whitelisting blocks embeds on unlisted domains
-- [ ] Pro: email gate checks cookie before requiring email
-- [ ] Pro: email gate rate limit: 5 attempts/min per IP
 
 ### Frontend
 - [ ] Non-logged-in user sees login overlay (when enabled)
 - [ ] Access denied message shows correctly
 - [ ] Concurrent stream limit shows error message
-- [ ] Pro: email gate overlay shows on gated video
 - [ ] Pro: email submission succeeds, sets cookie, starts video
 - [ ] Pro: returning visitor with cookie skips gate
-- [ ] Pro: email gate overlay has role=dialog, focus trap, Escape key
 
 ---
 
@@ -364,7 +360,6 @@ Organized by functional groups. Each group has **Backend** (PHP/REST/DB) and **F
 - [ ] Platform credentials encrypted with AES-256-CBC
 - [ ] Session token uses HMAC (no DB lookup for validation)
 - [ ] Session start response does NOT include `source_url`
-- [ ] Email gate rate limit uses `REMOTE_ADDR` only
 - [ ] Shaka Packager args escaped with `escapeshellarg()`
 - [ ] DRM license endpoint validates user access
 - [ ] Export endpoint requires `manage_options`
@@ -415,4 +410,3 @@ Organized by functional groups. Each group has **Backend** (PHP/REST/DB) and **F
 - [ ] Focus indicators visible on all interactive elements
 - [ ] Player container has focus ring via `:focus-visible`
 - [ ] Watermark canvas has `aria-hidden=true`
-- [ ] Overlays (login, email gate) have focus trap

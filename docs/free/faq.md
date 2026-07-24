@@ -82,7 +82,7 @@ For session heartbeats, if you use Cloudflare's Full Page Cache or APO, make sur
 
 ### What happens if my Pro license expires?
 
-**Your Pro features keep working.** License status in MediaShield Pro is **updates-only**. When your license lapses, you stop receiving plugin updates, but every Pro feature (watermark, email gate, DRM, heatmaps, realtime, etc.) keeps working exactly as before.
+**Your Pro features keep working.** License status in MediaShield Pro is **updates-only**. When your license lapses, you stop receiving plugin updates, but every Pro feature (watermark, DRM, heatmaps, realtime, etc.) keeps working exactly as before.
 
 Renewal restores update access. You never get locked out of your own content or settings. If you move Pro to a new site, deactivate on the old one first (Dashboard, MediaShield, License) to free the activation slot.
 

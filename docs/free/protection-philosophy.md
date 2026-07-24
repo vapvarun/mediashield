@@ -12,7 +12,6 @@ MediaShield does something different, and still valuable:
 * Traces leaked content back to the viewer with watermark forensics.
 * Enforces access rules: login, roles, concurrent streams, domain whitelist.
 * Measures engagement with sessions, milestones, and heatmaps.
-* Captures leads through the email gate (Pro).
 
 If you need "no one can ever record this video," you need a $30,000/year broadcast-grade setup, not MediaShield. Even that setup can be defeated by a phone camera.
 

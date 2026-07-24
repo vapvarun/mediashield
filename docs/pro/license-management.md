@@ -4,7 +4,7 @@ How to activate your license, what happens when it expires, how to move between 
 
 ## The short version
 
-Your license key unlocks **plugin updates and email support**. It does not gate feature availability. Every Pro feature (watermarks, email gate, DRM, heatmaps, realtime dashboard, platform imports, exports, digest emails) keeps working forever on any site where Pro was once activated. An expired license means no more automatic updates. Nothing else changes.
+Your license key unlocks **plugin updates and email support**. It does not gate feature availability. Every Pro feature (watermarks, DRM, heatmaps, realtime dashboard, platform imports, exports, digest emails) keeps working forever on any site where Pro was once activated. An expired license means no more automatic updates. Nothing else changes.
 
 This is deliberate. Your content protection should not break because we didn't get paid this year.
 
@@ -19,7 +19,6 @@ This is deliberate. Your content protection should not break because we didn't g
 
 | Feature | Requires active license? |
 |---|---|
-| All Pro features (watermark, email gate, DRM, analytics, etc.) | No. These work forever after activation. |
 | Plugin updates (bug fixes, security, new features) | Yes. |
 | Priority email support | Yes. |
 | Access to documentation and video tutorials | No. Always public. |

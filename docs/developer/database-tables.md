@@ -239,20 +239,3 @@ Encrypted AES-128 content keys for DRM-packaged videos.
 
 ---
 
-### `ms_email_captures`
-
-Email gate submission records.
-
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | bigint, PK, AUTO_INCREMENT | |
-| `email` | varchar(255) | Submitted email address |
-| `video_id` | bigint | CPT post ID |
-| `ip_address` | varchar(45) | For spam review |
-| `consent` | tinyint(1) | Whether the consent checkbox was ticked |
-| `consent_text` | text | Exact wording shown to the visitor at submission time |
-| `created_at` | datetime | UTC |
-
-**Indexes:** PRIMARY (`id`), KEY on `(email)`, KEY on `(video_id)`.
-
-**Cleanup:** `ms_email_capture_retention` cron (daily) deletes rows older than `ms_email_retention_months` option (default 12 months).
