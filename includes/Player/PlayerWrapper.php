@@ -215,7 +215,7 @@ class PlayerWrapper {
 
 				// Auto-wrapped players must advertise the access type exactly as
 				// Renderer::render() does, or a gated video looks ungated on this
-				// path: the client never learns it should show the email gate, so
+				// path: the client never learns it should show that gate, so
 				// the visitor just meets a player that refuses to stream. Same
 				// filter, same attribute, so both render paths agree.
 				$access_type      = (string) apply_filters( 'mediashield_player_access_type', '', $video_post_id );

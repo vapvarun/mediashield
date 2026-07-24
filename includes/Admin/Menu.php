@@ -162,7 +162,7 @@ class Menu {
 		<div class="notice notice-info is-dismissible ms-pro-notice" data-nonce="<?php echo esc_attr( $nonce ); ?>">
 			<p>
 				<strong><?php esc_html_e( 'Unlock the full power of MediaShield', 'mediashield' ); ?></strong> &mdash;
-				<?php esc_html_e( 'DRM encryption, heatmap analytics, LMS integration, email gate, and more.', 'mediashield' ); ?>
+				<?php esc_html_e( 'DRM encryption, heatmap analytics, LMS integration, and more.', 'mediashield' ); ?>
 				<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Get MediaShield Pro', 'mediashield' ); ?> &rarr;</a>
 			</p>
 		</div>

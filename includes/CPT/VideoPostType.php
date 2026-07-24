@@ -660,7 +660,6 @@ class VideoPostType {
 		?>
 		<div class="ms-teaser-box">
 			<ul>
-				<li><strong><?php esc_html_e( 'Email Gate', 'mediashield' ); ?></strong> — <?php esc_html_e( 'Require email before watching', 'mediashield' ); ?></li>
 				<li><strong><?php esc_html_e( 'Advanced Watermark', 'mediashield' ); ?></strong> — <?php esc_html_e( '7 fields (email, IP, timestamp...)', 'mediashield' ); ?></li>
 				<li><strong><?php esc_html_e( 'DRM', 'mediashield' ); ?></strong> — <?php esc_html_e( 'Widevine encryption', 'mediashield' ); ?></li>
 				<li><strong><?php esc_html_e( 'Heatmaps', 'mediashield' ); ?></strong> — <?php esc_html_e( 'See where viewers watch', 'mediashield' ); ?></li>

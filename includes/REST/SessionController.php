@@ -150,7 +150,7 @@ class SessionController extends WP_REST_Controller {
 		}
 
 		// Allow anonymous /session/start when the targeted video opts into an
-		// alternative access path (e.g. Pro's email gate). The downstream
+		// alternative access path declared by an extension. The downstream
 		// AccessControl::can_watch() still enforces the actual gate; this just
 		// lets the request reach the handler so it can return the right reason
 		// to the client. Heartbeat / end / revoke remain logged-in-only because
@@ -169,8 +169,8 @@ class SessionController extends WP_REST_Controller {
 		/**
 		 * Filter whether to allow an anonymous /session/start for this video.
 		 *
-		 * Defaults to allow when `_ms_access_type` is set (Pro's email-gate
-		 * meta). Extensions can opt additional anon-allowable access types in.
+		 * Defaults to allow when `_ms_access_type` is set by an extension.
+		 * Extensions can opt additional anon-allowable access types in.
 		 *
 		 * @since 1.1.0
 		 *
@@ -225,10 +225,10 @@ class SessionController extends WP_REST_Controller {
 		// Access control check.
 		$access = AccessControl::can_watch( $video_id, $user_id );
 		if ( ! $access['allowed'] ) {
-			// Promote the access reason to the WP_Error code so the client sees
-			// `data.code === 'email_gate_required'` (or similar) and can route to
-			// the right overlay. Falls back to the legacy 'access_denied' so any
-			// integrator listening for the old code still works.
+			// Promote the access reason to the WP_Error code so the client can
+			// route to the right overlay for whichever gate denied it. Falls
+			// back to the legacy 'access_denied' so any integrator listening for
+			// the old code still works.
 			$code = ! empty( $access['reason'] ) ? sanitize_key( $access['reason'] ) : 'access_denied';
 			return new WP_Error( $code, $access['reason'], array( 'status' => 403 ) );
 		}

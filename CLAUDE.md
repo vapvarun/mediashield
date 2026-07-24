@@ -487,7 +487,6 @@ Tighten budgets when refactoring a hot path. Loosen only with a written rational
 | Pro: DRM Types Explained | `docs/pro/drm-types-explained.md` | ClearKey vs Widevine L1 vs FairPlay — buyer-facing tradeoffs |
 | Pro: Analytics | `docs/pro/analytics.md` | Heatmaps, realtime, alerts, export — what you see and how to read it |
 | Pro: License Management | `docs/pro/license-management.md` | License unlocks updates + support; never gates features |
-| Pro: Email Gate | `docs/pro/email-gate.md` | Email-capture gate setup, scopes, integrations |
 | Pro: Hooks & Filters | `docs/pro/hooks-filters-pro.md` | Redirect stub → `docs/developer/hooks-filters-pro.md` |
 
 ### Developer Reference (`docs/developer/`)

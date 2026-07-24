@@ -73,7 +73,6 @@ MediaShield protects your video content on WordPress with dynamic watermarking, 
 * **Heatmap Analytics.** Per-video playback heatmaps with 10-second position buckets and retention curves.
 * **Realtime Dashboard.** Live active viewer count with 15-second auto-refresh.
 * **Suspicious Activity Detection.** Multi-IP, devtools, rapid seek, and VPN detection with alert management.
-* **Email Gate.** Capture emails before video access with webhook integration for marketing tools.
 * **Milestone Actions.** Tag user, send email, or fire webhook at completion milestones.
 * **Weekly Digest.** Automated analytics summary email to site admins.
 * **CSV and PDF Export.** Export watch data as CSV or generate async PDF reports.

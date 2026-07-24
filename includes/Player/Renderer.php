@@ -223,10 +223,10 @@ class Renderer {
 		$classes = apply_filters( 'mediashield_player_classes', array( 'ms-protected-player' ), $video_id );
 
 		/**
-		 * Filter the per-video access type (e.g. 'email_gate' for Pro's email gate).
+		 * Filter the per-video access type.
 		 *
-		 * Pro registers a callback that returns the `_ms_access_type` meta value so
-		 * the client can route gated videos to the right overlay (email form, etc.)
+		 * An extension returns a slug (typically the `_ms_access_type` meta value)
+		 * so the client can route gated videos to the right overlay
 		 * instead of the default login shortcut. Empty string means no special gate.
 		 *
 		 * @since 1.1.0

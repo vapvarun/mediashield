@@ -803,8 +803,8 @@
 
 		// Login gate (all non-none tiers).
 		// Skip the client-side shortcut when the video opts into an alternative
-		// access path (e.g. data-access-type="email_gate") so /session/start can
-		// run and return the proper reason for Pro's matching listener.
+		// access path (any data-access-type value) so /session/start can run and
+		// return the proper reason for whichever extension owns that path.
 		if ( ! config.isLoggedIn && ! el.dataset.accessType ) {
 			showLoginOverlay( el );
 			return;
@@ -830,16 +830,6 @@
 			startSession( el, videoId, playerAdapter );
 		} );
 	}
-
-	// ─── Email Gate Passed ──────────────────────────────────────
-
-	window.addEventListener( 'mediashield:email-gate-passed', function ( e ) {
-		var el = e.detail.el;
-		var videoId = e.detail.videoId;
-		if ( el && el._msAdapter ) {
-			startSession( el, videoId, el._msAdapter );
-		}
-	} );
 
 	function startSession( el, videoId, adapter ) {
 		if ( ! videoId ) {
@@ -876,7 +866,7 @@
 				}
 
 				// Handle access-denied responses (403 or error codes).
-				if ( status === 403 || data.code === 'access_denied' || data.code === 'email_gate_required' || data.code === 'login_required' ) {
+				if ( status === 403 || data.code === 'access_denied' || data.code === 'login_required' ) {
 					var reason = data.code || 'access_denied';
 
 					// Show login overlay for login_required when user is not logged in.
@@ -885,11 +875,11 @@
 						return;
 					}
 
-					// Give upstream listeners (Pro's email gate, custom integrations)
-					// the chance to handle the denial BEFORE the generic error
-					// overlay paints — otherwise the email form renders on top of
-					// a redundant "email_gate_required" overlay. Listeners suppress
-					// the fallback by calling event.preventDefault().
+					// Give upstream listeners (custom access integrations) the
+					// chance to handle the denial BEFORE the generic error overlay
+					// paints — otherwise their own UI renders on top of a redundant
+					// denial overlay. Listeners suppress the fallback by calling
+					// event.preventDefault().
 					var ev = new CustomEvent( 'mediashield:access-denied', {
 						bubbles: true,
 						cancelable: true,
