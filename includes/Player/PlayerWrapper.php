@@ -223,9 +223,27 @@ class PlayerWrapper {
 					? ' data-access-type="' . esc_attr( $access_type ) . '"'
 					: '';
 
+				// Per-video playback options, same tri-state contract Renderer
+				// uses ('1'/'0' explicit, '' = pristine -> adapter default). The
+				// auto-wrap path emitted none of these, so autoplay/loop/muted/
+				// controls set on the video were saved but silently ignored on
+				// any page that auto-wrapped instead of using the shortcode.
+				$playback_attr = '';
+				foreach ( array(
+					'_ms_autoplay'      => 'autoplay',
+					'_ms_loop'          => 'loop',
+					'_ms_muted'         => 'muted',
+					'_ms_show_controls' => 'controls',
+				) as $meta_key => $data_attr ) {
+					$raw = (string) get_post_meta( $video_post_id, $meta_key, true );
+					if ( '1' === $raw || '0' === $raw ) {
+						$playback_attr .= ' data-' . $data_attr . '="' . esc_attr( $raw ) . '"';
+					}
+				}
+
 				return sprintf(
 					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s"%s>'
-					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""%s></div>'
+					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""%s%s></div>'
 					. '<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>'
 					. '<div class="ms-protection-overlay"></div>'
 					. '<button class="ms-fullscreen-btn" aria-label="%s">' . \MediaShield\Support\Icons::svg( 'maximize', array( 'size' => 20 ) ) . '</button>'
@@ -238,6 +256,7 @@ class PlayerWrapper {
 					esc_attr( $platform_video_id ),
 					esc_url( $src_url ),
 					$overrides_attr,
+					$playback_attr,
 					$fullscreen_label
 				);
 			},
