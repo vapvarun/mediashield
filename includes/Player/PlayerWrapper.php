@@ -213,8 +213,18 @@ class PlayerWrapper {
 					}
 				}
 
+				// Auto-wrapped players must advertise the access type exactly as
+				// Renderer::render() does, or a gated video looks ungated on this
+				// path: the client never learns it should show the email gate, so
+				// the visitor just meets a player that refuses to stream. Same
+				// filter, same attribute, so both render paths agree.
+				$access_type      = (string) apply_filters( 'mediashield_player_access_type', '', $video_post_id );
+				$access_type_attr = '' !== $access_type
+					? ' data-access-type="' . esc_attr( $access_type ) . '"'
+					: '';
+
 				return sprintf(
-					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s">'
+					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s"%s>'
 					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""%s></div>'
 					. '<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>'
 					. '<div class="ms-protection-overlay"></div>'
@@ -224,6 +234,7 @@ class PlayerWrapper {
 					esc_attr( $platform ),
 					esc_attr( $protection ),
 					esc_attr( $player_type ),
+					$access_type_attr,
 					esc_attr( $platform_video_id ),
 					esc_url( $src_url ),
 					$overrides_attr,
