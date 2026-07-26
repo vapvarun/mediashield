@@ -26,11 +26,15 @@ class Activator {
 	 * Run on plugin activation.
 	 */
 	public static function activate(): void {
+		// Activation runs before `init`, so these requirement messages are kept
+		// as plain strings: translating the `mediashield` text domain this early
+		// trips WP 6.7's `_load_textdomain_just_in_time` notice. Same reason the
+		// Settings schema avoids __() in its defaults (see Settings::schema()).
 		// PHP version check.
 		if ( version_compare( PHP_VERSION, '8.1', '<' ) ) {
 			deactivate_plugins( plugin_basename( MEDIASHIELD_FILE ) );
 			wp_die(
-				esc_html__( 'MediaShield requires PHP 8.1 or higher.', 'mediashield' ),
+				'MediaShield requires PHP 8.1 or higher.',
 				'Plugin Activation Error',
 				array( 'back_link' => true )
 			);
@@ -40,7 +44,7 @@ class Activator {
 		if ( version_compare( get_bloginfo( 'version' ), '6.5', '<' ) ) {
 			deactivate_plugins( plugin_basename( MEDIASHIELD_FILE ) );
 			wp_die(
-				esc_html__( 'MediaShield requires WordPress 6.5 or higher.', 'mediashield' ),
+				'MediaShield requires WordPress 6.5 or higher.',
 				'Plugin Activation Error',
 				array( 'back_link' => true )
 			);
