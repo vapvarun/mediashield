@@ -58,7 +58,14 @@ class Cleanup {
 		if ( ! isset( $schedules['monthly'] ) ) {
 			$schedules['monthly'] = array(
 				'interval' => MONTH_IN_SECONDS,
-				'display'  => __( 'Once Monthly', 'mediashield' ),
+				// The cron_schedules filter fires whenever WP evaluates schedules,
+				// which can happen before init (WP-Cron spawn checks). Translating
+				// the mediashield domain that early trips WP 6.7's
+				// _load_textdomain_just_in_time notice. The display string is only
+				// ever shown in admin cron tools, which run after init and re-run
+				// this filter — so translate once init has fired, plain string
+				// before then.
+				'display'  => did_action( 'init' ) ? __( 'Once Monthly', 'mediashield' ) : 'Once Monthly',
 			);
 		}
 		return $schedules;
