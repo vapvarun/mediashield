@@ -17,7 +17,7 @@ import {
 	SelectControl,
 	Spinner,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
@@ -41,6 +41,33 @@ const PROTECTION_OPTIONS = [
 	{ label: __( 'Standard', 'mediashield' ), value: 'standard' },
 	{ label: __( 'Strict', 'mediashield' ), value: 'strict' },
 ];
+
+// Reference video used only to make the mid-roll spacing concrete in the
+// help text below -- picking a real-feeling lesson length (46 minutes) so
+// "3 mid-rolls" reads as "roughly 13:48, 23:00, 32:12" instead of an
+// abstract count. The engine itself spaces breaks across 10%-90% of the
+// ACTUAL video's duration (see AdManagerBridge::supply_breaks()); this is
+// illustration only.
+const AD_EXAMPLE_DURATION = 46 * 60;
+
+const formatTimecode = ( totalSeconds ) => {
+	const minutes = Math.floor( totalSeconds / 60 );
+	const seconds = Math.round( totalSeconds % 60 );
+	return `${ minutes }:${ String( seconds ).padStart( 2, '0' ) }`;
+};
+
+const midrollExampleTimes = ( count ) => {
+	if ( ! count || count < 1 ) {
+		return '';
+	}
+	const start = AD_EXAMPLE_DURATION * 0.1;
+	const span = AD_EXAMPLE_DURATION * 0.8;
+	const times = [];
+	for ( let i = 1; i <= count; i++ ) {
+		times.push( formatTimecode( start + ( span * i ) / ( count + 1 ) ) );
+	}
+	return times.join( ', ' );
+};
 
 const SectionCard = ( { icon, title, description, children } ) => (
 	<div className="mediashield-settings__section">
@@ -436,6 +463,86 @@ const Settings = () => {
 							value={ settings?.ms_player_endscreen_url || '' }
 							onChange={ ( val ) => updateSetting( 'ms_player_endscreen_url', val ) }
 							placeholder="https://..."
+							__nextHasNoMarginBottom
+						/>
+					</>
+				) }
+			</SectionCard>
+
+			<SectionCard
+				icon="megaphone"
+				title={ __( 'Video Ads', 'mediashield' ) }
+				description={ __( 'Site-wide placement for in-video ad breaks sourced from WB Ad Manager. Individual videos can override this under the video’s "Video Ads" box.', 'mediashield' ) }
+			>
+				<ToggleControl
+					label={ __( 'Enable In-Video Ads', 'mediashield' ) }
+					help={ __( 'Master switch for ad breaks inside the player. Off means no ads play anywhere, no matter what is set below. Default: on.', 'mediashield' ) }
+					checked={ settings?.ms_ads_enabled !== false }
+					onChange={ ( val ) => updateSetting( 'ms_ads_enabled', val ) }
+					__nextHasNoMarginBottom
+				/>
+				{ settings?.ms_ads_enabled !== false && (
+					<>
+						<ToggleControl
+							label={ __( 'Pre-roll', 'mediashield' ) }
+							help={ __( 'Play one ad before the video starts. Default: on.', 'mediashield' ) }
+							checked={ settings?.ms_ads_preroll !== false }
+							onChange={ ( val ) => updateSetting( 'ms_ads_preroll', val ) }
+							__nextHasNoMarginBottom
+						/>
+						<TextControl
+							label={ __( 'Mid-roll Count', 'mediashield' ) }
+							help={
+								( settings?.ms_ads_midroll_count ?? 3 ) > 0
+									? sprintf(
+										/* translators: 1: number of mid-roll breaks, 2: example timecodes on a 46-minute video */
+										__( 'Ad breaks spaced evenly across the middle 10%%–90%% of the video (0–10, default: 3). On a 46-minute video, %1$d mid-roll(s) would land at roughly %2$s.', 'mediashield' ),
+										settings?.ms_ads_midroll_count ?? 3,
+										midrollExampleTimes( settings?.ms_ads_midroll_count ?? 3 )
+									)
+									: __( 'No mid-roll breaks will play. When enabled, breaks are spaced evenly across the middle of the video, between the 10th and 90th percent mark (0-10, default: 3).', 'mediashield' )
+							}
+							type="number"
+							min={ 0 }
+							max={ 10 }
+							value={ settings?.ms_ads_midroll_count ?? 3 }
+							onChange={ ( val ) =>
+								updateSetting(
+									'ms_ads_midroll_count',
+									Math.max( 0, Math.min( 10, parseInt( val, 10 ) || 0 ) )
+								)
+							}
+							__nextHasNoMarginBottom
+						/>
+						<ToggleControl
+							label={ __( 'Require Full View', 'mediashield' ) }
+							help={ __( 'Viewer must watch each ad in full — the Skip button never appears. Overrides the skip delay below. Default: off.', 'mediashield' ) }
+							checked={ !! settings?.ms_ads_require_full_view }
+							onChange={ ( val ) => updateSetting( 'ms_ads_require_full_view', val ) }
+							__nextHasNoMarginBottom
+						/>
+						{ ! settings?.ms_ads_require_full_view && (
+							<TextControl
+								label={ __( 'Skip Delay (seconds)', 'mediashield' ) }
+								help={ __( 'Seconds before the Skip button unlocks on each ad. 0 = skippable immediately. Clamped 0–60. Default: 5.', 'mediashield' ) }
+								type="number"
+								min={ 0 }
+								max={ 60 }
+								value={ settings?.ms_ads_skip_after ?? 5 }
+								onChange={ ( val ) =>
+									updateSetting(
+										'ms_ads_skip_after',
+										Math.max( 0, Math.min( 60, parseInt( val, 10 ) || 0 ) )
+									)
+								}
+								__nextHasNoMarginBottom
+							/>
+						) }
+						<ToggleControl
+							label={ __( 'Show Break Markers', 'mediashield' ) }
+							help={ __( 'Display a marker on the seek bar for each upcoming ad break. Default: on.', 'mediashield' ) }
+							checked={ settings?.ms_ads_show_markers !== false }
+							onChange={ ( val ) => updateSetting( 'ms_ads_show_markers', val ) }
 							__nextHasNoMarginBottom
 						/>
 					</>
