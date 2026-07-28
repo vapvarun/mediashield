@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-24T17:13:24+00:00\n"
+"POT-Creation-Date: 2026-07-28T11:08:52+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -55,7 +55,7 @@ msgid "DRM encryption, heatmap analytics, LMS integration, and more."
 msgstr ""
 
 #: includes/Admin/Menu.php:166
-#: src/admin/pages/Settings.js:532
+#: src/admin/pages/Settings.js:639
 msgid "Get MediaShield Pro"
 msgstr ""
 
@@ -74,14 +74,6 @@ msgstr ""
 
 #: includes/Admin/SetupWizard.php:128
 msgid "JavaScript is required for the setup wizard."
-msgstr ""
-
-#: includes/Core/Activator.php:33
-msgid "MediaShield requires PHP 8.1 or higher."
-msgstr ""
-
-#: includes/Core/Activator.php:43
-msgid "MediaShield requires WordPress 6.5 or higher."
 msgstr ""
 
 #: includes/CPT/PlaylistPostType.php:49
@@ -245,13 +237,13 @@ msgid "Player Options"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:145
-#: src/admin/pages/Settings.js:473
-#: src/admin/pages/Settings.js:525
+#: src/admin/pages/Settings.js:580
+#: src/admin/pages/Settings.js:632
 msgid "LMS Integration"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:153
-#: src/admin/pages/Settings.js:510
+#: src/admin/pages/Settings.js:617
 msgid "Pro Features"
 msgstr ""
 
@@ -476,27 +468,27 @@ msgid "Override global settings for this video. \"Default\" uses the value from 
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:588
-#: src/admin/pages/Settings.js:390
+#: src/admin/pages/Settings.js:417
 msgid "Speed Control"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:589
-#: src/admin/pages/Settings.js:397
+#: src/admin/pages/Settings.js:424
 msgid "Keyboard Shortcuts"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:590
-#: src/admin/pages/Settings.js:404
+#: src/admin/pages/Settings.js:431
 msgid "Resume Playback"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:591
-#: src/admin/pages/Settings.js:411
+#: src/admin/pages/Settings.js:438
 msgid "Sticky Player"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:592
-#: src/admin/pages/Settings.js:418
+#: src/admin/pages/Settings.js:445
 msgid "End Screen"
 msgstr ""
 
@@ -546,7 +538,7 @@ msgid "Get Pro"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:663
-#: src/admin/pages/Settings.js:516
+#: src/admin/pages/Settings.js:623
 msgid "Advanced Watermark"
 msgstr ""
 
@@ -576,7 +568,7 @@ msgstr ""
 msgid "Upgrade"
 msgstr ""
 
-#: includes/Cron/Cleanup.php:61
+#: includes/Cron/Cleanup.php:68
 msgid "Once Monthly"
 msgstr ""
 
@@ -602,12 +594,12 @@ msgid "Next video in"
 msgstr ""
 
 #: includes/Player/Protection.php:41
-#: src/admin/pages/Settings.js:260
+#: src/admin/pages/Settings.js:287
 msgid "Developer Tools Detected"
 msgstr ""
 
 #: includes/Player/Protection.php:42
-#: src/admin/pages/Settings.js:267
+#: src/admin/pages/Settings.js:294
 msgid "Please close developer tools to continue watching this video."
 msgstr ""
 
@@ -884,7 +876,7 @@ msgid "Please log in to watch this video."
 msgstr ""
 
 #: templates/login-overlay.php:19
-#: src/admin/pages/Settings.js:371
+#: src/admin/pages/Settings.js:398
 msgid "Log In"
 msgstr ""
 
@@ -921,7 +913,7 @@ msgstr ""
 
 #: src/admin/App.js:68
 #: src/admin/pages/Playlists.js:88
-#: src/admin/pages/Settings.js:156
+#: src/admin/pages/Settings.js:183
 msgid "Settings"
 msgstr ""
 
@@ -1368,385 +1360,447 @@ msgstr ""
 msgid "Strict"
 msgstr ""
 
-#: src/admin/pages/Settings.js:83
+#: src/admin/pages/Settings.js:110
 msgid "Failed to load settings."
 msgstr ""
 
-#: src/admin/pages/Settings.js:109
+#: src/admin/pages/Settings.js:136
 msgid "Settings saved."
 msgstr ""
 
-#: src/admin/pages/Settings.js:113
+#: src/admin/pages/Settings.js:140
 msgid "Failed to save."
 msgstr ""
 
-#: src/admin/pages/Settings.js:136
+#: src/admin/pages/Settings.js:163
 msgid "Loading settings..."
 msgstr ""
 
-#: src/admin/pages/Settings.js:165
+#: src/admin/pages/Settings.js:192
 msgid "Auto-save enabled"
 msgstr ""
 
-#: src/admin/pages/Settings.js:171
+#: src/admin/pages/Settings.js:198
 #: src/admin/wizard/Wizard.js:23
 msgid "General"
 msgstr ""
 
-#: src/admin/pages/Settings.js:172
+#: src/admin/pages/Settings.js:199
 msgid "Core plugin behavior and protection defaults."
 msgstr ""
 
-#: src/admin/pages/Settings.js:175
+#: src/admin/pages/Settings.js:202
 msgid "Enable MediaShield"
 msgstr ""
 
-#: src/admin/pages/Settings.js:176
+#: src/admin/pages/Settings.js:203
 msgid "Turn video protection on or off globally."
 msgstr ""
 
-#: src/admin/pages/Settings.js:182
+#: src/admin/pages/Settings.js:209
 msgid "Default Protection Level"
 msgstr ""
 
-#: src/admin/pages/Settings.js:183
+#: src/admin/pages/Settings.js:210
 msgid "Applied to new videos unless overridden per-video."
 msgstr ""
 
-#: src/admin/pages/Settings.js:199
+#: src/admin/pages/Settings.js:226
 msgid "None:"
 msgstr ""
 
-#: src/admin/pages/Settings.js:199
+#: src/admin/pages/Settings.js:226
 msgid "No protection applied"
 msgstr ""
 
-#: src/admin/pages/Settings.js:200
+#: src/admin/pages/Settings.js:227
 msgid "Basic:"
 msgstr ""
 
-#: src/admin/pages/Settings.js:200
+#: src/admin/pages/Settings.js:227
 msgid "Login required, right-click disabled"
 msgstr ""
 
-#: src/admin/pages/Settings.js:201
+#: src/admin/pages/Settings.js:228
 msgid "Standard:"
 msgstr ""
 
-#: src/admin/pages/Settings.js:201
+#: src/admin/pages/Settings.js:228
 msgid "Basic + watermark + session tracking"
 msgstr ""
 
-#: src/admin/pages/Settings.js:202
+#: src/admin/pages/Settings.js:229
 msgid "Strict:"
 msgstr ""
 
-#: src/admin/pages/Settings.js:202
+#: src/admin/pages/Settings.js:229
 msgid "Standard + devtools detection + source hiding"
 msgstr ""
 
-#: src/admin/pages/Settings.js:205
+#: src/admin/pages/Settings.js:232
 msgid "Require Login"
 msgstr ""
 
-#: src/admin/pages/Settings.js:206
+#: src/admin/pages/Settings.js:233
 msgid "Only logged-in users can view protected videos."
 msgstr ""
 
-#: src/admin/pages/Settings.js:215
+#: src/admin/pages/Settings.js:242
 #: src/admin/pages/Videos.js:290
 #: src/admin/pages/Videos.js:325
 msgid "Protection"
 msgstr ""
 
-#: src/admin/pages/Settings.js:216
+#: src/admin/pages/Settings.js:243
 msgid "Anti-download behavior applied to the player."
 msgstr ""
 
-#: src/admin/pages/Settings.js:219
+#: src/admin/pages/Settings.js:246
 msgid "Block Right-Click"
 msgstr ""
 
-#: src/admin/pages/Settings.js:220
+#: src/admin/pages/Settings.js:247
 msgid "Prevent the browser context menu inside the player."
 msgstr ""
 
-#: src/admin/pages/Settings.js:226
+#: src/admin/pages/Settings.js:253
 msgid "Block Save Shortcut (Ctrl+S / Cmd+S)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:227
+#: src/admin/pages/Settings.js:254
 msgid "Intercept the save keyboard shortcut when the player is focused."
 msgstr ""
 
-#: src/admin/pages/Settings.js:233
+#: src/admin/pages/Settings.js:260
 msgid "Hide Video Source URL"
 msgstr ""
 
-#: src/admin/pages/Settings.js:234
+#: src/admin/pages/Settings.js:261
 msgid "Move the src attribute to a data-* attribute so it is not visible in View Source."
 msgstr ""
 
-#: src/admin/pages/Settings.js:240
+#: src/admin/pages/Settings.js:267
 msgid "Detect Developer Tools"
 msgstr ""
 
-#: src/admin/pages/Settings.js:241
+#: src/admin/pages/Settings.js:268
 msgid "Detect when the viewer opens browser DevTools and log a warning. Skipped on mobile and touch devices."
 msgstr ""
 
-#: src/admin/pages/Settings.js:249
+#: src/admin/pages/Settings.js:276
 msgid "Pause Video When Detected"
 msgstr ""
 
-#: src/admin/pages/Settings.js:250
+#: src/admin/pages/Settings.js:277
 msgid "Pause playback and show an overlay when DevTools is detected. Off by default — detection is logged either way."
 msgstr ""
 
-#: src/admin/pages/Settings.js:258
+#: src/admin/pages/Settings.js:285
 msgid "Overlay Title"
 msgstr ""
 
-#: src/admin/pages/Settings.js:265
+#: src/admin/pages/Settings.js:292
 msgid "Overlay Message"
 msgstr ""
 
-#: src/admin/pages/Settings.js:279
+#: src/admin/pages/Settings.js:306
 #: src/admin/wizard/Wizard.js:26
 msgid "Watermark"
 msgstr ""
 
-#: src/admin/pages/Settings.js:280
+#: src/admin/pages/Settings.js:307
 msgid "Dynamic overlay that identifies the viewer."
 msgstr ""
 
-#: src/admin/pages/Settings.js:283
+#: src/admin/pages/Settings.js:310
 #: src/admin/wizard/steps/WatermarkStep.js:26
 msgid "Opacity"
 msgstr ""
 
-#: src/admin/pages/Settings.js:293
+#: src/admin/pages/Settings.js:320
 msgid "Watermark Color"
 msgstr ""
 
-#: src/admin/pages/Settings.js:301
+#: src/admin/pages/Settings.js:328
 msgid "Position Swap Interval"
 msgstr ""
 
-#: src/admin/pages/Settings.js:302
+#: src/admin/pages/Settings.js:329
 msgid "Seconds between watermark position changes. Moving the watermark stops a viewer cropping it out, so lower is safer and higher is less distracting."
 msgstr ""
 
-#: src/admin/pages/Settings.js:312
+#: src/admin/pages/Settings.js:339
 msgid "Show MediaShield Badge"
 msgstr ""
 
-#: src/admin/pages/Settings.js:313
+#: src/admin/pages/Settings.js:340
 msgid "Display a small \"Protected by MediaShield\" badge on the player."
 msgstr ""
 
-#: src/admin/pages/Settings.js:322
-#: src/admin/pages/Settings.js:326
+#: src/admin/pages/Settings.js:349
+#: src/admin/pages/Settings.js:353
 msgid "Allowed Domains"
 msgstr ""
 
-#: src/admin/pages/Settings.js:323
+#: src/admin/pages/Settings.js:350
 msgid "Restrict video playback to specific domains."
 msgstr ""
 
-#: src/admin/pages/Settings.js:327
+#: src/admin/pages/Settings.js:354
 msgid "One domain per line. Leave empty to allow all domains."
 msgstr ""
 
-#: src/admin/pages/Settings.js:337
+#: src/admin/pages/Settings.js:364
 msgid "Concurrent Streams"
 msgstr ""
 
-#: src/admin/pages/Settings.js:338
+#: src/admin/pages/Settings.js:365
 msgid "Limit how many videos a user can watch simultaneously."
 msgstr ""
 
-#: src/admin/pages/Settings.js:341
+#: src/admin/pages/Settings.js:368
 msgid "Max Concurrent Streams"
 msgstr ""
 
-#: src/admin/pages/Settings.js:342
+#: src/admin/pages/Settings.js:369
 msgid "Number of simultaneous video sessions per user."
 msgstr ""
 
-#: src/admin/pages/Settings.js:355
+#: src/admin/pages/Settings.js:382
 msgid "Login & Access Messages"
 msgstr ""
 
-#: src/admin/pages/Settings.js:356
+#: src/admin/pages/Settings.js:383
 msgid "Customize the messages shown when users need to log in or lack access."
 msgstr ""
 
-#: src/admin/pages/Settings.js:359
+#: src/admin/pages/Settings.js:386
 msgid "Login Overlay Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:360
+#: src/admin/pages/Settings.js:387
 msgid "Message shown on the video overlay when login is required."
 msgstr ""
 
-#: src/admin/pages/Settings.js:363
+#: src/admin/pages/Settings.js:390
 msgid "Please log in to watch this video"
 msgstr ""
 
-#: src/admin/pages/Settings.js:367
+#: src/admin/pages/Settings.js:394
 msgid "Login Button Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:368
+#: src/admin/pages/Settings.js:395
 msgid "Label for the login button on the video overlay."
 msgstr ""
 
-#: src/admin/pages/Settings.js:375
+#: src/admin/pages/Settings.js:402
 msgid "Access Denied Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:376
+#: src/admin/pages/Settings.js:403
 msgid "Message shown when a logged-in user does not have permission to view a video."
 msgstr ""
 
-#: src/admin/pages/Settings.js:379
+#: src/admin/pages/Settings.js:406
 msgid "You do not have access to this video"
 msgstr ""
 
-#: src/admin/pages/Settings.js:386
+#: src/admin/pages/Settings.js:413
 msgid "Player Controls"
 msgstr ""
 
-#: src/admin/pages/Settings.js:387
+#: src/admin/pages/Settings.js:414
 msgid "Customize the video player behavior and features."
 msgstr ""
 
-#: src/admin/pages/Settings.js:391
+#: src/admin/pages/Settings.js:418
 msgid "Show playback speed selector (0.5x to 2x) on self-hosted and Bunny videos. Platform players (YouTube, Vimeo, Wistia) use their own speed controls."
 msgstr ""
 
-#: src/admin/pages/Settings.js:398
+#: src/admin/pages/Settings.js:425
 msgid "Space = play/pause, ← → = seek 5s, ↑ ↓ = volume, M = mute, F = fullscreen. Only active when player is focused."
 msgstr ""
 
-#: src/admin/pages/Settings.js:405
+#: src/admin/pages/Settings.js:432
 msgid "Remember where the viewer left off and offer to resume on return."
 msgstr ""
 
-#: src/admin/pages/Settings.js:412
+#: src/admin/pages/Settings.js:439
 msgid "Float the player in a corner when the viewer scrolls past it."
 msgstr ""
 
-#: src/admin/pages/Settings.js:419
+#: src/admin/pages/Settings.js:446
 msgid "Show a call-to-action overlay when the video finishes."
 msgstr ""
 
-#: src/admin/pages/Settings.js:427
+#: src/admin/pages/Settings.js:454
 msgid "End Screen Message"
 msgstr ""
 
-#: src/admin/pages/Settings.js:430
+#: src/admin/pages/Settings.js:457
 msgid "Enjoyed this video? Explore more content."
 msgstr ""
 
-#: src/admin/pages/Settings.js:434
+#: src/admin/pages/Settings.js:461
 msgid "End Screen Button URL"
 msgstr ""
 
-#: src/admin/pages/Settings.js:448
-msgid "Upload & Storage"
-msgstr ""
-
-#: src/admin/pages/Settings.js:449
-msgid "Choose where new videos are stored."
-msgstr ""
-
-#: src/admin/pages/Settings.js:452
-msgid "Default Upload Target"
-msgstr ""
-
-#: src/admin/pages/Settings.js:453
-msgid "Where new uploads go when you do not pick a platform yourself. \"Auto\" uses the first connected cloud platform."
-msgstr ""
-
-#: src/admin/pages/Settings.js:456
-msgid "Auto (use connected platform)"
-msgstr ""
-
-#: src/admin/pages/Settings.js:457
-msgid "Self-hosted (local server)"
+#: src/admin/pages/Settings.js:474
+msgid "Video Ads"
 msgstr ""
 
 #: src/admin/pages/Settings.js:475
-msgid "Settings for"
+msgid "Site-wide placement for in-video ad breaks sourced from WB Ad Manager. Individual videos can override this under the video’s \"Video Ads\" box."
 msgstr ""
 
-#: src/admin/pages/Settings.js:475
-msgid "integration."
+#: src/admin/pages/Settings.js:478
+msgid "Enable In-Video Ads"
 msgstr ""
 
-#: src/admin/pages/Settings.js:476
-msgid "Automatically complete lessons when students finish watching videos."
-msgstr ""
-
-#: src/admin/pages/Settings.js:480
-msgid "Auto-complete lessons"
-msgstr ""
-
-#: src/admin/pages/Settings.js:481
-msgid "Mark the associated LMS lesson as complete when a student finishes the video."
+#: src/admin/pages/Settings.js:479
+msgid "Master switch for ad breaks inside the player. Off means no ads play anywhere, no matter what is set below. Default: on."
 msgstr ""
 
 #: src/admin/pages/Settings.js:487
-msgid "Require enrollment"
+msgid "Pre-roll"
 msgstr ""
 
 #: src/admin/pages/Settings.js:488
-msgid "Only allow enrolled students to watch course videos."
+msgid "Play one ad before the video starts. Default: on."
 msgstr ""
 
 #: src/admin/pages/Settings.js:494
+msgid "Mid-roll Count"
+msgstr ""
+
+#. translators: 1: number of mid-roll breaks, 2: example timecodes on a 46-minute video
+#: src/admin/pages/Settings.js:499
+#, js-format
+msgid "Ad breaks spaced evenly across the middle 10%%–90%% of the video (0–10, default: 3). On a 46-minute video, %1$d mid-roll(s) would land at roughly %2$s."
+msgstr ""
+
+#: src/admin/pages/Settings.js:503
+msgid "No mid-roll breaks will play. When enabled, breaks are spaced evenly across the middle of the video, between the 10th and 90th percent mark (0-10, default: 3)."
+msgstr ""
+
+#: src/admin/pages/Settings.js:518
+msgid "Require Full View"
+msgstr ""
+
+#: src/admin/pages/Settings.js:519
+msgid "Viewer must watch each ad in full — the Skip button never appears. Overrides the skip delay below. Default: off."
+msgstr ""
+
+#: src/admin/pages/Settings.js:526
+msgid "Skip Delay (seconds)"
+msgstr ""
+
+#: src/admin/pages/Settings.js:527
+msgid "Seconds before the Skip button unlocks on each ad. 0 = skippable immediately. Clamped 0–60. Default: 5."
+msgstr ""
+
+#: src/admin/pages/Settings.js:542
+msgid "Show Break Markers"
+msgstr ""
+
+#: src/admin/pages/Settings.js:543
+msgid "Display a marker on the seek bar for each upcoming ad break. Default: on."
+msgstr ""
+
+#: src/admin/pages/Settings.js:555
+msgid "Upload & Storage"
+msgstr ""
+
+#: src/admin/pages/Settings.js:556
+msgid "Choose where new videos are stored."
+msgstr ""
+
+#: src/admin/pages/Settings.js:559
+msgid "Default Upload Target"
+msgstr ""
+
+#: src/admin/pages/Settings.js:560
+msgid "Where new uploads go when you do not pick a platform yourself. \"Auto\" uses the first connected cloud platform."
+msgstr ""
+
+#: src/admin/pages/Settings.js:563
+msgid "Auto (use connected platform)"
+msgstr ""
+
+#: src/admin/pages/Settings.js:564
+msgid "Self-hosted (local server)"
+msgstr ""
+
+#: src/admin/pages/Settings.js:582
+msgid "Settings for"
+msgstr ""
+
+#: src/admin/pages/Settings.js:582
+msgid "integration."
+msgstr ""
+
+#: src/admin/pages/Settings.js:583
+msgid "Automatically complete lessons when students finish watching videos."
+msgstr ""
+
+#: src/admin/pages/Settings.js:587
+msgid "Auto-complete lessons"
+msgstr ""
+
+#: src/admin/pages/Settings.js:588
+msgid "Mark the associated LMS lesson as complete when a student finishes the video."
+msgstr ""
+
+#: src/admin/pages/Settings.js:594
+msgid "Require enrollment"
+msgstr ""
+
+#: src/admin/pages/Settings.js:595
+msgid "Only allow enrolled students to watch course videos."
+msgstr ""
+
+#: src/admin/pages/Settings.js:601
 msgid "Global completion %"
 msgstr ""
 
-#: src/admin/pages/Settings.js:495
+#: src/admin/pages/Settings.js:602
 msgid "Minimum video watch percentage required to trigger lesson completion."
 msgstr ""
 
-#: src/admin/pages/Settings.js:511
+#: src/admin/pages/Settings.js:618
 msgid "Available with MediaShield Pro"
 msgstr ""
 
-#: src/admin/pages/Settings.js:516
+#: src/admin/pages/Settings.js:623
 msgid "7 configurable fields (username, email, IP, user ID, timestamp, site name, custom text)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:519
+#: src/admin/pages/Settings.js:626
 msgid "Email Gate"
 msgstr ""
 
-#: src/admin/pages/Settings.js:519
+#: src/admin/pages/Settings.js:626
 msgid "Capture emails before video access with webhook integration for CRMs"
 msgstr ""
 
-#: src/admin/pages/Settings.js:522
+#: src/admin/pages/Settings.js:629
 msgid "DRM Encryption"
 msgstr ""
 
-#: src/admin/pages/Settings.js:522
+#: src/admin/pages/Settings.js:629
 msgid "Widevine ClearKey via Bunny Stream or Shaka Packager"
 msgstr ""
 
-#: src/admin/pages/Settings.js:525
+#: src/admin/pages/Settings.js:632
 msgid "Auto-complete LearnDash, Tutor LMS, or LifterLMS lessons on video completion"
 msgstr ""
 
-#: src/admin/pages/Settings.js:528
+#: src/admin/pages/Settings.js:635
 msgid "Platform Browsers"
 msgstr ""
 
-#: src/admin/pages/Settings.js:528
+#: src/admin/pages/Settings.js:635
 msgid "Browse & bulk import videos from Bunny, YouTube, Vimeo, Wistia"
 msgstr ""
 
