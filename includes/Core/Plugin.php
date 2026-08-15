@@ -34,6 +34,8 @@ use MediaShield\Cron\Cleanup;
 use MediaShield\Privacy\PrivacyExporter;
 use MediaShield\Privacy\PrivacyEraser;
 use MediaShield\Block\MyVideosBlock;
+use MediaShield\Embed\EmbedPage;
+use MediaShield\Integrations\Learnomy as LearnomyIntegration;
 
 /**
  * Class Plugin
@@ -107,6 +109,14 @@ class Plugin {
 
 		// Single video template.
 		add_filter( 'single_template', array( $this, 'video_template' ) );
+
+		// Signed embed page — the one way a client that cannot run PHP (a
+		// native app, an LMS on another host) can play a protected video.
+		EmbedPage::register();
+
+		// Learnomy lessons: resolve the stored video ID into a playable URL on
+		// the REST payload. No-op without Learnomy.
+		LearnomyIntegration::register();
 
 		/**
 		 * Fires after MediaShield core has loaded.
