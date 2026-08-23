@@ -126,6 +126,12 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 		require_once $ms_scale_command;
 		\WP_CLI::add_command( 'mediashield scale', \MediaShield\CLI\ScaleCommand::class );
 	}
+
+	$ms_repair_command = MEDIASHIELD_PATH . 'src/CLI/RepairCommand.php';
+	if ( file_exists( $ms_repair_command ) ) {
+		require_once $ms_repair_command;
+		\WP_CLI::add_command( 'mediashield repair', \MediaShield\CLI\RepairCommand::class );
+	}
 }
 
 // Auto-activate the preset license key on first load so downloads work.

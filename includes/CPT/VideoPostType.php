@@ -181,11 +181,14 @@ class VideoPostType {
 			'mediashieldVideoAdmin',
 			array(
 				'labels' => array(
-					'youtube' => __( 'YouTube', 'mediashield' ),
-					'vimeo'   => __( 'Vimeo', 'mediashield' ),
-					'wistia'  => __( 'Wistia', 'mediashield' ),
-					'bunny'   => __( 'Bunny Stream', 'mediashield' ),
-					'self'    => __( 'Self-hosted / Direct URL', 'mediashield' ),
+					'youtube'         => __( 'YouTube', 'mediashield' ),
+					'vimeo'           => __( 'Vimeo', 'mediashield' ),
+					'wistia'          => __( 'Wistia', 'mediashield' ),
+					'bunny'           => __( 'Bunny Stream', 'mediashield' ),
+					'self'            => __( 'Self-hosted / Direct URL', 'mediashield' ),
+					'bunnyCollection' => __( 'That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL.', 'mediashield' ),
+					'bunnyDashboard'  => __( 'That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL.', 'mediashield' ),
+					'unrecognised'    => __( 'This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. It will be saved as self-hosted, which only works if the URL serves the video file itself.', 'mediashield' ),
 				),
 			)
 		);
@@ -306,6 +309,16 @@ class VideoPostType {
 						<strong id="ms-detected-platform-label"><?php echo esc_html( self::get_platform_label( $platform ) ); ?></strong>
 						<input type="hidden" id="ms-platform" name="_ms_platform" value="<?php echo esc_attr( $platform ); ?>" />
 						<input type="hidden" id="ms-platform-video-id" name="_ms_platform_video_id" value="<?php echo esc_attr( $video_id ); ?>" />
+						<?php
+						// Detection feedback. Falling back to "Self-hosted" without
+						// saying so is how a Bunny dashboard URL got saved as a
+						// self-hosted video on 19 of 26 videos on one site: the row
+						// above read "Self-hosted", which looks like a successful
+						// detection, and the player then hung forever with no error
+						// (BC#10225483994). aria-live so the message is announced
+						// when it changes, since it appears without user focus.
+						?>
+						<p id="ms-detect-note" class="description" role="status" aria-live="polite" style="display:none;"></p>
 					</td>
 				</tr>
 				<tr>

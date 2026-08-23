@@ -401,6 +401,10 @@ class Settings {
 				'loginOverlay' => self::get( 'ms_login_overlay_text' ),
 				'loginButton'  => self::get( 'ms_login_button_text' ),
 				'accessDenied' => self::get( 'ms_access_denied_text' ),
+				// Shown when the media element never loads anything and never
+				// fires an error either - the silent-hang case a bad source URL
+				// produces. Without it the viewer just stares at a dead player.
+				'loadFailed'   => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
 			),
 		);
 

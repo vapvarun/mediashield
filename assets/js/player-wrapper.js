@@ -279,6 +279,8 @@
 			var url        = streamUrl || sourceUrl;
 			var isAdaptive = !! url && ( url.indexOf( '.m3u8' ) > -1 || url.indexOf( '.mpd' ) > -1 );
 
+			watchForSilentStall( video, target );
+
 			if ( ! isAdaptive ) {
 				video.src = url;
 				return adapter;
@@ -935,6 +937,43 @@
 			.catch( function ( err ) {
 				console.warn( 'MediaShield: session start failed', err );
 			} );
+	}
+
+	// ─── Silent-stall watchdog ──────────────────────────────────
+	//
+	// A <video> pointed at something that is not media — an HTML page, a
+	// dashboard link, a 404 body — does not fail. It sits in
+	// networkState 2 (NETWORK_LOADING) with readyState 0 and duration NaN,
+	// and never fires `error`. The viewer sees a player that never starts,
+	// the console stays clean, and the admin shows nothing wrong. That is
+	// how 19 of 26 videos on one site were broken for weeks and reported
+	// only as "videos are not playing" (BC#10225483994).
+	//
+	// So we time it out ourselves. Loading legitimately takes a while on a
+	// slow connection, hence a generous window and a check for ANY progress
+	// (metadata, or bytes buffered) rather than requiring playback to begin.
+	var STALL_TIMEOUT_MS = 15000;
+
+	function watchForSilentStall( video, target ) {
+		var container = target.closest ? target.closest( '.ms-protected-player' ) : null;
+		if ( ! container ) return;
+
+		var timer = setTimeout( function () {
+			// HAVE_NOTHING and nothing buffered: no metadata arrived at all.
+			var progressed = video.readyState > 0 || ( video.buffered && video.buffered.length > 0 );
+			if ( progressed ) return;
+
+			// A real decode/network error already surfaced its own message.
+			if ( video.error ) return;
+
+			showErrorOverlay( container, ( config.messages && config.messages.loadFailed ) ||
+				'This video could not be loaded.' );
+		}, STALL_TIMEOUT_MS );
+
+		// Any sign of life cancels the watchdog.
+		[ 'loadedmetadata', 'loadeddata', 'canplay', 'playing', 'error' ].forEach( function ( ev ) {
+			video.addEventListener( ev, function () { clearTimeout( timer ); }, { once: true } );
+		} );
 	}
 
 	// ─── Error Overlay (generic) ────────────────────────────────
