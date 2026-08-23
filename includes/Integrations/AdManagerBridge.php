@@ -251,10 +251,33 @@ class AdManagerBridge {
 			. '<video class="ms-ad-overlay__video" src="' . esc_url( $ad['video_url'] ) . '" playsinline preload="auto"></video>'
 			. $close;
 
-		// Skip policy is plugin-level, not per-ad: mandatory full-view removes the
-		// Skip button outright (null); otherwise the global delay applies.
+		// Skip policy, most specific wins:
+		//
+		//   1. Mandatory full-view removes the Skip button outright (null). This
+		//      is a site-wide compliance switch (CLE and similar), so it still
+		//      overrides everything - an advertiser must not be able to opt a
+		//      viewer out of a rule the site owner set for legal reasons.
+		//   2. The per-ad "Allow skip after" configured on the creative.
+		//   3. The plugin-level default.
+		//
+		// (2) used to be skipped entirely: this read the global and threw the
+		// creative's own value away, so setting 2s or 10s on an individual ad
+		// did nothing and the player always counted down from the 5s default
+		// (BC#10128639184). The creative row already carries skip_after - it is
+		// in video_ads()'s own return docblock - so the setting was collected
+		// and discarded rather than never available.
 		$require_full = (bool) \MediaShield\Core\Settings::get( 'ms_ads_require_full_view' );
-		$skip_after   = $require_full ? null : (int) \MediaShield\Core\Settings::get( 'ms_ads_skip_after' );
+
+		if ( $require_full ) {
+			$skip_after = null;
+		} elseif ( isset( $ad['skip_after'] ) && '' !== $ad['skip_after'] && null !== $ad['skip_after'] ) {
+			// Clamped to the same 0-60 range the global setting validates to, so
+			// a bad value from the ad plugin cannot produce an ad that is
+			// skippable at a negative offset or effectively never.
+			$skip_after = max( 0, min( 60, (int) $ad['skip_after'] ) );
+		} else {
+			$skip_after = (int) \MediaShield\Core\Settings::get( 'ms_ads_skip_after' );
+		}
 
 		return array(
 			'id'        => 'wbam-' . $ad['id'] . '-' . $type . '-' . (int) $at,
