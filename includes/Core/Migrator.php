@@ -48,7 +48,42 @@ class Migrator {
 		// narrow the comparison via the outer version-bump branch.
 		self::backfill_milestone_tags();
 
+		// v5 — give back the analytics history that unconditional archiving
+		// moved out of reach. Scheduled rather than run inline: a long-lived
+		// site can hold a lot of archived rows, and an upgrade is the worst
+		// moment to block on an unbounded table copy.
+		self::restore_archived_sessions();
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+	}
+
+	/**
+	 * Queue the one-off restore of archived watch sessions.
+	 *
+	 * Archiving ran at 24 months for every install, into a table nothing reads,
+	 * so reports silently lost history at month 25 (BC#10217642180). Retention
+	 * is now opt-in, but that only stops further loss - these rows are the
+	 * history already moved out of reach.
+	 *
+	 * Self-gates on the stored DB version so an install already at v5+ never
+	 * re-queues, and Cleanup::restore_archived_sessions() reschedules itself
+	 * until the archive is empty.
+	 */
+	private static function restore_archived_sessions(): void {
+		if ( (int) get_option( 'ms_db_version', 0 ) >= 5 ) {
+			return;
+		}
+
+		if ( function_exists( 'as_schedule_single_action' ) ) {
+			if ( false === as_next_scheduled_action( 'ms_restore_archived_sessions' ) ) {
+				as_schedule_single_action( time() + MINUTE_IN_SECONDS, 'ms_restore_archived_sessions', array(), 'mediashield' );
+			}
+			return;
+		}
+
+		if ( ! wp_next_scheduled( 'ms_restore_archived_sessions' ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'ms_restore_archived_sessions' );
+		}
 	}
 
 	/**

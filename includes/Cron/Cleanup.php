@@ -7,7 +7,9 @@
  *
  * Crons (Action Scheduler):
  *   ms_cleanup_inactive_sessions (hourly)  — Mark stale sessions inactive.
- *   ms_archive_old_sessions      (monthly) — Archive sessions older than 24 months.
+ *   ms_archive_old_sessions      (monthly) — Archive sessions older than the
+ *                                            configured retention window. Disabled
+ *                                            unless the owner sets one.
  *
  * @package MediaShield\Cron
  */
@@ -40,6 +42,7 @@ class Cleanup {
 		// Cron callbacks.
 		add_action( 'ms_cleanup_inactive_sessions', array( __CLASS__, 'cleanup_inactive_sessions' ) );
 		add_action( 'ms_archive_old_sessions', array( __CLASS__, 'archive_old_sessions' ) );
+		add_action( 'ms_restore_archived_sessions', array( __CLASS__, 'restore_archived_sessions' ) );
 
 		// Register monthly schedule for WP-Cron fallback.
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_monthly_schedule' ) );
@@ -356,11 +359,139 @@ class Cleanup {
 	}
 
 	/**
-	 * Monthly: Archive sessions older than 24 months and delete originals.
+	 * Move previously archived sessions back into the live table.
+	 *
+	 * Archiving used to run at 24 months for every install, into a table no
+	 * read path queries. Any site that has been running long enough therefore
+	 * has real analytics history sitting somewhere the reports cannot see
+	 * (BC#10217642180). Turning archiving off going forward stops the bleeding
+	 * but does not give those months back - this does.
+	 *
+	 * Batched and self-rescheduling. A site with years of history can hold a
+	 * lot of rows, and a single unbounded INSERT..SELECT on upgrade is how a
+	 * migration times out halfway and leaves the data split across two tables
+	 * with nothing tracking which rows moved.
+	 *
+	 * INSERT IGNORE plus delete-what-we-moved makes a re-run safe: a batch
+	 * interrupted after the insert but before the delete re-inserts nothing and
+	 * simply deletes the duplicates on the next pass.
+	 *
+	 * @since 1.3.0
+	 */
+	public static function restore_archived_sessions(): void {
+		global $wpdb;
+
+		$sessions = "{$wpdb->prefix}ms_watch_sessions";
+		$archive  = "{$wpdb->prefix}ms_watch_sessions_archive";
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table migration.
+		$archive_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s',
+				DB_NAME,
+				$archive
+			)
+		);
+
+		if ( ! $archive_exists ) {
+			return;
+		}
+
+		$batch = (int) apply_filters( 'mediashield_restore_archive_batch_size', 2000 );
+		$batch = max( 100, min( 20000, $batch ) );
+
+		$ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$archive} ORDER BY id ASC LIMIT %d", $batch ) );
+
+		if ( empty( $ids ) ) {
+			return;
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$ids          = array_map( 'intval', $ids );
+
+		// Every column EXCEPT id, so the live table assigns fresh primary keys.
+		//
+		// `SELECT *` would carry each archived row's original id back with it,
+		// and those ids have since been handed out again by AUTO_INCREMENT to
+		// newer sessions. With INSERT IGNORE that silently drops the colliding
+		// rows, and the DELETE below then removes them from the archive too -
+		// so a migration written to RECOVER history would destroy it instead.
+		// Caught by watching the row counts during testing: the archive drained
+		// to zero while the live table did not grow.
+		//
+		// id is the only unique key on the table (session_token is not), so
+		// re-keying is safe and no IGNORE is needed.
+		$columns = 'video_id, user_id, session_token, ip_address, user_agent, device_type, browser, started_at, last_heartbeat, total_seconds, max_position, completion_pct, is_active';
+
+		$moved = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$sessions} ({$columns}) SELECT {$columns} FROM {$archive} WHERE id IN ({$placeholders})",
+				...$ids
+			)
+		);
+
+		// Only drop the archived rows once they are demonstrably somewhere else.
+		// A partial or failed insert leaves the batch in place for the next run
+		// rather than trading recoverable rows for lost ones.
+		if ( false === $moved || (int) $moved !== count( $ids ) ) {
+			return;
+		}
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$archive} WHERE id IN ({$placeholders})",
+				...$ids
+			)
+		);
+
+		$remaining = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$archive}" );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( $remaining > 0 ) {
+			self::schedule_single( 'ms_restore_archived_sessions', time() + MINUTE_IN_SECONDS );
+		}
+	}
+
+	/**
+	 * Schedule a one-off action, preferring Action Scheduler.
+	 *
+	 * @param string $hook Hook name.
+	 * @param int    $when Unix timestamp.
+	 */
+	private static function schedule_single( string $hook, int $when ): void {
+		if ( function_exists( 'as_schedule_single_action' ) ) {
+			if ( false === as_next_scheduled_action( $hook ) ) {
+				as_schedule_single_action( $when, $hook, array(), 'mediashield' );
+			}
+			return;
+		}
+
+		if ( ! wp_next_scheduled( $hook ) ) {
+			wp_schedule_single_event( $when, $hook );
+		}
+	}
+
+	/**
+	 * Monthly: move sessions past the configured retention window into the
+	 * archive table and delete the originals.
+	 *
+	 * Does nothing unless the owner has set a retention window. See the
+	 * `ms_session_retention_months` note in Core\Settings for why the default
+	 * is "keep everything".
 	 */
 	public static function archive_old_sessions(): void {
 		try {
 			global $wpdb;
+
+			// Retention is opt-in. This used to archive at 24 months for every
+			// install, into a table no read path queries - so at month 25 every
+			// report silently lost its history and nothing in the UI said the
+			// data had moved (BC#10217642180). An owner who never asked for a
+			// retention policy keeps their analytics.
+			$retention_months = (int) \MediaShield\Core\Settings::get( 'ms_session_retention_months' );
+			if ( $retention_months < 1 ) {
+				return;
+			}
 
 			$sessions = "{$wpdb->prefix}ms_watch_sessions";
 			$archive  = "{$wpdb->prefix}ms_watch_sessions_archive";
@@ -390,7 +521,7 @@ class Cleanup {
 				$wpdb->prepare(
 					"INSERT INTO {$archive} SELECT * FROM {$sessions} WHERE started_at < DATE_SUB( %s, INTERVAL %d MONTH )",
 					current_time( 'mysql', true ),
-					24
+					$retention_months
 				)
 			);
 
@@ -406,7 +537,7 @@ class Cleanup {
 				$wpdb->prepare(
 					"DELETE FROM {$sessions} WHERE started_at < DATE_SUB( %s, INTERVAL %d MONTH )",
 					current_time( 'mysql', true ),
-					24
+					$retention_months
 				)
 			);
 

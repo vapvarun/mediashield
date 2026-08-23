@@ -381,6 +381,41 @@ const Settings = () => {
 			</SectionCard>
 
 			<SectionCard
+				icon="backup"
+				title={ __( 'Analytics Retention', 'mediashield' ) }
+				description={ __(
+					'How long to keep watch history in your reports.',
+					'mediashield'
+				) }
+			>
+				<TextControl
+					label={ __( 'Keep watch history for (months)', 'mediashield' ) }
+					help={
+						Number( settings?.ms_session_retention_months ?? 0 ) > 0
+							? __(
+									'Warning: sessions older than this are moved out of your reports every month. Views, completion rates and top-video figures will stop including anything older, and this cannot be undone from here. Set 0 to keep everything.',
+									'mediashield'
+							  )
+							: __(
+									'0 keeps every watch session forever, which is the recommended setting. Set a number of months only if you have a data-retention policy that requires older sessions to be moved out of reporting.',
+									'mediashield'
+							  )
+					}
+					type="number"
+					min={ 0 }
+					max={ 120 }
+					value={ settings?.ms_session_retention_months ?? 0 }
+					onChange={ ( val ) =>
+						updateSetting(
+							'ms_session_retention_months',
+							parseInt( val, 10 ) || 0
+						)
+					}
+					__nextHasNoMarginBottom
+				/>
+			</SectionCard>
+
+			<SectionCard
 				icon="lock"
 				title={ __( 'Login & Access Messages', 'mediashield' ) }
 				description={ __( 'Customize the messages shown when users need to log in or lack access.', 'mediashield' ) }

@@ -104,6 +104,26 @@ class Settings {
 				'validate' => $min_int( 1 ),
 			),
 
+			// Analytics retention.
+			//
+			// Months of watch-session history to keep in the live table before
+			// moving rows to the archive. 0 = keep everything, and that is the
+			// default ON PURPOSE.
+			//
+			// It used to archive at 24 months unconditionally, into a table no
+			// read path queries - so at month 25 every report silently lost its
+			// history with nothing in the UI to say data had moved
+			// (BC#10217642180). An owner who never chose a retention policy
+			// should not silently lose analytics; one who does choose gets told
+			// what it means before the first move.
+			'ms_session_retention_months' => array(
+				'type'     => 'integer',
+				'default'  => 0,
+				'validate' => static function ( $v ) {
+					return max( 0, min( 120, (int) $v ) );
+				},
+			),
+
 			// Badge.
 			'ms_show_badge'              => array(
 				'type'    => 'boolean',

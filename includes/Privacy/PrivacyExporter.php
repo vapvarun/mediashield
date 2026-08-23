@@ -140,21 +140,46 @@ class PrivacyExporter {
 	private static function query_sessions( int $user_id, int $offset ): array {
 		global $wpdb;
 		$sessions = "{$wpdb->prefix}ms_watch_sessions";
+		$archive  = "{$wpdb->prefix}ms_watch_sessions_archive";
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query for GDPR export.
+		// A subject access request must return everything held about the person,
+		// and the archive table holds the same watch history with the same IP
+		// and user agent. Reading only the live table under-reported by however
+		// much had been archived - silently, and in the owner's favour
+		// (BC#10217642097, the export half of the same gap as the eraser).
+		//
+		// UNION ALL rather than UNION: the two tables are disjoint by design, so
+		// deduplicating would only cost a sort over the whole result set. The
+		// archive is folded in only when it exists, so an install whose schema
+		// predates it still exports.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query for GDPR export.
+		$archive_exists = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s',
+				DB_NAME,
+				$archive
+			)
+		);
+
+		$source = $archive_exists
+			? "( SELECT * FROM {$sessions} WHERE user_id = %d UNION ALL SELECT * FROM {$archive} WHERE user_id = %d )"
+			: "( SELECT * FROM {$sessions} WHERE user_id = %d )";
+
+		$params = $archive_exists
+			? array( $user_id, $user_id, self::PER_PAGE, $offset )
+			: array( $user_id, self::PER_PAGE, $offset );
+
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT s.*, p.post_title
-				 FROM {$sessions} s
+				 FROM {$source} s
 				 LEFT JOIN {$wpdb->posts} p ON s.video_id = p.ID
-				 WHERE s.user_id = %d
 				 ORDER BY s.started_at DESC, s.id DESC
 				 LIMIT %d OFFSET %d",
-				$user_id,
-				self::PER_PAGE,
-				$offset
+				...$params
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return is_array( $rows ) ? $rows : array();
 	}
 

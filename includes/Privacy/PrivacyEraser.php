@@ -94,6 +94,45 @@ class PrivacyEraser {
 			);
 			$items_removed   += $sessions_updated;
 
+			// The archive table holds the same personal data - it is populated
+			// by a straight INSERT..SELECT from the live table, IP address and
+			// user agent included. Erasure skipped it entirely, so a data
+			// subject on a site old enough to have archived rows got a success
+			// response while their IP and user agent survived indefinitely
+			// (BC#10217642097). Erasure that reports success without erasing
+			// everything is worse than erasure that fails loudly.
+			//
+			// Still needed even though retention is now opt-in: rows archived
+			// by the old unconditional behaviour exist on real sites, and the
+			// restore migration may not have drained them yet.
+			$archive_table = "{$wpdb->prefix}ms_watch_sessions_archive";
+			$archive_exists = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s',
+					DB_NAME,
+					$archive_table
+				)
+			);
+
+			$archived_updated = 0;
+			$archived_total   = 0;
+			if ( $archive_exists ) {
+				$archived_updated = (int) $wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$archive_table} SET ip_address = '', user_agent = '' WHERE user_id = %d AND ( ip_address != '' OR user_agent != '' )",
+						$user->ID
+					)
+				);
+				$items_removed   += $archived_updated;
+
+				$archived_total = (int) $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$archive_table} WHERE user_id = %d",
+						$user->ID
+					)
+				);
+			}
+
 			// Sessions themselves are retained (anonymized, not deleted) for aggregate analytics.
 			$total_sessions  = (int) $wpdb->get_var(
 				$wpdb->prepare(
@@ -101,7 +140,7 @@ class PrivacyEraser {
 					$user->ID
 				)
 			);
-			$items_retained += $total_sessions;
+			$items_retained += $total_sessions + $archived_total;
 
 			// Remove milestone rows (the per-user reached_at timestamps for
 			// 25/50/75/100% completion). Built on the Free side by the

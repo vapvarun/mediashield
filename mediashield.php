@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Plugin constants.
 define( 'MEDIASHIELD_VERSION', '1.2.0' );
-define( 'MEDIASHIELD_DB_VERSION', 4 );
+define( 'MEDIASHIELD_DB_VERSION', 5 );
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );
