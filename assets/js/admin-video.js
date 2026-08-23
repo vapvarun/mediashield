@@ -111,6 +111,120 @@
 		} );
 	}
 
+	// 1b) Upload a video file straight from this screen.
+	//
+	// "Add New Video" was URL-paste only, so self-hosting meant uploading
+	// through the Media Library separately and pasting the URL back - the one
+	// thing a buyer tries first, and the one thing the screen could not do
+	// (BC#10143668243). The REST route and driver behind this already existed
+	// and were already exercised by Pro's frontend upload form; nothing in the
+	// admin was calling them.
+	//
+	// XMLHttpRequest rather than fetch() because it is the only one of the two
+	// that reports upload progress, and a large video with no progress bar looks
+	// indistinguishable from a page that has hung.
+	var fileField = document.getElementById( 'ms-video-file' );
+	var uploadBtn = document.getElementById( 'ms-upload-btn' );
+	var uploadBar = document.getElementById( 'ms-upload-progress' );
+	var uploadMsg = document.getElementById( 'ms-upload-status' );
+
+	if ( fileField && uploadBtn && uploadBar && uploadMsg ) {
+		fileField.addEventListener( 'change', function () {
+			uploadBtn.disabled = ! this.files.length;
+			uploadMsg.textContent = '';
+		} );
+
+		uploadBtn.addEventListener( 'click', function () {
+			if ( ! fileField.files.length ) {
+				return;
+			}
+
+			var form = new FormData();
+			form.append( 'file', fileField.files[ 0 ] );
+			// Fill in the video being edited instead of creating a second one.
+			form.append( 'video_id', String( data.postId || 0 ) );
+
+			var titleField = document.getElementById( 'title' );
+			if ( titleField && titleField.value ) {
+				form.append( 'title', titleField.value );
+			}
+
+			var xhr = new XMLHttpRequest();
+			xhr.open( 'POST', ( data.restUrl || '/wp-json/mediashield/v1/' ) + 'upload/init' );
+			xhr.setRequestHeader( 'X-WP-Nonce', data.nonce || '' );
+
+			uploadBtn.disabled = true;
+			fileField.disabled = true;
+			uploadBar.value = 0;
+			uploadBar.style.display = '';
+			uploadMsg.textContent = labels.uploading || 'Uploading…';
+
+			xhr.upload.addEventListener( 'progress', function ( e ) {
+				if ( e.lengthComputable ) {
+					uploadBar.value = ( e.loaded / e.total ) * 100;
+				}
+			} );
+
+			var finish = function () {
+				uploadBtn.disabled = false;
+				fileField.disabled = false;
+				uploadBar.style.display = 'none';
+			};
+
+			xhr.addEventListener( 'load', function () {
+				finish();
+
+				var body = {};
+				try {
+					body = JSON.parse( xhr.responseText );
+				} catch ( err ) {
+					body = {};
+				}
+
+				if ( xhr.status < 200 || xhr.status >= 300 ) {
+					// Show the server's own reason. A bare "upload failed" sends
+					// the owner hunting for a cause the response already named -
+					// wrong file type, too large, no permission.
+					uploadMsg.textContent = ( labels.uploadFailed || 'Upload failed:' ) + ' ' +
+						( body.message || xhr.status );
+					return;
+				}
+
+				// Reflect the result in the fields the operator can see, so the
+				// screen agrees with what was just stored rather than needing a
+				// reload to tell the truth.
+				if ( urlField && body.embed_url ) {
+					urlField.value = body.embed_url;
+				}
+				if ( platformField ) {
+					platformField.value = 'self';
+				}
+				if ( videoIdField && body.platform_video_id ) {
+					videoIdField.value = body.platform_video_id;
+				}
+				if ( platformLabel ) {
+					platformLabel.textContent = labels.self || 'Self-hosted / Direct URL';
+				}
+				if ( platformRow ) {
+					platformRow.style.display = '';
+				}
+				if ( note ) {
+					note.textContent = '';
+					note.style.display = 'none';
+				}
+
+				uploadMsg.textContent = labels.uploadDone || 'Uploaded.';
+			} );
+
+			xhr.addEventListener( 'error', function () {
+				finish();
+				uploadMsg.textContent = labels.uploadNetwork || 'Upload failed.';
+			} );
+
+			xhr.send( form );
+		} );
+	}
+
 	// 2) Copy-to-clipboard buttons (replaces inline onclick + script).
 	document.querySelectorAll( '.ms-embed-copy-btn' ).forEach( function ( btn ) {
 		btn.addEventListener( 'click', function () {

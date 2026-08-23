@@ -72,8 +72,17 @@ class SelfHosted implements DriverInterface {
 			return self::error( __( 'File not found.', 'mediashield' ) );
 		}
 
-		// Validate MIME type.
-		$validation = $this->validate_file( $file_path );
+		// Validate against the name the browser sent, not the path on disk.
+		// PHP moves an upload to a temp file with no extension, so typing it
+		// from $file_path asks WordPress to identify "/tmp/phpAbC123" - which it
+		// cannot, so every real multipart upload was rejected as an invalid file
+		// type no matter what it actually was. It is why /upload/init had no
+		// admin caller worth adding: the route did not work from a browser.
+		$original_name = isset( $options['original_name'] ) && '' !== $options['original_name']
+			? (string) $options['original_name']
+			: basename( $file_path );
+
+		$validation = $this->validate_file( $file_path, $original_name );
 		if ( ! $validation['valid'] ) {
 			return self::error( $validation['error'] );
 		}
@@ -84,9 +93,11 @@ class SelfHosted implements DriverInterface {
 		// our own could only ever be lower than the server's, so it would restrict
 		// the owner without protecting anything.
 
-		// Generate unique filename.
-		$ext      = pathinfo( $file_path, PATHINFO_EXTENSION );
-		$filename = wp_unique_filename( $this->upload_dir, sanitize_file_name( basename( $file_path ) ) );
+		// Name the stored file after what was uploaded, for the same reason:
+		// basename() of the temp path yields "phpAbC123" with no extension, so
+		// stored files lost their type and the streaming endpoint could not work
+		// out a MIME type to serve them with.
+		$filename = wp_unique_filename( $this->upload_dir, sanitize_file_name( $original_name ) );
 		$dest     = $this->upload_dir . $filename;
 
 		// Move file.
@@ -102,23 +113,47 @@ class SelfHosted implements DriverInterface {
 		// the thumbnail fetcher early-returns on the 'self' platform, so this is
 		// belt-and-suspenders here — but it keeps every driver's insert shape
 		// identical and future-proof. See Basecamp card 9915014554.
-		$title   = $options['title'] ?? pathinfo( $filename, PATHINFO_FILENAME );
-		$post_id = wp_insert_post(
-			array(
-				'post_type'   => 'mediashield_video',
-				'post_title'  => sanitize_text_field( $title ),
-				'post_status' => 'publish',
-				'meta_input'  => array(
-					'_ms_platform'          => 'self',
-					'_ms_platform_video_id' => $filename,
-					'_ms_protection_level'  => 'standard',
-				),
-			)
-		);
+		$title = $options['title'] ?? pathinfo( $filename, PATHINFO_FILENAME );
 
-		if ( is_wp_error( $post_id ) ) {
-			wp_delete_file( $dest );
-			return self::error( $post_id->get_error_message() );
+		// `attach_to` names an EXISTING video to fill in, rather than creating a
+		// new one. The admin uploader needs this: "Add New Video" is already
+		// editing a post, so a driver that always inserts would leave the owner
+		// with two records per upload - the one they were editing and the one
+		// the upload made - and no indication which the shortcode should use.
+		//
+		// The caller has already confirmed the target exists, is the right post
+		// type, and that this user may edit it; this only writes.
+		$attach_to = isset( $options['attach_to'] ) ? (int) $options['attach_to'] : 0;
+
+		if ( $attach_to > 0 ) {
+			$post_id = $attach_to;
+
+			update_post_meta( $post_id, '_ms_platform', 'self' );
+			update_post_meta( $post_id, '_ms_platform_video_id', $filename );
+
+			// Protection level is only seeded when the post has none, so an
+			// operator who already chose one for this video keeps it.
+			if ( '' === (string) get_post_meta( $post_id, '_ms_protection_level', true ) ) {
+				update_post_meta( $post_id, '_ms_protection_level', 'standard' );
+			}
+		} else {
+			$post_id = wp_insert_post(
+				array(
+					'post_type'   => 'mediashield_video',
+					'post_title'  => sanitize_text_field( $title ),
+					'post_status' => 'publish',
+					'meta_input'  => array(
+						'_ms_platform'          => 'self',
+						'_ms_platform_video_id' => $filename,
+						'_ms_protection_level'  => 'standard',
+					),
+				)
+			);
+
+			if ( is_wp_error( $post_id ) ) {
+				wp_delete_file( $dest );
+				return self::error( $post_id->get_error_message() );
+			}
 		}
 
 		// The streaming URL depends on the new post ID, so it must be set after
@@ -220,8 +255,12 @@ class SelfHosted implements DriverInterface {
 	 * @param string $file_path Path to file.
 	 * @return array{valid: bool, error: string}
 	 */
-	private function validate_file( string $file_path ): array {
-		$check = wp_check_filetype_and_ext( $file_path, basename( $file_path ), self::ALLOWED_MIMES );
+	private function validate_file( string $file_path, string $original_name = '' ): array {
+		// The name is what carries the extension; the path is a temp file. Both
+		// are passed so WordPress can cross-check the claimed extension against
+		// the real content and reject a .mp4 that is not one.
+		$name  = '' !== $original_name ? $original_name : basename( $file_path );
+		$check = wp_check_filetype_and_ext( $file_path, $name, self::ALLOWED_MIMES );
 
 		if ( empty( $check['type'] ) || ! in_array( $check['type'], self::ALLOWED_MIMES, true ) ) {
 			return array(

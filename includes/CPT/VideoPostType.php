@@ -189,7 +189,17 @@ class VideoPostType {
 					'bunnyCollection' => __( 'That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL.', 'mediashield' ),
 					'bunnyDashboard'  => __( 'That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL.', 'mediashield' ),
 					'unrecognised'    => __( 'This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. It will be saved as self-hosted, which only works if the URL serves the video file itself.', 'mediashield' ),
+					'uploading'       => __( 'Uploading…', 'mediashield' ),
+					'uploadDone'      => __( 'Uploaded. Save the video to keep this file.', 'mediashield' ),
+					'uploadFailed'    => __( 'Upload failed:', 'mediashield' ),
+					'uploadNetwork'   => __( 'Upload failed: the connection dropped or the file is larger than this server accepts.', 'mediashield' ),
 				),
+				'restUrl' => esc_url_raw( rest_url( 'mediashield/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				// The post being edited. get_the_ID() is not dependable this
+				// early on post-new.php, so read the screen's own post object,
+				// which WordPress has already set up by admin_enqueue_scripts.
+				'postId'  => isset( $GLOBALS['post']->ID ) ? (int) $GLOBALS['post']->ID : 0,
 			)
 		);
 	}
@@ -303,6 +313,31 @@ class VideoPostType {
 						<p class="description"><?php esc_html_e( 'Paste the video URL. Supported: YouTube, Vimeo, Wistia, Bunny Stream embed URLs, or a direct video file URL.', 'mediashield' ); ?></p>
 					</td>
 				</tr>
+				<?php
+				// Uploading a file was the first thing buyers tried and the one
+				// thing this screen could not do: it offered a URL field only, so
+				// self-hosting meant uploading through the Media Library
+				// separately and pasting the resulting URL back (BC#10143668243).
+				// The /upload/init route and its driver already existed and were
+				// already proven by Pro's frontend upload form - nothing was
+				// reaching them from the admin.
+				if ( current_user_can( 'upload_mediashield' ) ) :
+					?>
+				<tr>
+					<th><label for="ms-video-file"><?php esc_html_e( 'Or upload a file', 'mediashield' ); ?></label></th>
+					<td>
+						<input type="file" id="ms-video-file" accept="video/*" />
+						<button type="button" class="button" id="ms-upload-btn" disabled>
+							<?php esc_html_e( 'Upload', 'mediashield' ); ?>
+						</button>
+						<progress id="ms-upload-progress" max="100" value="0" style="display:none;vertical-align:middle;"></progress>
+						<p id="ms-upload-status" class="description" role="status" aria-live="polite"></p>
+						<p class="description">
+							<?php esc_html_e( 'The file is stored on this site and played through a permission-checked URL, so the file path is never exposed. Large files are limited by your server’s upload size.', 'mediashield' ); ?>
+						</p>
+					</td>
+				</tr>
+				<?php endif; ?>
 				<tr id="ms-detected-platform-row" <?php echo $platform ? '' : 'style="display:none;"'; ?>>
 					<th><?php esc_html_e( 'Detected Platform', 'mediashield' ); ?></th>
 					<td>

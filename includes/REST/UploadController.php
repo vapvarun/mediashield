@@ -61,6 +61,14 @@ class UploadController extends WP_REST_Controller {
 						'default'           => 'self_hosted',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					// Fill in an existing video instead of creating one. The
+					// admin uploader is already editing a post, so without this
+					// each upload would leave two records behind.
+					'video_id' => array(
+						'type'              => 'integer',
+						'default'           => 0,
+						'sanitize_callback' => 'absint',
+					),
 				),
 			)
 		);
@@ -119,12 +127,37 @@ class UploadController extends WP_REST_Controller {
 		$title       = $request->get_param( 'title' );
 		$title       = ! empty( $title ) ? $title : pathinfo( $file['name'], PATHINFO_FILENAME );
 
+		// Attaching to an existing video is a write to THAT post, so it needs
+		// its own authorisation - upload_mediashield says the user may upload,
+		// not that they may overwrite any video on the site by id.
+		$attach_to = (int) $request->get_param( 'video_id' );
+		if ( $attach_to > 0 ) {
+			$target = get_post( $attach_to );
+
+			if ( ! $target || 'mediashield_video' !== $target->post_type ) {
+				return new WP_Error(
+					'invalid_video',
+					__( 'That video does not exist.', 'mediashield' ),
+					array( 'status' => 404 )
+				);
+			}
+
+			if ( ! current_user_can( 'edit_post', $attach_to ) ) {
+				return new WP_Error(
+					'cannot_edit_video',
+					__( 'You are not allowed to edit that video.', 'mediashield' ),
+					array( 'status' => 403 )
+				);
+			}
+		}
+
 		$result = UploadManager::upload(
 			$file['tmp_name'],
 			$driver_name,
 			array(
 				'title'         => $title,
 				'original_name' => $file['name'],
+				'attach_to'     => $attach_to,
 			)
 		);
 
