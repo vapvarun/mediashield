@@ -263,18 +263,33 @@ class AdManagerBridge {
 		// (2) used to be skipped entirely: this read the global and threw the
 		// creative's own value away, so setting 2s or 10s on an individual ad
 		// did nothing and the player always counted down from the 5s default
-		// (BC#10128639184). The creative row already carries skip_after - it is
-		// in video_ads()'s own return docblock - so the setting was collected
-		// and discarded rather than never available.
+		// (BC#10128639184).
+		//
+		// Zero means "not configured", NOT "skippable immediately". WB Ad
+		// Manager 3.1.0's Video_Ad_Resolver always emits skip_after and
+		// defaults it to 0, and its edit field stores 0 when left blank - so an
+		// unset delay and a deliberate 0 are indistinguishable in its data, and
+		// most zeros in the wild are blanks. Treating 0 as a configured value
+		// would make the plugin-level default unreachable on every site, which
+		// is the bug in this card wearing a different hat.
+		//
+		// Verified against a live 3.1.0 install rather than the docblock: an ad
+		// with the field set to 2 returns 2, and an ad with it left blank
+		// returns 0 with the key present either way.
+		//
+		// An owner who genuinely wants no skip delay at all has the site-wide
+		// full-view switch, which is a stronger and clearer statement than
+		// typing 0 into one creative.
 		$require_full = (bool) \MediaShield\Core\Settings::get( 'ms_ads_require_full_view' );
+		$per_ad       = isset( $ad['skip_after'] ) ? (int) $ad['skip_after'] : 0;
 
 		if ( $require_full ) {
 			$skip_after = null;
-		} elseif ( isset( $ad['skip_after'] ) && '' !== $ad['skip_after'] && null !== $ad['skip_after'] ) {
+		} elseif ( $per_ad > 0 ) {
 			// Clamped to the same 0-60 range the global setting validates to, so
 			// a bad value from the ad plugin cannot produce an ad that is
-			// skippable at a negative offset or effectively never.
-			$skip_after = max( 0, min( 60, (int) $ad['skip_after'] ) );
+			// effectively never skippable.
+			$skip_after = min( 60, $per_ad );
 		} else {
 			$skip_after = (int) \MediaShield\Core\Settings::get( 'ms_ads_skip_after' );
 		}
