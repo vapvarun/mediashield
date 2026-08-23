@@ -19,3 +19,7 @@ dist/
 # Journey runs — local artifacts written by bin/run-journeys.sh; the specs in
 # audit/journeys/ are the contract, the per-run output under journey-runs/ is not.
 audit/journey-runs/
+
+# PHPUnit caches.
+.phpunit.cache/
+.phpunit.result.cache

@@ -406,6 +406,28 @@ class VideoPostType {
 			'strict'   => __( 'Strict — Devtools detection + source hiding', 'mediashield' ),
 		);
 
+		/**
+		 * Filter the protection levels offered on the video edit screen.
+		 *
+		 * This list was a closed array, which made it a dead end for the whole
+		 * DRM feature: Pro decides a video is DRM-protected by reading
+		 * `_ms_protection_level === 'drm'`, but nothing could ever set that
+		 * value because the only UI that writes the meta did not offer it and
+		 * Pro had no way in (BC#10143667645). Opening the seam is the half of
+		 * that card that belongs in Free.
+		 *
+		 * Adding a level here only makes it selectable and storable. Whatever
+		 * the level is supposed to DO still has to be implemented by whoever
+		 * adds it - typically via `mediashield_player_type`.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param array<string,string> $levels   Level slug => human label.
+		 * @param \WP_Post             $post     Video being edited.
+		 * @param string               $selected Currently stored level.
+		 */
+		$levels = (array) apply_filters( 'mediashield_protection_levels', $levels, $post, (string) $protection );
+
 		$roles = wp_roles()->get_names();
 		?>
 		<table class="form-table" role="presentation">

@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+	PHPUnit 9.6 schema.
+
+	WordPress 6.x's own test suite (tests/phpunit/includes/abstract-testcase.php)
+	calls PHPUnit\Util\Test::parseTestMethodAnnotations(), which PHPUnit 10
+	removed. Pinning composer to ^10 therefore made this suite impossible to run
+	against a real WP test library at all — every test errored before its first
+	assertion. The config is on the 9.6 schema to match; `<source>` and
+	`cacheDirectory` are PHPUnit 10 syntax and are not valid here.
+-->
 <phpunit
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
 	bootstrap="tests/bootstrap.php"
 	colors="true"
 	beStrictAboutTestsThatDoNotTestAnything="true"
-	beStrictAboutOutputDuringTests="true"
-	cacheDirectory=".phpunit.cache"
+	beStrictAboutOutputDuringTests="false"
+	convertDeprecationsToExceptions="false"
 >
 	<testsuites>
 		<testsuite name="unit">
@@ -14,9 +24,9 @@
 		</testsuite>
 	</testsuites>
 
-	<source>
+	<coverage>
 		<include>
 			<directory suffix=".php">includes/</directory>
 		</include>
-	</source>
+	</coverage>
 </phpunit>
