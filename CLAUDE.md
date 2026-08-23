@@ -4,11 +4,11 @@
 
 > **What does this plugin actually do for a buyer?** [`CAPABILITIES.md`](CAPABILITIES.md) — capability-level truth, verified against code, and the source of truth for store copy and docs. The manifest counts routes; CAPABILITIES says what they add up to and what is missing. Read it before planning any feature or writing any marketing claim.
 
-> **READ FIRST:** Load [`audit/manifest.summary.json`](audit/manifest.summary.json) first (~1.4 KB index) — drill into [`audit/manifest.json`](audit/manifest.json) only when a task touches a specific category. Manifest v2.2 — 23 REST routes (`mediashield/v1`, +`/wizard/complete`), 1 AJAX (`ms_dismiss_pro_notice`), 2 admin pages, 6 tables, 3 blocks, **3 shortcodes**, 2 cron jobs, 2 CPTs, 32 hooks (15 actions + 17 filters), 34 services, 33 settings (authoritative source: `array_keys( Settings::schema() )` — the manifest `settings[]` array is pending a `--refresh` and under-reports; trust the schema, not the array count), 1 capability (`upload_mediashield`), 1 WP-CLI command (`mediashield scale`). ✅ **Release-ready** per wppqa baseline 2026-05-26 — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
+> **READ FIRST:** Load [`audit/manifest.summary.json`](audit/manifest.summary.json) first (~1.4 KB index) — drill into [`audit/manifest.json`](audit/manifest.json) only when a task touches a specific category. Manifest v2.2 — 23 REST routes (`mediashield/v1`, +`/wizard/complete`), 1 AJAX (`ms_dismiss_pro_notice`), 2 admin pages, 6 tables, 3 blocks, **3 shortcodes**, 3 cron jobs, 2 CPTs, 33 hooks (15 actions + 18 filters), 34 services, 34 settings (authoritative source: `array_keys( Settings::schema() )` — the manifest `settings[]` array is pending a `--refresh` and under-reports; trust the schema, not the array count), 1 capability (`upload_mediashield`), 2 WP-CLI commands (`mediashield scale`, `mediashield repair`). ✅ **Release-ready** per wppqa baseline 2026-05-26 — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
 
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
-- **Version:** 1.2.0
+- **Version:** 1.3.0
 - **Requires:** PHP 8.1, WordPress 6.5
 - **Text Domain:** mediashield
 - **Namespace:** `MediaShield\`
@@ -84,7 +84,7 @@ includes/
   Tags/
     TagManager.php           Tag CRUD helpers
   Cron/
-    Cleanup.php              Session archival, cascade delete
+    Cleanup.php              Cascade delete, session cleanup, opt-in retention archival (`ms_session_retention_months`, default 0 = keep everything) and the one-off `ms_restore_archived_sessions` job that walks previously archived rows back into the live table.
   Privacy/
     PrivacyExporter.php      GDPR data export
     PrivacyEraser.php        GDPR data erasure
@@ -204,7 +204,7 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 ### Upload
 | Method | Route | Description |
 |--------|-------|-------------|
-| POST | `/upload/init` | Initialize upload (chunked supported) |
+| POST | `/upload/init` | Upload a video file. Optional `video_id` attaches it to an existing video instead of creating one. |
 | GET | `/upload/status/{upload_id}` | Check upload progress |
 
 ### Settings
@@ -231,7 +231,7 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 ### Stream
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | `/stream/{video_id}` | Authenticated streaming handoff (permission: `stream_permissions_check`); used to gate self-hosted media URLs |
+| GET | `/stream/{video_id}` | Authenticated streaming handoff (permission: `stream_permissions_check`); used to gate self-hosted media URLs. Accepts a signed `ms_token` for media elements, which cannot send `X-WP-Nonce`. |
 
 ---
 
@@ -284,6 +284,7 @@ Both video and playlist shortcodes return empty output and skip asset enqueue fo
 | `mediashield_settings_update` | $data | PUT /settings input |
 | `mediashield_trusted_ip_headers` | $headers | IP detection header names |
 | `mediashield_allow_empty_referer` | $allow | When the allowed-domain whitelist is active, decides whether to permit playback for requests with no Referer header. Default `false` (deny). |
+| `mediashield_protection_levels` | $levels, $post, $selected | Protection levels offered on the video edit screen. Pro registers `drm` here. |
 | `mediashield_frontend_config` | $config | Frontend localized config payload emitted as `window.mediashieldConfig`. Pro hooks this to inject premium player options. |
 | `mediashield_privacy_erase_result` | $result, $email, $user, $page | Final GDPR erase report shape — extensions can append `items_removed` or `messages` before WordPress consumes the result |
 
@@ -372,7 +373,7 @@ Adding a new option:
 2. Bump `MEDIASHIELD_DB_VERSION` in `mediashield.php` so existing installs pick it up via `Migrator::run()` → `Settings::seed_defaults()`.
 3. (If exposed to JS) reference it from `Settings::frontend_config()`.
 
-Schema covers: `ms_enabled`, `ms_default_protection`, `ms_require_login`, `ms_watermark_opacity`, `ms_watermark_color`, `ms_watermark_swap_interval`, `ms_allowed_domains`, `ms_max_concurrent_streams`, `ms_show_badge`, `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`, `ms_player_speed_control`, `ms_player_sticky`, `ms_player_keyboard`, `ms_player_resume`, `ms_player_endscreen`, `ms_player_endscreen_text`, `ms_player_endscreen_url`, `ms_block_right_click`, `ms_block_keyboard`, `ms_hide_source`, `ms_detect_devtools`, `ms_pause_on_devtools`, `ms_devtools_title`, `ms_devtools_message`.
+Schema covers: `ms_enabled`, `ms_default_protection`, `ms_require_login`, `ms_watermark_opacity`, `ms_watermark_color`, `ms_watermark_swap_interval`, `ms_allowed_domains`, `ms_max_concurrent_streams`, `ms_session_retention_months`, `ms_show_badge`, `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`, `ms_player_speed_control`, `ms_player_sticky`, `ms_player_keyboard`, `ms_player_resume`, `ms_player_endscreen`, `ms_player_endscreen_text`, `ms_player_endscreen_url`, `ms_block_right_click`, `ms_block_keyboard`, `ms_hide_source`, `ms_detect_devtools`, `ms_pause_on_devtools`, `ms_devtools_title`, `ms_devtools_message`.
 
 Pro extends both the GET (`mediashield_settings_response`) and PUT (`mediashield_settings_update`) paths via filter callbacks; Pro callbacks `unset()` their own keys from `$data` so the free SettingsController loop ignores them.
 

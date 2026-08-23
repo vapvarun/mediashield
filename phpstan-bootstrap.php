@@ -6,7 +6,7 @@
  */
 
 // MediaShield constants.
-define( 'MEDIASHIELD_VERSION', '1.2.0' );
+define( 'MEDIASHIELD_VERSION', '1.3.0' );
 define( 'MEDIASHIELD_DB_VERSION', 1 );
 define( 'MEDIASHIELD_FILE', __DIR__ . '/mediashield.php' );
 define( 'MEDIASHIELD_PATH', __DIR__ . '/' );

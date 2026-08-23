@@ -234,7 +234,7 @@
       "action": "ms_dismiss_pro_notice",
       "handler": "MediaShield\\Admin\\Menu::dismiss_pro_notice",
       "nonce": "ms_dismiss_pro_notice",
-      "capability": "(none — nonce-only, FLAGGED by wppqa)",
+      "capability": "(none \u2014 nonce-only, FLAGGED by wppqa)",
       "purpose": "Dismiss the Pro upsell admin notice for current user (records in user meta)"
     }
   ],
@@ -493,7 +493,7 @@
     },
     {
       "name": "{prefix}ms_video_tags",
-      "purpose": "Video↔tag junction (video_id, tag_id unique pair)",
+      "purpose": "Video\u2194tag junction (video_id, tag_id unique pair)",
       "schema_in": "includes/DB/Schema.php:49"
     },
     {
@@ -715,7 +715,7 @@
       "type": "action",
       "args": "(none)",
       "where": "includes/Core/Plugin.php:110",
-      "consumed_by": "NOBODY — zero subscribers. PRO does NOT consume this; it boots on plugins_loaded:20 + a defined('MEDIASHIELD_VERSION') guard (mediashield-pro.php:85). Kept as a public extension point for third-party add-ons, but load order does not depend on it."
+      "consumed_by": "NOBODY \u2014 zero subscribers. PRO does NOT consume this; it boots on plugins_loaded:20 + a defined('MEDIASHIELD_VERSION') guard (mediashield-pro.php:85). Kept as a public extension point for third-party add-ons, but load order does not depend on it."
     },
     {
       "name": "mediashield_concurrent_limit_reached",
@@ -755,7 +755,7 @@
     {
       "name": "mediashield_milestone_{pct}",
       "type": "action",
-      "args": "$user_id, $video_id (dynamic — pct 25/50/75/100)",
+      "args": "$user_id, $video_id (dynamic \u2014 pct 25/50/75/100)",
       "where": "includes/Milestones/MilestoneTracker.php:138",
       "consumed_by": "PRO Modules\\Milestones\\AdvancedActions"
     },
@@ -906,7 +906,7 @@
       "type": "filter",
       "args": "(array $config)",
       "where": "includes/Core/Settings.php:408",
-      "consumed_by": "NOBODY — zero subscribers. PRO does not hook this. Fired by Free as a public extension point; the earlier 'PRO player config injection' claim was wrong."
+      "consumed_by": "NOBODY \u2014 zero subscribers. PRO does not hook this. Fired by Free as a public extension point; the earlier 'PRO player config injection' claim was wrong."
     },
     {
       "name": "mediashield_privacy_before_erase",
@@ -938,7 +938,7 @@
     }
   ],
   "buddypress_integration": {
-    "enabled_when": "n/a — not a BuddyPress integration",
+    "enabled_when": "n/a \u2014 not a BuddyPress integration",
     "manager": null,
     "sub_classes": []
   },
@@ -1017,7 +1017,7 @@
     }
   ],
   "security": {
-    "uploads_gate": "AccessControl::can_watch (mediashield_can_watch filter chain) — applied to /stream/{video_id} and player rendering",
+    "uploads_gate": "AccessControl::can_watch (mediashield_can_watch filter chain) \u2014 applied to /stream/{video_id} and player rendering",
     "signing_entry_points": [
       "SessionManager::generate_token (HMAC-signed session tokens)"
     ],
@@ -1031,10 +1031,10 @@
     "phpstan_level": 5
   },
   "coding_rules": [
-    "PSR-4 autoload via Composer (MediaShield\\ → includes/)",
+    "PSR-4 autoload via Composer (MediaShield\\ \u2192 includes/)",
     "PHP 8.1+ minimum",
     "WordPress 6.5+ minimum",
-    "REST namespace mediashield/v1 — exclusive (PRO uses mediashield-pro/v1)",
+    "REST namespace mediashield/v1 \u2014 exclusive (PRO uses mediashield-pro/v1)",
     "Hooks fired = wbam_*-style with mediashield_ prefix; PRO listens but never re-fires under our prefix",
     "DB tables prefixed with ms_; option keys prefixed with ms_",
     "Asset handles prefixed mediashield-* (PRO uses mediashield-pro-*)"
@@ -1046,7 +1046,7 @@
   "extension_points_for_pro": [
     {
       "pattern": "mediashield_admin_routes",
-      "detail": "Filter — Pro adds React admin routes to the SPA hash router"
+      "detail": "Filter \u2014 Pro adds React admin routes to the SPA hash router"
     },
     {
       "pattern": "wp.hooks SlotFill",
@@ -1070,14 +1070,15 @@
     }
   ],
   "notes": [
-    "COVERAGE CAVEAT (2026-07-24): the settings[] and hooks_fired[] inventories in this file are STALE and UNDER-REPORT. Live Settings::schema() has 33 keys (this array lists 22 — every ms_ads_* and ms_player_prevent_forward_seek added after the 2026-05 gen is missing). The generator's apply_filters/do_action regex is single-line only, so multi-line hook calls (e.g. mediashield_session_allow_anonymous_start, mediashield_player_html) are skipped. Authoritative sources until a fixed --refresh runs: array_keys( Settings::schema() ) for settings, and a grep of apply_filters|do_action across includes/ for hooks. Do NOT trust the numeric counts here for a reuse-check; read the code. Tracked as generator tooling work (lives in the /wp-plugin-onboard skill, not this repo).",
-    "FREE fires 'mediashield_loaded' as a public extension hook, but it has ZERO subscribers — PRO does NOT consume it. PRO boots on plugins_loaded:20 (Free is at default :10) plus a defined('MEDIASHIELD_VERSION') guard (mediashield-pro.php:85). Load order is carried by the priority gap, not this action. Do not re-time Free's bootstrap expecting Pro to wait on an action.",
-    "Multi-method REST routes (GET+PUT on /settings, GET+POST on /tags, GET+PUT+DELETE on /tags/{id}) are counted as one register_rest_route call each — total: 22 calls representing more logical endpoint × method combinations.",
-    "ms_watch_sessions_archive table mirrors ms_watch_sessions but is populated by the daily archive cron — same schema, dynamic creation.",
-    "Block source lives at src/blocks/<name>/ and is built to build/blocks/<name>/ via webpack. block.json appears in both — the build/ copy is the one register_block_type_from_metadata() actually loads.",
+    "COVERAGE CAVEAT (2026-07-24): the settings[] and hooks_fired[] inventories in this file are STALE and UNDER-REPORT. Live Settings::schema() has 33 keys (this array lists 22 \u2014 every ms_ads_* and ms_player_prevent_forward_seek added after the 2026-05 gen is missing). The generator's apply_filters/do_action regex is single-line only, so multi-line hook calls (e.g. mediashield_session_allow_anonymous_start, mediashield_player_html) are skipped. Authoritative sources until a fixed --refresh runs: array_keys( Settings::schema() ) for settings, and a grep of apply_filters|do_action across includes/ for hooks. Do NOT trust the numeric counts here for a reuse-check; read the code. Tracked as generator tooling work (lives in the /wp-plugin-onboard skill, not this repo).",
+    "FREE fires 'mediashield_loaded' as a public extension hook, but it has ZERO subscribers \u2014 PRO does NOT consume it. PRO boots on plugins_loaded:20 (Free is at default :10) plus a defined('MEDIASHIELD_VERSION') guard (mediashield-pro.php:85). Load order is carried by the priority gap, not this action. Do not re-time Free's bootstrap expecting Pro to wait on an action.",
+    "Multi-method REST routes (GET+PUT on /settings, GET+POST on /tags, GET+PUT+DELETE on /tags/{id}) are counted as one register_rest_route call each \u2014 total: 22 calls representing more logical endpoint \u00d7 method combinations.",
+    "ms_watch_sessions_archive table mirrors ms_watch_sessions but is populated by the daily archive cron \u2014 same schema, dynamic creation.",
+    "Block source lives at src/blocks/<name>/ and is built to build/blocks/<name>/ via webpack. block.json appears in both \u2014 the build/ copy is the one register_block_type_from_metadata() actually loads.",
     "Coverage gate: REST 22/22 (100%), AJAX 0/0 (no AJAX in FREE), hooks_fired 25/25 (12 actions + 13 filters), tables 5 grep + 1 dynamic = 6 logical, blocks 3 unique (6 grep hits because src/ + build/ each have one), shortcodes 2/2, cron 2/2, admin_pages 2/2, services 30/30.",
     "v2.2 refresh 2026-05-11: added missing capability upload_mediashield, AJAX ms_dismiss_pro_notice, shortcode mediashield_playlist, services Settings + PlaylistRenderer + PlaylistShortcode.",
-    "wppqa baseline flagged 1 HIGH (nonce-no-cap at Menu.php:174) — release blocker per Phase 0 hard rule."
+    "wppqa baseline flagged 1 HIGH (nonce-no-cap at Menu.php:174) \u2014 release blocker per Phase 0 hard rule.",
+    "1.3.0 targeted delta (full recount pending /wp-plugin-onboard --refresh): free adds setting ms_session_retention_months, filter mediashield_protection_levels, cron ms_restore_archived_sessions, WP-CLI 'mediashield repair', REST arg video_id on /upload/init and ms_token on /stream/{id}."
   ],
   "generated": {
     "at": "2026-05-26T00:00:00Z",

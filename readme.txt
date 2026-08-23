@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -146,11 +146,18 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 == Changelog ==
 
-= 1.2.0 - July 2026 =
+= 1.3.0 - August 2026 =
 
 * New      - Self-hosted videos are matched to their MediaShield entry by source URL, so automatic detection protects them instead of skipping them.
+* New      - Upload a video file directly from Add New Video, instead of uploading through the Media Library and pasting the URL back.
+* New      - Bunny dashboard URLs are recognised. Pasting the address bar from Bunny Stream now detects the video instead of silently saving it as self-hosted with no ID.
+* New      - The video editor says when a URL was not recognised, rather than quietly falling back to "Self-hosted".
+* New      - Analytics Retention setting controls how long watch history stays in reports. Default is to keep everything.
+* New      - wp mediashield repair bunny-urls repairs videos already saved from a Bunny dashboard URL. Dry-run by default.
+* Improve  - A video that cannot load now says so after 15 seconds instead of showing a player that never starts.
+* Improve  - Analytics history is no longer archived automatically. Sessions older than 24 months used to be moved out of every report with no warning; anything already moved is restored on upgrade.
 * Improve  - Ad rotation for in-video breaks is decided by WB Ad Manager instead of MediaShield, so the site's configured rotation model applies to video ads the same way it applies to banners.
-* Improve  - Removed the Pro email gate coupling. The gate itself is gone from MediaShield Pro 1.2.0; the generic access-type extension point it used remains for other integrations.
+* Improve  - Removed the Pro email gate coupling. The gate itself is gone from MediaShield Pro 1.3.0; the generic access-type extension point it used remains for other integrations.
 * Improve  - Removed the Max Upload Size setting. WordPress already enforces the server upload limit before MediaShield sees the file, so the setting could only ever restrict uploads further, never allow more. Uploads now use whatever the site accepts, with no configuration.
 * Improve  - An upload that exceeds the server limit now names the actual limit instead of reporting a size nobody configured.
 * Improve  - A shortcode or block pointing at a missing, unpublished, or sourceless video now explains itself to anyone who can edit content, instead of rendering blank space. Visitors still see nothing.
@@ -158,6 +165,14 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Improve  - Removed the Custom URL Patterns setting. It asked for a regular expression, silently ignored any pattern containing a slash, and could not match a video in the first place.
 * Improve  - The watermark Position Swap Interval no longer offers "0 = static", which was never honoured and produced a watermark that moved every second. The field now explains what the interval is for.
 * Improve  - The Upload and Storage settings card is hidden when no cloud platform is connected, instead of rendering empty, and no longer claims that connecting a platform stops files being stored locally.
+* Fix      - Require Login now works when turned off. Logged-out visitors can watch, and their views are recorded, instead of always seeing the login overlay.
+* Fix      - Hide Video Source URL now hides the source URL. Self-hosted videos play through a permission-checked address; the file path no longer appears in the page. Does not apply to YouTube, Vimeo, Wistia or Bunny embeds, which expose their own IDs.
+* Fix      - Two logged-out visitors watching the same video no longer share a session, which could hand one viewer another's playback position.
+* Fix      - Logged-out visitors are no longer counted against each other's concurrent stream limit, which blocked the third simultaneous viewer of a public video.
+* Fix      - Per-ad "Allow skip after" is honoured. Setting a skip delay on an individual video ad previously had no effect and the site default was always used.
+* Fix      - Erasing a person's data now also clears IP addresses and user agents from archived sessions, and a data export now includes them.
+* Fix      - Uploading a video file through the API works. Uploads were rejected as an invalid file type regardless of the file, which also affected the front-end upload form in Pro.
+* Fix      - The plugin no longer fails to load from a fresh clone or a package built with development dependencies.
 * Fix      - In-video ads no longer play past their Total Impressions limit. The break plan is now filled by WB Ad Manager, and the player checks with it immediately before each break, so a creative that runs out mid-video stops there instead of at the next page load.
 * Fix      - In-video ads now count toward a visitor's per-ad Session Limit. That limit previously had no effect on this surface at any value.
 * Fix      - Videos that MediaShield does not manage are no longer wrapped in the protection player. Regular YouTube, Vimeo, Bunny and Wistia embeds now pass through untouched instead of receiving a watermark and protection overlay.
@@ -165,6 +180,11 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Fix      - Turning off Enable MediaShield now renders videos unprotected instead of an empty player. Shortcodes, blocks and playlists all play normally with protection off.
 * Fix      - Self-hosted uploads no longer fail on a default install. The Max Upload Size setting was measured in megabytes everywhere except the check that enforced it, so a default install advertised a 500 MB limit and rejected anything over 500 bytes.
 * Fix      - Removed a WordPress 6.7 "translation loaded too early" notice that appeared when the monthly cron schedule was registered or the plugin was activated before the init hook.
+* Dev      - Added the mediashield_protection_levels filter so extensions can register additional protection levels.
+* Dev      - /upload/init accepts a video_id to attach an upload to an existing video.
+* Dev      - /stream/{id} accepts a signed ms_token, so media elements that cannot send an auth header can play.
+* Dev      - Added EmbedLink::token() and EmbedLink::STREAM_TTL for signing playback URLs.
+* Dev      - Test suite now runs. It required PHPUnit 10, which WordPress's own test suite does not support.
 * Dev      - Added the mediashield_unprotected_player_html filter for the markup used while MediaShield is switched off.
 * Dev      - Removed the unused data-ms-untracked attribute, which was written but never read.
 

@@ -55,8 +55,8 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			'ms_db_version',
 			'ms_wizard_completed',
 			'ms_activated_at',
-			'ms_custom_url_patterns', // Removed in 1.2.0.
-			'ms_max_upload_size',     // Removed in 1.2.0.
+			'ms_custom_url_patterns', // Removed in 1.3.0.
+			'ms_max_upload_size',     // Removed in 1.3.0.
 		)
 	);
 
