@@ -68,6 +68,18 @@ echo ""
 
 # ─── 1.x — Static checks (fast, no runtime needed) ───────────────────────────
 
+# 1.0 runs FIRST and on its own: a committed autoloader that references
+# uncommitted paths fatals on `require vendor/autoload.php`, so every stage
+# after this one would fail for a reason that has nothing to do with the code
+# being tested. Cheap, and it is the only gate that catches a break which is
+# invisible in an existing checkout.
+step "1.0" "Committed-autoloader integrity"
+if php bin/check-vendor-autoload.php; then
+  pass "Committed autoloader matches committed vendor tree"
+else
+  fail "1.0 Committed-autoloader integrity"
+fi
+
 step "1.1" "PHP lint (every changed-source PHP file)"
 PHP_LINT_FAILED=0
 while IFS= read -r -d '' file; do
