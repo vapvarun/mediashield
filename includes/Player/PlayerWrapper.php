@@ -181,6 +181,15 @@ class PlayerWrapper {
 					do_action( 'mediashield_needs_shaka' );
 				}
 
+				// Enforce "Hide Video Source URL" server-side here too. This is
+				// the auto-wrap path for embeds already in post content, and it
+				// printed the same raw URL into data-source-url that the
+				// shortcode path did (BC#10143668134). One helper, so the two
+				// render paths cannot drift apart on what they expose.
+				$safe_urls  = Protection::filter_player_urls( $video_post_id, (string) $platform, (string) $src_url, '' );
+				$src_url    = $safe_urls['source_url'];
+				$stream_url = $safe_urls['stream_url'];
+
 				$fullscreen_label = esc_attr__( 'Fullscreen', 'mediashield' );
 
 				// Per-video player feature overrides (same logic as Renderer.php).
@@ -243,7 +252,7 @@ class PlayerWrapper {
 
 				return sprintf(
 					'<div class="ms-protected-player" data-video-id="%d" data-platform="%s" data-protection-level="%s" data-player-type="%s"%s>'
-					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url=""%s%s></div>'
+					. '<div class="ms-player-target" data-platform-video-id="%s" data-source-url="%s" data-stream-url="%s"%s%s></div>'
 					. '<canvas class="ms-watermark-canvas" aria-hidden="true"></canvas>'
 					. '<div class="ms-protection-overlay"></div>'
 					. '<button class="ms-fullscreen-btn" aria-label="%s">' . \MediaShield\Support\Icons::svg( 'maximize', array( 'size' => 20 ) ) . '</button>'
@@ -255,6 +264,7 @@ class PlayerWrapper {
 					$access_type_attr,
 					esc_attr( $platform_video_id ),
 					esc_url( $src_url ),
+					esc_url( $stream_url ),
 					$overrides_attr,
 					$playback_attr,
 					$fullscreen_label

@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use MediaShield\Access\AccessControl;
+use MediaShield\Embed\EmbedLink;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -69,6 +70,12 @@ class StreamController extends WP_REST_Controller {
 						'required'          => true,
 						'sanitize_callback' => 'absint',
 					),
+					'ms_token' => array(
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+						'description'       => 'Signed viewer token, for media elements that cannot send an auth header.',
+					),
 				),
 			)
 		);
@@ -83,6 +90,28 @@ class StreamController extends WP_REST_Controller {
 	public function stream_permissions_check( WP_REST_Request $request ): bool|WP_Error {
 		$video_id = (int) $request->get_param( 'video_id' );
 		$user_id  = get_current_user_id();
+
+		// A <video src> cannot send an X-WP-Nonce header, so WordPress ignores
+		// the session cookie on this request and every viewer arrives as user 0
+		// - a logged-in member would be told to log in. That is why the player
+		// attaches a signed token instead: it names the viewer the URL was
+		// minted for, exactly as embed links do for native apps.
+		//
+		// The token is identity, not authorisation. can_watch() still runs
+		// below for the named viewer on every range request, so access revoked
+		// mid-playback is refused on the next one and the token cannot outlive
+		// the permission it was issued under.
+		$token = (string) $request->get_param( 'ms_token' );
+		if ( '' !== $token ) {
+			$claim = EmbedLink::verify( $token );
+
+			// A token that does not verify, or names a different video, is
+			// treated as absent rather than as a denial: the caller may still
+			// be a properly authenticated request that also carried junk.
+			if ( null !== $claim && $claim['video_id'] === $video_id ) {
+				$user_id = $claim['user_id'];
+			}
+		}
 
 		$access = AccessControl::can_watch( $video_id, $user_id );
 		if ( ! $access['allowed'] ) {

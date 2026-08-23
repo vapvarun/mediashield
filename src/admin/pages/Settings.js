@@ -258,7 +258,10 @@ const Settings = () => {
 				/>
 				<ToggleControl
 					label={ __( 'Hide Video Source URL', 'mediashield' ) }
-					help={ __( 'Move the src attribute to a data-* attribute so it is not visible in View Source.', 'mediashield' ) }
+					help={ __(
+						'Self-hosted videos only: play them through a permission-checked URL so the real file path never appears in the page. Does not apply to YouTube, Vimeo, Wistia or Bunny embeds - those players are iframes whose address necessarily contains the provider’s video ID.',
+						'mediashield'
+					) }
 					checked={ settings?.ms_hide_source !== false }
 					onChange={ ( val ) => updateSetting( 'ms_hide_source', val ) }
 					__nextHasNoMarginBottom

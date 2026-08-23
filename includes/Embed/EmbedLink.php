@@ -84,6 +84,43 @@ class EmbedLink {
 	}
 
 	/**
+	 * How long a media-streaming token stays valid, in seconds.
+	 *
+	 * Longer than TTL on purpose. An embed link is redeemed once, immediately,
+	 * for a page; a stream token is attached to a <video> element and re-sent on
+	 * every range request for as long as someone is watching - including after
+	 * they pause and come back. Reusing the fifteen-minute embed TTL would stop
+	 * a long lesson mid-play and, worse, break seeking backwards in one already
+	 * watched.
+	 *
+	 * The window is not the security boundary. The token names one viewer and
+	 * one video, and AccessControl::can_watch() runs again on every request, so
+	 * a revoked viewer is refused on their next range request no matter how long
+	 * the token still has to run.
+	 */
+	public const STREAM_TTL = 6 * HOUR_IN_SECONDS;
+
+	/**
+	 * Mint a bare token (no URL) for one viewer and one video.
+	 *
+	 * Exists for consumers that need to carry the credential in a query
+	 * parameter of their own - the streaming endpoint attaches it to a media
+	 * URL, which cannot send an X-WP-Nonce header the way apiFetch does.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  The viewer this token is for. 0 for a guest.
+	 * @param int $ttl      Lifetime in seconds. Defaults to self::TTL.
+	 * @return string Signed token.
+	 */
+	public static function token( int $video_id, int $user_id = 0, int $ttl = 0 ): string {
+		$ttl = $ttl > 0 ? $ttl : self::TTL;
+
+		return self::sign( $video_id, $user_id, time() + $ttl );
+	}
+
+	/**
 	 * Read a token back, if it is intact and still in date.
 	 *
 	 * @param string $token Raw token from the query string.

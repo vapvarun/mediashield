@@ -195,6 +195,18 @@ class Renderer {
 			return self::render_unprotected( $video_id, $platform, $source_url, $stream_url, $wrapper_attrs );
 		}
 
+		// Enforce "Hide Video Source URL" server-side. Stripping the URL in JS
+		// after the server had already printed it into data-source-url never hid
+		// anything (BC#10143668134).
+		//
+		// Applied AFTER the switched-off bailout above on purpose: that path
+		// deliberately hands the viewer the plain URL so the video still plays
+		// with protection off, and routing it through the gated /stream/
+		// endpoint instead would re-impose a check the operator just disabled.
+		$safe_urls  = Protection::filter_player_urls( $video_id, (string) $platform, (string) $source_url, $stream_url );
+		$source_url = $safe_urls['source_url'];
+		$stream_url = $safe_urls['stream_url'];
+
 		// Enqueue frontend assets (only loads when video content exists).
 		Assets::enqueue();
 
