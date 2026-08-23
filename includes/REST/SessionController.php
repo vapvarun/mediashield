@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
+use MediaShield\Core\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -149,13 +150,34 @@ class SessionController extends WP_REST_Controller {
 			return true;
 		}
 
-		// Allow anonymous /session/start when the targeted video opts into an
-		// alternative access path declared by an extension. The downstream
+		if ( 'POST' !== $request->get_method() ) {
+			return false;
+		}
+
+		$route = (string) $request->get_route();
+
+		// Heartbeat and end carry an HMAC-signed session token, and that token
+		// IS the authentication: SessionManager verifies the signature and
+		// rejects anything it did not mint. Once a guest can legitimately start
+		// a session (login gate off), refusing their heartbeats would record a
+		// start with zero watch time and call it analytics - the session would
+		// simply age out after five minutes having measured nothing.
+		//
+		// Nothing is trusted from the client here beyond the token, and an
+		// unsigned or tampered one fails inside SessionManager, so this widens
+		// who may ASK, not what they may do.
+		if ( false !== strpos( $route, '/session/heartbeat' ) || false !== strpos( $route, '/session/end' ) ) {
+			return '' !== (string) $request->get_param( 'token' );
+		}
+
+		// Allow anonymous /session/start when the operator has turned the login
+		// gate off, or when the targeted video opts into an alternative access
+		// path declared by an extension. The downstream
 		// AccessControl::can_watch() still enforces the actual gate; this just
 		// lets the request reach the handler so it can return the right reason
-		// to the client. Heartbeat / end / revoke remain logged-in-only because
-		// they never originate from an anonymous viewer.
-		if ( 'POST' !== $request->get_method() || false === strpos( $request->get_route(), '/session/start' ) ) {
+		// to the client. Revoke remains logged-in-only (admin-only, in fact) -
+		// it never originates from an anonymous viewer.
+		if ( false === strpos( $route, '/session/start' ) ) {
 			return false;
 		}
 
@@ -166,13 +188,28 @@ class SessionController extends WP_REST_Controller {
 
 		$access_type = (string) get_post_meta( $video_id, '_ms_access_type', true );
 
+		// The operator turned the login gate off, so an anonymous viewer is a
+		// legitimate one and must be allowed to REACH the handler. This is the
+		// server half of the same defect the client had: `ms_require_login` was
+		// honoured by AccessControl::can_watch() but the request never got that
+		// far, because this callback rejected every guest first. Opening only
+		// the client gate would have swapped a login overlay for a 401.
+		//
+		// Reaching the handler is not the same as being allowed to watch:
+		// can_watch() still applies the per-video role gate, the allowed-domain
+		// whitelist and the mediashield_can_watch filter chain, and still
+		// returns a denial reason the client can render.
+		$login_gate_off = ! Settings::get( 'ms_require_login' );
+
 		/**
 		 * Filter whether to allow an anonymous /session/start for this video.
 		 *
-		 * Defaults to allow when `_ms_access_type` is set by an extension.
-		 * Extensions can opt additional anon-allowable access types in.
+		 * Defaults to allow when the operator has turned `ms_require_login`
+		 * off, or when `_ms_access_type` is set by an extension. Extensions
+		 * can opt additional anon-allowable access types in.
 		 *
 		 * @since 1.1.0
+		 * @since 1.3.0 Also defaults to allow when `ms_require_login` is off.
 		 *
 		 * @param bool             $allow       Whether to allow anonymous start.
 		 * @param int              $video_id    Video CPT post ID.
@@ -181,7 +218,7 @@ class SessionController extends WP_REST_Controller {
 		 */
 		return (bool) apply_filters(
 			'mediashield_session_allow_anonymous_start',
-			'' !== $access_type,
+			$login_gate_off || '' !== $access_type,
 			$video_id,
 			$access_type,
 			$request
@@ -347,9 +384,18 @@ class SessionController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function heartbeat( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		// Rate limiting: max 4 heartbeats per minute per user.
+		// Rate limiting: max 4 heartbeats per minute per viewer.
 		// Increment first to close TOCTOU race window.
-		$rate_key = 'ms_rate_' . get_current_user_id();
+		//
+		// Keyed on the session token for guests: every anonymous viewer is
+		// user_id 0, so a user-id key would put the entire logged-out audience
+		// in one bucket and throttle the whole site at 4 heartbeats a minute.
+		// The token is per-session, which is the correct granularity, and it is
+		// hashed so a session token never becomes an option name.
+		$user_id  = get_current_user_id();
+		$rate_key = $user_id > 0
+			? 'ms_rate_' . $user_id
+			: 'ms_rate_g_' . hash( 'sha256', (string) $request->get_param( 'token' ) );
 		$count    = (int) get_transient( $rate_key );
 		++$count;
 		set_transient( $rate_key, $count, 60 );

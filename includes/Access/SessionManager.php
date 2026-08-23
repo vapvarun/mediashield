@@ -47,6 +47,30 @@ class SessionManager {
 		// -- Concurrent session limit check (with row locking) --
 		$max_concurrent = (int) get_option( 'ms_max_concurrent_streams', 2 );
 
+		// Guests have no identity, and every one of them lands on user_id = 0.
+		// Both queries below key on user_id, so treating a guest like a user
+		// produces two wrong answers:
+		//
+		//   1. The concurrent-stream count becomes a SITE-WIDE guest counter.
+		//      At the default limit of 2, the third simultaneous visitor to a
+		//      public video anywhere on the site is refused.
+		//   2. The dedup lookup matches ANOTHER guest's row, so visitor B is
+		//      handed visitor A's session token and resume position.
+		//
+		// (2) is the worse of the two - it leaks one viewer's progress to the
+		// next. Both only became reachable when guest playback was allowed, so
+		// they are fixed here rather than left for the first public video.
+		//
+		// A concurrent-stream limit exists to stop credential sharing. With no
+		// account to share there is nothing to enforce, so guests skip it and
+		// always get a fresh session. Limiting anonymous viewers would need a
+		// real guest identity, which is a feature, not a bug fix.
+		$is_guest = ( 0 === $user_id );
+
+		if ( $is_guest ) {
+			return self::start_guest_session( $video_id, $ip, $ua, $now );
+		}
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction start.
 		$wpdb->query( 'START TRANSACTION' );
 
@@ -186,6 +210,72 @@ class SessionManager {
 			'session_token'   => $token,
 			'session_id'      => $session_id,
 			'resume_position' => $resume_position,
+			'is_resumed'      => false,
+		);
+	}
+
+	/**
+	 * Start a watch session for an anonymous viewer.
+	 *
+	 * Reachable only when the operator has turned `ms_require_login` off, which
+	 * is the public-marketing-video case. Deliberately does NOT reuse start()'s
+	 * dedup / concurrency path: both key on user_id, and every guest is
+	 * user_id = 0, so they would collide across unrelated visitors (see the
+	 * note in start()).
+	 *
+	 * Always inserts a fresh row. No dedup lookup, because two guests are not
+	 * the same viewer. No resume position, because there is no identity to
+	 * resume against - handing a visitor the previous visitor's position would
+	 * be a privacy leak, not a feature. No transaction, because with nothing to
+	 * lock against there is no race to guard.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param int    $video_id Video CPT post ID.
+	 * @param string $ip       Client IP address.
+	 * @param string $ua       Client user agent.
+	 * @param string $now      Current GMT datetime in MySQL format.
+	 * @return array|false Session data on success, false if the insert failed.
+	 */
+	private static function start_guest_session( int $video_id, string $ip, string $ua, string $now ) {
+		global $wpdb;
+
+		$table = "{$wpdb->prefix}ms_watch_sessions";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table insert.
+		$inserted = $wpdb->insert(
+			$table,
+			array(
+				'video_id'       => $video_id,
+				'user_id'        => 0,
+				'session_token'  => wp_generate_password( 32, false ),
+				'ip_address'     => $ip,
+				'user_agent'     => mb_substr( $ua, 0, 500 ),
+				'device_type'    => self::parse_device_type( $ua ),
+				'browser'        => self::parse_browser( $ua ),
+				'started_at'     => $now,
+				'last_heartbeat' => $now,
+				'total_seconds'  => 0,
+				'max_position'   => 0,
+				'completion_pct' => 0,
+				'is_active'      => 1,
+			),
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%f', '%f', '%d' )
+		);
+
+		if ( ! $inserted ) {
+			return false;
+		}
+
+		$session_id = (int) $wpdb->insert_id;
+
+		/** This action is documented in includes/Access/SessionManager.php */
+		do_action( 'mediashield_session_started', $session_id, $video_id, 0, $ip );
+
+		return array(
+			'session_token'   => self::generate_token( $session_id, $video_id, 0, $now ),
+			'session_id'      => $session_id,
+			'resume_position' => 0.0,
 			'is_resumed'      => false,
 		);
 	}

@@ -805,7 +805,20 @@
 		// Skip the client-side shortcut when the video opts into an alternative
 		// access path (any data-access-type value) so /session/start can run and
 		// return the proper reason for whichever extension owns that path.
-		if ( ! config.isLoggedIn && ! el.dataset.accessType ) {
+		//
+		// `requireLogin` is the operator's setting. When it is off we must NOT
+		// short-circuit here: /session/start is the authoritative gate and it
+		// still enforces per-video role rules, allowed domains and the
+		// mediashield_can_watch filter chain. Returning early on `isLoggedIn`
+		// alone made the setting inert - a guest never reached the server
+		// decision that would have let them watch.
+		// wp_localize_script stringifies the payload: PHP `true` arrives as
+		// "1" and PHP `false` as "" - never as a JS boolean. So this is a
+		// truthiness test, matching how `isLoggedIn` is read above, NOT a
+		// `!== false` identity test (which "" would silently fail).
+		// A missing key means an older cached config, so default to gating.
+		var requiresLogin = ( 'requireLogin' in config ) ? !! config.requireLogin : true;
+		if ( requiresLogin && ! config.isLoggedIn && ! el.dataset.accessType ) {
 			showLoginOverlay( el );
 			return;
 		}

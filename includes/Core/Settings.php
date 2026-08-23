@@ -378,6 +378,14 @@ class Settings {
 			'isLoggedIn' => is_user_logged_in(),
 			'userId'     => $user->ID,
 			'loginUrl'   => wp_login_url( get_permalink() ),
+			// The login gate the client applies before it will call
+			// /session/start. Without this key the wrapper fell back to
+			// gating on `isLoggedIn` alone, so turning the setting OFF
+			// changed nothing for a guest: the player showed the login
+			// overlay and returned before the permissive server decision
+			// was ever reached. The setting was inert for exactly the case
+			// it exists to serve - a public marketing video with analytics.
+			'requireLogin' => (bool) self::get( 'ms_require_login' ),
 			'interval'   => 30000,
 			'player'     => array(
 				'speedControl'  => self::get( 'ms_player_speed_control' ),
