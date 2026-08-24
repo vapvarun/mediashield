@@ -279,7 +279,7 @@
 			var url        = streamUrl || sourceUrl;
 			var isAdaptive = !! url && ( url.indexOf( '.m3u8' ) > -1 || url.indexOf( '.mpd' ) > -1 );
 
-			watchForSilentStall( video, target );
+			watchForLoadFailure( video, target );
 
 			if ( ! isAdaptive ) {
 				video.src = url;
@@ -939,40 +939,64 @@
 			} );
 	}
 
-	// ─── Silent-stall watchdog ──────────────────────────────────
+	// ─── Load-failure watchdog ──────────────────────────────────
 	//
-	// A <video> pointed at something that is not media — an HTML page, a
-	// dashboard link, a 404 body — does not fail. It sits in
-	// networkState 2 (NETWORK_LOADING) with readyState 0 and duration NaN,
-	// and never fires `error`. The viewer sees a player that never starts,
-	// the console stays clean, and the admin shows nothing wrong. That is
-	// how 19 of 26 videos on one site were broken for weeks and reported
-	// only as "videos are not playing" (BC#10225483994).
+	// A source that will not play fails in one of two ways, and the viewer
+	// must be told either way. Both used to end in the same place: a player
+	// that never starts, a clean console, and nothing in the admin to say so.
+	// That is how 19 of 26 videos on one site were broken for weeks and
+	// reported only as "videos are not playing" (BC#10225483994).
 	//
-	// So we time it out ourselves. Loading legitimately takes a while on a
-	// slow connection, hence a generous window and a check for ANY progress
-	// (metadata, or bytes buffered) rather than requiring playback to begin.
+	//   1. It ERRORS. The browser can tell the bytes are not media, fires
+	//      `error`, and sets video.error — e.g. an HTML page served where an
+	//      mp4 was expected gives MEDIA_ERR_SRC_NOT_SUPPORTED.
+	//   2. It HANGS. The browser cannot tell, so it sits in networkState 2
+	//      (NETWORK_LOADING) with readyState 0 and duration NaN, and never
+	//      fires anything at all.
+	//
+	// Case 1 is handled immediately, because waiting out a timeout when the
+	// browser has already given a verdict just makes the viewer wait longer.
+	// Case 2 needs a timeout, generous enough not to fire on a slow
+	// connection, and checking for ANY progress (metadata, or bytes buffered)
+	// rather than requiring playback to have begun.
 	var STALL_TIMEOUT_MS = 15000;
 
-	function watchForSilentStall( video, target ) {
+	function watchForLoadFailure( video, target ) {
 		var container = target.closest ? target.closest( '.ms-protected-player' ) : null;
 		if ( ! container ) return;
 
-		var timer = setTimeout( function () {
-			// HAVE_NOTHING and nothing buffered: no metadata arrived at all.
-			var progressed = video.readyState > 0 || ( video.buffered && video.buffered.length > 0 );
-			if ( progressed ) return;
+		var settled = false;
 
-			// A real decode/network error already surfaced its own message.
-			if ( video.error ) return;
-
+		function fail() {
+			if ( settled ) return;
+			settled = true;
+			clearTimeout( timer );
 			showErrorOverlay( container, ( config.messages && config.messages.loadFailed ) ||
 				'This video could not be loaded.' );
+		}
+
+		var timer = setTimeout( function () {
+			if ( settled ) return;
+
+			// HAVE_NOTHING and nothing buffered: no metadata arrived at all.
+			var progressed = video.readyState > 0 || ( video.buffered && video.buffered.length > 0 );
+			if ( progressed ) {
+				settled = true;
+				return;
+			}
+
+			fail();
 		}, STALL_TIMEOUT_MS );
 
-		// Any sign of life cancels the watchdog.
-		[ 'loadedmetadata', 'loadeddata', 'canplay', 'playing', 'error' ].forEach( function ( ev ) {
-			video.addEventListener( ev, function () { clearTimeout( timer ); }, { once: true } );
+		// The browser reached a verdict: say so now rather than in 15 seconds.
+		video.addEventListener( 'error', fail, { once: true } );
+
+		// Any sign of life stands the watchdog down.
+		[ 'loadedmetadata', 'loadeddata', 'canplay', 'playing' ].forEach( function ( ev ) {
+			video.addEventListener( ev, function () {
+				settled = true;
+				clearTimeout( timer );
+			}, { once: true } );
 		} );
 	}
 
