@@ -354,7 +354,7 @@ const Settings = () => {
 			>
 				<TextareaControl
 					label={ __( 'Allowed Domains', 'mediashield' ) }
-					help={ __( 'One domain per line. Leave empty to allow all domains.', 'mediashield' ) }
+					help={ __( 'One domain per line, or separated by commas - both work. A full URL is fine too; only the domain is used. Leave empty to allow all domains.', 'mediashield' ) }
 					value={ settings?.ms_allowed_domains || '' }
 					onChange={ ( val ) => updateSetting( 'ms_allowed_domains', val ) }
 					rows={ 4 }
@@ -470,6 +470,15 @@ const Settings = () => {
 					help={ __( 'Remember where the viewer left off and offer to resume on return.', 'mediashield' ) }
 					checked={ !! settings?.ms_player_resume }
 					onChange={ ( val ) => updateSetting( 'ms_player_resume', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Prevent Skipping Ahead', 'mediashield' ) }
+					help={ __( 'Stop viewers seeking past the furthest point they have watched. Rewinding stays allowed. Useful for course and compliance videos.', 'mediashield' ) }
+					checked={ !! settings?.ms_player_prevent_forward_seek }
+					onChange={ ( val ) =>
+						updateSetting( 'ms_player_prevent_forward_seek', val )
+					}
 					__nextHasNoMarginBottom
 				/>
 				<ToggleControl
@@ -630,7 +639,7 @@ const Settings = () => {
 					/>
 					<ToggleControl
 						label={ __( 'Require enrollment', 'mediashield' ) }
-						help={ __( 'Only allow enrolled students to watch course videos.', 'mediashield' ) }
+						help={ __( 'Master switch for enrollment checks. When on, each video\'s own "Require enrollment" setting decides. Turn off to disable enrollment checks everywhere.', 'mediashield' ) }
 						checked={ !! settings?.ms_lms_enrollment_check }
 						onChange={ ( val ) => updateSetting( 'ms_lms_enrollment_check', val ) }
 						__nextHasNoMarginBottom

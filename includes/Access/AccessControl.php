@@ -115,7 +115,8 @@ class AccessControl {
 	 * privacy-respecting browsers can opt in via the
 	 * `mediashield_allow_empty_referer` filter.
 	 *
-	 * @param string $allowed_domains Comma-separated list of domains.
+	 * @param string $allowed_domains Whitelist as the owner typed it. See
+	 *                                parse_domains() for accepted separators.
 	 * @return array{allowed: bool, reason: string}
 	 */
 	private static function check_domain( string $allowed_domains ): array {
@@ -148,16 +149,76 @@ class AccessControl {
 		}
 
 		// Check against whitelist.
-		$domains = array_map( 'trim', explode( ',', $allowed_domains ) );
-		$domains = array_filter( $domains );
-
-		foreach ( $domains as $domain ) {
+		foreach ( self::parse_domains( $allowed_domains ) as $domain ) {
 			if ( $referer_host === $domain || str_ends_with( $referer_host, '.' . $domain ) ) {
 				return self::allow();
 			}
 		}
 
 		return self::deny( Settings::get( 'ms_access_denied_text' ) );
+	}
+
+	/**
+	 * Turn the Allowed Domains field into a list of hostnames to match.
+	 *
+	 * WHY THIS IS DELIBERATELY FORGIVING
+	 *
+	 * This used to be `explode( ',', ... )` while the field's own help text
+	 * said "One domain per line." An owner who followed the instruction
+	 * produced a single string containing newlines, which matches no referer -
+	 * and because the whitelist is only consulted when it is non-empty, filling
+	 * it in correctly switched on a check that could never pass. The result was
+	 * that every cross-origin embed was denied, which is the exact opposite of
+	 * what the owner was configuring, and it presents as a playback bug rather
+	 * than a settings mistake, so the field is the last place they would look.
+	 *
+	 * Rather than pick a separator and be wrong for every site already storing
+	 * the other one, both are accepted. Whitespace, newlines and commas all
+	 * separate entries, in any combination.
+	 *
+	 * A pasted URL is also accepted. "Domain" is not a distinction most people
+	 * make when the thing in their clipboard is `https://example.com/embed/`,
+	 * and the failure mode for getting it wrong here is silent and total, so
+	 * the host is extracted rather than the entry being discarded.
+	 *
+	 * Note this returns bare hostnames only; the caller matches both an exact
+	 * hit and any subdomain of the entry.
+	 *
+	 * @param string $allowed_domains Raw field value.
+	 * @return string[] Lowercased hostnames, no duplicates, no empties.
+	 */
+	private static function parse_domains( string $allowed_domains ): array {
+		$entries = preg_split( '/[\s,]+/', $allowed_domains, -1, PREG_SPLIT_NO_EMPTY );
+
+		if ( ! is_array( $entries ) ) {
+			return array();
+		}
+
+		$domains = array();
+
+		foreach ( $entries as $entry ) {
+			$entry = strtolower( trim( $entry ) );
+
+			// A pasted URL, or a bare host with a path or port stuck to it.
+			// wp_parse_url() only finds a host when there is a scheme, so add
+			// one for the bare case rather than parsing the string by hand.
+			if ( false !== strpos( $entry, '/' ) || false !== strpos( $entry, ':' ) ) {
+				$probe = ( false === strpos( $entry, '//' ) ) ? 'https://' . $entry : $entry;
+				$host  = wp_parse_url( $probe, PHP_URL_HOST );
+				if ( is_string( $host ) && '' !== $host ) {
+					$entry = $host;
+				}
+			}
+
+			// Trailing dot is legal in DNS and never appears in a Referer host.
+			$entry = rtrim( $entry, '.' );
+
+			if ( '' !== $entry ) {
+				$domains[] = $entry;
+			}
+		}
+
+		return array_values( array_unique( $domains ) );
 	}
 
 	/**
