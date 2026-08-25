@@ -3,7 +3,7 @@
 ![A protected video playing in the MediaShield player with the "Protected by MediaShield" badge visible](../images/mediashield-frontend-player.png)
 *A protected video in the frontend player. The dynamic watermark and "Protected by MediaShield" badge are visible during playback.*
 
-MediaShield is a WordPress plugin that adds a protection and analytics layer on top of your videos. Version 1.1.0.
+MediaShield is a WordPress plugin that adds a protection and analytics layer on top of your videos. Version 1.3.0.
 
 It works with videos hosted on YouTube, Vimeo, Bunny Stream, Wistia, or your own server. Once a video is registered in MediaShield, the plugin wraps it in a protected player that adds:
 
@@ -25,9 +25,12 @@ MediaShield is built for online course creators, membership site owners, and any
 
 ## What MediaShield does not promise
 
-No WordPress video plugin can block screen recording. MediaShield makes recordings traceable - not impossible to make. The dynamic watermark shows the viewer's name and IP address on every frame, so if content leaks, you know exactly who leaked it. This is the right model for WordPress-native video protection at this price point.
+No WordPress video plugin can block screen recording. MediaShield makes recordings traceable - not impossible to make. The dynamic watermark shows the viewer's display name, plus their IP address when the player is wide enough to fit it, on every frame. If content leaks, you know who was watching. This is the right model for WordPress-native video protection at this price point.
 
-For a full explanation of the threat model and its limits, see the Protection Philosophy section.
+Two further limits are worth knowing up front:
+
+- **Self-hosted files depend on your web server.** Videos uploaded to MediaShield are stored in `wp-content/uploads/mediashield/`. MediaShield writes an `.htaccess` deny rule there, but `.htaccess` is an Apache feature and nginx ignores it. On nginx those files stay directly downloadable until you add a matching rule to your server config. MediaShield tests this on your actual host and gives you the rule under **Tools > Site Health**. See [Troubleshooting](../using-mediashield/04-troubleshooting.md).
+- **Platform embeds always carry their own IDs.** YouTube, Vimeo, Wistia, and Bunny videos play inside the provider's iframe, and that iframe URL necessarily contains the provider's video ID. "Hide Video Source URL" therefore applies to self-hosted video only.
 
 ## Free vs Pro
 
@@ -40,13 +43,16 @@ The free plugin ships a complete protection and analytics layer. MediaShield Pro
 | Concurrent stream limit | Yes | Yes |
 | Session tracking and milestones | Yes | Yes |
 | Playlists | Yes | Yes |
+| In-video ad breaks | Yes | Yes |
 | Analytics dashboard | Yes | Yes (plus heatmaps, realtime, and alerts) |
 | Right-click and devtools protection | Yes | Yes |
 | Platform API connections (Bunny, YouTube, Vimeo, Wistia) | No | Yes |
-| ClearKey DRM for self-hosted video | No | Yes |
+| ClearKey DRM for self-hosted video (experimental) | No | Yes |
 | LMS integrations (LearnDash, LifterLMS, TutorLMS) | No | Yes |
 | Data export (CSV, PDF) | No | Yes |
 | Suspicious activity alerts | No | Yes |
+
+DRM is marked experimental deliberately. Before 1.3.0 it could not be switched on at all - nothing in the admin was able to store the `drm` protection level, so the whole feature was unreachable. It is selectable from 1.3.0 onward, but playback has not been verified end to end across browsers. Treat it as a preview, not a shipping guarantee.
 
 ## Requirements
 

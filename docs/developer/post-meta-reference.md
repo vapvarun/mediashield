@@ -1,36 +1,47 @@
 # Post Meta Reference
 
-Every `_ms_*` post meta key for the `mediashield_video` and `mediashield_playlist` custom post types. These are registered via `register_post_meta` in the CPT classes and are readable/writable via the WordPress REST API (`/wp-json/wp/v2/mediashield-videos/{id}` and `/wp-json/wp/v2/mediashield-playlists/{id}`) in addition to the MediaShield admin SPA.
+Every `_ms_*` post meta key for the `mediashield_video` and `mediashield_playlist` custom post types.
 
-Customers configure these through the video editor UI. Developers can read or write them via the REST API or `get_post_meta` / `update_post_meta`.
+**Only some of these are registered.** `VideoPostType::register_meta()` and `PlaylistPostType::register_meta()` call `register_post_meta( ..., 'show_in_rest' => true )` for the keys marked **registered** below; those are readable and writable through core's CPT routes (`/wp-json/wp/v2/mediashield-videos/{id}`, `/wp-json/wp/v2/mediashield-playlists/{id}`). Everything else is plain post meta written by the classic meta box's `$_POST` handler (`VideoPostType::save_meta_box()`) and is **not** exposed to REST - `get_post_meta()` / `update_post_meta()` is the only way in for those.
+
+Registered scalar meta uses `auth_callback => current_user_can( 'edit_posts' )` and a `sanitize_callback` of `sanitize_text_field` for strings, `absint` for integers, `rest_sanitize_boolean` for playlist booleans.
 
 ---
 
 ## `mediashield_video` CPT
 
-### Core fields
+### Core fields (registered)
 
 | Meta Key | Type | Default | Description |
 |----------|------|---------|-------------|
 | `_ms_platform` | string | `self` | Hosting platform: `self`, `youtube`, `vimeo`, `bunny`, `wistia`. |
 | `_ms_platform_video_id` | string | `''` | External platform video ID (extracted from the URL). |
 | `_ms_source_url` | string | `''` | Direct video URL. For self-hosted videos this is the uploaded file URL; for platform videos it is the original pasted URL. |
-| `_ms_protection_level` | string | `standard` | Per-video protection level override: `none`, `basic`, `standard`, `strict`. Empty string means "inherit `ms_default_protection`". |
-| `_ms_access_role` | string | `''` | Required WordPress role slug. Empty string or `any` disables the role gate. |
+| `_ms_stream_url` | string | `''` | Resolved playback URL when it differs from the source (Pro's Bunny driver writes signed CDN URLs here). Feeds the `mediashield_video_stream_url` filter. |
+| `_ms_protection_level` | string | `''` | Per-video protection level: `none`, `basic`, `standard`, `strict`, plus any slug added via `mediashield_protection_levels` (Pro adds `drm`). **The default is the empty string, meaning "inherit `ms_default_protection`"** - a literal default here would mask the global setting. |
+| `_ms_access_role` | string | `''` | Required WordPress role slug. Empty string or `any` disables the role gate. Enforced by free's `AccessControl::check_role()`, and again by Pro's `Access\RoleAccess` at priority 20. |
 | `_ms_duration` | int | `0` | Video duration in seconds. |
 
-### Playback options
+### Milestone tags (registered, object schema)
 
-| Meta Key | Type | Values | Description |
-|----------|------|--------|-------------|
-| `_ms_autoplay` | string | `'1'` / `'0'` | Autoplay on page load. |
-| `_ms_loop` | string | `'1'` / `'0'` | Loop playback. YouTube uses the `playlist=<id>` workaround so loop actually loops. |
-| `_ms_muted` | string | `'1'` / `'0'` | Start muted. |
-| `_ms_show_controls` | string | `'1'` / `'0'` | Show native player controls. Self-hosted only. |
+| Meta Key | Type | Default | Description |
+|----------|------|---------|-------------|
+| `_ms_milestone_tags` | object | `[]` | Map of `{ "<pct>": { enabled: bool, tag: string } }`. Registered with a custom REST schema and `sanitize_milestone_tags()` rather than the scalar loop, so the admin SPA can read and write it. Entries outside 1-100, or with an empty `tag`, are dropped. |
 
-### Player feature overrides (tri-state)
+### Playback options (not registered - meta box only)
 
-All tri-state keys use empty string = inherit global setting, `'on'` = force enabled, `'off'` = force disabled.
+Stored as the strings `'1'` and `'0'`. A **missing/empty** value is a third state meaning "never saved, use the player adapter's own default" - `Renderer` only emits the `data-*` attribute when the stored value is exactly `'1'` or `'0'`.
+
+| Meta Key | Values | Description |
+|----------|--------|-------------|
+| `_ms_autoplay` | `'1'` / `'0'` / unset | Autoplay on page load. |
+| `_ms_loop` | `'1'` / `'0'` / unset | Loop playback. YouTube uses the `playlist=<id>` workaround so loop actually loops. |
+| `_ms_muted` | `'1'` / `'0'` / unset | Start muted. |
+| `_ms_show_controls` | `'1'` / `'0'` / unset | Show native player controls. Self-hosted only. |
+
+### Player feature overrides (not registered - meta box only)
+
+Tri-state: the key is **deleted** to mean "inherit the global setting", `'on'` forces enabled, `'off'` forces disabled. Anything else submitted is treated as inherit.
 
 | Meta Key | Inherits from option | Description |
 |----------|---------------------|-------------|
@@ -39,28 +50,54 @@ All tri-state keys use empty string = inherit global setting, `'on'` = force ena
 | `_ms_player_resume` | `ms_player_resume` | Resume from last position. |
 | `_ms_player_sticky` | `ms_player_sticky` | Sticky player on scroll. |
 | `_ms_player_endscreen` | `ms_player_endscreen` | End-screen CTA overlay. |
-| `_ms_player_endscreen_text` | `ms_player_endscreen_text` | CTA text (empty = inherit global). |
-| `_ms_player_endscreen_url` | `ms_player_endscreen_url` | CTA URL (empty = inherit global). |
+
+The two end-screen text fields are plain strings, not tri-state - they are deleted when submitted empty, and an empty value inherits the global:
+
+| Meta Key | Inherits from option | Description |
+|----------|---------------------|-------------|
+| `_ms_player_endscreen_text` | `ms_player_endscreen_text` | CTA text. Sanitised with `sanitize_text_field`. |
+| `_ms_player_endscreen_url` | `ms_player_endscreen_url` | CTA URL. Sanitised with `esc_url_raw`. |
+
+`ms_player_prevent_forward_seek` is global-only. There is no `_ms_player_prevent_forward_seek` meta key.
+
+### Extension seam
+
+| Meta Key | Written by | Description |
+|----------|-----------|-------------|
+| `_ms_access_type` | Third-party extensions | Free reads this in two places and never writes it: `Player\Renderer` emits it as `data-access-type` on the player container (via the `mediashield_player_access_type` filter), and `SessionController` uses a non-empty value as the default reason to permit an anonymous `/session/start`. It is **not** set by Pro - no Pro code references the key. |
 
 ### Pro-managed meta
 
-These keys are written by the Pro plugin. They are listed here for completeness; the authoritative list is in [hooks-filters-pro.md](hooks-filters-pro.md#post-meta-pro-managed).
+Written by the Pro plugin. Listed here for completeness; the authoritative list is in [hooks-filters-pro.md](hooks-filters-pro.md#post-meta-pro-managed). None of these are registered for REST.
 
 | Meta Key | Set by | Description |
 |----------|--------|-------------|
-| `_ms_access_type` | Pro editor | Access gate type slug. Read by `mediashield_player_access_type` filter. |
 | `_ms_library_id` | BunnyStream driver | Bunny library ID. |
 | `_ms_wistia_numeric_id` | WistiaApi driver | Wistia numeric ID. |
-| `_ms_drm_enabled` | Pro DRM packager | Whether DRM is enabled for this video. |
-| `_ms_drm_method` | Pro DRM packager | DRM method: `cloud_bunny`, `local_shaka`. |
-| `_ms_drm_output_dir` | Pro DRM packager | Absolute path to the Shaka Packager DASH output directory. |
-| `_ms_drm_packaged_at` | Pro DRM packager | Timestamp of last successful packaging. |
-| `_ms_drm_packaging_status` | Pro DRM packager | Current packaging job status. |
-| `_ms_drm_packaging_action_id` | Pro DRM packager | Action Scheduler job ID for async packaging. |
+| `_ms_bunny_encode_status` | BunnyWebhookController | Latest encode state reported by the Bunny webhook. |
+| `_ms_drm_enabled` | DRM\Packager | Whether DRM packaging has completed for this video. Note Pro's player-type override reads `_ms_protection_level === 'drm'`, not this key. |
+| `_ms_drm_method` | DRM\Packager | DRM method used: `cloud_bunny` or `local_shaka`. |
+| `_ms_drm_output_dir` | DRM\Packager | Absolute path to the Shaka Packager DASH output directory (local method only). |
+| `_ms_drm_packaged_at` | DRM\Packager | UTC timestamp of last successful packaging. |
+| `_ms_drm_packaging_status` | DRM\Packager | Current packaging job status (`queued`, then updated by the worker). |
+| `_ms_drm_packaging_action_id` | DRM\Packager | Action Scheduler action ID for the async `mediashield_pro_drm_package` job. |
+| `_ms_linked_lesson` | LMS\LMSMetaBox | Lesson/topic post ID this video is bound to. Validated against the owning adapter's `owns_post()`. |
+| `_ms_lms_require_enrollment` | LMS\LMSMetaBox | Per-video override of `ms_lms_enrollment_check`. |
+| `_ms_lms_complete_pct` | LMS\LMSMetaBox | Per-video override of `ms_lms_complete_pct`. |
+| `_ms_ad_mode` | Ads\VideoAdsMetaBox | How ads run on this video (inherit / off / custom). |
+| `_ms_ad_ids` | Ads\VideoAdsMetaBox | Ad post IDs selected for this video. |
+| `_ms_ad_preroll` | Ads\VideoAdsMetaBox | Per-video pre-roll override. |
+| `_ms_ad_postroll` | Ads\VideoAdsMetaBox | Per-video post-roll override. |
+| `_ms_ad_midroll_count` | Ads\VideoAdsMetaBox | Per-video mid-roll count override. |
+| `_ms_ad_plan_custom` | Ads\VideoAdsMetaBox | Explicit break positions when the plan is hand-authored. |
+
+`_ms_meta_nonce`, `_ms_lms_nonce` and `_ms_ad_nonce` are meta-box nonce field names, not stored meta.
 
 ---
 
 ## `mediashield_playlist` CPT
+
+All four are registered and REST-exposed.
 
 | Meta Key | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -70,3 +107,13 @@ These keys are written by the Pro plugin. They are listed here for completeness;
 | `_ms_shuffle` | bool | `false` | Randomize playback order on each page load. |
 
 Playlist items (video ordering) are stored in the `ms_playlist_items` table, not in post meta. See [database-tables.md](database-tables.md#ms_playlist_items).
+
+---
+
+## User meta
+
+Not post meta, but the one `_ms_*` key that lives on users and is easy to mistake for a post meta key:
+
+| Meta Key | Description |
+|----------|-------------|
+| `_ms_video_tags` | A single serialised map per user, keyed `<video_id>_<pct>`, recording milestone tag awards. `Cron\Cleanup::handle_video_delete()` walks it and strips entries pointing at a deleted video so orphans cannot accumulate. |

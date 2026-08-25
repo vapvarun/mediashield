@@ -28,7 +28,7 @@ Renders a protected video player.
 </div>
 ```
 
-Invalid, missing, or unpublished IDs render nothing and skip asset loading.
+If the ID doesn't match a published video, visitors see nothing at all. Anyone who can edit posts sees a short message on the page instead, saying whether the ID matched nothing or matched a video that isn't published yet -- so if you can see an explanation and your visitors report a blank space, that's why.
 
 ### [mediashield_playlist]
 
@@ -46,31 +46,28 @@ Renders a protected playlist player.
 
 ### [mediashield_my_videos]
 
-Renders a grid of videos the current logged-in user has watched, with progress indicators.
+Renders a grid of videos the current logged-in user has watched, with progress indicators and All / In Progress / Completed filter buttons.
 
 ```
 [mediashield_my_videos]
 ```
 
-No attributes required. Shows nothing for visitors who aren't logged in.
+No attributes. Visitors who aren't logged in see "Please log in to see your video history." A logged-in user with no watch history yet sees "You have not watched any videos yet."
 
 ---
 
 ## PHP Template Usage
 
-You can render a protected video directly in PHP templates:
+To render a protected video from a PHP template, run the shortcode:
 
 ```php
 <?php
-// Render a specific video by post ID
+// Render a specific video by its library ID
 echo do_shortcode( '[mediashield id=42]' );
-
-// Or use the template helper
-if ( function_exists( 'mediashield_render_video' ) ) {
-    mediashield_render_video( 42 );
-}
 ?>
 ```
+
+The same works for `[mediashield_playlist id=15]` and `[mediashield_my_videos]`.
 
 ---
 
@@ -92,12 +89,12 @@ Embed a single protected video with the full player and protection layer.
 - Video picker with search
 - URL paste detection (creates a library entry automatically)
 - Live preview in editor
-- Sidebar controls for protection level and access settings
+- Sidebar controls for the video's protection level and duration
 
 **Frontend output:**
-- Protected video player with watermark overlay
-- Right-click blocking and developer-tools detection
-- Session tracking with heartbeat
+- Protected video player with watermark overlay (Standard and Strict only)
+- Right-click blocking and developer-tools detection, per your Protection settings
+- Session tracking with heartbeat (Standard and Strict only)
 - Login overlay for visitors who aren't logged in (when required)
 
 > **Developer reference:** the block slug is `mediashield/video`. For developer use only.
@@ -132,7 +129,7 @@ Display the logged-in user's watched video history with completion progress.
 
 **How to add it:** In the block inserter, search for "MediaShield My Videos."
 
-No configurable attributes. Automatically shows the current user's watch history. Shows nothing for visitors who aren't logged in.
+No configurable attributes. Automatically shows the current user's watch history. Visitors who aren't logged in see a "Please log in to see your video history" line.
 
 > **Developer reference:** the block slug is `mediashield/my-videos`. For developer use only.
 
@@ -140,24 +137,31 @@ No configurable attributes. Automatically shows the current user's watch history
 
 ## Asset Loading
 
-MediaShield only loads its CSS and JavaScript on pages that contain video content. Assets are conditionally loaded when:
+MediaShield doesn't load its CSS and JavaScript on every page. They load when:
 
-1. A `[mediashield]` shortcode is detected in post content.
+1. A `[mediashield]` shortcode is rendered.
 2. A MediaShield block is present.
-3. The output buffer detects a video or iframe element matching known patterns.
+3. The page contains any `<video>` element, `<iframe>`, or Wistia embed at all.
 
-This ensures zero performance impact on pages without videos.
+The third case is a wide net on purpose -- MediaShield has to load its assets before it knows whether an embed on the page is one of yours. In practice it means a page carrying an unrelated iframe (an embedded map, for instance) also loads MediaShield's assets. Pages with no video or iframe markup load nothing.
 
 ---
 
-## Output Buffer Detection
+## Automatic Detection of Existing Embeds
 
-MediaShield uses output buffering to detect and wrap video embeds that aren't placed via shortcode or block. This works with:
+MediaShield scans each page as it renders and takes over video embeds that weren't placed with a shortcode or block. It recognises:
 
 - Standard `<video>` elements
-- YouTube iframes
+- YouTube iframes (including youtube-nocookie)
 - Vimeo iframes
 - Bunny Stream iframes
 - Wistia inline embeds
 
-The output buffer can be disabled on specific pages via the `mediashield_enable_output_buffer` filter (see the [developer hooks reference](../developer/hooks-filters-free.md)).
+**It only takes over an embed it can match to a video in your MediaShield library** -- by the platform video ID for YouTube / Vimeo / Bunny / Wistia, or by the exact file address for a self-hosted `<video>`. Anything it can't match is left byte-for-byte as the theme or other plugin emitted it. Wrapping a video you don't own would burn a viewer's name and IP onto someone else's content, and for a self-hosted tag it would break playback outright, so MediaShield declines rather than guesses.
+
+Two consequences worth planning around:
+
+- Adding the video to your MediaShield library is what switches automatic detection on for it. There is no "protect every embed on the site" mode.
+- An automatically detected embed uses your **site-wide** default protection level and ignores that video's per-video protection level. Place the video with the block or the shortcode if you need the per-video setting to apply.
+
+To keep a specific embed out of MediaShield's hands, give it a `data-ms-skip` attribute or an `ms-skip` class. Detection can be turned off entirely via the `mediashield_enable_output_buffer` filter (see the [developer hooks reference](../developer/hooks-filters-free.md)).

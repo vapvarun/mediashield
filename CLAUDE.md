@@ -4,7 +4,9 @@
 
 > **What does this plugin actually do for a buyer?** [`CAPABILITIES.md`](CAPABILITIES.md) — capability-level truth, verified against code, and the source of truth for store copy and docs. The manifest counts routes; CAPABILITIES says what they add up to and what is missing. Read it before planning any feature or writing any marketing claim.
 
-> **READ FIRST:** Load [`audit/manifest.summary.json`](audit/manifest.summary.json) first (~1.4 KB index) — drill into [`audit/manifest.json`](audit/manifest.json) only when a task touches a specific category. Manifest v2.2 — 23 REST routes (`mediashield/v1`, +`/wizard/complete`), 1 AJAX (`ms_dismiss_pro_notice`), 2 admin pages, 6 tables, 3 blocks, **3 shortcodes**, 3 cron jobs, 2 CPTs, 33 hooks (15 actions + 18 filters), 34 services, 34 settings (authoritative source: `array_keys( Settings::schema() )` — the manifest `settings[]` array is pending a `--refresh` and under-reports; trust the schema, not the array count), 1 capability (`upload_mediashield`), 2 WP-CLI commands (`mediashield scale`, `mediashield repair`). ✅ **Release-ready** per wppqa baseline 2026-05-26 — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
+> **READ FIRST:** Counts below are **verified against 1.3.0 source**, not read off the manifest. [`audit/manifest.summary.json`](audit/manifest.summary.json) still reports `version: 1.2.0` and was generated 2026-05-26 — **it is stale for 1.3.0** (it says 33 settings, 32 hooks fired, 2 cron, 1 WP-CLI; all wrong now). Use it as a category index and drill into [`audit/manifest.json`](audit/manifest.json) for detail, but **trust the code-verified figures here until `/wp-plugin-onboard --refresh` runs**.
+>
+> **23 REST routes** in `mediashield/v1` (incl. `/wizard/complete`); WP core adds 6 more `wp/v2` routes for the two CPTs. **1 AJAX** (`ms_dismiss_pro_notice`), **2 admin pages**, **6 tables**, **3 blocks**, **3 shortcodes**, **2 CPTs**, **3 cron jobs** (2 recurring: `ms_cleanup_inactive_sessions` hourly, `ms_archive_old_sessions` monthly; 1 one-off: `ms_restore_archived_sessions` — plus the bundled EDD SDK's weekly WP-Cron licence check), **44 hooks fired** (15 actions + 29 filters, verified by scanning `do_action`/`apply_filters` in `includes/` and `src/`, excluding docblocks) plus the JS-side `mediashield_admin_routes` `wp.hooks` filter, **34 settings** (authoritative source: `array_keys( Settings::schema() )`), **1 capability** (`upload_mediashield`), **2 WP-CLI commands** (`mediashield scale`, `mediashield repair`). Service count is a manifest-only concept and **has not been re-verified for 1.3.0** — do not quote the manifest's `34` as current. **Release-ready as of the 2026-05-26 wppqa baseline** — which was taken against 1.2.0 and has NOT been re-run for 1.3.0; treat it as "no known blockers carried forward", not as a 1.3.0 sign-off — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
 
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
@@ -91,6 +93,15 @@ includes/
   Admin/
     Menu.php                 Admin menu + SPA asset enqueue
     SetupWizard.php          First-activation redirect + wizard
+    HealthCheck.php          Site Health test (1.3.0) — fetches a real file from uploads/mediashield/ and reports whether the web server serves it directly. The shipped .htaccess deny rule is Apache-only; on nginx this is the only thing that tells the owner their videos are downloadable, and it supplies the nginx rule to paste.
+  Embed/
+    EmbedLink.php            Signed playback/embed tokens — token(), STREAM_TTL, mediashield_embed_url
+    EmbedPage.php            Standalone signed-embed page renderer
+  Integrations/
+    AdManagerBridge.php      WB Ad Manager bridge — break plan + creative selection for in-video ads
+    Learnomy.php             Learnomy LMS touchpoints
+  Support/
+    Icons.php                Inline Lucide SVG icon helper
 
 src/                         JS source (compiled to build/)
   admin/                     React admin SPA
@@ -119,12 +130,21 @@ src/                         JS source (compiled to build/)
     video/                   Video block (edit.js, index.js, view.js)
     playlist/                Playlist block (edit.js, index.js, view.js)
 
+src/CLI/
+  ScaleCommand.php           wp mediashield scale {seed,benchmark,teardown}
+  RepairCommand.php          wp mediashield repair bunny-urls (1.3.0) — dry-run by default
+
 assets/
   js/
     player-wrapper.js        Vanilla JS player detection + wrapping
     watermark.js             Dynamic watermark rendering
     tracker.js               Watch session heartbeat + progress
     protection.js            Right-click block, devtools detection
+    ad-breaks.js             In-video ad break playback engine
+    admin-video.js           Add New Video screen — file uploader + URL detection (1.3.0)
+    admin-notice.js          Pro upsell notice dismissal
+  vendor/
+    hls.min.js               Bundled hls.js 1.5.20 — enqueued only when a page carries an HLS source
   css/
     player.css               Player + watermark styles
 ```
@@ -136,7 +156,7 @@ assets/
 ### mediashield_video
 - **Slug:** `video`
 - **REST base:** `mediashield-videos`
-- **Supports:** title, editor, thumbnail, custom-fields
+- **Supports:** title, thumbnail, custom-fields (no `editor` — the video CPT has no content body)
 - **Meta fields:**
   - `_ms_platform` (string, default `self`) -- hosting platform
   - `_ms_platform_video_id` (string) -- external platform video ID
@@ -233,6 +253,13 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 |--------|-------|-------------|
 | GET | `/stream/{video_id}` | Authenticated streaming handoff (permission: `stream_permissions_check`); used to gate self-hosted media URLs. Accepts a signed `ms_token` for media elements, which cannot send `X-WP-Nonce`. |
 
+### Wizard
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/wizard/complete` | Marks the first-run setup wizard finished |
+
+That is 23 routes in `mediashield/v1`. Registering the two CPTs with `show_in_rest` adds 6 more under `wp/v2` (`mediashield-videos`, `mediashield-playlists`, and their autosave routes) — those are WordPress's, not ours, but they are live and permission-checked by WP core.
+
 ---
 
 ## Gutenberg Blocks
@@ -251,19 +278,23 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 - `[mediashield_playlist id=Y]` -- Render protected playlist for playlist CPT ID Y (delegates to `Player\PlaylistRenderer`)
 - `[mediashield_my_videos]` -- Render current user's watched videos grid
 
-Both video and playlist shortcodes return empty output and skip asset enqueue for invalid/missing/non-published IDs.
+Both video and playlist shortcodes return empty output for visitors on invalid/missing/non-published IDs, and skip asset enqueue; since 1.3.0 they render an explanatory notice to users who can `edit_posts` rather than blank space.
+
+A 4th shortcode, `[mediashield_upload]`, is registered by **Pro** — but only as a retirement stub. It renders nothing for visitors and an explanation for editors. It stays registered so WordPress does not print the literal `[mediashield_upload]` string on pages that still carry it. Inventory scans therefore report **4 shortcodes** across the pair; Free owns 3.
 
 ---
 
 ## WordPress Hooks
 
-### Actions
+Verified against 1.3.0 source (`do_action` / `apply_filters` in `includes/` and `src/`, docblock mentions excluded): **15 actions + 29 filters = 44 hooks fired by Free.** Pro fires 20 more of its own and re-applies `mediashield_enqueue_frontend`. Two further hooks are Action Scheduler *job* hooks fired by Pro (`mediashield_generate_pdf`, `mediashield_fire_webhook`), and `mediashield_admin_routes` is a JS-side `wp.hooks` filter, not a PHP one.
+
+### Actions (15)
 | Hook | Parameters | Description |
 |------|------------|-------------|
-| `mediashield_loaded` | (none) | Fired after core plugin fully loaded |
-| `mediashield_session_started` | $session_id, $video_id, $user_id, $ip | New watch session created |
+| `mediashield_loaded` | (none) | Fired after core plugin fully loaded. Note: **zero subscribers** — Pro boots on `plugins_loaded:20`, not on this. |
+| `mediashield_session_started` | $session_id, $video_id, $user_id, $ip | New watch session created. Also fires for guest sessions with `$user_id = 0`. |
 | `mediashield_session_ended` | $session_id, $video_id, $user_id | Watch session finalized |
-| `mediashield_concurrent_limit_reached` | $user_id, $video_id, $active_count, $max | Too many concurrent streams |
+| `mediashield_concurrent_limit_reached` | $user_id, $video_id, $active_count, $max | Too many concurrent streams (logged-in users only; guests are exempt) |
 | `mediashield_user_access_revoked` | $user_id, $count | All sessions killed for user |
 | `mediashield_milestone_reached` | $user_id, $video_id, $pct, $session_id | Any milestone hit |
 | `mediashield_milestone_{pct}` | $user_id, $video_id | Specific milestone (25/50/75/100) |
@@ -271,12 +302,16 @@ Both video and playlist shortcodes return empty output and skip asset enqueue fo
 | `mediashield_upload_complete` | $video_id, $driver_name, $result | Upload finished successfully |
 | `mediashield_upload_failed` | $driver, $error, $options | Upload driver returned an error |
 | `mediashield_privacy_before_erase` | $email, $user, $page, $counters | Fired before per-user GDPR erase begins so extensions can log/cleanup adjacent data |
+| `mediashield_before_player` | $video_id | Immediately before the protected player container is emitted (`Renderer.php:225`) |
+| `mediashield_after_player` | $video_id | Immediately after the protected player container is emitted (`Renderer.php:378`) |
+| `mediashield_needs_shaka` | (none) | Signals the page carries an adaptive-streaming source. `Core\Assets` listens and enqueues the bundled `hls.js`. Fired from both `Renderer.php:215` and `PlayerWrapper.php:181`. |
+| `mediashield_devtools_detected` | $context | Client devtools/right-click beacon received (`ProtectionController.php:154`). Pro logs it to `ms_activity_alerts`. |
 
-### Filters
+### Filters (29)
 | Hook | Parameters | Description |
 |------|------------|-------------|
 | `mediashield_can_watch` | $result, $video_id, $user_id | Access control gate (return WP_Error to deny) |
-| `mediashield_watermark_config` | $config, $video_id, $user_id | Watermark overlay settings |
+| `mediashield_watermark_config` | $config, $video_id, $user_id | Watermark overlay settings (`SessionController.php:311`) |
 | `mediashield_upload_drivers` | $drivers | Registered upload driver classes |
 | `mediashield_player_type` | $type, $video_id | Player type string (standard/drm) |
 | `mediashield_milestone_thresholds` | $thresholds, $video_id | Array of milestone percentages |
@@ -284,9 +319,31 @@ Both video and playlist shortcodes return empty output and skip asset enqueue fo
 | `mediashield_settings_update` | $data | PUT /settings input |
 | `mediashield_trusted_ip_headers` | $headers | IP detection header names |
 | `mediashield_allow_empty_referer` | $allow | When the allowed-domain whitelist is active, decides whether to permit playback for requests with no Referer header. Default `false` (deny). |
-| `mediashield_protection_levels` | $levels, $post, $selected | Protection levels offered on the video edit screen. Pro registers `drm` here. |
+| `mediashield_protection_levels` | $levels, $post, $selected | Protection levels offered on the video edit screen. Pro registers `drm` here (only once `ms_drm_method` is set). |
 | `mediashield_frontend_config` | $config | Frontend localized config payload emitted as `window.mediashieldConfig`. Pro hooks this to inject premium player options. |
 | `mediashield_privacy_erase_result` | $result, $email, $user, $page | Final GDPR erase report shape — extensions can append `items_removed` or `messages` before WordPress consumes the result |
+| `mediashield_privacy_export_result` | $result, $email, $user, $page | Final GDPR export payload (`PrivacyExporter.php:122`) |
+| `mediashield_enable_output_buffer` | $enable | Return false to skip the output-buffer video scan entirely (`PlayerWrapper.php:51`) |
+| `mediashield_enqueue_frontend` | $register | Return false to prevent frontend asset registration (`Assets.php:81`). Pro applies the same filter in its own enqueue path. |
+| `mediashield_player_access_type` | $access_type, $video_id | Per-video access-type slug so extensions can declare an alternative gate flow (`Renderer.php:249`) |
+| `mediashield_player_classes` | $classes, $video_id | CSS classes on the player container (`Renderer.php:235`) |
+| `mediashield_player_html` | $html, $video_id, $context | Final protected-player markup (`Renderer.php:361`) |
+| `mediashield_unprotected_player_html` | $html, $video_id, $platform | Markup used while MediaShield is switched off (`Renderer.php:107`) |
+| `mediashield_protection_config` | $config | Right-click / keyboard / devtools client config (`Protection.php:54`) |
+| `mediashield_restore_archive_batch_size` | $batch | Rows per pass of the one-off archive restore job. Default 2000. (`Cleanup.php:400`) |
+| `mediashield_session_allow_anonymous_start` | $allow, $video_id, $access_type, $request | Whether an anonymous `POST /session/start` may reach the handler. Defaults true when `ms_require_login` is off or `_ms_access_type` is set. (`SessionController.php:220`) |
+| `mediashield_shortcode_source_url` | $url, $video_id, $atts | Override the source URL a `[mediashield]` shortcode resolves to (`Shortcode.php:61`) |
+| `mediashield_stored_filename` | $obscured, $original_name | The randomised on-disk filename for a self-hosted upload (`SelfHosted.php:144`) |
+| `mediashield_video_ad_breaks` | $breaks, $video_id, $duration | In-video ad breaks. Populated by the WB Ad Manager bridge; empty when no ad source is active. (`Renderer.php:263`) |
+| `mediashield_video_ads` | $ads, $video_id, $duration | Ad creatives available for this video (`AdManagerBridge.php:104`) |
+| `mediashield_ad_break_plan` | $plan, $video_id, $duration | Which break slots (pre / mid count / post) to plan (`AdManagerBridge.php:120`) |
+| `mediashield_video_stream_url` | $stream_url, $video_id, $platform, $platform_video_id | Resolve a platform stream URL. Pro derives the Bunny HLS playlist here. (`SessionController.php:371`, `Renderer.php`) |
+| `mediashield_embed_url` | $url, $video_id, $user_id | Signed standalone embed URL (`EmbedLink.php:79`) |
+
+### JavaScript (`wp.hooks`)
+| Hook | Where | Description |
+|------|-------|-------------|
+| `mediashield_admin_routes` | `src/admin/App.js:116` | Adds pages to the admin SPA hash router. This is how Pro injects its screens. |
 
 ---
 
@@ -295,8 +352,13 @@ Both video and playlist shortcodes return empty output and skip asset enqueue fo
 ### Vanilla JS (assets/js/) -- no build required
 - **player-wrapper.js** -- Detects video/iframe elements, wraps with protection container
 - **watermark.js** -- Renders dynamic user watermark overlay (email/name + timestamp)
-- **tracker.js** -- Sends heartbeat POST to /session/heartbeat every 30s
+- **tracker.js** -- Sends heartbeat POST to /session/heartbeat every 30s (`config.interval`, default 30000ms)
 - **protection.js** -- Disables right-click context menu, detects devtools open
+- **ad-breaks.js** -- Plays pre/mid/post-roll breaks supplied by the WB Ad Manager bridge
+- **admin-video.js** -- Add New Video uploader + platform-URL detection (admin only)
+- **admin-notice.js** -- Pro upsell notice dismissal (admin only)
+
+**Player i18n gap:** none of these call `wp.i18n`, and none is passed to `wp_set_script_translations()` — only the admin SPA handle is (`Menu.php:126`). The student-facing player is untranslated. See `CAPABILITIES.md`.
 
 ### React (src/) -- built via webpack
 - **Admin SPA** (src/admin/) -- React app with hash routing (`#/dashboard`, `#/videos`, etc.)
@@ -313,7 +375,7 @@ webpack.config.js entry points:
 - `blocks/playlist/index` + `blocks/playlist/view`
 - `admin/index`
 
-Dependencies: chart.js (analytics charts), shaka-player (DRM playback)
+Dependencies: chart.js (analytics charts), lucide-react (admin icons). `shaka-player` is still listed in `package.json` but **is not imported anywhere in `src/` and is not a webpack entry** — adaptive playback ships as the pre-built `assets/vendor/hls.min.js`, loaded by handle, not by the bundler. Treat the shaka-player dependency as removable dead weight.
 
 ---
 
@@ -373,7 +435,16 @@ Adding a new option:
 2. Bump `MEDIASHIELD_DB_VERSION` in `mediashield.php` so existing installs pick it up via `Migrator::run()` → `Settings::seed_defaults()`.
 3. (If exposed to JS) reference it from `Settings::frontend_config()`.
 
-Schema covers: `ms_enabled`, `ms_default_protection`, `ms_require_login`, `ms_watermark_opacity`, `ms_watermark_color`, `ms_watermark_swap_interval`, `ms_allowed_domains`, `ms_max_concurrent_streams`, `ms_session_retention_months`, `ms_show_badge`, `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`, `ms_player_speed_control`, `ms_player_sticky`, `ms_player_keyboard`, `ms_player_resume`, `ms_player_endscreen`, `ms_player_endscreen_text`, `ms_player_endscreen_url`, `ms_block_right_click`, `ms_block_keyboard`, `ms_hide_source`, `ms_detect_devtools`, `ms_pause_on_devtools`, `ms_devtools_title`, `ms_devtools_message`.
+Schema covers **34 keys** (this list is the full set — verified against `Settings::schema()` at 1.3.0):
+
+- **Core:** `ms_enabled`, `ms_default_protection`, `ms_require_login`, `ms_allowed_domains`, `ms_max_concurrent_streams`, `ms_session_retention_months`, `ms_show_badge`
+- **Watermark:** `ms_watermark_opacity`, `ms_watermark_color`, `ms_watermark_swap_interval`
+- **Messages:** `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`
+- **Player:** `ms_player_speed_control`, `ms_player_prevent_forward_seek`, `ms_player_sticky`, `ms_player_keyboard`, `ms_player_resume`, `ms_player_endscreen`, `ms_player_endscreen_text`, `ms_player_endscreen_url`
+- **Ads:** `ms_ads_enabled`, `ms_ads_require_full_view`, `ms_ads_skip_after`, `ms_ads_preroll`, `ms_ads_midroll_count`, `ms_ads_show_markers`
+- **Protection:** `ms_block_right_click`, `ms_block_keyboard`, `ms_hide_source`, `ms_detect_devtools`, `ms_pause_on_devtools`, `ms_devtools_title`, `ms_devtools_message`
+
+Removed in 1.3.0 (do not re-add): `ms_custom_url_patterns`, `ms_max_upload_size`. `ms_session_retention_months` was added in 1.3.0 and **defaults to `0` = keep everything**; archiving is opt-in.
 
 Pro extends both the GET (`mediashield_settings_response`) and PUT (`mediashield_settings_update`) paths via filter callbacks; Pro callbacks `unset()` their own keys from `$data` so the free SettingsController loop ignores them.
 
@@ -499,7 +570,7 @@ Tighten budgets when refactoring a hot path. Loosen only with a written rational
 | Hooks & Filters (Pro) | `docs/developer/hooks-filters-pro.md` | Pro hooks fired + free hooks Pro consumes; deprecation shims documented |
 | Settings Reference | `docs/developer/settings-reference.md` | Every `ms_*` option key — type, default, validator, sanitizer, where used |
 | REST API | `docs/developer/rest-api.md` | All `mediashield/v1` + `mediashield-pro/v1` endpoints — method, auth, request, response |
-| Database Tables | `docs/developer/database-tables.md` | Schema for all 14 tables (6 free + 8 pro) — columns, indexes, cleanup behaviour |
+| Database Tables | `docs/developer/database-tables.md` | Schema for all **13** tables (6 free + 7 pro) — columns, indexes, cleanup behaviour. Was 14 (6 + 8); Pro's `ms_email_captures` went with the email gate. |
 | Post Meta Reference | `docs/developer/post-meta-reference.md` | Every `_ms_*` post meta key on the `mediashield_video` + `mediashield_playlist` CPTs |
 | Extension Architecture | `docs/developer/extension-architecture.md` | Filter chain order, priorities, `mediashield_lms_adapters`, SlotFill, upload drivers, Free/Pro boot |
 | Cron & Background Jobs | `docs/developer/cron-and-background-jobs.md` | Every cron hook + Action Scheduler job — interval, purpose, debug |
@@ -532,6 +603,8 @@ Tighten budgets when refactoring a hot path. Loosen only with a written rational
 
 | Date | Files | Summary |
 |------|-------|---------|
+| 2026-08-25 | CLAUDE.md, CAPABILITIES.md, readme.txt | Top-level doc audit against 1.3.0 source. Corrected the READ-FIRST counts (hooks 33 -> 44, cron restated, manifest flagged stale at 1.2.0), rewrote both hook tables from a source scan, added the `/wizard/complete` route, the missing `includes/` directories (`Admin/HealthCheck`, `Embed/`, `Integrations/`, `Support/`), `src/CLI/`, the new `assets/js` + `assets/vendor` files, and the full 34-key settings list. Fixed the video CPT `supports` (no `editor`) and the developer-docs table count (14 -> 13). |
+| 2026-08-23 | includes/, src/, assets/, readme.txt | 1.3.0. Admin uploader at Videos > Add New; `/upload/init` file-typing fixed. Require Login honoured when off (client + `session_permissions_check`), guests get real sessions with recorded views. Hide Video Source URL now works for self-hosted via `Protection::filter_player_urls()` + signed `/stream/{id}`. Guest session dedup + concurrency split out of the `user_id = 0` bucket. `ms_session_retention_months` (default 0 = keep everything) replaces the automatic 24-month archive; previously archived rows are restored on upgrade. GDPR erase + export now cover `ms_watch_sessions_archive`. `Admin\HealthCheck` Site Health test for direct file access on nginx; stored filenames carry a random token (`mediashield_stored_filename`). Added `mediashield_protection_levels`; `wp mediashield repair bunny-urls`; bundled `hls.js` now actually enqueued. |
 | 2026-07-17 | includes/Player/Renderer.php, includes/Player/PlayerWrapper.php, includes/Core/Settings.php, src/admin/pages/Settings.js, src/admin/wizard/steps/PlatformStep.js, docs/ | Usability audit fallout. Renderer now emits an editor-only notice for a missing/unpublished/sourceless video instead of blank space (propagates PlaylistRenderer::notice). Fixed wizard copy that promised pasted embeds are protected — untrue since the card 10033964248 fix. Removed `ms_custom_url_patterns`: the same fix made it unable to match anything, and it demanded regex, dropped any pattern with a slash, and could white-screen the frontend via ReDoS. Dropped the unhonoured "0 = static" watermark claim. Settings 23→22. |
 | 2026-07-17 | includes/Core/Settings.php, includes/Upload/Drivers/SelfHosted.php, includes/REST/UploadController.php, src/admin/pages/Settings.js, uninstall.php, docs/, audit/ | Removed the `ms_max_upload_size` setting. It was megabytes everywhere except the check that enforced it, so a default install advertised 500 MB and rejected anything over 500 bytes. WordPress enforces the server limit before MediaShield sees the file, so the setting could only ever restrict further — the question is gone, not repaired. Settings 24→23. |
 | 2026-07-17 | includes/Player/PlayerWrapper.php, includes/Player/Renderer.php, includes/Player/PlaylistRenderer.php | Card 10033964248 — only wrap videos MediaShield manages (untracked embeds now pass through untouched; self-hosted matched on source URL); `ms_enabled` off now renders plain playable markup instead of an empty shell. Added `mediashield_unprotected_player_html` filter + `Renderer::render_unprotected()`. Removed dead `data-ms-untracked`. Hooks 31→32. |

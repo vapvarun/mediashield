@@ -29,27 +29,17 @@ This guide covers migration from the common alternatives.
 4. Test each page. The player now shows MediaShield branding and watermark.
 5. Deactivate Presto once all videos are migrated.
 
-**Bulk migration for 50+ videos:** use WP-CLI or a custom script:
+**Bulk migration for 50+ videos.** The free plugin has no bulk importer, and there is no supported one-liner for this. Your options, best first:
 
-```php
-// Pseudo-code. Adapt to Presto's post meta keys.
-$presto_videos = get_posts( array( 'post_type' => 'pp_video_block', 'numberposts' => -1 ) );
-foreach ( $presto_videos as $pv ) {
-    $url = get_post_meta( $pv->ID, '_presto_source', true );
-    $ms_id = wp_insert_post( array(
-        'post_type'   => 'mediashield_video',
-        'post_title'  => $pv->post_title,
-        'post_status' => 'publish',
-    ) );
-    update_post_meta( $ms_id, '_ms_source_url', $url );
-    // Detect platform using MediaShield's detection helper.
-}
-```
+* **If your videos are on Bunny, YouTube, Vimeo or Wistia, use Pro.** Its platform browsers list everything in your account and import in bulk, filling in the platform and video ID correctly. This is the only route that scales without hand-written code.
+* **Otherwise, add them through Videos > Add New.** Pasting the URL there is what works out the platform and extracts the video ID; a script that only copies the source address across produces records MediaShield cannot play or match to an embed, because the platform and video ID are still empty. If you do script it, you must set the platform and the platform's video ID yourself as well -- budget for checking every record afterwards.
+
+Either way, plan on spot-checking the migrated videos on the frontend before you switch Presto off.
 
 **What Presto does that we don't:**
 
 * Gutenberg-native chapter markers and custom player skinning beyond our basic overrides.
-* Transcript overlays (planned for MediaShield 1.1).
+* Transcript overlays. MediaShield has no transcript feature, in free or Pro, and none is scheduled.
 
 If those are critical, keep Presto for specific videos and run them without MediaShield protection.
 
@@ -69,9 +59,9 @@ If those are critical, keep Presto for specific videos and run them without Medi
 
 1. Be honest about your DRM need. Read `docs/pro/drm-types-explained.md`. If ClearKey is enough for your threat model, continue. If not, stay with VdoCipher.
 2. Export your videos from VdoCipher. If your plan allows, download originals from the VdoCipher dashboard. Alternative: move the video files to Bunny Stream, which is cheaper and works with MediaShield Pro DRM.
-3. Connect Bunny Stream to MediaShield Pro. Admin, Platforms, Add, Bunny Stream.
-4. Upload videos to Bunny (MediaShield Pro admin, Platforms, Bunny, Browse, Upload).
-5. Enable DRM. Admin, DRM, Method, Bunny Stream cloud DRM.
+3. Connect Bunny Stream to MediaShield Pro under **MediaShield > Platforms**.
+4. Upload or import your videos from **MediaShield > Bunny Library**.
+5. Enable DRM under **MediaShield > DRM** and set Encryption Method to **Cloud - Bunny Stream**.
 6. Replace embed codes in your content with `[mediashield id=X]` shortcodes.
 7. Cancel VdoCipher after 30 days of clean MediaShield operation. Keep it as fallback during cutover.
 
@@ -90,7 +80,7 @@ If those are critical, keep Presto for specific videos and run them without Medi
   ffmpeg -i source.cspv -c:v libx264 -c:a aac -f mp4 output.mp4
   ```
   CopySafe's `.cspv` can't be decoded by ffmpeg directly. You need the original source files. Contact CopySafe support for "uncrypted exports" if they exist.
-* You lose CopySafe's proprietary offline download protection. MediaShield Pro offers PWA offline with ClearKey as a replacement (not identical; read `docs/pro/drm-types-explained.md`).
+* You lose CopySafe's offline download feature and MediaShield has nothing that replaces it. Pro once shipped an offline mode, but it was removed in Pro 1.2.0; MediaShield is online playback only. If offline viewing is a requirement, MediaShield is not the right move.
 
 **Migration steps:**
 
@@ -120,10 +110,12 @@ The easiest migration. You've been embedding videos with raw iframe code or the 
 
 1. Install MediaShield (free).
 2. Run the setup wizard.
-3. **Option A, manual:** replace your embed blocks with MediaShield Video blocks or `[mediashield id=X]` shortcodes.
-4. **Option B, automatic:** leave existing embeds alone. MediaShield's output buffer auto-detects and wraps them. Slower than explicit shortcodes but requires zero content changes.
+3. **Add each video to MediaShield.** There is no way to skip this. MediaShield protects the videos in its library and leaves every other embed untouched, so a video that isn't in the library gets no protection at all -- no watermark, no login gate, no tracking.
+4. Then choose how it appears on the page:
+   * **Option A, replace the embed:** swap your embed blocks for MediaShield Video blocks or `[mediashield id=X]` shortcodes. More editing, but the video's own per-video settings apply.
+   * **Option B, leave the embed alone:** once the video is in the library, MediaShield recognises the existing embed on the page and takes it over, with no content changes. The catch is that videos handled this way use your **site-wide** default protection level and ignore the per-video override.
 
-Option B is often enough. You lose the per-video protection-level override (since there's no MediaShield video record), but all other protection applies.
+Earlier versions of this guide said you could skip step 3 and let MediaShield protect embeds it had no record of. That was never how it worked -- an unrecognised embed is passed through untouched.
 
 ---
 

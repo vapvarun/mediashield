@@ -29,32 +29,41 @@ When MediaShield activates, it:
 
 - Creates 6 database tables for sessions, milestones, tags, and playlists
 - Seeds default settings
-- Registers the MediaShield admin menu (7 pages)
+- Adds a single top-level **MediaShield** menu to the admin sidebar
+- Gives the Administrator role the `upload_mediashield` capability
 - Redirects to the setup wizard on first activation
 
-The 6 tables are created automatically. You don't need to manage them - they're cleaned up on uninstall.
+The 6 tables are created automatically. You don't need to manage them - they're removed when you delete the plugin.
 
 ## After installation
 
-After activation, you'll see **MediaShield** in the WordPress admin sidebar with seven sections:
+MediaShield adds one item to the WordPress admin sidebar. Opening it loads a single-page admin app whose own sidebar has seven sections:
 
-| Page | Purpose |
-|------|---------|
+| Section | Purpose |
+|---------|---------|
 | Dashboard | Overview stats and activity chart |
 | Videos | Your video library |
 | Playlists | Grouped video sequences |
-| Tags | Tag dictionary for milestones |
-| Students | Per-user watch progress |
-| Milestones | Completion percentage settings |
+| Viewers | Per-user watch progress |
+| Tags | Tag dictionary for organising videos |
+| Milestones | Log of milestones viewers have reached |
 | Settings | All plugin configuration |
 
+Videos and playlists are WordPress custom post types, but they have no menu items of their own. You reach their edit screens from the Videos and Playlists sections.
+
 The setup wizard launches automatically on first activation. Follow the [Setup Wizard guide](03-setup-wizard.md) to complete initial configuration.
+
+### Check Site Health if you host video files yourself
+
+If you plan to upload video files to your own server, open **Tools > Site Health** after installing. MediaShield adds a check that requests one of your own stored video files over HTTP and reports what the server actually did. On Apache the bundled `.htaccess` rule blocks that request; on nginx it does not, and the check gives you the rule to add. Videos hosted on YouTube, Vimeo, Wistia, or Bunny are unaffected.
 
 ## Upgrading
 
 MediaShield includes an automatic migration system. When you update the plugin, database schema changes are applied on the next page load. No manual steps needed.
 
+Upgrading to 1.3.0 also queues a one-off background job that moves previously archived watch sessions back into the live table, so history that earlier versions archived out of reach reappears in your reports. It runs in batches and reschedules itself until finished.
+
 ## Uninstalling
 
-- **Deactivating** the plugin clears scheduled background jobs but preserves all data and settings.
-- **Deleting** the plugin (Plugins > Delete) drops all 6 tables, removes all MediaShield options, and cleans up role capabilities. If MediaShield Pro is still active, Pro data is preserved separately.
+- **Deactivating** the plugin unschedules its background jobs but preserves all data, settings, videos, and playlists.
+- **Deleting** the plugin (Plugins > Delete) is destructive. It drops all 6 tables, **permanently deletes every MediaShield video and playlist post**, removes the `upload_mediashield` capability from all roles, and clears MediaShield's options and transients. Options and transients are left in place when MediaShield Pro is still active, so Pro keeps working; the tables and posts are removed either way. Export anything you want to keep before deleting.

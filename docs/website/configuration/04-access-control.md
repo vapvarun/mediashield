@@ -1,44 +1,70 @@
 # Access Control
 
-MediaShield provides several layers of access control to determine who can watch your videos and under what conditions.
+MediaShield decides who can watch a video with a single check that runs when a watch session starts, and again on every request for a self-hosted file. The checks run in this order:
+
+1. **Administrators pass.** Anyone with `manage_options` is never blocked.
+2. **Login gate** - the Require Login setting.
+3. **Per-video role** - the video's Restrict to Role setting.
+4. **Domain whitelist** - the Allowed Domains setting.
+5. **Custom rules** - the `mediashield_can_watch` filter, where membership plugins, Pro's LMS adapters, and your own code plug in.
 
 ## Login requirement
 
-**Require Login** (Settings > General) forces all viewers to be logged in before any video plays. When a visitor hits a protected video without being logged in, they see a login overlay with configurable text and a button.
+**Require Login** (Settings > General) is on by default. While it is on, visitors who are not logged in see a login overlay instead of the player.
 
-Customize the overlay at Settings > Access Control:
+Turn it off and guests can watch: the player asks the server, the server allows it, and the watch session is recorded like any other. Before 1.3.0 this setting did nothing when off - the player refused guests locally before the server was ever consulted - so if you tried it in an earlier version and nothing changed, that was the bug, not your configuration.
 
-- **Login Overlay Text** - the message shown to visitors. Default: "Please log in to watch this video."
-- **Login Button Text** - the button label. Default: "Log In."
+Customise the overlay under Settings > Login & Access Messages:
+
+- **Login Overlay Text** - the message shown to visitors. Default: "Please log in to watch this video"
+- **Login Button Text** - the button label. Default: "Log In"
 
 ## Per-video role restriction
 
-Each video in your library has an optional **Access Role** field. When set, only users with that WordPress role (or higher) can watch the video. Logged-in users who don't qualify see the Access Denied text.
+Each video has an optional **Restrict to Role** setting. When set, only users who actually hold that role can watch.
 
-**Access Denied Text** (Settings > Access Control) - the message shown when a logged-in user doesn't have the required role. Default: "You do not have access to this video."
+The match is exact, not hierarchical. A video restricted to `subscriber` refuses an `editor`, because an editor does not hold the subscriber role. Administrators are the one exception and always pass. Logged-out visitors are refused with the login overlay text, since a guest cannot hold any role.
 
-Leave the Access Role field blank to allow all logged-in users.
+Users who are signed in but don't hold the role see the **Access Denied Text** (Settings > Login & Access Messages). Default: "You do not have access to this video".
+
+Leave the setting on "Any logged-in user" to allow every signed-in viewer.
 
 ## Concurrent stream limits
 
-**Max Concurrent Streams** - how many devices one account can actively watch on at the same time. Default is 2.
+**Max Concurrent Streams** (Settings > Concurrent Streams) - how many devices one account can actively watch on at the same time. Default is 2.
 
-MediaShield tracks active sessions via heartbeat pings every 30 seconds. When a viewer tries to start a new session beyond the limit, the request is denied. The `mediashield_concurrent_limit_reached` action fires so you can hook additional logic (such as logging or alerting).
+The player sends a heartbeat every 30 seconds. A session that has not sent one for 5 minutes stops counting toward the limit, so a viewer who closes their laptop is not locked out for long. An hourly background job then marks sessions with no heartbeat for 10 minutes as finished, which is what clears them out of the Active Viewers count.
 
-When a viewer closes a browser tab, MediaShield uses the browser's `sendBeacon` API to end the session immediately. If the beacon fails (browser crash, for example), the session is automatically expired after 5 minutes with no heartbeat.
+When a viewer tries to start a stream beyond the limit, the request is refused with "Too many active streams. Please close another video first." The `mediashield_concurrent_limit_reached` action fires at the same moment, so you can hook logging or alerting.
 
-Admins can revoke all active sessions for a specific user from **MediaShield > Students**. This immediately terminates every active stream for that account.
+When a viewer closes a browser tab, MediaShield uses the browser's `sendBeacon` API to end the session immediately. If the beacon never arrives (a browser crash, for example) the 5-minute rule above covers it.
+
+Guests are never counted. With no account there is nothing to share, and counting them would make every anonymous visitor on the site compete for the same two slots.
+
+### Revoking a user's sessions
+
+MediaShield can terminate every active session for one account, which fires `mediashield_user_access_revoked` and immediately breaks their streams.
+
+There is no button for it in the admin in this release. It is available as an authenticated REST call for administrators:
+
+```
+POST /wp-json/mediashield/v1/session/revoke-user
+{ "user_id": 42 }
+```
+
+Anything that can make an authenticated WordPress REST request as an administrator can trigger it - WP-CLI, a small admin snippet, or your own tooling.
 
 ## Domain whitelist
 
 **Allowed Domains** - a comma-separated list of domains that may embed your videos. Leave empty to allow embeds from any domain.
 
-When a domain list is set:
-- Requests from whitelisted domains are allowed
-- Requests from non-listed domains are denied
-- Requests with a missing Referer header are denied by default (can be changed with the `mediashield_allow_empty_referer` developer filter)
+When a list is set:
+- Requests from your own site's domain are always allowed
+- Requests from a listed domain, or any of its subdomains, are allowed
+- Requests from any other domain are denied with the Access Denied text
+- Requests with a missing Referer header are denied by default (change this with the `mediashield_allow_empty_referer` filter)
 
-This prevents your video embeds from being placed on external sites without permission.
+This prevents your video embeds from being placed on external sites without permission. It is a Referer check, so treat it as a courtesy fence rather than a hard boundary - a Referer header can be forged.
 
 ## Membership and LMS integrations
 

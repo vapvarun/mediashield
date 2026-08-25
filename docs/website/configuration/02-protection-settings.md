@@ -1,44 +1,56 @@
 # Protection Settings
 
-The Protection Controls section of **MediaShield > Settings** governs the technical layer that runs in the browser while a video is playing.
+The Protection section of **MediaShield > Settings** governs the technical layer that runs in the browser while a video is playing.
 
 ## Protection levels
 
-Before tuning individual controls, set the right protection level. Levels are cumulative - each includes everything below it.
+Before tuning individual controls, set the right protection level. The levels are not a simple ladder of extras - each one changes what the player does:
 
-| Level | What it includes |
-|-------|-----------------|
-| None | No protection. Videos play as normal embeds. |
-| Basic | Right-click disabled. Source URL hidden from page source. |
-| Standard | Everything in Basic, plus dynamic watermark and developer-tools detection. |
-| Strict | Everything in Standard, plus keyboard shortcut blocking and fullscreen watermark. |
+| Level | What happens |
+|-------|-------------|
+| None | Free preview. No login gate, no watermark, no session tracking. Player features (speed, resume, sticky, end screen) still work. |
+| Basic | Login gate plus the protection controls below. No watermark, and no session tracking or milestones, because no watch session is started. |
+| Standard | Login gate, watermark, session tracking, and milestones. |
+| Strict | Everything in Standard, and forces developer-tools detection, pause-on-detection, and source-URL hiding on for that video even when those toggles are off globally. |
 
-Set the default level under General Settings. Override it per video on the video edit screen.
+The important one to know is Basic: it protects the player but records nothing. If you want analytics for a video, use Standard or Strict.
 
-## Protection Controls settings
+Set the default level under General. Override it per video on the video edit screen.
 
-**Block Right-Click** - Disables the browser context menu over the player so viewers can't use "Save video as." Works at Basic level and above.
+## Protection controls
 
-**Block Keyboard Shortcuts** - Disables common browser shortcuts like Ctrl+S (Save) and Ctrl+U (View Source) while the player is focused. Off by default. Enable on Strict sites.
+These apply to every player except those set to None.
 
-**Hide Source URL** - Moves the raw video file address out of the visible page source. This is not a DRM boundary - a determined viewer can still find the URL with browser developer tools. It stops casual scraping, which is the right goal for this feature. Leave it on unless you have a specific reason not to.
+**Block Right-Click** - Disables the browser context menu over the player so viewers can't use "Save video as". On by default.
 
-**Detect Developer Tools** - Detects when a viewer opens browser developer tools while watching. Uses timing and size heuristics. On by default.
+**Block Save Shortcut (Ctrl+S / Cmd+S)** - Intercepts the save shortcut when the keypress happens inside a protected player. Off by default. This is the only shortcut it blocks; it does not intercept View Source, print, or developer-tools shortcuts, because browsers do not let a page do that reliably.
 
-**Pause on Developer Tools** - Pauses the video automatically when developer tools are detected. Off by default. Enable if you want to interrupt playback as a deterrent.
+**Hide Video Source URL** - On by default, and **self-hosted video only**.
 
-**Developer Tools Overlay Title** - The heading shown on the overlay when developer tools are detected. Default: "Developer Tools Detected". Edit to match your site's tone.
+When on, MediaShield stops printing the file's own address in the page and points the player at `/wp-json/mediashield/v1/stream/<id>` instead. That endpoint runs the same access check as the player on every request, including every seek, so a URL copied out of the page is useless to somebody without access. The URL carries a signed token naming the viewer, because a `<video>` element cannot send an authentication header.
 
-**Developer Tools Overlay Message** - The body text below the heading on the overlay.
+It does nothing for YouTube, Vimeo, Wistia, or Bunny embeds, and the setting says so in the admin. Those play in the provider's iframe, whose address has to contain the provider's video ID for playback to work at all. Blanking it would break the video and protect nothing.
 
-## What protection cannot do
+If you upgraded: before 1.3.0 this setting was cosmetic. The server printed the file URL into the player markup and the JavaScript stripped it afterwards, so View Source showed the address instantly. It hid nothing from anyone who looked.
 
-Developer-tools detection fires a `mediashield_devtools_detected` server-side action. Pro logs these as suspicious activity alerts. Free users can hook this action for custom logging.
+**Detect Developer Tools** - Detects when a viewer opens browser developer tools while watching, using window-size delta and debugger-timing heuristics. On by default.
 
-Detection is disabled intentionally on touch devices and small screens (under 1024 px wide) to avoid false positives from on-screen keyboards and device orientation changes.
+**Pause Video When Detected** - Pauses playback and shows an overlay when developer tools are detected. Off by default; detection is recorded either way. Videos set to Strict force this on.
 
-No combination of these settings blocks screen recording. A viewer can always record the screen with a phone camera or system screen recorder. The watermark makes any recording traceable - that is the correct deterrence model. For a full explanation, see the Protection Philosophy section.
+**Overlay Title** and **Overlay Message** - The heading and body of that overlay. Defaults: "Developer Tools Detected" and "Please close developer tools to continue watching this video."
+
+## What detection does and does not do
+
+A detection sends a beacon to `POST /mediashield/v1/protection/devtools-event`, which writes an entry to the PHP error log and fires the `mediashield_devtools_detected` action. Pro turns those into suspicious activity alerts; on free you can hook the action for your own logging. There is no devtools report in the free admin.
+
+The beacon is rate limited to one event per user per hour per IP, so a viewer who opens and closes devtools repeatedly does not flood your log.
+
+Detection is skipped on touch devices and on screens narrower than 1024 px, to avoid false positives from on-screen keyboards and orientation changes.
+
+No combination of these settings blocks screen recording. A viewer can always record the screen with a phone camera or a system screen recorder. The watermark makes any recording traceable - that is the correct deterrence model. See [Watermarks](../using-mediashield/01-watermarks.md) and "What MediaShield does not promise" in the [Introduction](../getting-started/01-introduction.md).
 
 ## Per-video overrides
 
-Every protection level and player control can be overridden per video. Open the video edit screen and look for the protection and player sections. The per-video value wins over the global default.
+Protection level and the player controls can be set per video on the video edit screen, and the per-video value wins over the global default.
+
+One exception worth knowing: MediaShield also wraps video embeds it finds in your page output automatically. Those auto-wrapped players use the **site-wide** default protection level, not the video's own. If a specific video needs its own level, embed it with the `[mediashield id=X]` shortcode or the MediaShield Video block, which do respect it.

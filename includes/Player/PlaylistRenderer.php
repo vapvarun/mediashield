@@ -63,8 +63,18 @@ class PlaylistRenderer {
 
 		$first             = $items[0];
 		$first_platform    = $first->platform ? $first->platform : 'self';
-		$first_source_url  = $first->source_url ? $first->source_url : '';
 		$first_protection  = $first->protection_level ? $first->protection_level : 'standard';
+
+		// Hide Video Source URL applies to the opening video too, not just the
+		// sidebar list. Both are on this page, so missing either one leaks the
+		// file address the setting exists to keep out of the markup.
+		$first_urls        = Protection::filter_player_urls(
+			(int) $first->video_id,
+			(string) $first_platform,
+			(string) ( $first->source_url ? $first->source_url : '' ),
+			''
+		);
+		$first_source_url  = '' !== $first_urls['source_url'] ? $first_urls['source_url'] : $first_urls['stream_url'];
 		$first_player_type = apply_filters( 'mediashield_player_type', 'standard', (int) $first->video_id );
 
 		// If the caller didn't pass block wrapper attributes, build the same
@@ -118,10 +128,25 @@ class PlaylistRenderer {
 			<?php
 			foreach ( $items as $idx => $item ) :
 				$thumb = get_the_post_thumbnail_url( (int) $item->video_id, 'thumbnail' );
+
+				// Apply "Hide Video Source URL" here too. The 1.3.0 fix covered
+				// Renderer and PlayerWrapper but not this path, so a self-hosted
+				// video inside a playlist still printed its real file address
+				// with the setting on - the whole point of that setting, missed
+				// on one of three render paths.
+				$item_urls   = Protection::filter_player_urls(
+					(int) $item->video_id,
+					(string) ( $item->platform ? $item->platform : 'self' ),
+					(string) ( $item->source_url ? $item->source_url : '' ),
+					''
+				);
+				$item_source = $item_urls['source_url'];
+				$item_stream = $item_urls['stream_url'];
 				?>
 				<div class="ms-playlist-item <?php echo esc_attr( 0 === $idx ? 'is-active' : '' ); ?>"
 					data-video-id="<?php echo esc_attr( $item->video_id ); ?>"
-					data-source-url="<?php echo esc_url( $item->source_url ? $item->source_url : '' ); ?>"
+					data-source-url="<?php echo esc_url( $item_source ); ?>"
+					data-stream-url="<?php echo esc_url( $item_stream ); ?>"
 					data-platform="<?php echo esc_attr( $item->platform ? $item->platform : 'self' ); ?>"
 					data-protection-level="<?php echo esc_attr( $item->protection_level ? $item->protection_level : 'standard' ); ?>"
 					data-index="<?php echo esc_attr( (string) $idx ); ?>">

@@ -17,14 +17,14 @@ MediaShield protects your video content on WordPress with dynamic watermarking, 
 = Video Protection =
 
 * **Dynamic Watermarking.** User-specific watermarks (name plus IP) overlaid on every video to deter unauthorized screen recording. Watermark position swaps at configurable intervals.
-* **Anti-Download Protection.** Right-click blocking, keyboard shortcut prevention, devtools detection, and source URL hiding.
+* **Anti-Download Protection.** Right-click blocking, keyboard shortcut prevention, devtools detection, and source URL hiding for self-hosted videos.
 * **Domain Whitelisting.** Restrict video embeds to approved domains only.
 
 = Session Tracking and Access Control =
 
-* **HMAC Session Tokens.** Cryptographic session validation without database lookups. Good performance even on busy sites.
-* **Concurrent Stream Limits.** Configurable max simultaneous streams per user. Default is 2.
-* **Login-Gated Playback.** Require users to log in before watching videos.
+* **HMAC Session Tokens.** Cryptographic session validation, so the token itself proves who started the session. Good performance even on busy sites.
+* **Concurrent Stream Limits.** Configurable max simultaneous streams per logged-in user. Default is 2.
+* **Login-Gated Playback.** Require users to log in before watching videos, or turn it off and let guests watch with their views still recorded.
 * **Role-Based Restriction.** Restrict specific videos to certain WordPress roles.
 * **30-Second Heartbeat.** Continuous progress tracking with automatic session cleanup.
 
@@ -40,7 +40,7 @@ MediaShield protects your video content on WordPress with dynamic watermarking, 
 * **Vimeo.** Protect Vimeo embeds with the full protection suite.
 * **Bunny Stream.** Native support for Bunny.net video hosting.
 * **Wistia.** Protect Wistia inline embeds.
-* **Self-Hosted.** Upload and protect MP4, WebM, MOV, and M4V files.
+* **Self-Hosted.** Upload and protect MP4, WebM, MOV, and M4V files from Videos, Add New.
 
 = Player Controls =
 
@@ -54,9 +54,9 @@ MediaShield protects your video content on WordPress with dynamic watermarking, 
 
 * **Gutenberg Blocks.** Video, Playlist, and My Videos blocks with full block editor integration.
 * **Shortcodes.** `[mediashield id=X]` for protected videos. `[mediashield_my_videos]` for watch history.
-* **REST API.** Full REST API for tags, sessions, playlists, uploads, settings, and analytics.
-* **Hooks and Filters.** 8 actions and 8 filters for custom integrations (LMS, CRM, etc.).
-* **Output Buffer Detection.** Automatically wraps video embeds from any page builder.
+* **REST API.** 23 REST routes for tags, sessions, playlists, uploads, streaming, settings, and analytics.
+* **Hooks and Filters.** 15 actions and 29 filters for custom integrations (LMS, CRM, etc.).
+* **Output Buffer Detection.** Finds videos from your MediaShield library anywhere on the page, whatever wrote the markup, and wraps them. Videos MediaShield does not manage are left alone.
 
 = Privacy and Compliance =
 
@@ -68,16 +68,14 @@ MediaShield protects your video content on WordPress with dynamic watermarking, 
 [MediaShield Pro](https://wbcomdesigns.com/downloads/mediashield-pro/) extends the free plugin with:
 
 * **Platform Connections.** Browse and bulk import videos from Bunny, YouTube, Vimeo, and Wistia.
-* **DRM Encryption.** ClearKey DRM, software-based AES-128 encryption via Shaka Player, with Bunny Stream cloud packaging or local Shaka Packager. Widevine L1 hardware DRM is not included.
+* **DRM Encryption (experimental).** ClearKey DRM, software-based AES-128 encryption via Shaka Player, with Bunny Stream cloud packaging or local Shaka Packager. Selectable only once a packaging method is configured. Widevine L1 hardware DRM is not included.
 * **Advanced Watermark.** 7 configurable fields: username, email, IP, user ID, timestamp, site name, custom text.
 * **Heatmap Analytics.** Per-video playback heatmaps with 10-second position buckets and retention curves.
 * **Realtime Dashboard.** Live active viewer count with 15-second auto-refresh.
-* **Suspicious Activity Detection.** Multi-IP, devtools, rapid seek, and VPN detection with alert management.
+* **Suspicious Activity Detection.** Multi-IP, devtools, and rapid seek detection with alert management. Optional VPN and proxy detection needs your own lookup API key.
 * **Milestone Actions.** Tag user, send email, or fire webhook at completion milestones.
 * **Weekly Digest.** Automated analytics summary email to site admins.
-* **CSV and PDF Export.** Export watch data as CSV or generate async PDF reports.
-* **Frontend Upload.** `[mediashield_upload]` shortcode for user video submissions.
-* **PWA Offline Playback.** Service Worker-based offline viewing for DRM-protected content.
+* **CSV and PDF Export.** Export watch sessions, milestones, and per-user summaries as CSV, or generate async PDF reports.
 
 == Installation ==
 
@@ -100,11 +98,19 @@ MediaShield supports self-hosted videos (MP4, WebM, MOV, M4V), YouTube, Vimeo, B
 
 = Does MediaShield work with page builders? =
 
-Yes. MediaShield uses output buffering to detect and wrap video embeds automatically. It works with Elementor, Beaver Builder, Divi, WPBakery, and any builder that outputs standard video or iframe elements.
+Yes, for videos you have added to MediaShield. There is no builder widget to drag in, but MediaShield scans the finished page and wraps any video that matches one in your library, matched on its platform video ID or its file URL. That works with Elementor, Beaver Builder, Divi, WPBakery, and any builder that outputs standard video or iframe elements. A video you never added to MediaShield is left exactly as the builder wrote it.
 
 = Does it work with LMS plugins? =
 
 Yes. MediaShield works alongside LearnDash, LifterLMS, Tutor LMS, Sensei, and other LMS plugins. Use the `mediashield_milestone_reached` action to integrate with LMS completion tracking.
+
+= Does Hide Video Source URL work on YouTube and Vimeo? =
+
+No, and it cannot. It applies to self-hosted files only: those play through a permission-checked address, and the file path never appears in the page. A YouTube, Vimeo, Wistia, or Bunny embed has to hand the browser its own video ID for the platform's player to work, so there is nothing to hide.
+
+= Can guests watch without logging in? =
+
+Yes. Turn off Require Login and logged-out visitors can watch, with their views and watch time recorded. Milestones still need a logged-in user, because there is no account to attach them to.
 
 = How does the watermark work? =
 
@@ -112,7 +118,7 @@ MediaShield renders a dynamic canvas overlay on top of the video player showing 
 
 = How are concurrent streams limited? =
 
-Each user is allowed a configurable number of simultaneous video streams. Default is 2. When the limit is reached, the user must close another video before starting a new one. Sessions are tracked via HMAC tokens with 30-second heartbeats.
+Each logged-in user is allowed a configurable number of simultaneous video streams. Default is 2. When the limit is reached, the user must close another video before starting a new one. Sessions are tracked via HMAC tokens with 30-second heartbeats. Logged-out visitors are not limited, because there is no account for them to share.
 
 = Will MediaShield slow down my site? =
 
@@ -120,7 +126,7 @@ No. MediaShield only loads its CSS and JavaScript on pages that contain video co
 
 = Is it GDPR compliant? =
 
-Yes. MediaShield registers personal data exporters and erasers with the WordPress privacy tools. Watch session PII (IP address, user agent) is anonymized during erasure while aggregate analytics are retained.
+Yes. MediaShield registers personal data exporters and erasers with the WordPress privacy tools. Watch session PII (IP address, user agent) is anonymized during erasure while aggregate analytics are retained. Archived sessions are covered too, in both the export and the erasure.
 
 = Can I customize the access control logic? =
 
@@ -177,12 +183,14 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Fix      - The plugin no longer fails to load from a fresh clone or a package built with development dependencies.
 * Fix      - In-video ads no longer play past their Total Impressions limit. The break plan is now filled by WB Ad Manager, and the player checks with it immediately before each break, so a creative that runs out mid-video stops there instead of at the next page load.
 * Fix      - In-video ads now count toward a visitor's per-ad Session Limit. That limit previously had no effect on this surface at any value.
+* Fix      - A DRM-protected video now hands the encrypted player its playback address. The address was removed from the session response by an earlier security fix and never restored, so the encrypted player never started and the video played through the standard player unencrypted. Needs MediaShield Pro.
 * Fix      - Videos that MediaShield does not manage are no longer wrapped in the protection player. Regular YouTube, Vimeo, Bunny and Wistia embeds now pass through untouched instead of receiving a watermark and protection overlay.
 * Fix      - Plain self-hosted video tags no longer lose their source and stop playing on pages where MediaShield is active.
 * Fix      - Turning off Enable MediaShield now renders videos unprotected instead of an empty player. Shortcodes, blocks and playlists all play normally with protection off.
 * Fix      - Self-hosted uploads no longer fail on a default install. The Max Upload Size setting was measured in megabytes everywhere except the check that enforced it, so a default install advertised a 500 MB limit and rejected anything over 500 bytes.
 * Fix      - Removed a WordPress 6.7 "translation loaded too early" notice that appeared when the monthly cron schedule was registered or the plugin was activated before the init hook.
 * Dev      - Added the mediashield_protection_levels filter so extensions can register additional protection levels.
+* Dev      - Added the mediashield_stored_filename filter for the on-disk name given to an uploaded video file.
 * Dev      - /upload/init accepts a video_id to attach an upload to an existing video.
 * Dev      - /stream/{id} accepts a signed ms_token, so media elements that cannot send an auth header can play.
 * Dev      - Added EmbedLink::token() and EmbedLink::STREAM_TTL for signing playback URLs.
@@ -245,6 +253,9 @@ Bug fixes, accessibility and UX polish, a complete documentation set, and new de
 * 8 actions and 8 filters for developer integrations.
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+Require Login and Hide Video Source URL both work now, guests can watch with their views recorded, and analytics history is no longer archived out of your reports without asking. Videos are uploaded from Videos, Add New. Run Tools, Site Health after updating: on nginx your video files are directly downloadable and the new check tells you the rule to add. Install MediaShield Pro 1.3.0 at the same time.
 
 = 1.1.0 =
 Bug fixes, accessibility and UX polish, and a complete documentation set. Safe upgrade with no schema change beyond the v3 milestone-tags migration shipped in 1.0.0.

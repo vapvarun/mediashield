@@ -4,41 +4,80 @@ How MediaShield Pro generates keys, packages video, and serves licenses. This pa
 
 ---
 
-## Key generation — `DRM\KeyServer`
+## Status: experimental, and partly unwired
 
-When a video is packaged with DRM, `DRM\KeyServer` generates a random AES-128 content key and key ID:
+Read this before anything below.
 
-1. `random_bytes(16)` generates a 16-byte (128-bit) AES key.
-2. `random_bytes(16)` generates a 16-byte key ID, formatted as a hex string.
-3. The key is encrypted at rest with AES-256-CBC using your site's `SECURE_AUTH_SALT` as the encryption key.
-4. The encrypted key and key ID are stored in `ms_drm_keys` with a UNIQUE constraint on `video_id` (one key per video).
-
----
-
-## Video packaging — `DRM\Packager`
-
-When admin clicks "Package with DRM" on a video (or when `ms_drm_auto_package` is on), `DRM\Packager`:
-
-1. Retrieves the content key from `ms_drm_keys` for the video.
-2. Calls the Shaka Packager CLI via `shell_exec()`. All arguments are escaped with `escapeshellarg()`.
-3. Shaka Packager produces DASH segments plus a DASH manifest (`.mpd`) in a protected output directory under `wp-content/uploads/mediashield/drm/`.
-4. Sets `_ms_drm_packaging_status` and `_ms_drm_packaged_at` post meta on the video CPT.
-
-The free plugin's `mediashield_player_type` filter is hooked by Pro to return `'drm'` for any video with `_ms_drm_enabled = true`, which causes `Player\Renderer` to emit a Shaka Player-compatible video element.
+- **Before 1.3.0 DRM could not be turned on at all.** Pro decides a video is DRM-protected by reading `_ms_protection_level === 'drm'`, but the Protection Level list on the video edit screen was a closed array, so nothing could ever store that value. The `mediashield_protection_levels` filter (free, 1.3.0) is what opened it; Pro's `Core\Plugin::register_drm_level()` hooks it and adds the `drm` level - and only when `ms_drm_method` is something other than `none`. The label Pro registers is literally "DRM - Encrypted playback (experimental)".
+- **Encrypted playback has never been verified end to end.** Treat everything on this page as the intended design plus the code that exists, not as a shipped, proven pipeline.
+- **The packaging entry points are not wired.** `DRM\Packager::package()`, `DRM\Packager::schedule_packaging()` and `DRM\KeyServer::generate_key()` are public and complete, but nothing in either plugin calls them: there is no "Package with DRM" control, and `ms_drm_auto_package` is stored and returned by the settings API without any code reading it at upload time. In practice a key row is never created, so `POST /drm/license` returns 404 `drm_key_not_found`. Wiring a trigger is the missing piece; the code below is what that trigger would drive.
 
 ---
 
-## License serving — `POST /mediashield-pro/v1/drm/license`
+## Key generation - `DRM\KeyServer`
 
-When Shaka Player encounters a ClearKey-protected manifest:
+`KeyServer::generate_key( $video_id )`:
 
-1. Shaka Player sends a ClearKey license request to the configured license URL.
-2. MediaShield's license endpoint receives the request.
-3. The endpoint calls `Access\AccessControl::can_watch()` — which runs the full `mediashield_can_watch` filter chain including Pro's role check and LMS gates.
-4. On approval, the endpoint decrypts the content key from `ms_drm_keys` and returns it in the ClearKey JSON format (`{ keys: [{ kty, k, kid }], type: 'temporary' }`).
-5. Shaka Player decrypts and plays the video.
+1. `bin2hex( random_bytes( 16 ) )` produces a 128-bit key ID as 32 hex characters.
+2. `bin2hex( random_bytes( 16 ) )` produces the 128-bit content key, also carried as a hex string (not raw bytes) everywhere in PHP.
+3. The hex content key is encrypted with `PlatformController::encrypt()` - AES-256-CBC keyed on `SECURE_AUTH_SALT`, with the IV embedded in the ciphertext.
+4. The row is written to `ms_drm_keys` as `key_id` + `content_key_encrypted`, INSERTed or UPDATEd against the UNIQUE `uk_video` constraint on `video_id` (one key per video).
 
-Offline (persistent) licenses use the same flow but set `type: 'persistent-license'` and a longer expiry, stored in `ms_drm_licenses`.
+The column is `content_key_encrypted`; there is no plaintext `content_key` column. The legacy `iv` column was never read and is dropped at DB v2 - see [database-tables.md](database-tables.md#ms_drm_keys).
+
+---
+
+## Video packaging - `DRM\Packager`
+
+`Packager::package( $video_id, $file_path )` reads `ms_drm_method` and dispatches. It fires `mediashield_before_drm_package` ($video_id, $method) on entry and `mediashield_after_drm_package` ($video_id, $method, $result) on exit, whichever branch ran.
+
+| `ms_drm_method` | Behaviour |
+|-----------------|-----------|
+| `none` | `WP_Error( 'drm_disabled' )`, 400. |
+| `cloud_bunny` | No local work. Verifies `_ms_source_url` is a valid URL (set by the BunnyStream driver), then marks the video up. |
+| `cloud_aws` | `WP_Error( 'drm_not_implemented' )`, 501. The admin dropdown offers it as "Coming Soon"; the method body is a stub. |
+| `local_shaka` | Runs the Shaka Packager CLI. |
+
+### `local_shaka`
+
+1. Requires `shell_exec` to be available, else `WP_Error`.
+2. Retrieves the content key from `ms_drm_keys` for the video.
+3. Builds a command in which the binary path (`ms_drm_shaka_path`, default `packager`) and every argument are wrapped in `escapeshellarg()`, writing into `wp-content/uploads/mediashield/drm/{video_id}/`.
+4. Success is judged by `stream.mpd` existing in the output directory after the call.
+5. Sets `_ms_drm_enabled = true`, `_ms_drm_method = 'local_shaka'`, `_ms_drm_output_dir`, `_ms_drm_packaged_at`.
+
+Note it does **not** set `_ms_protection_level`, which is the meta Pro's player-type override actually reads - a locally packaged video still needs the Protection Level set to `drm` on the edit screen before the DRM player engages.
+
+### `cloud_bunny`
+
+Sets `_ms_drm_enabled = true`, `_ms_drm_method = 'cloud_bunny'`, `_ms_drm_packaged_at`, **and** `_ms_protection_level = 'drm'`. This is the one path that switches the player over by itself.
+
+### Async variant
+
+`Packager::schedule_packaging( $video_id, $file_path )` enqueues `mediashield_pro_drm_package` on Action Scheduler (group `mediashield-pro`, args `video_id` + `file_path`), writes `_ms_drm_packaging_status = 'queued'` and stores the action id in `_ms_drm_packaging_action_id`. Returns `WP_Error( 'drm_no_scheduler' )` when Action Scheduler is absent.
+
+### How the player is switched over
+
+Pro hooks free's `mediashield_player_type` filter with `Core\Plugin::override_player_type()`, which returns `'drm'` when **`_ms_protection_level === 'drm'` and `ms_drm_method !== 'none'`**. It does not read `_ms_drm_enabled`. Free's `Player\Renderer`, `PlayerWrapper` and `SessionController` all consult the same filter, and `SessionController::resolve_drm_source_url()` only puts a manifest URL in the `/session/start` payload when the filter says `drm`.
+
+---
+
+## License serving - `POST /mediashield-pro/v1/drm/license`
+
+Permission callback is `is_user_logged_in()`. Body: `video_id` (required), `device_id` (optional).
+
+1. The player sends a ClearKey license request to the configured license URL.
+2. `WidevineLicense::issue_clearkey_license()` calls `issue_license()`, which runs `Access\AccessControl::can_watch()` - the full `mediashield_can_watch` chain including Pro's role check at 20 and the LMS gates at 25 - and refuses if any row for that user+video pair has a non-NULL `revoked_at`.
+3. On approval it writes an `ms_drm_licenses` row with `license_type = 'streaming'` and `expires_at = now + ms_drm_license_duration_streaming` (default 86400 s, floored at 300 s by the settings validator).
+4. It decrypts `content_key_encrypted`, converts both the key ID and the content key from hex to base64url, and returns the ClearKey JWK set:
+
+```json
+{ "keys": [ { "kty": "oct", "kid": "<base64url>", "k": "<base64url>" } ], "type": "temporary" }
+```
+
+`type` is always `temporary`. **There is no `/drm/offline` route and no persistent-license flow** - offline licensing was removed in 1.2.0. The `persistent` value survives in the `ms_drm_licenses.license_type` enum for legacy rows only, and `ms_drm_license_duration_persistent` is not a real option.
+
+Revocation is `POST /drm/revoke` (`manage_options`, body `video_id` + `user_id`), exposed in the admin as the "Revoke All Licenses" form on the DRM settings page. It stamps `revoked_at`, which `is_revoked()` then reads on every subsequent issue - a standing decision about the person, not about one license row.
 
 ---
 
@@ -46,10 +85,10 @@ Offline (persistent) licenses use the same flow but set `type: 'persistent-licen
 
 When DRM method is `cloud_bunny`, MediaShield does not run the local packager. Instead:
 
-1. Video is uploaded to Bunny Stream via the tus resumable upload protocol.
-2. Bunny automatically packages DRM-protected DASH and HLS manifests (using Bunny's own Widevine infrastructure).
-3. MediaShield's `mediashield_player_type` filter returns `'drm'`.
-4. Shaka Player requests a ClearKey license from MediaShield's license endpoint (as above). Bunny's CDN delivers the encrypted segments; MediaShield's WordPress site serves only the key.
+1. Video is uploaded to Bunny Stream via the tus resumable upload protocol (`Upload\Drivers\BunnyStream`).
+2. Bunny packages and serves the streams from its own infrastructure.
+3. `Packager::package_cloud_bunny()` only validates that `_ms_source_url` holds a usable URL and writes the DRM meta, including `_ms_protection_level = 'drm'`.
+4. `Platform\BunnyUrls` supplies the playback URL through free's `mediashield_video_stream_url` filter, optionally token-signed (`mediashield_pro_bunny_token_key`, `mediashield_pro_bunny_token_ttl`, default 6 hours).
 
 The encrypted content never passes through your WordPress server in the Bunny cloud method.
 
@@ -57,7 +96,7 @@ The encrypted content never passes through your WordPress server in the Bunny cl
 
 ## Security considerations
 
-- Content keys are never logged or transmitted in plaintext.
-- `SECURE_AUTH_SALT` is the encryption key for at-rest key storage. Rotating this salt will invalidate all stored keys — avoid salt rotation once DRM packaging is in use.
-- License requests require a valid WordPress session (`is_user_logged_in()` at minimum) unless a custom `mediashield_can_watch` filter callback permits anonymous access.
-- ClearKey is software-based DRM. Keys are visible in the browser JS debugger with effort. This is an inherent limitation of ClearKey. See [`docs/pro/drm-types-explained.md`](../pro/drm-types-explained.md) for the full tier comparison.
+- Content keys are never logged or returned in plaintext hex; the license response carries them base64url-encoded inside the JWK, which is what ClearKey requires.
+- `SECURE_AUTH_SALT` is the encryption key for at-rest key storage. Rotating this salt will invalidate all stored keys - avoid salt rotation once DRM packaging is in use.
+- License requests require a logged-in WordPress session at the permission callback, and then the full `mediashield_can_watch` chain inside the handler.
+- ClearKey is software-based DRM. Keys are visible in the browser JS debugger with effort. This is an inherent limitation of ClearKey, and part of why the level is labelled experimental. See [`docs/pro/drm-types-explained.md`](../pro/drm-types-explained.md) for the full tier comparison.

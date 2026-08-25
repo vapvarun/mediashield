@@ -21,9 +21,9 @@ You're a course creator. Your $500 course sits on WordPress. A student wants to 
 
 MediaShield's answer:
 
-* Their name and IP appear on every frame as a watermark. They think twice before sharing.
-* Their login streams on only 2 devices at once. They can't hand out credentials.
-* If they share credentials anyway, we detect 3 IPs in 6 hours and send you an alert.
+* Their name and IP appear on every frame as a watermark. They think twice before sharing. (This needs the video set to Standard or Strict -- the Basic tier has no watermark.)
+* Their login streams on only 2 devices at once. They can't hand out credentials. The limit counts per account, so it applies to logged-in viewers, not to guests on a public video.
+* If they share credentials anyway, Pro raises an alert -- by default when one account is seen from 5 different IP addresses within 12 hours, tightenable to 3 within 6. Free records sessions with their IPs but does not raise alerts.
 * If they screen-record and post it, the watermark tells you exactly who leaked it. You deactivate their account and chase the leak.
 
 This stops 90 percent of casual piracy. Not because recording became impossible, but because leakers are now identifiable and accountable.
@@ -35,7 +35,7 @@ Be honest with yourself and with your customers.
 | Attack | MediaShield's response |
 |---|---|
 | Screen recording (OBS, macOS screen capture, phone camera) | Cannot be blocked. The watermark makes the recording traceable. |
-| Saving the video URL from browser developer tools | Free hides the URL from View Source. Pro encrypts the self-hosted video with ClearKey. YouTube and Vimeo iframe URLs stay visible because the platforms publish them. |
+| Saving the video URL from browser developer tools | For self-hosted video, free keeps the file address out of the page entirely and plays through a permission-checked address instead. Pro additionally encrypts the file with ClearKey. YouTube, Vimeo, Wistia and Bunny embeds keep their URLs, because a provider iframe cannot load without carrying the provider's video ID. |
 | Stream Recorder or Video DownloadHelper browser extensions | Effective against unencrypted streams. Pro's ClearKey blocks them for encrypted self-hosted video. |
 | Professional piracy (yt-dlp -- a command-line tool for downloading videos from web platforms -- plus ffmpeg plus key extraction) | No software DRM stops a determined attacker. Only hardware Widevine L1 does that, and MediaShield does not ship it. |
 | Requesting a self-hosted video file directly by its web address | **Depends on your web server, and by default it is not blocked on nginx.** See below. |
@@ -52,7 +52,10 @@ anyone who knows or guesses a file's address can download the video without
 logging in, and none of your access rules apply. Not the login requirement, not
 per-video role restrictions, not the allowed-domain list. The player itself is
 unaffected either way, because it never uses that address; it streams through
-MediaShield, which checks permissions on every request.
+MediaShield, which checks permissions on every request. That last part depends on
+**Hide Video Source URL** being on, which it is by default -- turn it off and the
+player goes back to using the plain file address, putting it in your page markup
+for anyone to copy.
 
 Two things reduce the risk, and neither is a fix:
 
@@ -108,11 +111,11 @@ That's honest, enforceable, and legally clean. It deters 90 percent of casual sh
 
 ## How MediaShield supports this philosophy technically
 
-* **Dynamic watermark.** User identity rendered on a canvas over every frame. Swaps position every X seconds. Survives fullscreen. Re-renders if the DOM is tampered. A MutationObserver pauses the video on tamper.
+* **Dynamic watermark.** User identity rendered on a canvas over every frame. Swaps position every X seconds. Survives fullscreen, because the whole player goes fullscreen rather than the bare video. Watched for tampering: delete or hide the overlay from developer tools and the video is paused and the player hidden -- MediaShield stops playback rather than redrawing, so there is no watermark-free moment to capture.
 * **HMAC session tokens.** Cryptographically validated without a database lookup per heartbeat.
-* **Concurrent stream limit.** Server-enforced with row locking so race conditions can't slip through.
+* **Concurrent stream limit.** Server-enforced with row locking so race conditions can't slip through. Applies to logged-in accounts.
 * **Suspicious activity detection (Pro).** Multi-IP, rapid seek, developer-tools open, VPN or proxy. Admin sees alerts in real time.
-* **Revoke all sessions.** One admin action kills every active session for a user caught leaking.
+* **Revoke all sessions.** Ends every active session a user holds in one action. **This has no button in the admin yet** -- it is reachable to developers through the plugin's API. Without code, the equivalent is removing the user's role or deactivating the account, which takes effect on their next request because every request re-checks permission.
 * **Audit trail.** Every session logs IP, user agent, device, duration, and completion. Export it via WordPress privacy tools.
 
 You get enough forensic data to act decisively when something leaks. That's what WordPress-native video protection at this price point should do.
@@ -129,7 +132,7 @@ Yes. Bunny Stream MediaCage Enterprise gives you Widevine L1 plus FairPlay. Medi
 For the $99 per year Pro price, yes. It stops casual download tools. For high-value IP like films or live sports, no. Use Widevine L1.
 
 **What about the watermark. Can't someone just crop it out?**
-In theory, yes. In practice, the watermark moves position every 20 seconds by default, survives fullscreen, covers multiple areas over time, and anti-tamper pauses the video if someone removes the canvas. Cropping would also crop the video content. Most leakers don't bother. They just don't share rather than risk it.
+In theory, yes. In practice, the watermark moves position every 30 seconds by default (and you can set that lower), survives fullscreen, covers multiple areas over time, and anti-tamper pauses the video if someone removes the overlay. Cropping would also crop the video content. Most leakers don't bother. They just don't share rather than risk it.
 
 ## Bottom line
 

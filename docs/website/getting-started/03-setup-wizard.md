@@ -2,61 +2,57 @@
 
 On first activation, MediaShield redirects you to a four-step setup wizard. The wizard lets you configure the essentials before adding any videos.
 
-Each step auto-saves as you go. If you close the tab mid-wizard, your progress is kept. When you return, you'll land on the dashboard and can access the wizard from there until you click **Finish**.
+Every control saves as soon as you change it, so nothing is lost if you close the tab. There is no link back to the wizard from the admin menu, though: if you leave part way through and want to return, open `wp-admin/admin.php?page=mediashield-wizard` directly. Everything the wizard sets is also available under **MediaShield > Settings**, so skipping it costs you nothing.
 
 ## Step 1 - General Settings
 
-Configure the site-wide defaults:
+Three site-wide switches:
 
-**Enable Protection** - The master on/off switch for all MediaShield features. Leave this on.
+**Enable video protection** - The master on/off switch for all MediaShield features. Leave this on. With it off, videos still play, but with no watermark, no protection layer, and no session tracking.
 
-**Default Protection Level** - The baseline for all videos that don't have a per-video override. Options:
+**Require login to watch** - When on, visitors must be logged in before a protected video plays; they see a login overlay instead. When off, guests can watch and their sessions are still recorded. Per-video role restrictions and any custom access rules still apply either way.
 
-- **None** - No protection. Videos play as normal embeds.
-- **Basic** - Right-click disabled, source URL hidden.
-- **Standard** (recommended) - Everything in Basic, plus the dynamic watermark and developer-tools detection.
-- **Strict** - Everything in Standard, plus keyboard shortcut blocking and a fullscreen watermark.
+**Default protection level** - The baseline for videos that have no per-video setting. The wizard offers the two ends of the range:
 
-Standard is the right starting point for most sites. You can override this per video.
+- **Standard (Watermark + Tracking)** - recommended for gated content.
+- **None (No protection)** - plays as a normal embed.
 
-**Require Login** - Forces viewers to log in before any video plays. Turn this off only if you want specific videos to be publicly viewable without an account.
+The full set of four levels (None, Basic, Standard, Strict) is available under **MediaShield > Settings** and on each video's edit screen. See [Protection Settings](../configuration/02-protection-settings.md) for what each level does.
 
-## Step 2 - Platform Selection
+## Step 2 - Connect a Platform
 
-Tell MediaShield which video platforms you use. Options: Self-hosted, YouTube, Vimeo, Bunny Stream, Wistia.
+An information screen. It lists the platforms MediaShield works with (YouTube, Vimeo, Bunny Stream, Wistia) and points out that direct API connections for browsing and importing libraries are a Pro feature.
 
-The wizard just records your intended platforms. It does not connect to any external APIs at this step. Direct API connections to Bunny, YouTube, Vimeo, and Wistia (for browsing and importing video libraries) are available in Pro.
+Nothing here is selectable and nothing is saved. You do not have to declare which platforms you use: MediaShield detects the platform from the URL when you add a video, and self-hosted files are supported as well. Skip this step.
 
-In the free plugin, MediaShield detects and wraps embeds from all five platforms automatically via output buffering, regardless of what you select here.
+## Step 3 - First Video (Optional)
 
-## Step 3 - Watermark Settings
-
-Configure the identity overlay that appears on top of every video for logged-in viewers:
-
-**Opacity** - How visible the watermark is, as a percentage. 0% is invisible. 100% is fully solid. A value in the 30-50% range is visible enough to deter sharing without being distracting.
-
-**Color** - The watermark text color. Use a color that contrasts with your typical video content.
-
-**Swap Interval** - How often the watermark moves to a new position, in seconds. Shorter intervals make it harder to crop out of a recording.
-
-The free watermark shows the viewer's display name and IP address. Pro adds 7 configurable fields including email, user ID, timestamp, and custom text.
-
-## Step 4 - First Video (Optional)
-
-Optionally create your first video right in the wizard by pasting a URL. MediaShield detects the platform from the URL and creates a library entry automatically.
+Paste a video URL and click **Protect** to create your first library entry. MediaShield detects the platform from the URL and stores the platform's video ID alongside the original URL.
 
 Supported URL formats:
 - YouTube: `https://www.youtube.com/watch?v=...`
 - Vimeo: `https://vimeo.com/...`
-- Self-hosted: any direct `.mp4`, `.webm`, or `.m4v` URL
-- Bunny Stream: your Bunny CDN embed URL
 - Wistia: your Wistia embed URL
+- Bunny Stream: the video's embed URL, or its URL from the Bunny video page
+- Self-hosted: any direct `.mp4`, `.webm`, `.mov`, or `.m4v` URL
 
 If you skip this step, you can add videos any time from **MediaShield > Videos**.
 
+## Step 4 - Watermark Settings
+
+Configure the identity overlay drawn on top of the video while it plays:
+
+**Opacity** - A slider from 0.1 to 1.0, where 1.0 is fully solid. Values around 0.3 to 0.5 are visible enough to deter sharing without being distracting.
+
+**Text Color** - The watermark text color. Use a color that contrasts with your typical video content.
+
+**Position swap interval** - How many seconds the watermark stays in one position before moving to the next. Shorter intervals make it harder to crop out of a recording.
+
+The preview panel shows the shape of the overlay: display name, then IP address. The free watermark shows exactly those two fields. Pro adds 7 configurable fields including email, user ID, timestamp, site name, and custom text.
+
 ## After the wizard
 
-Click **Finish** to complete setup and go to the dashboard. From here you can:
+Click **Finish** to mark setup complete and land on the dashboard. From here you can:
 
 - Add and manage videos from **MediaShield > Videos**
 - Fine-tune all settings from **MediaShield > Settings**
