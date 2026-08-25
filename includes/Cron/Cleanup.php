@@ -126,87 +126,46 @@ class Cleanup {
 	 *
 	 * @param int $post_id Post ID being deleted.
 	 */
-	/**
-	 * Whether deleting a MediaShield video may also delete the master on the
-	 * hosting platform. Defaults to NO, and should stay that way.
-	 *
-	 * WHY THIS DEFAULTS TO NO
-	 *
-	 * A video on Bunny, YouTube, Vimeo or Wistia does not belong to this
-	 * plugin. It is usually the only master copy, it commonly predates the
-	 * MediaShield record that points at it, and it is frequently referenced by
-	 * things MediaShield cannot see - another site, a course platform, an
-	 * embed in an email. The MediaShield post is a POINTER to that media, and
-	 * deleting a pointer must not destroy the thing it points at.
-	 *
-	 * Until 1.3.0 this ran unconditionally, with no confirmation and no notice
-	 * anywhere in the UI. Trashing a video to tidy a library silently deleted
-	 * the master from the platform, permanently - none of these providers keep
-	 * a recoverable trash. That is how a 5.8 GB production video was destroyed
-	 * during testing of this very release: an imported record was removed with
-	 * `wp post delete --force`, and the cascade took the Bunny master with it.
-	 *
-	 * The asymmetry with self-hosted files above is deliberate. Those live in
-	 * this site's uploads folder and were put there by this plugin, so removing
-	 * them alongside the video is what an owner expects. Remote media is
-	 * someone else's system.
-	 *
-	 * A site that genuinely wants the old behaviour - a library where every
-	 * asset is created and owned by MediaShield, say - can opt in per video or
-	 * globally through the filter.
-	 *
-	 * @since 1.3.0
-	 *
-	 * @param int    $post_id  Video CPT post ID being deleted.
-	 * @param string $platform Platform slug (bunny, youtube, vimeo, wistia).
-	 * @return bool True only when the owner has explicitly opted in.
-	 */
-	private static function should_delete_remote_media( int $post_id, string $platform ): bool {
-		/**
-		 * Filter whether to delete the master from the hosting platform.
-		 *
-		 * Returning true is irreversible: these providers do not offer a trash
-		 * or an undo, so a mistake here destroys the customer's media with no
-		 * recovery path. Opt in only where MediaShield is the sole owner of
-		 * every asset in the library.
-		 *
-		 * @since 1.3.0
-		 *
-		 * @param bool   $delete   Whether to delete remote media. Default false.
-		 * @param int    $post_id  Video CPT post ID.
-		 * @param string $platform Platform slug.
-		 */
-		return (bool) apply_filters( 'mediashield_delete_remote_media', false, $post_id, $platform );
-	}
 
 	public static function handle_video_delete( int $post_id ): void {
 		if ( 'mediashield_video' !== get_post_type( $post_id ) ) {
 			return;
 		}
 
-		// Delete the video file/resource from the hosting platform.
+		// REMOVING A VIDEO HERE NEVER TOUCHES THE HOSTING PLATFORM.
+		//
+		// Deleting a MediaShield video removes this site's record of it. The
+		// master on Bunny, Vimeo, YouTube or Wistia is left exactly where it
+		// is, so the same video can be linked back at any time by importing it
+		// again from Videos > Import.
+		//
+		// This used to call the driver's delete(), which meant tidying up a
+		// video list in WordPress could destroy source media held on another
+		// service - media the owner is paying to store, may be using elsewhere,
+		// and never asked WordPress to manage. It is not recoverable: none of
+		// these providers offer a trash or an undo. That is not hypothetical;
+		// it destroyed a 5.8 GB master on a live library during 1.3.0 testing.
+		//
+		// 1.3.0 first made it opt-in behind a filter. That was not enough - the
+		// capability still existed, so a site could switch back on the one
+		// behaviour we never want. The call is gone instead. If a platform
+		// video genuinely needs deleting, the place to do that is the
+		// platform's own dashboard, where the person doing it can see what
+		// else uses the asset.
+		//
+		// Self-hosted is the deliberate exception, and it is not an exception
+		// to the rule above: that file is in this site's own uploads folder,
+		// put there by this plugin, and nothing references it once the CPT is
+		// gone. Deleting it is delegated to the driver that owns it rather
+		// than rebuilt inline, so there is one implementation of where that
+		// file lives.
 		$platform          = get_post_meta( $post_id, '_ms_platform', true );
 		$platform_video_id = get_post_meta( $post_id, '_ms_platform_video_id', true );
 
-		if ( ! empty( $platform ) && ! empty( $platform_video_id ) ) {
-			if ( 'self' === $platform ) {
-				// Self-hosted: the file lives in this site's own uploads folder
-				// and was put there by this plugin, so removing it with the
-				// video it belongs to is the expected outcome. Nothing else
-				// references it once the CPT is gone.
-				$wp_upload = wp_upload_dir();
-				$file_path = trailingslashit( $wp_upload['basedir'] ) . 'mediashield/' . sanitize_file_name( $platform_video_id );
-				if ( file_exists( $file_path ) ) {
-					wp_delete_file( $file_path );
-				}
-			} elseif ( self::should_delete_remote_media( $post_id, (string) $platform ) ) {
-				// External platform: only ever reached when the site owner has
-				// deliberately opted in. See should_delete_remote_media().
-				$driver_name = str_replace( '-', '_', $platform );
-				$driver      = UploadManager::get_driver( $driver_name );
-				if ( $driver ) {
-					$driver->delete( $platform_video_id );
-				}
+		if ( 'self' === $platform && ! empty( $platform_video_id ) ) {
+			$driver = UploadManager::get_driver( 'self_hosted' );
+			if ( $driver ) {
+				$driver->delete( (string) $platform_video_id );
 			}
 		}
 
