@@ -25,12 +25,6 @@ parameters:
 			path: includes/Core/Assets.php
 
 		-
-			message: '#^Constant DB_NAME not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: includes/Cron/Cleanup.php
-
-		-
 			message: '#^Function as_schedule_recurring_action not found\.$#'
 			identifier: function.notFound
 			count: 2
@@ -41,12 +35,6 @@ parameters:
 			identifier: argument.type
 			count: 2
 			path: includes/Player/Renderer.php
-
-		-
-			message: '#^Constant DB_NAME not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: includes/Privacy/PrivacyEraser.php
 
 		-
 			message: '#^Parameter \#2 \$value of method WP_HTTP_Response\:\:header\(\) expects string, int given\.$#'

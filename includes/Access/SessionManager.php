@@ -47,19 +47,21 @@ class SessionManager {
 		// -- Concurrent session limit check (with row locking) --
 		$max_concurrent = (int) get_option( 'ms_max_concurrent_streams', 2 );
 
-		// Guests have no identity, and every one of them lands on user_id = 0.
-		// Both queries below key on user_id, so treating a guest like a user
-		// produces two wrong answers:
-		//
-		//   1. The concurrent-stream count becomes a SITE-WIDE guest counter.
-		//      At the default limit of 2, the third simultaneous visitor to a
-		//      public video anywhere on the site is refused.
-		//   2. The dedup lookup matches ANOTHER guest's row, so visitor B is
-		//      handed visitor A's session token and resume position.
-		//
-		// (2) is the worse of the two - it leaks one viewer's progress to the
-		// next. Both only became reachable when guest playback was allowed, so
-		// they are fixed here rather than left for the first public video.
+		/*
+		 * Guests have no identity, and every one of them lands on user_id = 0.
+		 * Both queries below key on user_id, so treating a guest like a user
+		 * produces two wrong answers:
+		 *
+		 *   1. The concurrent-stream count becomes a SITE-WIDE guest counter.
+		 *      At the default limit of 2, the third simultaneous visitor to a
+		 *      public video anywhere on the site is refused.
+		 *   2. The dedup lookup matches ANOTHER guest's row, so visitor B is
+		 *      handed visitor A's session token and resume position.
+		 *
+		 * (2) is the worse of the two - it leaks one viewer's progress to the
+		 * next. Both only became reachable when guest playback was allowed, so
+		 * they are fixed here rather than left for the first public video.
+		 */
 		//
 		// A concurrent-stream limit exists to stop credential sharing. With no
 		// account to share there is nothing to enforce, so guests skip it and

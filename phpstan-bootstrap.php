@@ -18,6 +18,14 @@ define( 'ABSPATH', '/tmp/wordpress/' );
 define( 'WPINC', 'wp-includes' );
 define( 'WP_CONTENT_DIR', '/tmp/wordpress/wp-content' );
 define( 'WP_PLUGIN_DIR', '/tmp/wordpress/wp-content/plugins' );
+
+// Always defined at runtime by wp-config.php. Without it PHPStan reports
+// "Constant DB_NAME not found" at every use, and those were being papered over
+// with per-file baseline entries carrying an exact `count:` - which then went
+// stale the moment a file gained a second reference, failing the run for a
+// reason that had nothing to do with the code. Declaring it once removes the
+// error and the baseline entries that existed only to hide it.
+define( 'DB_NAME', 'wordpress' );
 // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound
 
 // Action Scheduler function stubs — required at runtime via the vendored
@@ -46,6 +54,17 @@ if ( ! function_exists( 'as_schedule_recurring_action' ) ) {
 	 */
 	function as_schedule_recurring_action( int $timestamp, int $interval_in_seconds, string $hook, array $args = array(), string $group = '' ): int {
 		return 0;
+	}
+}
+if ( ! function_exists( 'as_next_scheduled_action' ) ) {
+	/**
+	 * @param string            $hook
+	 * @param array<mixed>|null $args
+	 * @param string            $group
+	 * @return int|bool
+	 */
+	function as_next_scheduled_action( string $hook, ?array $args = null, string $group = '' ) {
+		return false;
 	}
 }
 if ( ! function_exists( 'as_enqueue_async_action' ) ) {

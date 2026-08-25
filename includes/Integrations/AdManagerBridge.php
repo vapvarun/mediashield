@@ -251,19 +251,21 @@ class AdManagerBridge {
 			. '<video class="ms-ad-overlay__video" src="' . esc_url( $ad['video_url'] ) . '" playsinline preload="auto"></video>'
 			. $close;
 
-		// Skip policy, most specific wins:
-		//
-		//   1. Mandatory full-view removes the Skip button outright (null). This
-		//      is a site-wide compliance switch (CLE and similar), so it still
-		//      overrides everything - an advertiser must not be able to opt a
-		//      viewer out of a rule the site owner set for legal reasons.
-		//   2. The per-ad "Allow skip after" configured on the creative.
-		//   3. The plugin-level default.
-		//
-		// (2) used to be skipped entirely: this read the global and threw the
-		// creative's own value away, so setting 2s or 10s on an individual ad
-		// did nothing and the player always counted down from the 5s default
-		// (BC#10128639184).
+		/*
+		 * Skip policy, most specific wins:
+		 *
+		 *   1. Mandatory full-view removes the Skip button outright (null). This
+		 *      is a site-wide compliance switch (CLE and similar), so it still
+		 *      overrides everything - an advertiser must not be able to opt a
+		 *      viewer out of a rule the site owner set for legal reasons.
+		 *   2. The per-ad "Allow skip after" configured on the creative.
+		 *   3. The plugin-level default.
+		 *
+		 * (2) used to be skipped entirely: this read the global and threw the
+		 * creative's own value away, so setting 2s or 10s on an individual ad
+		 * did nothing and the player always counted down from the 5s default
+		 * (BC#10128639184).
+		 */
 		//
 		// Zero means "not configured", NOT "skippable immediately". WB Ad
 		// Manager 3.1.0's Video_Ad_Resolver always emits skip_after and
