@@ -76,21 +76,68 @@ if ( isset( $wp_roles ) ) {
 	}
 }
 
-// Delete all video and playlist CPT posts.
-$ms_post_types = array( 'mediashield_video', 'mediashield_playlist' );
-foreach ( $ms_post_types as $ms_cpt ) {
-	$ms_posts = get_posts(
-		array(
-			'post_type'      => $ms_cpt,
-			'post_status'    => 'any',
-			'posts_per_page' => -1,
-			'fields'         => 'ids',
-			'no_found_rows'  => true,
-		)
-	);
+// Delete all video and playlist CPT posts, and the video files they own.
+//
+// INSIDE THE PRO GUARD, WHICH IT USED NOT TO BE.
+//
+// Options and transients below were already skipped while Pro is installed,
+// deliberately, so that removing Free does not wipe a site that is still
+// running Pro. This loop sat outside that guard and ran unconditionally - so
+// the protection covered the settings and not the content, and the one thing
+// a site owner actually cannot rebuild was the one thing that was destroyed.
+//
+// The files are removed explicitly. The plugin is not bootstrapped during
+// uninstall, so `before_delete_post` never fires and Cleanup never runs: every
+// self-hosted video file was left behind while its record was deleted. The
+// whole directory goes rather than one file per post - it belongs to this
+// plugin alone, and doing it that way also collects files orphaned by that bug
+// before this release.
+//
+// Deleting in batches keeps a library of several thousand videos from turning
+// the uninstall request into a timeout, which would leave the removal half
+// finished with no indication of where it stopped.
+if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+	$ms_post_types = array( 'mediashield_video', 'mediashield_playlist' );
 
-	foreach ( $ms_posts as $ms_post_id ) {
-		wp_delete_post( $ms_post_id, true );
+	foreach ( $ms_post_types as $ms_cpt ) {
+		$ms_batch = 200;
+
+		do {
+			$ms_posts = get_posts(
+				array(
+					'post_type'      => $ms_cpt,
+					'post_status'    => 'any',
+					'posts_per_page' => $ms_batch,
+					'fields'         => 'ids',
+					'no_found_rows'  => true,
+				)
+			);
+
+			$ms_found = count( $ms_posts );
+
+			foreach ( $ms_posts as $ms_post_id ) {
+				wp_delete_post( $ms_post_id, true );
+			}
+		} while ( $ms_found === $ms_batch );
+	}
+
+	// Remove the plugin's own upload directory and everything in it.
+	$ms_upload = wp_upload_dir();
+	$ms_dir    = trailingslashit( $ms_upload['basedir'] ) . 'mediashield';
+
+	if ( is_dir( $ms_dir ) ) {
+		$ms_files = glob( trailingslashit( $ms_dir ) . '*' );
+
+		foreach ( (array) $ms_files as $ms_file ) {
+			if ( is_file( $ms_file ) ) {
+				wp_delete_file( $ms_file );
+			}
+		}
+
+		// Only removes the directory when it is genuinely empty, so anything
+		// unexpected in there is left for a human rather than deleted blind.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir, WordPress.PHP.NoSilencedErrors.Discouraged -- WP_Filesystem is not initialised during uninstall; a non-empty directory is a deliberate no-op.
+		@rmdir( $ms_dir );
 	}
 }
 
