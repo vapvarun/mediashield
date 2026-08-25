@@ -154,6 +154,7 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 = 1.3.0 - August 2026 =
 
+* New      - Added a "Prevent Skipping Ahead" setting. Viewers cannot seek past the furthest point they have watched; rewinding still works. The feature was already built and shipped with no way to switch it on.
 * New      - Self-hosted videos are matched to their MediaShield entry by source URL, so automatic detection protects them instead of skipping them.
 * New      - Upload a video file directly from Add New Video, instead of uploading through the Media Library and pasting the URL back.
 * New      - Bunny dashboard URLs are recognised. Pasting the address bar from Bunny Stream now detects the video instead of silently saving it as self-hosted with no ID.
@@ -161,6 +162,10 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * New      - Analytics Retention setting controls how long watch history stays in reports. Default is to keep everything.
 * New      - wp mediashield repair bunny-urls repairs videos already saved from a Bunny dashboard URL. Dry-run by default.
 * New      - Site Health check that asks your web server whether it will serve video files directly, and warns if it does. The folder rule MediaShield ships only works on Apache; on nginx it is ignored.
+* Improve  - The Allowed Domains list now accepts one domain per line or comma-separated, and a pasted web address works too. Following the on-screen instruction produced a list nothing matched, which blocked playback on every other site instead of allowing it.
+* Improve  - A video's protection level is now the same wherever it appears. A video set to Strict was served at the site default when it was picked up automatically on a page rather than added with the block or shortcode, and playlists ignored the site default entirely.
+* Improve  - Changing the default protection level now applies to videos you already have. Every video was saved with a copy of whatever the default was on the day it was added, so changing it later moved nothing.
+* Improve  - The "Require enrollment" and "Default Upload Target" settings now do something. Both saved and were read by nothing: enrollment was decided per video whatever the site setting said, and uploads ignored the chosen destination.
 * Improve  - Uploaded video files are stored under unguessable names, so a file address cannot be worked out from the video title.
 * Improve  - A video that cannot load now says so after 15 seconds instead of showing a player that never starts.
 * Improve  - Analytics history is no longer archived automatically. Sessions older than 24 months used to be moved out of every report with no warning; anything already moved is restored on upgrade.
@@ -173,6 +178,10 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Improve  - Removed the Custom URL Patterns setting. It asked for a regular expression, silently ignored any pattern containing a slash, and could not match a video in the first place.
 * Improve  - The watermark Position Swap Interval no longer offers "0 = static", which was never honoured and produced a watermark that moved every second. The field now explains what the interval is for.
 * Improve  - The Upload and Storage settings card is hidden when no cloud platform is connected, instead of rendering empty, and no longer claims that connecting a platform stops files being stored locally.
+* Fix      - Deleting a video no longer deletes it from Bunny, Vimeo, YouTube or Wistia. Tidying a video list could destroy the original on a service you pay for, with no warning and no way to get it back. The video is now left in place, so you can add it again whenever you want.
+* Fix      - Videos placed on a page as a plain Bunny embed are now protected. They were not recognised, so they played with no watermark, no protection and no viewing figures.
+* Fix      - Deleting the plugin no longer removes your videos while the Pro version is still installed, and no longer leaves the video files behind on your server.
+* Fix      - Repairing videos added from a Bunny dashboard address now makes them playable. The repair corrected the record but left it pointing at a page that cannot be played.
 * Fix      - Require Login now works when turned off. Logged-out visitors can watch, and their views are recorded, instead of always seeing the login overlay.
 * Fix      - Hide Video Source URL now hides the source URL. Self-hosted videos play through a permission-checked address; the file path no longer appears in the page. Does not apply to YouTube, Vimeo, Wistia or Bunny embeds, which expose their own IDs.
 * Fix      - Two logged-out visitors watching the same video no longer share a session, which could hand one viewer another's playback position.

@@ -60,7 +60,89 @@ class PlayerWrapper {
 			return;
 		}
 
+		// ONLY WRAP WHAT WE CAN ALSO PLAY.
+		//
+		// process_buffer() runs inside an output-buffer callback, which fires at
+		// shutdown - after wp_head() and wp_footer() have printed. Its
+		// Assets::enqueue() call therefore did nothing: it marked handles for
+		// output that had already happened. So the auto-wrap replaced every
+		// embed it recognised with a player container and loaded none of the
+		// JavaScript that turns a container into a player, leaving a blank box
+		// where the video used to be - on every platform. (It went unseen for
+		// Bunny only because a separate defect stopped Bunny embeds matching at
+		// all, so they were left alone and played unprotected.)
+		//
+		// Printing the assets from inside the callback is not available either:
+		// PHP refuses ob_start() in an output-buffering display handler, and
+		// hand-writing script tags would drop dependency order and the
+		// wp_localize_script payload the player reads its config from.
+		//
+		// So the decision moves to here, at template_redirect, which still runs
+		// before wp_head(). If this page's content has something worth wrapping,
+		// enqueue properly and buffer. If not, do not buffer at all - a theme
+		// that injects an embed we never see keeps its own markup and plays
+		// unprotected, which is what it did before and is far better than a
+		// container with no player behind it.
+		if ( ! self::content_has_embed() ) {
+			return;
+		}
+
+		Assets::enqueue();
+
 		ob_start( array( __CLASS__, 'process_buffer' ) );
+	}
+
+	/**
+	 * Cheap look at this page's own content for something the wrapper handles.
+	 *
+	 * Deliberately a substring test on the queried post's content rather than
+	 * the full set of wrapping regexes: this runs on every front-end request, it
+	 * only decides whether buffering is worth starting, and process_buffer()
+	 * does the precise matching afterwards. A false positive costs one buffered
+	 * page; running six regexes on every request to avoid that would cost more.
+	 *
+	 * Content is the only thing inspected, so an embed printed by the theme
+	 * rather than stored in the post is not detected. That is the documented
+	 * limit of the auto-wrap, and the `mediashield_force_output_buffer` filter
+	 * exists for sites that need it anyway.
+	 *
+	 * @return bool
+	 */
+	private static function content_has_embed(): bool {
+		/**
+		 * Force output buffering on regardless of what this page's content holds.
+		 *
+		 * For themes and page builders that print video embeds without storing
+		 * them in post content, where the auto-wrap would otherwise never see
+		 * them.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param bool $force Whether to buffer unconditionally. Default false.
+		 */
+		if ( (bool) apply_filters( 'mediashield_force_output_buffer', false ) ) {
+			return true;
+		}
+
+		$queried = get_queried_object();
+
+		if ( ! $queried instanceof \WP_Post ) {
+			return false;
+		}
+
+		$content = (string) $queried->post_content;
+
+		if ( '' === $content ) {
+			return false;
+		}
+
+		foreach ( array( 'youtube.com/embed', 'youtube-nocookie.com/embed', 'player.vimeo.com/video', 'iframe.mediadelivery.net', 'wistia_async_', '<video' ) as $needle ) {
+			if ( false !== stripos( $content, $needle ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -118,6 +200,7 @@ class PlayerWrapper {
 
 		return $html;
 	}
+
 
 	/**
 	 * Find matches, extract platform video ID, and replace with player target div.
