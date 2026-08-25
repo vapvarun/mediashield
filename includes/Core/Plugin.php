@@ -114,7 +114,6 @@ class Plugin {
 		MyVideosBlock::register();
 
 		// Single video template.
-		add_filter( 'single_template', array( $this, 'video_template' ) );
 
 		// Signed embed page — the one way a client that cannot run PHP (a
 		// native app, an LMS on another host) can play a protected video.
@@ -146,27 +145,6 @@ class Plugin {
 		( new ProtectionController() )->register_routes();
 	}
 
-	/**
-	 * Load custom single template for mediashield_video.
-	 *
-	 * @param string $template Default template path.
-	 * @return string
-	 */
-	public function video_template( string $template ): string {
-		if ( is_singular( 'mediashield_video' ) ) {
-			// Allow theme override: mediashield/single-mediashield_video.php.
-			$theme_template = locate_template( 'mediashield/single-mediashield_video.php' );
-			if ( $theme_template ) {
-				return $theme_template;
-			}
-
-			$custom = MEDIASHIELD_PATH . 'templates/single-mediashield_video.php';
-			if ( file_exists( $custom ) ) {
-				return $custom;
-			}
-		}
-		return $template;
-	}
 
 	/** Prevent cloning. */
 	private function __clone() {}
