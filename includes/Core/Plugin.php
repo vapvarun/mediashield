@@ -27,6 +27,7 @@ use MediaShield\REST\SettingsController;
 use MediaShield\REST\AnalyticsController;
 use MediaShield\REST\StreamController;
 use MediaShield\REST\ProtectionController;
+use MediaShield\Admin\HealthCheck;
 use MediaShield\Admin\Menu;
 use MediaShield\Admin\SetupWizard;
 use MediaShield\Core\Assets;
@@ -96,6 +97,11 @@ class Plugin {
 
 		// Setup wizard (first activation redirect).
 		SetupWizard::register();
+
+		// Site Health: asks the web server whether it will serve video files
+		// directly, rather than assuming the .htaccess deny rule is honoured.
+		// It is not, on nginx (BC#10231033764).
+		HealthCheck::register();
 
 		// Cron cleanup + video/playlist deletion cascade (Task 22).
 		Cleanup::register();

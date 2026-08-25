@@ -97,7 +97,40 @@ class SelfHosted implements DriverInterface {
 		// basename() of the temp path yields "phpAbC123" with no extension, so
 		// stored files lost their type and the streaming endpoint could not work
 		// out a MIME type to serve them with.
-		$filename = wp_unique_filename( $this->upload_dir, sanitize_file_name( $original_name ) );
+		//
+		// A random token is folded into the stem because the directory's
+		// .htaccess is NOT enforced on nginx, which serves a large share of
+		// WordPress hosting - the "Require all denied" rule is an Apache
+		// directive that nginx never reads. Measured on nginx 1.26: a file in
+		// this directory returns HTTP 200 to an anonymous request while the
+		// gated /stream/ endpoint correctly returns 403 (BC#10231033764).
+		//
+		// This is defence in depth, NOT access control. It makes a path
+		// impractical to guess; it does nothing about a path already known or
+		// leaked. The real fix is serving these files from outside the web root,
+		// which is tracked on that card. The readable stem is kept so an
+		// operator can still recognise files on disk.
+		$stem      = pathinfo( sanitize_file_name( $original_name ), PATHINFO_FILENAME );
+		$extension = pathinfo( sanitize_file_name( $original_name ), PATHINFO_EXTENSION );
+		$token     = wp_generate_password( 20, false, false );
+
+		$obscured = $stem . '-' . $token . ( '' !== $extension ? '.' . $extension : '' );
+
+		/**
+		 * Filter the stored filename for a self-hosted upload.
+		 *
+		 * Return the plain sanitised name to opt out of the random token - for
+		 * instance on an Apache host where the directory deny rule does apply
+		 * and predictable names are wanted for operational reasons.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param string $obscured      Filename with the random token.
+		 * @param string $original_name Name as supplied by the client.
+		 */
+		$obscured = (string) apply_filters( 'mediashield_stored_filename', $obscured, $original_name );
+
+		$filename = wp_unique_filename( $this->upload_dir, $obscured );
 		$dest     = $this->upload_dir . $filename;
 
 		// Move file.

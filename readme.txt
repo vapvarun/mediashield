@@ -154,6 +154,8 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * New      - The video editor says when a URL was not recognised, rather than quietly falling back to "Self-hosted".
 * New      - Analytics Retention setting controls how long watch history stays in reports. Default is to keep everything.
 * New      - wp mediashield repair bunny-urls repairs videos already saved from a Bunny dashboard URL. Dry-run by default.
+* New      - Site Health check that asks your web server whether it will serve video files directly, and warns if it does. The folder rule MediaShield ships only works on Apache; on nginx it is ignored.
+* Improve  - Uploaded video files are stored under unguessable names, so a file address cannot be worked out from the video title.
 * Improve  - A video that cannot load now says so after 15 seconds instead of showing a player that never starts.
 * Improve  - Analytics history is no longer archived automatically. Sessions older than 24 months used to be moved out of every report with no warning; anything already moved is restored on upgrade.
 * Improve  - Ad rotation for in-video breaks is decided by WB Ad Manager instead of MediaShield, so the site's configured rotation model applies to video ads the same way it applies to banners.
