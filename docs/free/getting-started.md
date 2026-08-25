@@ -48,7 +48,10 @@ Open **MediaShield > Videos** and click **Add New Video**.
 You'll be asked for:
 
 - **Platform** -- pick from Self-hosted, YouTube, Vimeo, Bunny, or Wistia.
-- **Source URL or Video ID** -- paste the platform URL. MediaShield extracts the platform's video identifier and keeps the original URL.
+- **Source URL or Video ID** -- paste the platform URL. MediaShield works out which platform it is and extracts the video identifier. If it does not recognise the address, **it now tells you** rather than quietly filing the video as self-hosted -- which used to produce a player that never started, with nothing anywhere to explain why.
+  - Pasting the address bar from the **Bunny Stream dashboard** works. If you paste a Bunny *collection* address (a folder of videos) it will say so and ask for the video itself.
+  - Already have videos saved wrongly this way from an older version? Run `wp mediashield repair bunny-urls` to find and fix them. It shows you what it would change before changing anything; add `--execute` to apply.
+- **Or upload a file** -- new in 1.3.0. Pick a video file and upload it straight from this screen, with a progress bar. Before 1.3.0 there was no uploader: you had to go to the Media Library, upload there, and paste the resulting address back. Your server's upload size limit still applies.
 - **Protection Level** -- choose the per-video override:
   - **None** -- no protection; the video plays as a normal embed.
   - **Basic** -- right-click disabled, source URL hidden.

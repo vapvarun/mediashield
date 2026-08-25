@@ -3,7 +3,10 @@
  * REST API controller for streaming self-hosted video files.
  *
  * Serves protected video files through a permissioned REST endpoint
- * instead of direct file access (blocked by .htaccess).
+ * instead of direct file access. Note the .htaccess deny rule in that
+ * directory is Apache-only - nginx ignores it, so direct access may well be
+ * possible on the host. See Admin\HealthCheck, which tests it rather than
+ * assuming. This endpoint is the only path that actually enforces access.
  *
  * Route:
  *   GET /mediashield/v1/stream/{video_id} — Stream a self-hosted video

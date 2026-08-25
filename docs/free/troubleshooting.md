@@ -106,15 +106,18 @@ Uploaded MP4 plays in some browsers but 403s in others.
 
 1. **Session not started.** Self-hosted streaming requires an active session. Make sure the player JS loaded and the session start request succeeded (check the Network tab in DevTools).
 
-2. **`.htaccess` misconfigured.** Our upload directory has an `.htaccess` that only allows proxy-served access. If you moved the uploads directory, re-run activation to regenerate `.htaccess`.
+2. **`.htaccess` missing.** The upload directory gets an `.htaccess` deny rule on activation. If you moved the uploads directory, re-run activation to regenerate it. Note this only matters on Apache -- see the next point.
 
-3. **Nginx (no `.htaccess`).** Our streaming proxy still works, but your Nginx config may not respect proxy headers. Add:
+3. **Nginx ignores `.htaccess` entirely.** This does not break playback (the player streams through MediaShield either way), but it does mean the opposite problem: your video files are served directly to anyone with the address, with no login check and no access rules applied.
+
+   **Go to Tools > Site Health.** MediaShield runs a check there that asks your own server for one of your video files and reports what happened. It gives you the exact rule if the server is handing them over:
    ```nginx
-   location ~* /mediashield-uploads/ {
+   location ^~ /wp-content/uploads/mediashield/ {
        deny all;
+       return 403;
    }
    ```
-   so only the PHP proxy can serve files.
+   Adding it does not affect playback -- the player never requests that address.
 
 4. **Range header dropped by CDN.** Cloudflare plus self-hosted video is a bad combo without config. Disable Cloudflare proxying for the proxy URL, or use Bunny Stream hosting (Pro) instead.
 

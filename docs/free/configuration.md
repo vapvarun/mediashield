@@ -10,7 +10,7 @@ All settings are managed from the **MediaShield > Settings** admin page, which a
 |---------|---------|-------------|
 | Enable Protection | On | Master toggle. Turn this off to disable all protection and session tracking site-wide. Use it for maintenance, not permanently. |
 | Default Protection Level | Standard | Baseline protection for all videos. Applies when a video has no per-video override. Choose from None, Basic, Standard, or Strict. |
-| Require Login | On | Forces viewers to log in before any video plays. Turn this off only for public preview videos. |
+| Require Login | On | Forces viewers to log in before any video plays. Turn it off for a public marketing or preview video: logged-out visitors can then watch, and their views are still recorded. (Before 1.3.0 turning it off had no effect - the login overlay appeared regardless.) |
 | Show Badge | On | Displays a "Protected by MediaShield" badge on the player. Many site owners turn this off for a cleaner look. |
 
 ### Protection levels
@@ -73,7 +73,13 @@ The **Player Controls** section of the settings page tunes how the video player 
 
 **End-screen message + URL.** When the video finishes, MediaShield can show a short call-to-action overlay with a message and a clickable button. Use it to push viewers to the next lesson ("Continue to Module 2"), an upsell ("Get the full course"), or a related video. Leave both fields blank to fall back to the global default, or fill them in per video to customise per topic.
 
-**Hide source URL.** When on, MediaShield moves the raw video URL out of the visible page source so it doesn't appear when someone clicks "View Source". This is not a real DRM boundary -- a determined user can still find the URL with browser developer tools -- but it stops the most casual scraping. Leave it on unless you have a specific need to expose the URL.
+**Hide source URL.** Applies to **self-hosted videos only.** When on, the video plays through a permission-checked address and the real file path never appears in the page at all -- not in View Source, not in developer tools.
+
+It does **not** apply to YouTube, Vimeo, Wistia or Bunny videos. Those play in the provider's own iframe, whose address necessarily contains their video ID, so there is nothing MediaShield can hide there. The setting says so on screen.
+
+Leave it on. (Before 1.3.0 this setting did nothing useful: the file address was printed into the page markup even with it enabled, so View Source revealed it immediately.)
+
+One thing worth knowing if you self-host: hiding the address stops it being *published*, but it does not stop your web server handing the file over to anyone who already has the address. Whether it does depends on your server -- see **Tools > Site Health**, which checks this for you. There is more detail in *Protection Philosophy*.
 
 ### Player controls settings
 
@@ -91,6 +97,25 @@ The **Player Controls** section of the settings page tunes how the video player 
 
 ---
 
+## Analytics Retention
+
+**Keep watch history for (months).** How long watch sessions stay in your
+reports. **The default is `0`, which means keep everything, and that is the
+recommended setting.**
+
+Set a number of months only if you have a data-retention policy that requires
+older sessions to be moved out of reporting. When you do, sessions older than
+that window are moved to an archive table each month, and your views, completion
+rates and top-video figures stop including them. The setting warns you about this
+on screen once you enter a value.
+
+If you are upgrading from an earlier version: MediaShield used to archive at 24
+months automatically, whether or not anyone asked it to, which meant reports on
+long-running sites quietly lost history. Anything already moved is brought back
+during the upgrade.
+
+---
+
 ## Protection Controls
 
 Controls for the technical protection layer that runs in the browser while the video is playing.
@@ -99,7 +124,7 @@ Controls for the technical protection layer that runs in the browser while the v
 |---------|---------|-------------|
 | Block Right-Click | On | Disables the browser context menu over the player, so viewers can't "Save video as." |
 | Block Keyboard Shortcuts | Off | Disables common browser shortcuts like Ctrl+S (Save) and Ctrl+U (View Source) while the player is in focus. |
-| Hide Source URL | On | Hides the direct video file address from the page source. |
+| Hide Source URL | On | Self-hosted videos only: plays them through a permission-checked address so the file path never appears in the page. Does not apply to YouTube, Vimeo, Wistia or Bunny embeds. |
 | Detect Developer Tools | On | Detects when a viewer opens browser developer tools while watching. |
 | Pause on Developer Tools | Off | Pauses the video automatically when developer tools are detected. |
 | Developer Tools Overlay Title | "Developer Tools Detected" | The heading shown on the overlay when developer tools are detected. Edit to match your site's tone. |

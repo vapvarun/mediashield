@@ -99,7 +99,9 @@ The Platforms page shows your uploads moving through stages: pending → uploadi
 
 ## Frontend Upload
 
-Add `[mediashield_upload]` to any page to allow authorized users to upload videos. The upload permission (the permission your admin gives users to upload videos) must be assigned to their role before the form will appear for them. Connected platforms appear as upload targets in the form.
+Upload videos from **Videos > Add New** in the admin. The upload permission must be assigned to a user's role first.
+
+The `[mediashield_upload]` front-end shortcode was retired in 1.3.0 - it never worked.
 
 ---
 

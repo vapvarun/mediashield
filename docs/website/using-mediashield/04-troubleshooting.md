@@ -84,7 +84,14 @@ Visitors see the login gate even on pages you intended to be public.
 
 1. **Session not started.** Self-hosted streaming requires an active session token. Check the Network tab in browser DevTools to confirm the session start request succeeded.
 
-2. **Nginx configuration.** If you use Nginx (not Apache), add a rule to deny direct access to the protected upload directory and let only the PHP proxy serve files. See the server configuration section in the developer guide.
+2. **Nginx configuration.** `.htaccess` is an Apache feature and Nginx ignores it, so the deny rule MediaShield writes has no effect there. Check **Tools > Site Health** -- MediaShield tests this by requesting one of your own video files and tells you the result, along with the rule to add:
+   ```nginx
+   location ^~ /wp-content/uploads/mediashield/ {
+       deny all;
+       return 403;
+   }
+   ```
+   Playback is unaffected: the player streams through MediaShield, never that address.
 
 3. **CDN caching the stream endpoint.** The self-hosted stream endpoint should not be cached. If you use Cloudflare or another CDN, add a bypass rule for your stream URL.
 

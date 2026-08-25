@@ -2,7 +2,9 @@
 /**
  * Self-hosted upload driver.
  *
- * Uploads videos to wp-content/uploads/mediashield/ with .htaccess protection.
+ * Uploads videos to wp-content/uploads/mediashield/. An .htaccess deny rule is
+ * written there, but it is Apache-only and nginx ignores it - treat it as
+ * best-effort, not protection. Admin\HealthCheck reports the truth per host.
  * Creates a mediashield_video CPT post on successful upload.
  *
  * @package MediaShield\Upload\Drivers
@@ -149,7 +151,8 @@ class SelfHosted implements DriverInterface {
 			return self::error( __( 'Failed to move uploaded file.', 'mediashield' ) );
 		}
 
-		// Use REST streaming endpoint instead of direct file URL (blocked by .htaccess).
+		// Use the REST streaming endpoint rather than a direct file URL. That
+		// endpoint is what enforces access; the .htaccess deny rule is Apache-only.
 		// Build the post ID first via a placeholder is not possible, so derive the
 		// stream URL after insert; but pass the platform meta via `meta_input` so
 		// it is present BEFORE `save_post` fires (Thumbnail::maybe_fetch_thumbnail()
@@ -324,7 +327,11 @@ class SelfHosted implements DriverInterface {
 	}
 
 	/**
-	 * Ensure the upload directory exists with .htaccess protection.
+	 * Ensure the upload directory exists, with an .htaccess deny rule.
+	 *
+	 * The rule only takes effect on Apache. nginx ignores .htaccess entirely, so
+	 * this is written on a best-effort basis and must not be relied on as access
+	 * control - Admin\HealthCheck tests what the server actually does.
 	 */
 	private function ensure_directory(): void {
 		if ( ! file_exists( $this->upload_dir ) ) {

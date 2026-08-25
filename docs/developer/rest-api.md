@@ -56,7 +56,7 @@ Session tokens are HMAC-signed. Heartbeat interval: 30 seconds (configurable via
 
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
-| GET | `/stream/{video_id}` | `stream_permissions_check` (requires valid session) | Authenticated streaming handoff for self-hosted media. Returns a signed URL or streams the file via proxy. |
+| GET | `/stream/{video_id}` | `stream_permissions_check` | Streams a self-hosted file with HTTP range support, after `AccessControl::can_watch()`. Accepts an optional signed `ms_token` query arg (since 1.3.0) - a `<video src>` cannot send an `X-WP-Nonce` header, so WordPress ignores the session cookie and every viewer would otherwise arrive as user 0. The token names the viewer; `can_watch()` still runs per request, so revoked access is refused on the next range request. Mint one with `EmbedLink::token( $video_id, $user_id, EmbedLink::STREAM_TTL )`. |
 
 ---
 
@@ -75,7 +75,7 @@ Session tokens are HMAC-signed. Heartbeat interval: 30 seconds (configurable via
 
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
-| POST | `/upload/init` | `upload_mediashield` capability | Initialize upload (chunked supported). Body: `{ filename, file_size, platform? }`. Returns `upload_id`. |
+| POST | `/upload/init` | `upload_mediashield` capability | Upload a video file as `multipart/form-data`. Fields: `file` (required), `title`, `driver` (default `self_hosted`), and `video_id` (since 1.3.0). Returns `{ video_id, platform_video_id, embed_url, status }` with 201. Passing `video_id` fills in an **existing** video instead of creating one - the admin uploader needs this, since Add New Video is already editing a post. That path is authorised separately with `edit_post`: the capability says a user may upload, not that they may overwrite any video by id. |
 | GET | `/upload/status/{upload_id}` | `upload_mediashield` capability | Check upload progress. Returns `{ status, progress_pct }`. |
 
 Upload status values: `pending` → `uploading` → `processing` → `complete` (or `failed`).
@@ -158,6 +158,6 @@ License keys are stored in `ms_drm_keys` (encrypted at rest). See [drm-internals
 
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
-| GET | `/export/csv/{type}` | `manage_options` | Stream CSV export. `{type}`: `watch_sessions`, `milestones`, `users`. Params: `?from=YYYY-MM-DD&to=YYYY-MM-DD`. Max 50,000 rows. |
+| GET | `/export/csv/{type}` | `manage_options` | Stream CSV export. `{type}`: `watch_sessions`, `milestones`, `users`. Params: `?from=YYYY-MM-DD&to=YYYY-MM-DD`. No cap on watch-session and milestone exports since 1.3.0 - they page through and export in full. The user export keeps a 200,000-row ceiling and writes a notice into the CSV if it is reached. |
 | POST | `/export/pdf/report` | `manage_options` | Queue an async PDF report via Action Scheduler. Returns `{ job_id }`. |
 | GET | `/export/status/{job_id}` | `manage_options` | Check PDF generation status. |

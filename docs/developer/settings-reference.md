@@ -17,8 +17,9 @@ Pro settings are listed separately at the bottom of [hooks-filters-pro.md](hooks
 |-----------|------|---------|-------------|
 | `ms_enabled` | bool | `true` | Master toggle. All protection and session tracking requires this to be on. |
 | `ms_default_protection` | string | `standard` | Baseline protection level for all videos: `none`, `basic`, `standard`, `strict`. Used when a video has no per-video override. Values outside this enum are rejected. |
-| `ms_require_login` | bool | `true` | Force login before any video playback. |
+| `ms_require_login` | bool | `true` | Force login before any video playback. Honoured on **both** sides since 1.3.0 - it is emitted to the client as `requireLogin` and relaxes the `/session/start` permission callback when off. Before 1.3.0 turning it off had no effect: the client gated on `isLoggedIn` alone and the REST callback refused every anonymous request regardless. |
 | `ms_show_badge` | bool | `true` | Display "Protected by MediaShield" badge on the player. |
+| `ms_session_retention_months` | int | `0` | Months of watch history to keep in the live table before moving rows to `ms_watch_sessions_archive`. **`0` = keep everything, and that is the default on purpose.** Clamped 0-120. Before 1.3.0 archiving ran unconditionally at 24 months into a table no read path queried, so every report silently lost history at month 25. Rows already archived are walked back on upgrade by `ms_restore_archived_sessions`. |
 
 ---
 
@@ -51,7 +52,9 @@ When `ms_allowed_domains` is non-empty, the request's HTTP Referer must match th
 | Option Key | Type | Default | Validation |
 |-----------|------|---------|------------|
 
-Self-hosted uploads are stored in `wp-content/uploads/mediashield/` with `.htaccess` protection. A REST proxy endpoint serves files after access verification.
+Self-hosted uploads are stored in `wp-content/uploads/mediashield/`. A REST proxy endpoint (`/stream/{id}`) serves files after access verification, and that is the only path the player uses.
+
+MediaShield also writes an `.htaccess` deny rule into that directory, but **treat it as best-effort, not protection**: `.htaccess` is an Apache feature and nginx ignores it entirely, so on nginx the files are served directly with no access check. Stored filenames carry a random token so addresses cannot be derived from a video title, and the Site Health check in `Admin\HealthCheck` fetches a real file to report whether the server is actually refusing them. Files stay inside `uploads/` because that is the only directory a distributed plugin can rely on being writable, backed up and multisite-aware.
 
 ---
 

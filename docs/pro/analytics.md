@@ -81,7 +81,7 @@ Download your watch data as spreadsheets with date range filters.
 - **Milestones** -- every completion record.
 - **Users** -- per-user aggregated stats.
 
-**Limits:** 50,000 rows per export.
+**Limits:** No cap on watch-session and milestone exports since 1.3.0 - they page through and export in full. The user export keeps a 200,000-row ceiling and writes a notice into the CSV if it is reached.
 
 Go to **MediaShield > Export**, choose the export type, set a date range, and click Download.
 

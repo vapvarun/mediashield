@@ -380,6 +380,70 @@ Each driver class must implement `MediaShield\Upload\Drivers\DriverInterface`.
 
 ---
 
+### mediashield_protection_levels
+
+*Since 1.3.0.*
+
+Add or relabel the Protection Level choices on the video edit screen.
+
+Until 1.3.0 this list was a closed array, which made DRM unreachable as a whole:
+Pro decides a video is DRM-protected by reading `_ms_protection_level === 'drm'`,
+but nothing could ever write that value because the only UI that saves the meta
+did not offer it and Pro had no way in.
+
+Adding a level here only makes it **selectable and storable**. Whatever the level
+is meant to *do* is still yours to implement, usually via `mediashield_player_type`.
+
+```php
+add_filter( 'mediashield_protection_levels', function ( $levels, $post, $selected ) {
+    // Only offer it once the thing behind it is actually configured.
+    if ( 'none' === get_option( 'my_packaging_method', 'none' ) ) {
+        return $levels;
+    }
+
+    $levels['drm'] = __( 'DRM - Encrypted playback', 'my-plugin' );
+
+    return $levels;
+}, 10, 3 );
+```
+
+**Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `$levels` | array | Level slug => human label |
+| `$post` | WP_Post | The video being edited |
+| `$selected` | string | Currently stored level |
+
+---
+
+### mediashield_stored_filename
+
+*Since 1.3.0.*
+
+Change the on-disk filename chosen for a self-hosted upload.
+
+By default the stored name carries a random token (`my-video-a1b2c3….mp4`) so a
+file's address cannot be derived from the video title. That exists because the
+`.htaccess` deny rule in the uploads folder is Apache-only and nginx ignores it -
+see `Admin\HealthCheck`. It is defence in depth, not access control.
+
+Return the plain sanitised name to opt out, for instance on an Apache host where
+the deny rule does apply and predictable names are wanted operationally.
+
+```php
+add_filter( 'mediashield_stored_filename', function ( $obscured, $original_name ) {
+    return sanitize_file_name( $original_name );
+}, 10, 2 );
+```
+
+**Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `$obscured` | string | Filename including the random token |
+| `$original_name` | string | Name as supplied by the client |
+
+---
+
 ### mediashield_player_type
 
 Override the player type for a video.

@@ -38,6 +38,38 @@ Be honest with yourself and with your customers.
 | Saving the video URL from browser developer tools | Free hides the URL from View Source. Pro encrypts the self-hosted video with ClearKey. YouTube and Vimeo iframe URLs stay visible because the platforms publish them. |
 | Stream Recorder or Video DownloadHelper browser extensions | Effective against unencrypted streams. Pro's ClearKey blocks them for encrypted self-hosted video. |
 | Professional piracy (yt-dlp -- a command-line tool for downloading videos from web platforms -- plus ffmpeg plus key extraction) | No software DRM stops a determined attacker. Only hardware Widevine L1 does that, and MediaShield does not ship it. |
+| Requesting a self-hosted video file directly by its web address | **Depends on your web server, and by default it is not blocked on nginx.** See below. |
+
+### The one you have to check yourself: direct file access
+
+If you self-host video (rather than using YouTube, Vimeo, Bunny or Wistia), the
+files live in `wp-content/uploads/mediashield/`. MediaShield writes an
+`.htaccess` file there telling the server to refuse direct requests.
+
+**`.htaccess` is an Apache feature. nginx does not read it.** A large share of
+WordPress hosting runs nginx, and on those servers the file is ignored -- so
+anyone who knows or guesses a file's address can download the video without
+logging in, and none of your access rules apply. Not the login requirement, not
+per-video role restrictions, not the allowed-domain list. The player itself is
+unaffected either way, because it never uses that address; it streams through
+MediaShield, which checks permissions on every request.
+
+Two things reduce the risk, and neither is a fix:
+
+* Stored filenames include a random string, so an address cannot be worked out
+  from a video's title. That makes guessing impractical. It does nothing about
+  an address someone already has.
+* **Tools > Site Health** runs a check that asks your own server for one of
+  your video files and tells you what happened. If the server hands it over,
+  the check reports a problem and gives you the exact nginx rule to fix it.
+
+**Run that check if you self-host.** It is the only way to know which situation
+you are in, because the presence of the `.htaccess` file tells you nothing about
+whether your server honours it.
+
+If you cannot change your server configuration, use a platform (YouTube, Vimeo,
+Bunny, Wistia) rather than self-hosting. Those files never sit in your uploads
+folder in the first place.
 
 If any of those attacks are your main concern, you need:
 

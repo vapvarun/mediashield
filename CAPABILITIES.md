@@ -58,7 +58,8 @@ What this plugin actually does for a site owner, in their language, verified aga
 
 | Can I…? | Status | How it works / the catch | Evidence |
 |---|---|---|---|
-| Upload a video file from the admin? | **NO** | **There is no file upload anywhere in the product.** You paste a URL. To self-host you upload via WP Media separately, then paste the URL back. `/upload/init` exists as a REST route but **no JavaScript calls it**. | `post-new.php?post_type=mediashield_video`; `/upload/init` has zero JS callers |
+| Upload a video file from the admin? | **YES** (1.3.0) | Videos > Add New has a file picker with progress. Before 1.3.0 there was none, and `/upload/init` rejected every real upload anyway - it typed the file from PHP's temp path, which has no extension. Both fixed. | `CPT/VideoPostType.php`; `Upload/Drivers/SelfHosted.php` |
+| Stop a self-hosted file being downloaded by its address? | **DEPENDS ON THE SERVER** | MediaShield writes an `.htaccess` deny rule into the uploads folder. That is Apache-only - **nginx ignores it**, and on nginx the file is served with no access check at all (measured: HTTP 200 for the file, 403 for the gated endpoint). Filenames now carry a random token so addresses cannot be guessed, and a Site Health check tells the owner which situation they are in and supplies the nginx rule. Neither is access control. | `Upload/Drivers/SelfHosted.php`; `Admin/HealthCheck.php` |
 | Use my existing video host? | **YES** | YouTube, Vimeo, Bunny Stream, Wistia, or a direct file URL. This is the real strength — keep your hosting. | `Player/PlayerWrapper.php` |
 | Place a video on a page? | **YES** | Gutenberg block or `[mediashield id=X]`. A wrong/unpublished ID now explains itself to editors. | `Block/`, `Player/Renderer.php` |
 | Use a page builder (Elementor/Divi)? | **NO** | No builder integration, and the CPT is non-public so there's no URL fallback. | `VideoPostType.php:78,85` |
@@ -88,7 +89,7 @@ What this plugin actually does for a site owner, in their language, verified aga
 Ranked by how likely a buyer is to *assume* it already exists.
 
 1. **Captions / subtitles.** Every competitor has them; several auto-generate. We cannot accept a `.vtt` at all. The declared market is **courses** — WCAG 2.1 **Level A** 1.2.2 requires captions on prerecorded video, and the EAA has applied to EU digital products since June 2025. This fails an institutional procurement checklist before protection is ever discussed. **This is the single largest gap in the product.**
-2. **Uploading a video from the admin.** "It's a video plugin, I'll upload my video" is the first thing anyone tries. There is no uploader. Compounded by no chunked upload, so the server's limit (typically 64–128 MB on shared hosting) is a hard ceiling a 20-minute lesson exceeds.
+2. ~~**Uploading a video from the admin.**~~ **Fixed in 1.3.0** - Videos > Add New now has a file picker. Still no chunked upload, so the server's limit (typically 64-128 MB on shared hosting) remains a hard ceiling that a 20-minute lesson can exceed; the error now names the actual limit rather than a number nobody configured.
 3. **Adaptive streaming / quality selector.** A 1080p lesson is unwatchable on weak mobile data with no lower rung to fall to.
 4. **Picture-in-picture** — and our redundant fullscreen button actively occludes the browser's native PiP/speed menu. Cheapest fix on this list.
 5. **Chapters / markers.** A 40-minute lesson without them is a scrub-hunt.
