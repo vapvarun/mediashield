@@ -107,9 +107,20 @@ class SelfHosted implements DriverInterface {
 		//
 		// This is defence in depth, NOT access control. It makes a path
 		// impractical to guess; it does nothing about a path already known or
-		// leaked. The real fix is serving these files from outside the web root,
-		// which is tracked on that card. The readable stem is kept so an
-		// operator can still recognise files on disk.
+		// leaked.
+		//
+		// And it is as far as the plugin can go on its own. Files stay inside
+		// wp-content/uploads because that is the only location a distributed
+		// plugin can rely on: it is the one directory guaranteed writable, the
+		// one backup and migration tools carry, and the one multisite maps per
+		// site. Writing outside it is a bespoke-hosting move, not something a
+		// plugin shipped to unknown installs can do. Closing this properly
+		// therefore needs either server configuration the owner applies, or
+		// encryption at rest so a downloaded file is not playable - both
+		// tracked on the card.
+		//
+		// The readable stem is kept so an operator can still recognise files on
+		// disk.
 		$stem      = pathinfo( sanitize_file_name( $original_name ), PATHINFO_FILENAME );
 		$extension = pathinfo( sanitize_file_name( $original_name ), PATHINFO_EXTENSION );
 		$token     = wp_generate_password( 20, false, false );

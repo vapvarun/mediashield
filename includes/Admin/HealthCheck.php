@@ -124,7 +124,17 @@ class HealthCheck {
 		$result['label']  = __( 'MediaShield video files can be downloaded directly, bypassing access checks', 'mediashield' );
 		$result['description'] = '<p>' . esc_html__( 'Your web server is serving MediaShield video files straight from their storage folder. Anyone with the file address can download a video without logging in, and without any of your access rules being applied.', 'mediashield' ) . '</p>'
 			. '<p>' . esc_html__( 'MediaShield ships an .htaccess rule to prevent this, but that only works on Apache. If your site runs nginx, the rule is ignored and the folder needs a matching rule in your server configuration.', 'mediashield' ) . '</p>';
-		$result['actions'] = '<p>' . esc_html__( 'Ask your host to deny direct requests to the /wp-content/uploads/mediashield/ folder. Video playback will keep working, because the player does not use that address.', 'mediashield' ) . '</p>';
+		// Give the owner the actual rule rather than "ask your host". Most
+		// people reading this cannot write nginx config from scratch, and a
+		// support round-trip to obtain four lines is a poor use of everyone's
+		// time. Playback is unaffected because the player never requests this
+		// path - it goes through /stream/.
+		$result['actions'] = '<p>' . esc_html__( 'Add this to your nginx server block, or send it to your host, then re-run this check:', 'mediashield' ) . '</p>'
+			. '<pre><code>location ^~ /wp-content/uploads/mediashield/ {' . "\n"
+			. '    deny all;' . "\n"
+			. '    return 403;' . "\n"
+			. '}</code></pre>'
+			. '<p>' . esc_html__( 'Video playback keeps working, because the player never requests that address - it streams through MediaShield, which checks permissions on every request.', 'mediashield' ) . '</p>';
 
 		return $result;
 	}
