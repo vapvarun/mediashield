@@ -161,7 +161,6 @@ class PlayerWrapper {
 					? self::extract_source_url( $embed )
 					: ( $matches[1] ?? '' );
 				$platform_video_id = self::extract_video_id( $src_url, $platform );
-				$protection        = get_option( 'ms_default_protection', 'standard' );
 
 				$video_post_id = self::find_video_post_id( $platform, $platform_video_id, $src_url );
 
@@ -173,6 +172,13 @@ class PlayerWrapper {
 				if ( 0 === $video_post_id ) {
 					return $embed;
 				}
+
+				// Resolved only now that the video is known to be ours, and via the
+				// same helper Renderer uses. This used to read the global default
+				// directly and never consult the per-video override, so a video set
+				// to Strict was silently served at the site default whenever the
+				// auto-wrap was the path that found it.
+				$protection = Protection::resolve_level( $video_post_id );
 
 				$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_post_id );
 
@@ -296,8 +302,17 @@ class PlayerWrapper {
 				return '';
 
 			case 'bunny':
-				if ( preg_match( '/embed\/(\d+)\/([a-f0-9-]+)/', $url, $m ) ) {
-					return $m[1] . '/' . $m[2];
+				// The GUID alone. A Bunny embed URL is
+				// iframe.mediadelivery.net/embed/{library}/{guid}, and this used
+				// to return "{library}/{guid}" - but every write path stores the
+				// bare GUID in `_ms_platform_video_id`, and find_video_post_id()
+				// matches that meta exactly. The two could never agree, so no
+				// Bunny video was ever recognised on the auto-wrap path: raw
+				// Bunny embeds went out unwrapped, with no watermark, no
+				// protection overlay and no session tracking. The library id is
+				// not lost - it is stored separately as `_ms_library_id`.
+				if ( preg_match( '/embed\/\d+\/([a-f0-9-]+)/', $url, $m ) ) {
+					return $m[1];
 				}
 				return '';
 

@@ -396,7 +396,9 @@ class VideoPostType {
 	 * @param \WP_Post $post Current post object.
 	 */
 	public static function render_settings_meta_box( \WP_Post $post ): void {
-		$protection = get_post_meta( $post->ID, '_ms_protection_level', true ) ?: get_option( 'ms_default_protection', 'standard' );
+		// Same resolver the front end uses, so the value shown here is the value
+		// that will actually be applied.
+		$protection = \MediaShield\Player\Protection::resolve_level( (int) $post->ID );
 		$access     = get_post_meta( $post->ID, '_ms_access_role', true );
 
 		$levels = array(

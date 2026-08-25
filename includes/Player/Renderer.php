@@ -163,17 +163,10 @@ class Renderer {
 		 */
 		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
 
-		$protection_raw    = get_post_meta( $video_id, '_ms_protection_level', true );
-		// Fall back to the operator-configured global default before the
-		// last-resort 'standard' so the Settings → Default Protection Level
-		// toggle actually has an effect on videos that don't carry a per-video
-		// override.
-		$protection_level = ! empty( $protection_raw )
-			? $protection_raw
-			: \MediaShield\Core\Settings::get( 'ms_default_protection' );
-		if ( empty( $protection_level ) ) {
-			$protection_level = 'standard';
-		}
+		// Per-video override, then the owner's global default, then 'standard'.
+		// Shared with PlayerWrapper so the auto-wrap path cannot resolve this
+		// differently from the shortcode path, which is exactly what it did.
+		$protection_level = Protection::resolve_level( $video_id );
 		$duration    = (int) get_post_meta( $video_id, '_ms_duration', true );
 		$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 

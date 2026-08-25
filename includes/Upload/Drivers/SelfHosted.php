@@ -178,11 +178,19 @@ class SelfHosted implements DriverInterface {
 			update_post_meta( $post_id, '_ms_platform', 'self' );
 			update_post_meta( $post_id, '_ms_platform_video_id', $filename );
 
-			// Protection level is only seeded when the post has none, so an
-			// operator who already chose one for this video keeps it.
-			if ( '' === (string) get_post_meta( $post_id, '_ms_protection_level', true ) ) {
-				update_post_meta( $post_id, '_ms_protection_level', 'standard' );
-			}
+			// No protection level is stamped here on purpose. Writing one makes
+			// it a per-video override, and an override wins over the owner's
+			// Settings > Default Protection Level forever - so a site set to
+			// Strict quietly got Standard on every video it uploaded, and
+			// changing the default later moved none of them. Leaving the meta
+			// empty means the video follows the default, and keeps following it
+			// when the default changes. An operator who wants something else
+			// for this one video sets it on the video, which is what an
+			// override is for.
+			//
+			// Protection\Protection::resolve_level() supplies the effective
+			// value everywhere it is needed, so nothing downstream requires
+			// this row to exist.
 		} else {
 			$post_id = wp_insert_post(
 				array(
@@ -192,7 +200,6 @@ class SelfHosted implements DriverInterface {
 					'meta_input'  => array(
 						'_ms_platform'          => 'self',
 						'_ms_platform_video_id' => $filename,
-						'_ms_protection_level'  => 'standard',
 					),
 				)
 			);

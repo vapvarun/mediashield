@@ -10,6 +10,7 @@
 
 namespace MediaShield\Player;
 
+use MediaShield\Core\Settings;
 use MediaShield\Embed\EmbedLink;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,6 +27,62 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Protection {
 
 	/**
+	 * Resolve the protection level that applies to one video.
+	 *
+	 * WHY THIS IS SHARED RATHER THAN INLINE
+	 *
+	 * There is more than one way a video reaches the page. Renderer handles the
+	 * shortcode and the block; PlayerWrapper handles the output-buffer auto-wrap
+	 * that picks up an embed a theme or another plugin emitted. Both need the
+	 * same answer to "how protected is this video".
+	 *
+	 * They did not give the same answer. Renderer read the per-video
+	 * `_ms_protection_level` meta and fell back to the global default;
+	 * PlayerWrapper read the global default and never looked at the meta at all.
+	 * So the same video was protected as configured when placed by shortcode and
+	 * silently downgraded to the site default when the auto-wrap was what found
+	 * it - with nothing on screen indicating the setting had been ignored. An
+	 * owner who deliberately set one lecture to Strict got Standard on any page
+	 * where the embed came from the theme.
+	 *
+	 * One resolver, two callers. A third render path gets the right answer by
+	 * construction instead of by someone remembering to copy eight lines.
+	 *
+	 * Order: per-video override, then the owner's global default, then
+	 * 'standard' as a last resort for an install whose option row is missing.
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return string Protection level slug.
+	 */
+	public static function resolve_level( int $video_id ): string {
+		$per_video = get_post_meta( $video_id, '_ms_protection_level', true );
+
+		return empty( $per_video ) ? self::default_level() : (string) $per_video;
+	}
+
+	/**
+	 * The protection level for a video that carries no override of its own.
+	 *
+	 * Split out from resolve_level() for the batch callers. A playlist reads
+	 * every item's level in one JOIN specifically to avoid a get_post_meta()
+	 * per row, so it cannot call resolve_level() without reintroducing the N+1
+	 * it was written to avoid. It calls this instead, once, and applies it to
+	 * whichever rows came back with nothing.
+	 *
+	 * Having it here rather than inline in each caller is the point: the
+	 * playlist used to fall back to 'standard' directly, which silently
+	 * ignored the owner's Settings > Default Protection Level for every video
+	 * in every playlist.
+	 *
+	 * @return string Protection level slug.
+	 */
+	public static function default_level(): string {
+		$default = Settings::get( 'ms_default_protection' );
+
+		return empty( $default ) ? 'standard' : (string) $default;
+	}
+
+	/**
 	 * Get the protection configuration for JS.
 	 *
 	 * Values come from wp_options with sensible defaults; the result is passed
@@ -34,14 +91,23 @@ class Protection {
 	 * @return array Protection config.
 	 */
 	public static function get_config(): array {
+		// Read through Settings::get() rather than get_option() with a default
+		// written out again here. Every hand-copied default is a second copy of
+		// a value that already exists in the schema, and this one had already
+		// drifted: `ms_block_keyboard` fell back to true while the schema
+		// declares false. Harmless wherever seed_defaults() has run and the row
+		// exists - and on any install where it does not (a partial activation, a
+		// failed migration, a site restored from an incomplete export) keyboard
+		// blocking switched itself on against the documented default. Settings
+		// resolves the schema default and casts, so there is one source.
 		$config = array(
-			'block_right_click' => (bool) get_option( 'ms_block_right_click', true ),
-			'block_keyboard'    => (bool) get_option( 'ms_block_keyboard', true ),
-			'hide_source'       => (bool) get_option( 'ms_hide_source', true ),
-			'detect_devtools'   => (bool) get_option( 'ms_detect_devtools', true ),
-			'pause_on_devtools' => (bool) get_option( 'ms_pause_on_devtools', false ),
-			'devtools_title'    => (string) get_option( 'ms_devtools_title', __( 'Developer Tools Detected', 'mediashield' ) ),
-			'devtools_message'  => (string) get_option( 'ms_devtools_message', __( 'Please close developer tools to continue watching this video.', 'mediashield' ) ),
+			'block_right_click' => (bool) Settings::get( 'ms_block_right_click' ),
+			'block_keyboard'    => (bool) Settings::get( 'ms_block_keyboard' ),
+			'hide_source'       => (bool) Settings::get( 'ms_hide_source' ),
+			'detect_devtools'   => (bool) Settings::get( 'ms_detect_devtools' ),
+			'pause_on_devtools' => (bool) Settings::get( 'ms_pause_on_devtools' ),
+			'devtools_title'    => (string) Settings::get( 'ms_devtools_title' ),
+			'devtools_message'  => (string) Settings::get( 'ms_devtools_message' ),
 		);
 
 		/**

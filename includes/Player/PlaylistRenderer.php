@@ -63,7 +63,7 @@ class PlaylistRenderer {
 
 		$first             = $items[0];
 		$first_platform    = $first->platform ? $first->platform : 'self';
-		$first_protection  = $first->protection_level ? $first->protection_level : 'standard';
+		$first_protection  = $first->protection_level ? $first->protection_level : Protection::default_level();
 
 		// Hide Video Source URL applies to the opening video too, not just the
 		// sidebar list. Both are on this page, so missing either one leaks the
@@ -148,7 +148,7 @@ class PlaylistRenderer {
 					data-source-url="<?php echo esc_url( $item_source ); ?>"
 					data-stream-url="<?php echo esc_url( $item_stream ); ?>"
 					data-platform="<?php echo esc_attr( $item->platform ? $item->platform : 'self' ); ?>"
-					data-protection-level="<?php echo esc_attr( $item->protection_level ? $item->protection_level : 'standard' ); ?>"
+					data-protection-level="<?php echo esc_attr( $item->protection_level ? $item->protection_level : Protection::default_level() ); ?>"
 					data-index="<?php echo esc_attr( (string) $idx ); ?>">
 					<span class="ms-playlist-item-num"><?php echo esc_html( (string) ( $idx + 1 ) ); ?></span>
 					<?php if ( $thumb ) : ?>

@@ -320,7 +320,11 @@ class SessionController extends WP_REST_Controller {
 					'id'               => $video_id,
 					'title'            => sanitize_text_field( $video->post_title ),
 					'platform'         => sanitize_text_field( get_post_meta( $video_id, '_ms_platform', true ) ),
-					'protection_level' => sanitize_text_field( get_post_meta( $video_id, '_ms_protection_level', true ) ),
+					// The EFFECTIVE level, not the raw override. Reading the meta
+					// directly reported an empty string for every video that
+					// relies on the site default, so the API told a client the
+					// video was unprotected when it was not.
+					'protection_level' => sanitize_text_field( \MediaShield\Player\Protection::resolve_level( (int) $video_id ) ),
 					'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
 					// The manifest the DRM player loads. Dropped from this payload
 					// on 2026-04-20 (a security fix that also stopped self-hosted
@@ -358,7 +362,11 @@ class SessionController extends WP_REST_Controller {
 		// Only DRM-protected videos get a manifest here. A standard/self-hosted
 		// video keeps going through the signed /stream/ handoff, never a raw URL
 		// in this response.
-		$player_type = (string) apply_filters( 'mediashield_player_type', (string) get_post_meta( $video_id, '_ms_protection_level', true ), $video_id );
+		// Seeded with 'standard' to match Renderer. The seed is only a fallback:
+		// Pro's override_player_type() reads the video's protection level itself
+		// to decide about DRM, so seeding it differently here changed nothing
+		// except which of the two paths a reader had to trust.
+		$player_type = (string) apply_filters( 'mediashield_player_type', 'standard', $video_id );
 		if ( 'drm' !== $player_type ) {
 			return '';
 		}
