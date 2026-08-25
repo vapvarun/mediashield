@@ -54,6 +54,53 @@ class UploadManager {
 	 * @param string $name Driver name (e.g. 'self_hosted', 'bunny').
 	 * @return DriverInterface|null Driver instance or null if not found.
 	 */
+	/**
+	 * Decide which driver an upload goes to when the request did not name one.
+	 *
+	 * Settings > Default Upload Target used to be read by nothing. The dropdown
+	 * saved, and every upload went to whatever driver the request happened to
+	 * name - which for the admin uploader is always self-hosted. So an owner who
+	 * connected Bunny and set this to Bunny kept filling their own disk, and the
+	 * only signal was that the videos were not appearing in their library.
+	 *
+	 * Values match the dropdown: 'self' pins uploads to this server, a platform
+	 * slug pins them to that platform, and 'auto' - the shipped default - means
+	 * "the first connected cloud platform", which only Pro can answer because
+	 * only Pro stores connections. Free asks through a filter and falls back to
+	 * self-hosted when nothing answers.
+	 *
+	 * A platform the owner named explicitly is honoured even if its connection
+	 * has since been removed, so the upload fails with that platform's own
+	 * credentials error. Quietly redirecting it to local disk instead would put
+	 * the file somewhere they did not choose and say nothing about it - the
+	 * failure is the useful outcome here. Only an unrecognised value falls back,
+	 * which means a driver that no longer exists at all.
+	 *
+	 * @return string Driver name, always one that exists.
+	 */
+	public static function resolve_default_driver(): string {
+		$target = (string) get_option( 'ms_default_upload_target', 'auto' );
+
+		if ( 'auto' === $target ) {
+			/**
+			 * Filter the driver used when the upload target is "auto".
+			 *
+			 * Pro answers with its first connected platform.
+			 *
+			 * @since 1.3.0
+			 *
+			 * @param string $driver Driver name. Default 'self_hosted'.
+			 */
+			$target = (string) apply_filters( 'mediashield_default_upload_driver', 'self_hosted' );
+		} elseif ( 'self' === $target ) {
+			$target = 'self_hosted';
+		}
+
+		$drivers = self::get_drivers();
+
+		return isset( $drivers[ $target ] ) ? $target : 'self_hosted';
+	}
+
 	public static function get_driver( string $name = 'self_hosted' ): ?DriverInterface {
 		$drivers = self::get_drivers();
 

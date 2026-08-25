@@ -67,22 +67,37 @@ final class RepairCommand {
 	public function bunny_urls( $args, $assoc_args ): void {
 		$execute = isset( $assoc_args['execute'] );
 
-		$query = new WP_Query(
-			array(
-				'post_type'      => 'mediashield_video',
-				'post_status'    => 'any',
-				'posts_per_page' => -1,
-				'fields'         => 'ids',
-				// No meta_query on platform: a record saved before the platform
-				// meta existed has no row at all, and would be skipped by one.
-				'no_found_rows'  => true,
-			)
-		);
+		// Paged rather than posts_per_page => -1. This runs on the sites that
+		// have the problem, and the site this was written for had 26 videos while
+		// the next one may have thousands; loading every id plus the meta each
+		// one pulls in is how a repair tool runs out of memory on exactly the
+		// install that needs it most.
+		$video_ids = array();
+		$paged     = 1;
+
+		do {
+			$query = new WP_Query(
+				array(
+					'post_type'      => 'mediashield_video',
+					'post_status'    => 'any',
+					'posts_per_page' => 200,
+					'paged'          => $paged,
+					'fields'         => 'ids',
+					// No meta_query on platform: a record saved before the platform
+					// meta existed has no row at all, and would be skipped by one.
+					'no_found_rows'  => true,
+				)
+			);
+
+			$found     = count( $query->posts );
+			$video_ids = array_merge( $video_ids, $query->posts );
+			++$paged;
+		} while ( 200 === $found );
 
 		$repairable  = array();
 		$collections = array();
 
-		foreach ( $query->posts as $video_id ) {
+		foreach ( $video_ids as $video_id ) {
 			$video_id = (int) $video_id;
 			$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
 			$source   = (string) get_post_meta( $video_id, '_ms_source_url', true );
@@ -103,8 +118,15 @@ final class RepairCommand {
 				continue;
 			}
 
-			if ( preg_match( '#dash\.bunny\.net/stream/\d+/library/([a-f0-9-]{36})#i', $source, $m ) ) {
-				$repairable[ $video_id ] = strtolower( $m[1] );
+			// Both halves are in the URL. dash.bunny.net/stream/{library}/library/{guid}
+			// carries the library id as well as the GUID, so the embed address can
+			// be rebuilt from the broken value itself - no Bunny connection needed,
+			// and no guessing which library the video belongs to.
+			if ( preg_match( '#dash\.bunny\.net/stream/(\d+)/library/([a-f0-9-]{36})#i', $source, $m ) ) {
+				$repairable[ $video_id ] = array(
+					'library' => $m[1],
+					'guid'    => strtolower( $m[2] ),
+				);
 			}
 		}
 
@@ -113,20 +135,34 @@ final class RepairCommand {
 			return;
 		}
 
-		foreach ( $repairable as $video_id => $guid ) {
+		foreach ( $repairable as $video_id => $parts ) {
+			$guid = $parts['guid'];
+
+			// The embed page, which is what the player can actually render.
+			// Setting only the platform and the video id left `_ms_source_url`
+			// pointing at the Bunny dashboard - an admin page, which the player
+			// hands to its iframe and which answers with a login screen or an
+			// X-Frame-Options refusal. The record came out correctly labelled
+			// and still did not play, so the symptom the owner reported survived
+			// the repair written for it.
+			$embed_url = "https://iframe.mediadelivery.net/embed/{$parts['library']}/{$guid}";
+
 			WP_CLI::log(
 				sprintf(
-					'%s #%d "%s" -> platform=bunny, video id=%s',
+					'%s #%d "%s" -> platform=bunny, video id=%s, library=%s',
 					$execute ? 'REPAIRED' : 'would repair',
 					$video_id,
 					get_the_title( $video_id ),
-					$guid
+					$guid,
+					$parts['library']
 				)
 			);
 
 			if ( $execute ) {
 				update_post_meta( $video_id, '_ms_platform', 'bunny' );
 				update_post_meta( $video_id, '_ms_platform_video_id', $guid );
+				update_post_meta( $video_id, '_ms_source_url', $embed_url );
+				update_post_meta( $video_id, '_ms_library_id', $parts['library'] );
 			}
 		}
 

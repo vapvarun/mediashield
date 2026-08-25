@@ -123,7 +123,13 @@ class UploadController extends WP_REST_Controller {
 			);
 		}
 
+		// An explicit choice in the request wins; otherwise the site's
+		// Default Upload Target decides. This used to take the request
+		// parameter and nothing else, so the setting had no effect at all.
 		$driver_name = $request->get_param( 'driver' );
+		$driver_name = ! empty( $driver_name )
+			? (string) $driver_name
+			: UploadManager::resolve_default_driver();
 		$title       = $request->get_param( 'title' );
 		$title       = ! empty( $title ) ? $title : pathinfo( $file['name'], PATHINFO_FILENAME );
 
