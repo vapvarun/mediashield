@@ -11,6 +11,8 @@
 
 namespace MediaShield\Player;
 
+use MediaShield\Support\Platforms;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -203,8 +205,9 @@ class Renderer {
 		// Enqueue frontend assets (only loads when video content exists).
 		Assets::enqueue();
 
-		// Flag that we need Shaka Player for self-hosted / bunny.
-		if ( in_array( $platform, array( 'self', 'bunny' ), true ) ) {
+		// One implementation of "does this platform need the adaptive player",
+		// shared with PlayerWrapper - the two used to carry a copy each.
+		if ( Platforms::needs_adaptive_player( (string) $platform ) ) {
 			do_action( 'mediashield_needs_shaka' );
 		}
 

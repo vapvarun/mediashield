@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use MediaShield\Core\Assets;
+use MediaShield\Support\Platforms;
 
 /**
  * Class PlayerWrapper
@@ -83,8 +84,22 @@ class PlayerWrapper {
 		// that injects an embed we never see keeps its own markup and plays
 		// unprotected, which is what it did before and is far better than a
 		// container with no player behind it.
-		if ( ! self::content_has_embed() ) {
+		$found = self::content_embed_kinds();
+
+		if ( empty( $found ) ) {
 			return;
+		}
+
+		// Flag adaptive platforms BEFORE enqueueing, not during the buffer.
+		// Assets listens for this and pulls in the streaming library; firing it
+		// from process_buffer() - as the wrapping code does - lands after
+		// wp_footer() has printed, so the library never loaded on this path and
+		// a direct-play Bunny stream only ever played in Safari.
+		foreach ( $found as $platform ) {
+			if ( Platforms::needs_adaptive_player( $platform ) ) {
+				do_action( 'mediashield_needs_shaka' );
+				break;
+			}
 		}
 
 		Assets::enqueue();
@@ -106,9 +121,9 @@ class PlayerWrapper {
 	 * limit of the auto-wrap, and the `mediashield_force_output_buffer` filter
 	 * exists for sites that need it anyway.
 	 *
-	 * @return bool
+	 * @return string[] Platform slugs whose signature appears in the content.
 	 */
-	private static function content_has_embed(): bool {
+	private static function content_embed_kinds(): array {
 		/**
 		 * Force output buffering on regardless of what this page's content holds.
 		 *
@@ -120,29 +135,42 @@ class PlayerWrapper {
 		 *
 		 * @param bool $force Whether to buffer unconditionally. Default false.
 		 */
+		$signatures = array(
+			'youtube.com/embed'          => 'youtube',
+			'youtube-nocookie.com/embed' => 'youtube',
+			'player.vimeo.com/video'     => 'vimeo',
+			'iframe.mediadelivery.net'   => 'bunny',
+			'wistia_async_'              => 'wistia',
+			'<video'                     => Platforms::SELF_HOSTED,
+		);
+
 		if ( (bool) apply_filters( 'mediashield_force_output_buffer', false ) ) {
-			return true;
+			// Nothing was sniffed, so assume the page may hold anything - which
+			// includes the adaptive platforms.
+			return array_values( array_unique( $signatures ) );
 		}
 
 		$queried = get_queried_object();
 
 		if ( ! $queried instanceof \WP_Post ) {
-			return false;
+			return array();
 		}
 
 		$content = (string) $queried->post_content;
 
 		if ( '' === $content ) {
-			return false;
+			return array();
 		}
 
-		foreach ( array( 'youtube.com/embed', 'youtube-nocookie.com/embed', 'player.vimeo.com/video', 'iframe.mediadelivery.net', 'wistia_async_', '<video' ) as $needle ) {
+		$found = array();
+
+		foreach ( $signatures as $needle => $platform ) {
 			if ( false !== stripos( $content, $needle ) ) {
-				return true;
+				$found[ $platform ] = true;
 			}
 		}
 
-		return false;
+		return array_keys( $found );
 	}
 
 	/**
@@ -265,8 +293,9 @@ class PlayerWrapper {
 
 				$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_post_id );
 
-				// Flag Shaka Player needed for self/bunny.
-				if ( in_array( $platform, array( 'self', 'bunny' ), true ) ) {
+				// Same helper Renderer uses, so the auto-wrap path and the
+				// shortcode path cannot disagree about this.
+				if ( Platforms::needs_adaptive_player( (string) $platform ) ) {
 					do_action( 'mediashield_needs_shaka' );
 				}
 
