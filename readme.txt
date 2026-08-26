@@ -198,6 +198,7 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Fix      - Turning off Enable MediaShield now renders videos unprotected instead of an empty player. Shortcodes, blocks and playlists all play normally with protection off.
 * Fix      - Self-hosted uploads no longer fail on a default install. The Max Upload Size setting was measured in megabytes everywhere except the check that enforced it, so a default install advertised a 500 MB limit and rejected anything over 500 bytes.
 * Fix      - Removed a WordPress 6.7 "translation loaded too early" notice that appeared when the monthly cron schedule was registered or the plugin was activated before the init hook.
+* Fix      - Videos detected automatically on a page now load the streaming library they need. A Bunny video set to play directly, rather than through Bunny's own player, would not start outside Safari.
 * Dev      - Added the mediashield_protection_levels filter so extensions can register additional protection levels.
 * Dev      - Added the mediashield_stored_filename filter for the on-disk name given to an uploaded video file.
 * Dev      - /upload/init accepts a video_id to attach an upload to an existing video.
