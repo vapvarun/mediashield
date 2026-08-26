@@ -52,37 +52,17 @@ The viewer clicks play. The player requests a key from your WordPress site, veri
 
 ---
 
-## Method 2: Local packager
+## Local packaging was removed in 1.3.0
 
-For self-hosted videos when you want DRM without a cloud provider.
+MediaShield Pro used to offer a "Local - Shaka Packager" method, with a binary
+path setting, an Auto-Package toggle and a manual packaging step. None of it
+ever packaged a video: the code behind it had no callers anywhere in either
+plugin. It was removed in 1.3.0 rather than left as settings that look like a
+feature.
 
-### Prerequisites
-
-- Access to your server's command line.
-- Sufficient disk space for packaged output (DASH segment files).
-
-### Setup
-
-1. Install Shaka Packager on your server:
-   ```bash
-   # Download from https://github.com/shaka-project/shaka-packager/releases
-   chmod +x packager
-   sudo mv packager /usr/local/bin/
-   ```
-2. Go to **MediaShield > DRM** in the admin.
-3. Set **DRM Method** to "Local Packager".
-4. Set **Packager Path** (default: `packager` -- works if the binary is on your system's PATH).
-5. Optionally enable **Auto-Package** to automatically DRM-wrap new uploads.
-6. Save settings.
-
-### Manual packaging for existing videos
-
-For videos already in your library:
-1. Go to the video edit screen.
-2. Click **Package with DRM**.
-3. MediaShield packages the video into an encrypted streaming format and stores the output. The video library entry updates automatically.
-
----
+If your site had that method selected, **DRM Method** now reads **None**, which
+is what it effectively was. Bunny Stream DRM (above) is unaffected - Bunny does
+the packaging on their side.
 
 ## DRM License Types
 

@@ -78,7 +78,7 @@ When DRM method is `cloud_bunny`, MediaShield does not run the local packager. I
 
 1. Video is uploaded to Bunny Stream via the tus resumable upload protocol (`Upload\Drivers\BunnyStream`).
 2. Bunny packages and serves the streams from its own infrastructure.
-3. `Packager::package_cloud_bunny()` only validates that `_ms_source_url` holds a usable URL and writes the DRM meta, including `_ms_protection_level = 'drm'`.
+3. ~~`Packager::package_cloud_bunny()` marked the video DRM-enabled.~~ **Removed in 1.3.0** with the rest of the packaging code - it only ever set `_ms_protection_level = 'drm'` on a video whose URL already came from Bunny, and nothing called it. Selecting `cloud_bunny` today sets `ms_drm_method`, which is what switches the player over; no plugin-side packaging step runs.
 4. `Platform\BunnyUrls` supplies the playback URL through free's `mediashield_video_stream_url` filter, optionally token-signed (`mediashield_pro_bunny_token_key`, `mediashield_pro_bunny_token_ttl`, default 6 hours).
 
 The encrypted content never passes through your WordPress server in the Bunny cloud method.

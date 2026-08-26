@@ -607,6 +607,38 @@ wins.
 
 ---
 
+### mediashield_adaptive_platforms
+
+*Added in 1.3.0.*
+
+Which platforms deliver an adaptive stream that must play in a real `<video>`
+element, rather than being handed off to the provider's own iframe. Anything on
+this list causes the HLS library to be loaded on pages carrying that platform's
+video; anything not on it plays in the provider's embed and needs no streaming
+library.
+
+Default: `[ 'self', 'bunny' ]`.
+
+```php
+// A custom driver whose media is an HLS playlist.
+add_filter( 'mediashield_adaptive_platforms', function ( $platforms ) {
+    $platforms[] = 'acme';
+    return $platforms;
+} );
+```
+
+**Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `$platforms` | string[] | Platform slugs. Default `[ 'self', 'bunny' ]`. |
+
+`Support\Platforms::needs_adaptive_player()` is the single consumer, called by
+both `Player\Renderer` (shortcode and block) and `Player\PlayerWrapper` (the
+output-buffer auto-wrap). Before 1.3.0 those two carried a hardcoded copy each,
+so adding a platform meant editing both and they could drift apart.
+
+---
+
 ### mediashield_default_upload_driver
 
 *Added in 1.3.0.*

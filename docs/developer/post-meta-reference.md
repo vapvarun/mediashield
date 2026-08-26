@@ -75,10 +75,10 @@ Written by the Pro plugin. Listed here for completeness; the authoritative list 
 | `_ms_library_id` | BunnyStream driver | Bunny library ID. |
 | `_ms_wistia_numeric_id` | WistiaApi driver | Wistia numeric ID. |
 | `_ms_bunny_encode_status` | BunnyWebhookController | Latest encode state reported by the Bunny webhook. |
-| `_ms_drm_enabled` | DRM\Packager | Whether DRM packaging has completed for this video. Note Pro's player-type override reads `_ms_protection_level === 'drm'`, not this key. |
-| `_ms_drm_method` | DRM\Packager | DRM method used: `cloud_bunny` or `local_shaka`. |
-| `_ms_drm_output_dir` | DRM\Packager | Absolute path to the Shaka Packager DASH output directory (local method only). |
-| `_ms_drm_packaged_at` | DRM\Packager | UTC timestamp of last successful packaging. |
+| `_ms_drm_enabled` | _(writer removed in 1.3.0)_ | Whether DRM packaging has completed for this video. Note Pro's player-type override reads `_ms_protection_level === 'drm'`, not this key. |
+| `_ms_drm_method` | _(writer removed in 1.3.0)_ | DRM method used: `cloud_bunny` or `local_shaka`. |
+| `_ms_drm_output_dir` | _(writer removed in 1.3.0)_ | Absolute path to the Shaka Packager DASH output directory (local method only). |
+| `_ms_drm_packaged_at` | _(writer removed in 1.3.0)_ | UTC timestamp of last successful packaging. |
 | `_ms_linked_lesson` | LMS\LMSMetaBox | Lesson/topic post ID this video is bound to. Validated against the owning adapter's `owns_post()`. |
 | `_ms_lms_require_enrollment` | LMS\LMSMetaBox | Per-video override of `ms_lms_enrollment_check`. |
 | `_ms_lms_complete_pct` | LMS\LMSMetaBox | Per-video override of `ms_lms_complete_pct`. |

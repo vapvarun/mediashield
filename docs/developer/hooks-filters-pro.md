@@ -2,7 +2,7 @@
 
 Pro-specific hooks that extend the free plugin's hook system. For free plugin hooks, see [hooks-filters-free.md](hooks-filters-free.md).
 
-Most Pro-fired hooks use the `mediashield_pro_*` prefix per the Free/Pro architecture contract. Several pre-date that contract and keep a bare `mediashield_` prefix (`mediashield_fire_webhook`, `mediashield_generate_pdf`, `mediashield_before_drm_package`, `mediashield_after_drm_package`, `mediashield_bunny_encoded`, `mediashield_bunny_failed`, `mediashield_lms_adapters`, `mediashield_lms_adapters_loaded`, `mediashield_lms_lesson_completed`, `mediashield_vpn_lookup_url`). They are all real and all fired by Pro; a future release may rename them behind a `do_action_deprecated()` shim.
+Most Pro-fired hooks use the `mediashield_pro_*` prefix per the Free/Pro architecture contract. Several pre-date that contract and keep a bare `mediashield_` prefix (`mediashield_fire_webhook`, `mediashield_generate_pdf`, `mediashield_bunny_encoded`, `mediashield_bunny_failed`, `mediashield_lms_adapters`, `mediashield_lms_adapters_loaded`, `mediashield_lms_lesson_completed`, `mediashield_vpn_lookup_url`). They are all real and all fired by Pro. (`mediashield_before_drm_package` and `mediashield_after_drm_package` were on this list until 1.3.0; they were removed with the DRM packaging code.) a future release may rename them behind a `do_action_deprecated()` shim.
 
 Line references are against 1.3.0. Paths are relative to the `mediashield-pro` repo.
 
@@ -57,40 +57,7 @@ add_action( 'mediashield_pro_privacy_before_erase', function( $email, $user, $pa
 
 ---
 
-### mediashield_before_drm_package
 
-*Since 1.1.0*
-
-**Removed in 1.3.0.** Fired only from `DRM\Packager::package()`, which had no callers and was deleted.
-
-Source: `includes/DRM/Packager.php:64`
-
-**Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| `$video_id` | int | Video CPT post ID |
-| `$method` | string | `cloud_bunny`, `cloud_aws` or `local_shaka` (the `none` case returns before this fires) |
-
----
-
-### mediashield_after_drm_package
-
-*Since 1.1.0*
-
-Fired after packaging returns, on both the success and failure paths.
-
-Source: `includes/DRM/Packager.php:97`
-
-**Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| `$video_id` | int | Video CPT post ID |
-| `$method` | string | Packaging method used |
-| `$result` | array\|`WP_Error` | Packaging result, or the error. Check with `is_wp_error()`. |
-
-> Both actions were **removed in 1.3.0** along with the packaging code they fired from. See [drm-internals.md](drm-internals.md#video-packaging---removed-in-130).
-
----
 
 ### mediashield_lms_lesson_completed
 
@@ -405,7 +372,7 @@ Options Pro reads or writes. The `Exposed` column says whether the key appears i
 | `ms_pro_watermark_font_size` | `'medium'` | yes | Font size: small/medium/large |
 | `ms_show_badge` | `true` | yes | Show MediaShield badge. Shared with free - the key exists in `Settings::schema()` too. |
 | `ms_pro_milestone_config` | `[]` | no (own route) | Milestone action configurations. Read through `GET /milestones/config`. |
-| `ms_drm_method` | `'none'` | yes | `none`, `cloud_bunny`, `cloud_aws`, `local_shaka`. Anything else submitted is coerced to `none`. `cloud_aws` is a stub. |
+| `ms_drm_method` | `'none'` | yes | `none` or `cloud_bunny`. Anything else submitted is coerced to `none` - including `local_shaka` and `cloud_aws`, which were removed in 1.3.0 with the packaging code. Read by `override_player_type()` and `register_drm_level()`, so it now means "use the encrypted player", not "how do we package". |
 | `ms_drm_license_duration_streaming` | `86400` | yes | Streaming license seconds. Anything under 300 is reset to 86400. |
 | `ms_suspicious_sensitivity` | `'medium'` | yes | `low`, `medium` or `high`; anything else is coerced to `medium`. |
 | `ms_safe_users` | `[]` | no (own route) | Whitelisted user IDs, written by `POST /analytics/suspicious/safe-user` |
@@ -444,10 +411,10 @@ There is **no** `ms_drm_license_duration_persistent` option - offline licensing 
 | `_ms_library_id` | BunnyStream driver | Bunny library ID |
 | `_ms_wistia_numeric_id` | WistiaApi driver | Wistia numeric ID |
 | `_ms_bunny_encode_status` | BunnyWebhookController | Latest encode state from the Bunny webhook (`error` on failure) |
-| `_ms_drm_enabled` | DRM\Packager | DRM packaging completed flag |
-| `_ms_drm_method` | DRM\Packager | `cloud_bunny` or `local_shaka` |
-| `_ms_drm_output_dir` | DRM\Packager | Shaka output directory (local method only) |
-| `_ms_drm_packaged_at` | DRM\Packager | Packaging timestamp |
+| `_ms_drm_enabled` | _(writer removed in 1.3.0)_ | DRM packaging completed flag |
+| `_ms_drm_method` | _(writer removed in 1.3.0)_ | `cloud_bunny` or `local_shaka` |
+| `_ms_drm_output_dir` | _(writer removed in 1.3.0)_ | Shaka output directory (local method only) |
+| `_ms_drm_packaged_at` | _(writer removed in 1.3.0)_ | Packaging timestamp |
 | `_ms_linked_lesson` | LMS\LMSMetaBox | Lesson / topic post ID, validated against the owning adapter's `owns_post()` |
 | `_ms_lms_require_enrollment` | LMS\LMSMetaBox | Per-video override of `ms_lms_enrollment_check` |
 | `_ms_lms_complete_pct` | LMS\LMSMetaBox | Per-video override of `ms_lms_complete_pct` |
