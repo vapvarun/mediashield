@@ -28,7 +28,16 @@ PLUGIN_SLUG="$(basename "$PLUGIN_DIR")"
 cd "$PLUGIN_DIR"
 
 MODE="full"
-SITE_URL="${LOCAL_CI_SITE_URL:-http://mediashield.local}"
+# Site URL comes from docs/qa/qa-config.json when present, so this script and
+# /wp-plugin-smoke cannot disagree about which site to test. They did: this
+# defaulted to mediashield.local while qa-config said lms.local, so the journeys
+# stage had never once run - it reported "site not reachable" and was counted as
+# a warning.
+QA_CONFIG_URL=""
+if [ -f docs/qa/qa-config.json ] && command -v jq >/dev/null 2>&1; then
+  QA_CONFIG_URL="$(jq -r '.base_url // empty' docs/qa/qa-config.json 2>/dev/null)"
+fi
+SITE_URL="${LOCAL_CI_SITE_URL:-${QA_CONFIG_URL:-http://mediashield.local}}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -43,6 +52,9 @@ done
 # ─── helpers ─────────────────────────────────────────────────────────────────
 
 FAILED=()
+# A gate that did not run proves nothing, so skips are tracked and the run ends
+# non-zero. Ported from Pro (BC#10235757874); free was never swept.
+SKIPPED=()
 GREEN="\033[0;32m"; RED="\033[0;31m"; YELLOW="\033[0;33m"; DIM="\033[2m"; RESET="\033[0m"
 
 step() { printf "${DIM}[%s]${RESET} %s\n" "$1" "${@:2}"; }
@@ -98,6 +110,28 @@ done < <(find . -type f -name '*.php' \
           -print0)
 [ "$PHP_LINT_FAILED" = "0" ] && pass "PHP lint clean"
 
+# ─── Dev autoloader, temporarily ─────────────────────────────────────────────
+#
+# The COMMITTED autoloader must be --no-dev: it ships to customers, and one
+# built with dev requirements took every site down on a fresh clone. But phpcs,
+# phpstan and phpunit are all dev requirements, so with the shipped autoloader
+# none of them can load - which is why 1.3 PHPStan failed on a clean checkout
+# and stayed red. Build a dev autoloader for the run, put the shipped one back
+# afterwards. The trap covers a failing gate and a Ctrl-C alike, because a tree
+# left holding a dev autoloader is the state that caused the outage.
+RESTORE_AUTOLOAD=0
+restore_autoload() {
+  if [ "$RESTORE_AUTOLOAD" = "1" ]; then
+    composer dump-autoload --no-dev --quiet 2>/dev/null || true
+    RESTORE_AUTOLOAD=0
+  fi
+}
+trap restore_autoload EXIT INT TERM
+
+if [ "$MODE" != "quick" ] && [ -d vendor/phpunit ] && ! grep -q "phpunit" vendor/composer/autoload_classmap.php 2>/dev/null; then
+  composer dump-autoload --quiet 2>/dev/null && RESTORE_AUTOLOAD=1
+fi
+
 if [ "$MODE" = "quick" ]; then
   step "QUICK" "skipping WPCS / PHPStan / wppqa / journeys"
 else
@@ -106,6 +140,7 @@ else
       run_stage "1.2" "WPCS (phpcs)" composer phpcs
     else
       warn "1.2 WPCS skipped — run 'composer install' first"
+      SKIPPED+=("1.2 WPCS")
     fi
   fi
 
@@ -114,6 +149,19 @@ else
       run_stage "1.3" "PHPStan static analysis" composer phpstan
     else
       warn "1.3 PHPStan skipped — vendor/bin/phpstan not present"
+      SKIPPED+=("1.3 PHPStan")
+    fi
+  fi
+
+  # The suite itself. There was no PHPUnit stage here at all, so the 58 tests in
+  # tests/unit/ were run by nothing - every "tests pass" claim on Free was a
+  # statement about a command someone ran by hand, if at all.
+  if [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; then
+    if [ -x vendor/bin/phpunit ]; then
+      run_stage "1.4" "PHPUnit test suite" vendor/bin/phpunit
+    else
+      warn "1.4 PHPUnit skipped — vendor/bin/phpunit not present"
+      SKIPPED+=("1.4 PHPUnit")
     fi
   fi
 fi
@@ -158,6 +206,7 @@ if [ "$MODE" = "full" ]; then
       run_stage "4.1" "Customer journeys (browser+REST+DB)" bash bin/run-journeys.sh --site "$SITE_URL"
     else
       warn "4.1 Journeys skipped — site $SITE_URL is not reachable"
+      SKIPPED+=("4.1 Journeys")
     fi
   fi
 fi
@@ -180,9 +229,17 @@ fi
 
 echo ""
 echo "=== Summary ==="
-if [ ${#FAILED[@]} -eq 0 ]; then
+if [ ${#FAILED[@]} -eq 0 ] && [ ${#SKIPPED[@]} -eq 0 ]; then
   printf "${GREEN}local-CI green${RESET}\n"
   exit 0
+elif [ ${#FAILED[@]} -eq 0 ]; then
+  printf "${YELLOW}local-CI incomplete: %d gate(s) could not run${RESET}\n" "${#SKIPPED[@]}"
+  for stage in "${SKIPPED[@]}"; do
+    printf "  ${YELLOW}!${RESET} %s\n" "$stage"
+  done
+  printf "\nNothing failed, but this is not a pass - a gate that did not run\n"
+  printf "proves nothing. Make the listed gates runnable and re-run.\n"
+  exit 1
 else
   printf "${RED}local-CI failed: %d stage(s)${RESET}\n" "${#FAILED[@]}"
   for stage in "${FAILED[@]}"; do

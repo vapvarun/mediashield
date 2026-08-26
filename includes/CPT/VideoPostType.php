@@ -396,9 +396,18 @@ class VideoPostType {
 	 * @param \WP_Post $post Current post object.
 	 */
 	public static function render_settings_meta_box( \WP_Post $post ): void {
-		// Same resolver the front end uses, so the value shown here is the value
-		// that will actually be applied.
-		$protection = \MediaShield\Player\Protection::resolve_level( (int) $post->ID );
+		// The RAW override, not the resolved value.
+		//
+		// This read Protection::resolve_level(), which returns the site default
+		// when a video has no override of its own. With no "Default" option to
+		// return to and a save handler that writes whatever is posted, merely
+		// OPENING a video and pressing Update stamped the current default onto
+		// it as a permanent per-video override - so the video stopped following
+		// Settings > Default Protection Level from then on. That is the ninth
+		// creation path of the same bug the other eight were fixed for
+		// (BC#10235758016); showing the effective value here is what introduced
+		// it.
+		$protection = (string) get_post_meta( $post->ID, '_ms_protection_level', true );
 		$access     = get_post_meta( $post->ID, '_ms_access_role', true );
 
 		$levels = array(
@@ -429,6 +438,18 @@ class VideoPostType {
 		 * @param string               $selected Currently stored level.
 		 */
 		$levels = (array) apply_filters( 'mediashield_protection_levels', $levels, $post, (string) $protection );
+
+		// Prepended after the filter so it stays first, and so an add-on cannot
+		// remove the only route back to "follow the site default". The label
+		// names the current default, because "Default" on its own tells the
+		// operator nothing about what they are choosing.
+		$levels = array(
+			'' => sprintf(
+				/* translators: %s: the site-wide default protection level. */
+				__( 'Default (%s)', 'mediashield' ),
+				\MediaShield\Player\Protection::default_level()
+			),
+		) + $levels;
 
 		$roles = wp_roles()->get_names();
 		?>
@@ -768,10 +789,30 @@ class VideoPostType {
 			'_ms_duration'          => 'absint',
 		);
 
+		// Keys where an empty submission means "not set", not "set to empty".
+		// Writing '' created a meta row on a video that had none - a save that
+		// changed nothing still stamped every field, and for
+		// _ms_protection_level that empty row is the difference between
+		// following the site default and overriding it forever.
+		$unset_when_empty = array(
+			'_ms_platform',
+			'_ms_platform_video_id',
+			'_ms_source_url',
+			'_ms_protection_level',
+			'_ms_access_role',
+		);
+
 		foreach ( $fields as $key => $sanitize ) {
 			if ( isset( $_POST[ $key ] ) ) {
 				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized via $sanitize callback (sanitize_text_field, esc_url_raw, absint).
-				update_post_meta( $post_id, $key, $sanitize( wp_unslash( $_POST[ $key ] ) ) );
+				$value = $sanitize( wp_unslash( $_POST[ $key ] ) );
+
+				if ( '' === $value && in_array( $key, $unset_when_empty, true ) ) {
+					delete_post_meta( $post_id, $key );
+					continue;
+				}
+
+				update_post_meta( $post_id, $key, $value );
 			}
 		}
 
@@ -840,8 +881,19 @@ class VideoPostType {
 	public static function register_meta(): void {
 		$meta_fields = array(
 			'_ms_platform'          => array(
-				'type'    => 'string',
-				'default' => 'self',
+				'type' => 'string',
+				// Deliberately '' and not 'self', for the same reason
+				// `_ms_protection_level` is '' below: a registered default is
+				// returned by get_post_meta() for a row that does not exist, so
+				// a non-empty one turns "no platform set" into "self-hosted" at
+				// read time. The edit screen then renders that into its hidden
+				// field and the save persists it, so merely opening a video and
+				// pressing Update marked it self-hosted with no source URL -
+				// the exact state that makes the player hang with no error
+				// (BC#10225483994). Renderer still coalesces an absent platform
+				// to 'self' for rendering; StreamController and Cleanup
+				// correctly do nothing when it is unset.
+				'default' => '',
 			),
 			'_ms_platform_video_id' => array(
 				'type'    => 'string',

@@ -1,5 +1,16 @@
 # MediaShield (FREE) — Architecture + Flow + Wiring Audit
 
+> **SNAPSHOT — 2026-05-12, audited against 1.1.0-dev. Verify before use.**
+>
+> This is history, not current state. It describes the plugin as it was, and
+> several things it documents are gone: `EmailGate` was removed with the email
+> gate in 1.2.0, and the DRM packaging layer was deleted in 1.3.0. Its
+> "Release status: BLOCKED" refers to a HIGH that was resolved in 1.3.0.
+>
+> For current state use the trust order in CLAUDE.md: `audit/manifest.summary.json`
+> first, then `CAPABILITIES.md`, then the code. A dated audit never outranks any
+> of them.
+
 **Plugin:** mediashield
 **Version under audit:** 1.0.0 (plugin header) / 1.1.0-dev (manifest)
 **Audit date:** 2026-05-12

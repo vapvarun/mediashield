@@ -134,4 +134,43 @@ class SettingsResolutionTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'self_hosted', UploadManager::resolve_default_driver() );
 	}
+
+	/**
+	 * The ninth creation path: the edit screen itself.
+	 *
+	 * Eight paths were stopped from stamping the site default onto a video as a
+	 * per-video override. The edit screen still did it - the metabox
+	 * pre-selected Protection::resolve_level(), which returns the default when
+	 * no override exists, there was no "Default" option to return to, and the
+	 * save handler wrote whatever was posted. So opening a video and pressing
+	 * Update, changing nothing, pinned it to the current default forever
+	 * (BC#10235758016, QA bounce).
+	 *
+	 * The registered meta default must stay '' for the same reason: a non-empty
+	 * one is returned by get_post_meta() for a row that does not exist, which
+	 * makes "unset" indistinguishable from "explicitly set to the default".
+	 */
+	public function test_absent_override_reads_as_empty_not_as_the_default(): void {
+		$raw = get_post_meta( $this->video_id, '_ms_protection_level', true );
+
+		$this->assertSame(
+			'',
+			$raw,
+			'A video with no override must read as empty. A registered default here would '
+			. 'make the edit screen stamp it back on the next save.'
+		);
+	}
+
+	/**
+	 * Same trap on the platform key, which did have a registered default of
+	 * "self" - so opening any video and saving marked it self-hosted with no
+	 * source URL, the state that makes the player hang with no error.
+	 */
+	public function test_absent_platform_reads_as_empty_not_self(): void {
+		$this->assertSame(
+			'',
+			get_post_meta( $this->video_id, '_ms_platform', true ),
+			'An unset platform must not read back as "self".'
+		);
+	}
 }
