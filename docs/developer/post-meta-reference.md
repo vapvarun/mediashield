@@ -79,8 +79,6 @@ Written by the Pro plugin. Listed here for completeness; the authoritative list 
 | `_ms_drm_method` | DRM\Packager | DRM method used: `cloud_bunny` or `local_shaka`. |
 | `_ms_drm_output_dir` | DRM\Packager | Absolute path to the Shaka Packager DASH output directory (local method only). |
 | `_ms_drm_packaged_at` | DRM\Packager | UTC timestamp of last successful packaging. |
-| `_ms_drm_packaging_status` | DRM\Packager | Current packaging job status (`queued`, then updated by the worker). |
-| `_ms_drm_packaging_action_id` | DRM\Packager | Action Scheduler action ID for the async `mediashield_pro_drm_package` job. |
 | `_ms_linked_lesson` | LMS\LMSMetaBox | Lesson/topic post ID this video is bound to. Validated against the owning adapter's `owns_post()`. |
 | `_ms_lms_require_enrollment` | LMS\LMSMetaBox | Per-video override of `ms_lms_enrollment_check`. |
 | `_ms_lms_complete_pct` | LMS\LMSMetaBox | Per-video override of `ms_lms_complete_pct`. |

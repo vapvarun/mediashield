@@ -10,13 +10,13 @@ Read this before anything below.
 
 - **Before 1.3.0 DRM could not be turned on at all.** Pro decides a video is DRM-protected by reading `_ms_protection_level === 'drm'`, but the Protection Level list on the video edit screen was a closed array, so nothing could ever store that value. The `mediashield_protection_levels` filter (free, 1.3.0) is what opened it; Pro's `Core\Plugin::register_drm_level()` hooks it and adds the `drm` level - and only when `ms_drm_method` is something other than `none`. The label Pro registers is literally "DRM - Encrypted playback (experimental)".
 - **Encrypted playback has never been verified end to end.** Treat everything on this page as the intended design plus the code that exists, not as a shipped, proven pipeline.
-- **The packaging entry points are not wired.** `DRM\Packager::package()`, `DRM\Packager::schedule_packaging()` and `DRM\KeyServer::generate_key()` are public and complete, but nothing in either plugin calls them: there is no "Package with DRM" control, and `ms_drm_auto_package` is stored and returned by the settings API without any code reading it at upload time. In practice a key row is never created, so `POST /drm/license` returns 404 `drm_key_not_found`. Wiring a trigger is the missing piece; the code below is what that trigger would drive.
+- **The packaging code was deleted in 1.3.0.** `DRM\Packager` had no callers anywhere in either plugin, and `DRM\KeyServer::generate_key()` was called only from inside it, so no key row could ever be created. Rather than keep ~480 lines that nothing could reach, both were removed along with the `ms_drm_shaka_path` and `ms_drm_auto_package` settings and the `local_shaka` / `cloud_aws` methods. `KeyServer::get_key()` and `DRM\WidevineLicense` remain because `REST\DRMController` genuinely calls them - but with no writer for `ms_drm_keys`, `POST /drm/license` answers `drm_key_not_found` for every video. Restoring DRM means writing a packaging path AND a trigger for it, not re-wiring what was there.
 
 ---
 
 ## Key generation - `DRM\KeyServer`
 
-`KeyServer::generate_key( $video_id )`:
+`KeyServer::generate_key( $video_id )` (**removed in 1.3.0** - documented here only so an older install's rows make sense):
 
 1. `bin2hex( random_bytes( 16 ) )` produces a 128-bit key ID as 32 hex characters.
 2. `bin2hex( random_bytes( 16 ) )` produces the 128-bit content key, also carried as a hex string (not raw bytes) everywhere in PHP.
@@ -27,43 +27,31 @@ The column is `content_key_encrypted`; there is no plaintext `content_key` colum
 
 ---
 
-## Video packaging - `DRM\Packager`
+## Video packaging - removed in 1.3.0
 
-`Packager::package( $video_id, $file_path )` reads `ms_drm_method` and dispatches. It fires `mediashield_before_drm_package` ($video_id, $method) on entry and `mediashield_after_drm_package` ($video_id, $method, $result) on exit, whichever branch ran.
+There is no packaging code. `DRM\Packager` held it - a dispatcher on
+`ms_drm_method` with a `cloud_bunny` branch, a `local_shaka` branch that shelled
+out to Shaka Packager, a `cloud_aws` stub that returned 501, and an Action
+Scheduler variant - and **nothing in either plugin ever called any of it**. It
+was deleted rather than kept as ~480 lines of unreachable code that reads like a
+working feature.
 
-| `ms_drm_method` | Behaviour |
-|-----------------|-----------|
-| `none` | `WP_Error( 'drm_disabled' )`, 400. |
-| `cloud_bunny` | No local work. Verifies `_ms_source_url` is a valid URL (set by the BunnyStream driver), then marks the video up. |
-| `cloud_aws` | `WP_Error( 'drm_not_implemented' )`, 501. The admin dropdown offers it as "Coming Soon"; the method body is a stub. |
-| `local_shaka` | Runs the Shaka Packager CLI. |
+Removed with it: `DRM\KeyServer::generate_key()` (the only caller was Packager),
+the `ms_drm_shaka_path` and `ms_drm_auto_package` settings, the `local_shaka` and
+`cloud_aws` values of `ms_drm_method`, and the `mediashield_before_drm_package` /
+`mediashield_after_drm_package` actions, which only ever fired from inside the
+dead path.
 
-### `local_shaka`
+`ms_drm_method` survives, narrowed to `none` | `cloud_bunny`, because
+`Plugin::override_player_type()` and `Plugin::register_drm_level()` both read it -
+it now means "should protected videos use the encrypted player", not "how do we
+package". A stored `local_shaka` or `cloud_aws` coerces to `none` on next save.
 
-1. Requires `proc_open` to be available, else `WP_Error`. (`function_exists()` is the check - PHP reports a function listed in `disable_functions` as non-existent, which is how shared hosts switch process execution off.)
-2. Requires `ms_drm_shaka_path` to be an **absolute path to an executable**, else `WP_Error`. A bare program name is refused: it would rely on `PATH`, and PHP-FPM's `PATH` is not the shell's on most managed hosts, so a bare name resolves in a CLI test and fails in production with nothing but "packaging failed".
-3. Retrieves the content key from `ms_drm_keys` for the video.
-4. Runs the binary through `proc_open` with an **argument array** - no shell is involved, so nothing is escaped - writing into `wp-content/uploads/mediashield/drm/{video_id}/`. Both stdout and stderr are captured.
-5. Success is judged by `stream.mpd` existing in the output directory after the call.
-6. Sets `_ms_drm_enabled = true`, `_ms_drm_method = 'local_shaka'`, `_ms_drm_output_dir`, `_ms_drm_packaged_at`.
-
-Changed in 1.3.0. This previously assembled a single command string and passed it to PHP's shell-execution function, with `escapeshellarg()` on each value. That was correct - there was no injection - but malware scanners match the *shape* of the call, so customers running Wordfence could see their install flagged as backdoored. The argument-array form gives a scanner nothing to match. It also fixed a real bug: `escapeshellarg()` was applied to the paths *inside* the `in=...,output=...` stream descriptor, which the shell unquotes back into one word only while no path contains a space - on a host whose uploads path has one, the descriptor split across two arguments and packaging failed.
-
-Note it does **not** set `_ms_protection_level`, which is the meta Pro's player-type override actually reads - a locally packaged video still needs the Protection Level set to `drm` on the edit screen before the DRM player engages.
-
-### `cloud_bunny`
-
-Sets `_ms_drm_enabled = true`, `_ms_drm_method = 'cloud_bunny'`, `_ms_drm_packaged_at`, **and** `_ms_protection_level = 'drm'`. This is the one path that switches the player over by itself.
-
-### Async variant
-
-`Packager::schedule_packaging( $video_id, $file_path )` enqueues `mediashield_pro_drm_package` on Action Scheduler (group `mediashield-pro`, args `video_id` + `file_path`), writes `_ms_drm_packaging_status = 'queued'` and stores the action id in `_ms_drm_packaging_action_id`. Returns `WP_Error( 'drm_no_scheduler' )` when Action Scheduler is absent.
-
-### How the player is switched over
-
-Pro hooks free's `mediashield_player_type` filter with `Core\Plugin::override_player_type()`, which returns `'drm'` when **`_ms_protection_level === 'drm'` and `ms_drm_method !== 'none'`**. It does not read `_ms_drm_enabled`. Free's `Player\Renderer`, `PlayerWrapper` and `SessionController` all consult the same filter, and `SessionController::resolve_drm_source_url()` only puts a manifest URL in the `/session/start` payload when the filter says `drm`.
-
----
+**Consequence, stated plainly:** nothing writes `ms_drm_keys`, so
+`KeyServer::get_key()` returns null for every video and the license endpoint
+below answers `drm_key_not_found` every time. That was already true before the
+deletion - the write path was unreachable - it is simply visible in the code
+now. Restoring DRM means writing a packaging path *and* a trigger for it.
 
 ## License serving - `POST /mediashield-pro/v1/drm/license`
 

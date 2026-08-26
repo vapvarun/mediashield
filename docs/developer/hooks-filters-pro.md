@@ -61,7 +61,7 @@ add_action( 'mediashield_pro_privacy_before_erase', function( $email, $user, $pa
 
 *Since 1.1.0*
 
-Fired at the top of `DRM\Packager::package()`, before the method dispatches to the Bunny / AWS / Shaka branch.
+**Removed in 1.3.0.** Fired only from `DRM\Packager::package()`, which had no callers and was deleted.
 
 Source: `includes/DRM/Packager.php:64`
 
@@ -88,7 +88,7 @@ Source: `includes/DRM/Packager.php:97`
 | `$method` | string | Packaging method used |
 | `$result` | array\|`WP_Error` | Packaging result, or the error. Check with `is_wp_error()`. |
 
-> Neither of these fires today: nothing in either plugin calls `Packager::package()`. See [drm-internals.md](drm-internals.md#status-experimental-and-partly-unwired).
+> Both actions were **removed in 1.3.0** along with the packaging code they fired from. See [drm-internals.md](drm-internals.md#video-packaging---removed-in-130).
 
 ---
 
@@ -406,9 +406,7 @@ Options Pro reads or writes. The `Exposed` column says whether the key appears i
 | `ms_show_badge` | `true` | yes | Show MediaShield badge. Shared with free - the key exists in `Settings::schema()` too. |
 | `ms_pro_milestone_config` | `[]` | no (own route) | Milestone action configurations. Read through `GET /milestones/config`. |
 | `ms_drm_method` | `'none'` | yes | `none`, `cloud_bunny`, `cloud_aws`, `local_shaka`. Anything else submitted is coerced to `none`. `cloud_aws` is a stub. |
-| `ms_drm_shaka_path` | `''` | yes | **Absolute path** to the Shaka Packager binary. A bare program name is rejected from 1.3.0 (it relies on `PATH`, which PHP-FPM does not share with the shell). An empty submitted value is ignored, keeping the previous path. |
 | `ms_drm_license_duration_streaming` | `86400` | yes | Streaming license seconds. Anything under 300 is reset to 86400. |
-| `ms_drm_auto_package` | `false` | yes | Auto-package uploads with DRM. **Stored and returned but never read** - no code packages on upload. |
 | `ms_suspicious_sensitivity` | `'medium'` | yes | `low`, `medium` or `high`; anything else is coerced to `medium`. |
 | `ms_safe_users` | `[]` | no (own route) | Whitelisted user IDs, written by `POST /analytics/suspicious/safe-user` |
 | `ms_weekly_digest_enabled` | `true` | yes | Enable weekly digest |
@@ -450,8 +448,6 @@ There is **no** `ms_drm_license_duration_persistent` option - offline licensing 
 | `_ms_drm_method` | DRM\Packager | `cloud_bunny` or `local_shaka` |
 | `_ms_drm_output_dir` | DRM\Packager | Shaka output directory (local method only) |
 | `_ms_drm_packaged_at` | DRM\Packager | Packaging timestamp |
-| `_ms_drm_packaging_status` | DRM\Packager | Job status |
-| `_ms_drm_packaging_action_id` | DRM\Packager | Action Scheduler action ID |
 | `_ms_linked_lesson` | LMS\LMSMetaBox | Lesson / topic post ID, validated against the owning adapter's `owns_post()` |
 | `_ms_lms_require_enrollment` | LMS\LMSMetaBox | Per-video override of `ms_lms_enrollment_check` |
 | `_ms_lms_complete_pct` | LMS\LMSMetaBox | Per-video override of `ms_lms_complete_pct` |
