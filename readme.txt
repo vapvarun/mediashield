@@ -162,6 +162,7 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * New      - Analytics Retention setting controls how long watch history stays in reports. Default is to keep everything.
 * New      - wp mediashield repair bunny-urls repairs videos already saved from a Bunny dashboard URL. Dry-run by default.
 * New      - Site Health check that asks your web server whether it will serve video files directly, and warns if it does. The folder rule MediaShield ships only works on Apache; on nginx it is ignored.
+* New      - "Prevent Skipping Ahead" can now be set per video, on the video edit screen, like every other player feature. It was the only one with a global setting and no per-video control.
 * Improve  - The Allowed Domains list now accepts one domain per line or comma-separated, and a pasted web address works too. Following the on-screen instruction produced a list nothing matched, which blocked playback on every other site instead of allowing it.
 * Improve  - A video's protection level is now the same wherever it appears. A video set to Strict was served at the site default when it was picked up automatically on a page rather than added with the block or shortcode, and playlists ignored the site default entirely.
 * Improve  - Changing the default protection level now applies to videos you already have. Every video was saved with a copy of whatever the default was on the day it was added, so changing it later moved nothing.

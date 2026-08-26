@@ -656,13 +656,11 @@ class VideoPostType {
 				<?php esc_html_e( 'Override global settings for this video. "Default" uses the value from Settings → Player Controls.', 'mediashield' ); ?>
 			</p>
 			<?php
-			$overrides = array(
-				'_ms_player_speed'     => __( 'Speed Control', 'mediashield' ),
-				'_ms_player_keyboard'  => __( 'Keyboard Shortcuts', 'mediashield' ),
-				'_ms_player_resume'    => __( 'Resume Playback', 'mediashield' ),
-				'_ms_player_sticky'    => __( 'Sticky Player', 'mediashield' ),
-				'_ms_player_endscreen' => __( 'End Screen', 'mediashield' ),
-			);
+			// Labels come from the same class the player reads its overrides
+			// from, so a feature cannot appear in one and not the other - which
+			// is how Prevent Skipping Ahead ended up as the only player feature
+			// with no per-video control.
+			$overrides = \MediaShield\Player\FeatureOverrides::labels();
 			?>
 			<div class="ms-feature-overrides">
 			<?php
@@ -784,7 +782,7 @@ class VideoPostType {
 		}
 
 		// Player feature overrides (tri-state: '', 'on', 'off').
-		$override_keys = array( '_ms_player_speed', '_ms_player_keyboard', '_ms_player_resume', '_ms_player_sticky', '_ms_player_endscreen' );
+		$override_keys = \MediaShield\Player\FeatureOverrides::keys();
 		foreach ( $override_keys as $key ) {
 			if ( isset( $_POST[ $key ] ) ) {
 				$val = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );

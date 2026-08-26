@@ -49,7 +49,7 @@ All free-plugin options are defined in `Core\Settings::schema()`, which carries 
 
 Uninstall derives the list of options to delete from the same schema, so an option added there is cleaned up automatically.
 
-Two schema entries have no admin UI in 1.3.0 and are settable only through the option or the settings REST route: `ms_player_prevent_forward_seek` (clamps forward seeking to the furthest point watched) and `ms_bunny_webhook_url` in Pro.
+One schema entry has no admin UI in 1.3.0 and is settable only through the option or the settings REST route: `ms_bunny_webhook_url` in Pro. (`ms_player_prevent_forward_seek` was the other; it gained a global toggle on Settings > Player and a per-video override on the video edit screen in 1.3.0.)
 
 ## JavaScript
 

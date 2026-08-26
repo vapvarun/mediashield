@@ -607,6 +607,35 @@ wins.
 
 ---
 
+### mediashield_player_overrides
+
+*Added in 1.3.0.*
+
+The map of per-video player-feature overrides: override meta key => the key the
+player reads in its config. Adding an entry makes the feature appear on the video
+edit screen, saved by the existing handler, and applied on both render paths.
+
+```php
+add_filter( 'mediashield_player_overrides', function ( $map ) {
+    $map['_ms_player_acme'] = 'acme';
+    return $map;
+} );
+```
+
+**Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `$map` | array<string,string> | Meta key => frontend config key. |
+
+`Player\FeatureOverrides` is the single consumer, read by `CPT\VideoPostType`
+(labels and save handler), `Player\Renderer` and `Player\PlayerWrapper`. Before
+1.3.0 this list was written out by hand in all four, which is why
+`prevent_forward_seek` shipped as the only player feature with no per-video
+control - it was added to the settings and the player, and the four copies were
+never updated.
+
+---
+
 ### mediashield_adaptive_platforms
 
 *Added in 1.3.0.*

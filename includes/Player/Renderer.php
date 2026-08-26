@@ -283,20 +283,8 @@ class Renderer {
 		>
 			<?php
 			// Per-video player feature overrides (tri-state: on/off/empty=global).
-			$video_overrides = array();
-			$override_keys   = array(
-				'_ms_player_speed'     => 'speedControl',
-				'_ms_player_keyboard'  => 'keyboard',
-				'_ms_player_resume'    => 'resume',
-				'_ms_player_sticky'    => 'sticky',
-				'_ms_player_endscreen' => 'endscreen',
-			);
-			foreach ( $override_keys as $meta_key => $js_key ) {
-				$val = get_post_meta( $video_id, $meta_key, true );
-				if ( 'on' === $val || 'off' === $val ) {
-					$video_overrides[ $js_key ] = ( 'on' === $val );
-				}
-			}
+			// One map, shared with PlayerWrapper and the edit screen.
+			$video_overrides = FeatureOverrides::for_video( (int) $video_id );
 			// Per-video end screen text/URL.
 			$es_text = get_post_meta( $video_id, '_ms_player_endscreen_text', true );
 			$es_url  = get_post_meta( $video_id, '_ms_player_endscreen_url', true );

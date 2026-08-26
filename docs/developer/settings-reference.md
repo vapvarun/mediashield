@@ -64,7 +64,7 @@ Global defaults for the player UI. Most can be overridden per-video via the vide
 | Option Key | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `ms_player_speed_control` | bool | `true` | Show the playback-rate menu (self-hosted / Bunny only). Per-video override: `_ms_player_speed`. |
-| `ms_player_prevent_forward_seek` | bool | `false` | Block seeking past the furthest point already watched. Emitted to JS as `player.preventForwardSeek`. Global only - there is no per-video override meta key. |
+| `ms_player_prevent_forward_seek` | bool | `false` | Block seeking past the furthest point already watched. Emitted to JS as `player.preventForwardSeek`. Overridable per video since 1.3.0 via `_ms_player_prevent_forward_seek`. |
 | `ms_player_sticky` | bool | `false` | Pin the player to a corner when scrolled off-screen during playback. |
 | `ms_player_keyboard` | bool | `true` | Allow Space/Arrow/M/F shortcuts on the player. |
 | `ms_player_resume` | bool | `true` | Resume from the last reached position when re-opening a video. |

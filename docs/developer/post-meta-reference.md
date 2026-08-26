@@ -50,6 +50,7 @@ Tri-state: the key is **deleted** to mean "inherit the global setting", `'on'` f
 | `_ms_player_resume` | `ms_player_resume` | Resume from last position. |
 | `_ms_player_sticky` | `ms_player_sticky` | Sticky player on scroll. |
 | `_ms_player_endscreen` | `ms_player_endscreen` | End-screen CTA overlay. |
+| `_ms_player_prevent_forward_seek` | `ms_player_prevent_forward_seek` | Clamp forward seeking to the furthest point watched. |
 
 The two end-screen text fields are plain strings, not tri-state - they are deleted when submitted empty, and an empty value inherits the global:
 
@@ -58,7 +59,9 @@ The two end-screen text fields are plain strings, not tri-state - they are delet
 | `_ms_player_endscreen_text` | `ms_player_endscreen_text` | CTA text. Sanitised with `sanitize_text_field`. |
 | `_ms_player_endscreen_url` | `ms_player_endscreen_url` | CTA URL. Sanitised with `esc_url_raw`. |
 
-`ms_player_prevent_forward_seek` is global-only. There is no `_ms_player_prevent_forward_seek` meta key.
+All six overrides come from one map, `Player\FeatureOverrides::map()`, which the edit screen, the save handler, `Player\Renderer` and `Player\PlayerWrapper` all read. Add a feature there and it appears in every one of them.
+
+`_ms_player_prevent_forward_seek` was added in 1.3.0. It was the only player feature without a per-video override, because the map behind these was written out four times by hand and the other three copies were never updated. The `mediashield_player_overrides` filter lets an add-on register its own.
 
 ### Extension seam
 
