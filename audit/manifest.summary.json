@@ -1,65 +1,41 @@
 {
-  "$schema": "https://wpmediaverse.com/schemas/wp-plugin-manifest-summary-v2.json",
   "plugin": {
-    "slug": "mediashield",
-    "name": "MediaShield",
-    "version": "1.2.0",
-    "namespace": "MediaShield",
-    "main_file": "mediashield.php",
-    "text_domain": "mediashield",
-    "extends": null,
-    "extension_hook_consumed": null,
-    "extension_hook_fired": "mediashield_loaded"
+    "slug": null,
+    "name": null,
+    "version": null,
+    "namespace": null,
+    "text_domain": null,
+    "extends": null
+  },
+  "generated": {
+    "at": null,
+    "schema": "v3-functional",
+    "by": "wp-plugin-onboard --refresh",
+    "verified_by": "wp-plugin-onboard --refresh 2026-08-26; coverage gate run against grep ground truth, two categories hand-patched (see notes.generator_blind_spots)"
   },
   "counts": {
     "rest_endpoints": 23,
     "ajax": 1,
     "admin_pages": 2,
-    "settings": 33,
-    "shortcodes": 3,
-    "blocks": 3,
-    "post_types": 2,
-    "taxonomies": 0,
     "tables": 6,
+    "hooks_fired": 62,
+    "blocks": 3,
+    "shortcodes": 3,
+    "cron": 4,
+    "post_types": 2,
     "capabilities": 1,
-    "services": 34,
-    "hooks_fired": 32,
-    "cron": 2,
-    "wp_cli": 1,
-    "storage_drivers": 1
+    "settings": 34,
+    "wp_cli": 2
   },
   "detail_files": {
-    "rest": "manifest.json#/rest",
-    "ajax": "manifest.json#/ajax",
-    "settings": "manifest.json#/settings",
-    "hooks_fired": "manifest.json#/hooks_fired",
-    "services": "manifest.json#/services",
-    "static_analysis": "manifest.json#/static_analysis"
+    "full_manifest": "audit/manifest.json"
   },
-  "release_readiness": {
-    "status": "READY",
-    "verified_at": "2026-05-26",
-    "wppqa_baseline": "audit/wppqa-baseline-2026-05-26/SUMMARY.md",
-    "prior_blockers_resolved": [
-      {
-        "code": "nonce-no-cap",
-        "where": "includes/Admin/Menu.php:174",
-        "resolved": "current_user_can(manage_options) now follows check_ajax_referer (Menu.php:181-184)"
-      },
-      {
-        "code": "inline-onclick",
-        "where": "includes/CPT/VideoPostType.php:382,396",
-        "resolved": "no inline onclick attributes remain in the plugin"
-      }
-    ]
+  "notes": {
+    "generator_blind_spots": [
+      "tables: ms_watch_sessions_archive is created by str_replace() on the sessions schema (DB/Schema.php:84-88), not a literal CREATE TABLE, so write-manifest.mjs cannot see it. Patched in from ground truth; re-patch after every regeneration until the generator learns this pattern.",
+      "admin_pages: SetupWizard's add_submenu_page (includes/Admin/SetupWizard.php) was missed; only Menu.php's add_menu_page was found. Patched in from ground truth."
+    ],
+    "summary_hand_verified": "post_types, capabilities, settings and wp_cli come back 0 from the v3 generator on this plugin - CPTs are registered inside a wrapper method (CPT/*PostType::register_post_type), the capability and WP-CLI commands are registered in the bootstrap file rather than includes/, and settings live in Settings::schema(). Values here are ground-truthed: 2 CPTs (mediashield_video, mediashield_playlist), 1 capability (upload_mediashield), 34 settings (count( Settings::schema() ), confirmed live), 2 WP-CLI commands (mediashield scale, mediashield repair)."
   },
-  "generated": {
-    "at": "2026-05-26T00:00:00Z",
-    "from": "wp-plugin-onboard skill (v2.2 refresh)",
-    "branch": "main",
-    "schema_version": "v2.2",
-    "scan_scope": "gruntfile",
-    "scan_path": ".",
-    "php_file_count": 53
-  }
+  "read_me_first": "Counts here are code-verified and coverage-gated against grep ground truth. Where the generator has a known blind spot it is listed under notes.generator_blind_spots and the value was hand-patched - re-patch after any regeneration."
 }

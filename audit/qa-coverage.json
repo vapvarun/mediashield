@@ -1,221 +1,233 @@
 {
-    "schema_version": "v1",
-    "plugin": {
-        "slug": "mediashield",
-        "version": "1.1.0-dev"
-    },
-    "generated": {
-        "at": "2026-05-11T18:18:07+00:00",
-        "manifest_at": "2026-05-11T00:00:00Z",
-        "manifest_branch": "main"
-    },
-    "categories": {
-        "rest": {
-            "total": 28,
-            "covered": 0,
-            "uncovered": 28,
-            "skipped": 0,
-            "covered_items": [],
-            "uncovered_items": [
-                {
-                    "method": "GET",
-                    "route": "/tags",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/tags\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/tags",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/tags\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/tags/(?P<id>\\d+)",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/tags/(?P<id>\\d+)\""
-                },
-                {
-                    "method": "PUT",
-                    "route": "/tags/(?P<id>\\d+)",
-                    "stub_command": "bin/qa-stub-gen.php rest PUT \"/tags/(?P<id>\\d+)\""
-                },
-                {
-                    "method": "DELETE",
-                    "route": "/tags/(?P<id>\\d+)",
-                    "stub_command": "bin/qa-stub-gen.php rest DELETE \"/tags/(?P<id>\\d+)\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/videos/(?P<video_id>\\d+)/tags",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/videos/(?P<video_id>\\d+)/tags\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/videos/(?P<video_id>\\d+)/tags",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/videos/(?P<video_id>\\d+)/tags\""
-                },
-                {
-                    "method": "DELETE",
-                    "route": "/videos/(?P<video_id>\\d+)/tags/(?P<tag_id>\\d+)",
-                    "stub_command": "bin/qa-stub-gen.php rest DELETE \"/videos/(?P<video_id>\\d+)/tags/(?P<tag_id>\\d+)\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/session/start",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/session/start\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/session/heartbeat",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/session/heartbeat\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/session/end",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/session/end\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/session/revoke-user",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/session/revoke-user\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/playlists/(?P<playlist_id>\\d+)/items",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/playlists/(?P<playlist_id>\\d+)/items\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/playlists/(?P<playlist_id>\\d+)/items",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/playlists/(?P<playlist_id>\\d+)/items\""
-                },
-                {
-                    "method": "DELETE",
-                    "route": "/playlists/(?P<playlist_id>\\d+)/items/(?P<item_id>\\d+)",
-                    "stub_command": "bin/qa-stub-gen.php rest DELETE \"/playlists/(?P<playlist_id>\\d+)/items/(?P<item_id>\\d+)\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/playlists/(?P<playlist_id>\\d+)/items/reorder",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/playlists/(?P<playlist_id>\\d+)/items/reorder\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/upload/init",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/upload/init\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/upload/status/(?P<upload_id>[a-zA-Z0-9._-]+)",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/upload/status/(?P<upload_id>[a-zA-Z0-9._-]+)\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/settings",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/settings\""
-                },
-                {
-                    "method": "PUT",
-                    "route": "/settings",
-                    "stub_command": "bin/qa-stub-gen.php rest PUT \"/settings\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/analytics/overview",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/overview\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/videos/(?P<id>\\d+)/stats",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/videos/(?P<id>\\d+)/stats\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/analytics/milestones",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/milestones\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/analytics/users",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/users\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/analytics/users/(?P<user_id>\\d+)",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/users/(?P<user_id>\\d+)\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/analytics/my-videos",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/my-videos\""
-                },
-                {
-                    "method": "GET",
-                    "route": "/stream/(?P<video_id>\\d+)",
-                    "stub_command": "bin/qa-stub-gen.php rest GET \"/stream/(?P<video_id>\\d+)\""
-                },
-                {
-                    "method": "POST",
-                    "route": "/protection/devtools-event",
-                    "stub_command": "bin/qa-stub-gen.php rest POST \"/protection/devtools-event\""
-                }
-            ]
+  "schema_version": "v1",
+  "plugin": {
+    "slug": "mediashield",
+    "version": "1.2.0"
+  },
+  "generated": {
+    "at": "2026-08-26T07:31:49.097Z",
+    "manifest_at": "2026-05-26T00:00:00Z",
+    "manifest_branch": "main"
+  },
+  "categories": {
+    "rest": {
+      "total": 29,
+      "covered": 0,
+      "uncovered": 29,
+      "skipped": 0,
+      "covered_items": [],
+      "uncovered_items": [
+        {
+          "method": "GET",
+          "route": "/tags",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/tags\""
         },
-        "ajax": {
-            "total": 1,
-            "covered": 0,
-            "uncovered": 1,
-            "skipped": 0,
-            "covered_items": [],
-            "uncovered_items": [
-                {
-                    "action": "ms_dismiss_pro_notice",
-                    "stub_command": "bin/qa-stub-gen.php ajax ms_dismiss_pro_notice"
-                }
-            ]
+        {
+          "method": "POST",
+          "route": "/tags",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/tags\""
         },
-        "hooks_fired": {
-            "total": 0,
-            "covered": 0,
-            "uncovered": 0,
-            "skipped": 25,
-            "covered_items": [],
-            "uncovered_items": [],
-            "_note": "Tracks only hooks with non-empty consumed_by. Skipped hooks are pure extensibility surface."
+        {
+          "method": "GET",
+          "route": "/tags/(?P<id>\\d+)",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/tags/(?P<id>\\d+)\""
         },
-        "cron": {
-            "total": 2,
-            "covered": 0,
-            "uncovered": 2,
-            "skipped": 0,
-            "covered_items": [],
-            "uncovered_items": [
-                {
-                    "hook": "mediashield_archive_old_sessions",
-                    "stub_command": "bin/qa-stub-gen.php cron mediashield_archive_old_sessions"
-                },
-                {
-                    "hook": "mediashield_cleanup_inactive_sessions",
-                    "stub_command": "bin/qa-stub-gen.php cron mediashield_cleanup_inactive_sessions"
-                }
-            ]
+        {
+          "method": "PUT",
+          "route": "/tags/(?P<id>\\d+)",
+          "stub_command": "bin/qa-stub-gen.php rest PUT \"/tags/(?P<id>\\d+)\""
         },
-        "wp_cli": {
-            "total": 0,
-            "covered": 0,
-            "uncovered": 0,
-            "skipped": 0
+        {
+          "method": "DELETE",
+          "route": "/tags/(?P<id>\\d+)",
+          "stub_command": "bin/qa-stub-gen.php rest DELETE \"/tags/(?P<id>\\d+)\""
+        },
+        {
+          "method": "GET",
+          "route": "/videos/(?P<video_id>\\d+)/tags",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/videos/(?P<video_id>\\d+)/tags\""
+        },
+        {
+          "method": "POST",
+          "route": "/videos/(?P<video_id>\\d+)/tags",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/videos/(?P<video_id>\\d+)/tags\""
+        },
+        {
+          "method": "DELETE",
+          "route": "/videos/(?P<video_id>\\d+)/tags/(?P<tag_id>\\d+)",
+          "stub_command": "bin/qa-stub-gen.php rest DELETE \"/videos/(?P<video_id>\\d+)/tags/(?P<tag_id>\\d+)\""
+        },
+        {
+          "method": "POST",
+          "route": "/session/start",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/session/start\""
+        },
+        {
+          "method": "POST",
+          "route": "/session/heartbeat",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/session/heartbeat\""
+        },
+        {
+          "method": "POST",
+          "route": "/session/end",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/session/end\""
+        },
+        {
+          "method": "POST",
+          "route": "/session/revoke-user",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/session/revoke-user\""
+        },
+        {
+          "method": "GET",
+          "route": "/playlists/(?P<playlist_id>\\d+)/items",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/playlists/(?P<playlist_id>\\d+)/items\""
+        },
+        {
+          "method": "POST",
+          "route": "/playlists/(?P<playlist_id>\\d+)/items",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/playlists/(?P<playlist_id>\\d+)/items\""
+        },
+        {
+          "method": "DELETE",
+          "route": "/playlists/(?P<playlist_id>\\d+)/items/(?P<item_id>\\d+)",
+          "stub_command": "bin/qa-stub-gen.php rest DELETE \"/playlists/(?P<playlist_id>\\d+)/items/(?P<item_id>\\d+)\""
+        },
+        {
+          "method": "POST",
+          "route": "/playlists/(?P<playlist_id>\\d+)/items/reorder",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/playlists/(?P<playlist_id>\\d+)/items/reorder\""
+        },
+        {
+          "method": "POST",
+          "route": "/upload/init",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/upload/init\""
+        },
+        {
+          "method": "GET",
+          "route": "/upload/status/(?P<upload_id>[a-zA-Z0-9._-]+)",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/upload/status/(?P<upload_id>[a-zA-Z0-9._-]+)\""
+        },
+        {
+          "method": "GET",
+          "route": "/settings",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/settings\""
+        },
+        {
+          "method": "PUT",
+          "route": "/settings",
+          "stub_command": "bin/qa-stub-gen.php rest PUT \"/settings\""
+        },
+        {
+          "method": "GET",
+          "route": "/analytics/overview",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/overview\""
+        },
+        {
+          "method": "GET",
+          "route": "/videos/(?P<id>\\d+)/stats",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/videos/(?P<id>\\d+)/stats\""
+        },
+        {
+          "method": "GET",
+          "route": "/analytics/milestones",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/milestones\""
+        },
+        {
+          "method": "GET",
+          "route": "/analytics/users",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/users\""
+        },
+        {
+          "method": "GET",
+          "route": "/analytics/users/(?P<user_id>\\d+)",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/users/(?P<user_id>\\d+)\""
+        },
+        {
+          "method": "GET",
+          "route": "/analytics/my-videos",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/analytics/my-videos\""
+        },
+        {
+          "method": "GET",
+          "route": "/stream/(?P<video_id>\\d+)",
+          "stub_command": "bin/qa-stub-gen.php rest GET \"/stream/(?P<video_id>\\d+)\""
+        },
+        {
+          "method": "POST",
+          "route": "/protection/devtools-event",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/protection/devtools-event\""
+        },
+        {
+          "method": "POST",
+          "route": "/wizard/complete",
+          "stub_command": "bin/qa-stub-gen.php rest POST \"/wizard/complete\""
         }
+      ]
     },
-    "summary": {
-        "categories_checked": 5,
-        "items_total": 31,
-        "items_covered": 0,
-        "items_uncovered": 31,
-        "items_skipped": 25,
-        "coverage_percent": 0
+    "ajax": {
+      "total": 1,
+      "covered": 0,
+      "uncovered": 1,
+      "skipped": 0,
+      "covered_items": [],
+      "uncovered_items": [
+        {
+          "action": "ms_dismiss_pro_notice",
+          "stub_command": "bin/qa-stub-gen.php ajax ms_dismiss_pro_notice"
+        }
+      ]
     },
-    "drift": {
-        "previous_uncovered": null,
-        "current_uncovered": 31,
-        "delta": null
+    "hooks_fired": {
+      "total": 0,
+      "covered": 0,
+      "uncovered": 0,
+      "skipped": 32,
+      "covered_items": [],
+      "uncovered_items": [],
+      "_note": "Tracks only hooks with non-empty consumed_by. Skipped hooks are pure extensibility surface."
+    },
+    "cron": {
+      "total": 2,
+      "covered": 0,
+      "uncovered": 2,
+      "skipped": 0,
+      "covered_items": [],
+      "uncovered_items": [
+        {
+          "hook": "mediashield_archive_old_sessions",
+          "stub_command": "bin/qa-stub-gen.php cron mediashield_archive_old_sessions"
+        },
+        {
+          "hook": "mediashield_cleanup_inactive_sessions",
+          "stub_command": "bin/qa-stub-gen.php cron mediashield_cleanup_inactive_sessions"
+        }
+      ]
+    },
+    "wp_cli": {
+      "total": 1,
+      "covered": 0,
+      "uncovered": 1,
+      "skipped": 0,
+      "covered_items": [],
+      "uncovered_items": [
+        {
+          "command": "mediashield scale",
+          "stub_command": "bin/qa-stub-gen.php wp_cli mediashield scale"
+        }
+      ]
     }
+  },
+  "summary": {
+    "categories_checked": 5,
+    "items_total": 33,
+    "items_covered": 0,
+    "items_uncovered": 33,
+    "items_skipped": 32,
+    "coverage_percent": 0
+  },
+  "drift": {
+    "previous_uncovered": 31,
+    "current_uncovered": 33,
+    "delta": 2
+  }
 }
