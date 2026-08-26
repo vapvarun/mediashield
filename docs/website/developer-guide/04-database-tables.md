@@ -1,6 +1,6 @@
 # Database Tables
 
-MediaShield creates 6 tables in the free plugin. All table names use the `{$wpdb->prefix}` prefix (typically `wp_`). Tables are created via `dbDelta` on activation, re-run by `Core\Migrator` whenever `MEDIASHIELD_DB_VERSION` increases, and dropped on full uninstall (Plugins > Delete).
+MediaShield creates 6 tables in the free plugin. All table names use the `{$wpdb->prefix}` prefix (typically `wp_`). Tables are created via `dbDelta` on activation, re-run by `Core\Migrator` whenever `MEDIASHIELD_DB_VERSION` increases, and dropped on full uninstall (Plugins > Delete) - unless Pro is still installed, in which case they are left alone along with the settings and the video records.
 
 ---
 
@@ -122,6 +122,6 @@ Until 1.3.0 this job archived at 24 months unconditionally, into a table nothing
 
 There is no five-minute cron. If you need to react to session expiry sooner than the hourly job, read `last_heartbeat` yourself.
 
-**Cascade delete.** Not a cron job: `before_delete_post` cleans up when a video or playlist is permanently deleted. Deleting a video removes its tag links (and any tag left with no videos), its sessions in both tables, its milestones, its playlist entries, and the matching entries in each user's earned-tag meta. For self-hosted videos it also deletes the stored file; for platform videos it asks the driver to delete the remote resource. With Pro active it clears the Pro tables that reference the video or its sessions. Deleting a playlist removes its items.
+**Cascade delete.** Not a cron job: `before_delete_post` cleans up when a video or playlist is permanently deleted. Deleting a video removes its tag links (and any tag left with no videos), its sessions in both tables, its milestones, its playlist entries, and the matching entries in each user's earned-tag meta. For self-hosted videos it also deletes the stored file - that file is in this site's own uploads folder and nothing else references it. **For platform videos it does not touch the platform.** A master on Bunny, Vimeo, YouTube or Wistia is left exactly where it is, so the same video can be linked back at any time by importing it again. With Pro active it clears the Pro tables that reference the video or its sessions. Deleting a playlist removes its items.
 
 Deactivating the plugin unschedules the recurring jobs and leaves all data in place. Deleting the plugin drops all six tables and permanently deletes every video and playlist post.

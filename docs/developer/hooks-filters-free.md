@@ -571,6 +571,67 @@ add_filter( 'mediashield_enable_output_buffer', function( $enabled ) {
 
 ---
 
+### mediashield_force_output_buffer
+
+*Added in 1.3.0.*
+
+Force output buffering on regardless of what the current page's content holds.
+
+Buffering only starts when the queried post's own content contains something the
+auto-wrap handles (a YouTube/Vimeo/Bunny/Wistia embed or a `<video>` tag). That
+keeps buffering off pages with no video at all, and - more importantly - means
+the wrapper only ever replaces an embed on a page where it has already enqueued
+the player assets. Before 1.3.0 it wrapped first and enqueued from inside the
+output-buffer callback, which fires after `wp_footer()` has printed, so the
+scripts never loaded and every auto-detected embed rendered a blank box.
+
+The trade-off is that an embed printed by the theme or a page builder, rather
+than stored in post content, is not detected. Use this filter for those sites.
+
+```php
+// A page builder renders video embeds that are not in post_content.
+add_filter( 'mediashield_force_output_buffer', function ( $force ) {
+    return is_singular( 'portfolio' ) ? true : $force;
+} );
+```
+
+**Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `$force` | bool | Whether to buffer unconditionally. Default `false`. |
+
+Note this is separate from `mediashield_enable_output_buffer`, which turns
+buffering off. This one turns it on where content inspection would have skipped
+it; that one vetoes it entirely. A `false` from `mediashield_enable_output_buffer`
+wins.
+
+---
+
+### mediashield_default_upload_driver
+
+*Added in 1.3.0.*
+
+Supplies the driver used when **Settings > Default Upload Target** is `auto` and
+the upload request did not name one. Free cannot answer this itself - platform
+connections are a Pro table - so it asks, and falls back to `self_hosted` when
+nothing responds. Pro hooks this and returns its first active connection.
+
+```php
+add_filter( 'mediashield_default_upload_driver', function ( $driver ) {
+    return 'bunny';
+} );
+```
+
+**Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `$driver` | string | Driver name. Default `'self_hosted'`. |
+
+The returned name must exist in `mediashield_upload_drivers`; an unrecognised
+value falls back to `self_hosted`.
+
+---
+
 ### mediashield_player_html
 
 Filter the final player HTML output.

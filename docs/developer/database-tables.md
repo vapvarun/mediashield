@@ -1,6 +1,6 @@
 # Database Tables Reference
 
-All tables use the `{$wpdb->prefix}` prefix (typically `wp_`). Created via `dbDelta` in `MediaShield\DB\Schema` (free, `includes/DB/Schema.php`) and `MediaShieldPro\DB\Schema` (Pro, same path in the Pro repo). Both free and Pro tables are created on plugin activation and dropped on full uninstall (deletion via Plugins > Delete).
+All tables use the `{$wpdb->prefix}` prefix (typically `wp_`). Created via `dbDelta` in `MediaShield\DB\Schema` (free, `includes/DB/Schema.php`) and `MediaShieldPro\DB\Schema` (Pro, same path in the Pro repo). Both free and Pro tables are created on plugin activation and dropped on full uninstall (deletion via Plugins > Delete). Free's tables are **not** dropped while Pro is still installed - see the uninstall note below.
 
 Every table is `utf8mb4` / `utf8mb4_unicode_ci`. Every `datetime` column is UTC, written with `current_time( 'mysql', true )` - reads compare against that same function passed as a prepared parameter rather than MySQL `NOW()`, so retention windows do not drift with the session timezone.
 

@@ -146,7 +146,7 @@ interface DriverInterface {
 }
 ```
 
-Note `upload()` returns `video_id` and `embed_url` - not a `url` key - and `get_status()` returns `progress`, not `progress_pct`. `Cron\Cleanup::handle_video_delete()` calls `delete()` when a video CPT is permanently deleted, so a driver that no-ops `delete()` will leave orphans on the remote platform.
+Note `upload()` returns `video_id` and `embed_url` - not a `url` key - and `get_status()` returns `progress`, not `progress_pct`. `Cron\Cleanup::handle_video_delete()` calls `delete()` **only for the self-hosted driver**, whose file lives in this site's own uploads folder. It is never called for a remote platform: MediaShield does not delete media from Bunny, Vimeo, YouTube or Wistia, so the master survives and the video can be linked back by importing it again. Implement `delete()` as a refusal that returns `false`, which is what the bundled platform drivers do.
 
 Register a driver by class name (the filter takes class strings, unlike the LMS filter which takes instances):
 

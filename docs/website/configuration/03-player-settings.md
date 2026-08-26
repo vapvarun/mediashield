@@ -38,4 +38,4 @@ Four more options exist only per video, with no global equivalent: **Autoplay**,
 
 ## Not in the settings UI
 
-The player also supports preventing forward seeking (rewinding is allowed; skipping past the furthest point actually watched is clamped), which is used for watch-enforcement and compliance training. It is implemented and honoured by the player, including the keyboard skip-forward shortcut, but has no control on the Settings screen in this release. Developers can set the `ms_player_prevent_forward_seek` option, or send it to `PUT /wp-json/mediashield/v1/settings`, to switch it on.
+**Prevent Skipping Ahead** stops viewers seeking past the furthest point they have already watched, including via the keyboard skip-forward shortcut. Rewinding is still allowed. It is used for watch-enforcement and compliance training. Added to the Settings screen in 1.3.0 - the feature was already built and shipped before that with no way to switch it on.

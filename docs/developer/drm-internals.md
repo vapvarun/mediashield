@@ -40,11 +40,14 @@ The column is `content_key_encrypted`; there is no plaintext `content_key` colum
 
 ### `local_shaka`
 
-1. Requires `shell_exec` to be available, else `WP_Error`.
-2. Retrieves the content key from `ms_drm_keys` for the video.
-3. Builds a command in which the binary path (`ms_drm_shaka_path`, default `packager`) and every argument are wrapped in `escapeshellarg()`, writing into `wp-content/uploads/mediashield/drm/{video_id}/`.
-4. Success is judged by `stream.mpd` existing in the output directory after the call.
-5. Sets `_ms_drm_enabled = true`, `_ms_drm_method = 'local_shaka'`, `_ms_drm_output_dir`, `_ms_drm_packaged_at`.
+1. Requires `proc_open` to be available, else `WP_Error`. (`function_exists()` is the check - PHP reports a function listed in `disable_functions` as non-existent, which is how shared hosts switch process execution off.)
+2. Requires `ms_drm_shaka_path` to be an **absolute path to an executable**, else `WP_Error`. A bare program name is refused: it would rely on `PATH`, and PHP-FPM's `PATH` is not the shell's on most managed hosts, so a bare name resolves in a CLI test and fails in production with nothing but "packaging failed".
+3. Retrieves the content key from `ms_drm_keys` for the video.
+4. Runs the binary through `proc_open` with an **argument array** - no shell is involved, so nothing is escaped - writing into `wp-content/uploads/mediashield/drm/{video_id}/`. Both stdout and stderr are captured.
+5. Success is judged by `stream.mpd` existing in the output directory after the call.
+6. Sets `_ms_drm_enabled = true`, `_ms_drm_method = 'local_shaka'`, `_ms_drm_output_dir`, `_ms_drm_packaged_at`.
+
+Changed in 1.3.0. This previously assembled a single command string and passed it to PHP's shell-execution function, with `escapeshellarg()` on each value. That was correct - there was no injection - but malware scanners match the *shape* of the call, so customers running Wordfence could see their install flagged as backdoored. The argument-array form gives a scanner nothing to match. It also fixed a real bug: `escapeshellarg()` was applied to the paths *inside* the `in=...,output=...` stream descriptor, which the shell unquotes back into one word only while no path contains a space - on a host whose uploads path has one, the descriptor split across two arguments and packaging failed.
 
 Note it does **not** set `_ms_protection_level`, which is the meta Pro's player-type override actually reads - a locally packaged video still needs the Protection Level set to `drm` on the edit screen before the DRM player engages.
 

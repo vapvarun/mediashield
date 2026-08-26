@@ -406,7 +406,7 @@ Options Pro reads or writes. The `Exposed` column says whether the key appears i
 | `ms_show_badge` | `true` | yes | Show MediaShield badge. Shared with free - the key exists in `Settings::schema()` too. |
 | `ms_pro_milestone_config` | `[]` | no (own route) | Milestone action configurations. Read through `GET /milestones/config`. |
 | `ms_drm_method` | `'none'` | yes | `none`, `cloud_bunny`, `cloud_aws`, `local_shaka`. Anything else submitted is coerced to `none`. `cloud_aws` is a stub. |
-| `ms_drm_shaka_path` | `'packager'` | yes | Shaka Packager binary path. An empty submitted value is ignored, keeping the previous path. |
+| `ms_drm_shaka_path` | `''` | yes | **Absolute path** to the Shaka Packager binary. A bare program name is rejected from 1.3.0 (it relies on `PATH`, which PHP-FPM does not share with the shell). An empty submitted value is ignored, keeping the previous path. |
 | `ms_drm_license_duration_streaming` | `86400` | yes | Streaming license seconds. Anything under 300 is reset to 86400. |
 | `ms_drm_auto_package` | `false` | yes | Auto-package uploads with DRM. **Stored and returned but never read** - no code packages on upload. |
 | `ms_suspicious_sensitivity` | `'medium'` | yes | `low`, `medium` or `high`; anything else is coerced to `medium`. |
@@ -416,9 +416,9 @@ Options Pro reads or writes. The `Exposed` column says whether the key appears i
 | `ms_heatmap_last_aggregated` | `'1970-01-01 00:00:00'` | no | Heatmap aggregation watermark |
 | `ms_vpn_detection_enabled` | `false` | yes | VPN / proxy detection toggle |
 | `ms_vpn_api_key` | `''` | **no** | Provider API key. The settings response exposes only the derived boolean `ms_vpn_api_key_set`, never the key - a settings response is readable by anyone who can open the screen. |
-| `ms_default_upload_target` | `'auto'` | yes | Default upload destination |
+| `ms_default_upload_target` | `'auto'` | yes | Default upload destination, read by `UploadManager::resolve_default_driver()` when the request names no driver. `auto` resolves through `mediashield_default_upload_driver`, which Pro answers with its first active connection. |
 | `ms_lms_auto_complete` | `true` | yes | Mark the linked lesson complete on milestone |
-| `ms_lms_enrollment_check` | `true` | yes | Gate playback on enrolment |
+| `ms_lms_enrollment_check` | `true` | yes | Master switch for enrollment gating. On (default) means each video's `_ms_lms_require_enrollment` decides; off disables the gate everywhere by not registering the adapters' `mediashield_can_watch` hook. |
 | `ms_lms_complete_pct` | `100` | yes | Milestone percentage that triggers completion |
 | `ms_bunny_direct_play` | `false` | no | Direct (non-iframe) Bunny playback. Filterable via `mediashield_pro_bunny_direct_play`. |
 | `ms_bunny_prefer_mp4` | `false` | no | Serve the MP4 rendition instead of HLS |

@@ -38,7 +38,7 @@ Pro settings are listed separately at the bottom of [hooks-filters-pro.md](hooks
 | Option Key | Type | Default | Validation |
 |-----------|------|---------|------------|
 | `ms_max_concurrent_streams` | int | `2` | Minimum 1. Enforced with row locking in `Access\SessionManager`. |
-| `ms_allowed_domains` | string | `''` | Comma-separated domain whitelist for embed access. Empty string disables the check. |
+| `ms_allowed_domains` | string | `''` | Domain whitelist for embed access. Entries may be separated by newlines, commas or whitespace in any combination, and a full URL is reduced to its host. Empty string disables the check. |
 | `ms_login_overlay_text` | string | `"Please log in to watch this video"` | Sanitised via `sanitize_textarea_field`. |
 | `ms_login_button_text` | string | `"Log In"` | Sanitised via `sanitize_textarea_field`. |
 | `ms_access_denied_text` | string | `"You do not have access to this video"` | Sanitised via `sanitize_textarea_field`. |
@@ -49,7 +49,7 @@ When `ms_allowed_domains` is non-empty, the request's HTTP Referer must match th
 
 ## Upload
 
-No option keys. There is nothing configurable at the option layer: the driver is chosen per request (the `driver` param on `POST /upload/init`, default `self_hosted`) and the per-file ceiling is the server's own `wp_max_upload_size()`. `ms_max_upload_size` and `ms_custom_url_patterns` existed before 1.3.0 and are now only referenced by `uninstall.php` so upgraded installs get the stale rows cleaned up - do not read or write them.
+No free option keys. The driver is chosen per request (the `driver` param on `POST /upload/init`); when the request names none, `UploadManager::resolve_default_driver()` reads Pro's `ms_default_upload_target` and falls back to `self_hosted`. The per-file ceiling is the server's own `wp_max_upload_size()`. `ms_max_upload_size` and `ms_custom_url_patterns` existed before 1.3.0 and are now only referenced by `uninstall.php` so upgraded installs get the stale rows cleaned up - do not read or write them.
 
 Self-hosted uploads are stored in `wp-content/uploads/mediashield/`. A REST proxy endpoint (`/stream/{id}`) serves files after access verification, and that is the only path the player uses.
 
@@ -116,4 +116,4 @@ Not part of `Settings::schema()`. These are written by the activator, the migrat
 | `ms_activated_at` | option | int | Unix timestamp of first activation. Backfilled by `Admin\Menu` if missing. Drives the delayed Pro upsell notice. |
 | `ms_activation_redirect` | **transient** | bool | 30-second transient set by `Activator::activate()`, consumed and deleted by `SetupWizard` on the next admin page load. Not an option - `get_option()` will never find it. |
 
-The three options are removed by `uninstall.php`; the transient expires on its own. The delete list is derived from `array_keys( Settings::schema() )` plus those three plus the two removed-in-1.3.0 keys, never a hand-maintained copy, so a new schema key is cleaned up automatically. Option deletion is skipped entirely when `MEDIASHIELD_PRO_VERSION` is defined, so uninstalling Free while Pro is still installed leaves the settings in place.
+The three options are removed by `uninstall.php`; the transient expires on its own. The delete list is derived from `array_keys( Settings::schema() )` plus those three plus the two removed-in-1.3.0 keys, never a hand-maintained copy, so a new schema key is cleaned up automatically. Option deletion is skipped entirely when `MEDIASHIELD_PRO_VERSION` is defined, so uninstalling Free while Pro is still installed leaves the settings in place. As of 1.3.0 the same guard also covers the video and playlist records and the free tables - previously only the options were protected, so a Free uninstall alongside Pro preserved the settings while dropping every watch session and milestone.

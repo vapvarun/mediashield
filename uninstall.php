@@ -11,18 +11,28 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb;
 
-// Drop all free tables.
-$tables = array(
-	'ms_video_tags',
-	'ms_playlist_items',
-	'ms_milestones',
-	'ms_watch_sessions_archive',
-	'ms_watch_sessions',
-	'ms_tags',
-);
+// Drop all free tables - but not while Pro is still installed.
+//
+// Everything else below already skips when MEDIASHIELD_PRO_VERSION is defined,
+// so that removing Free does not gut a site still running Pro. This did not,
+// which made the protection incoherent: the settings and the video records
+// were carefully preserved while every watch session, milestone and tag - the
+// analytics history, the part an owner genuinely cannot rebuild - was dropped.
+// Pro reads these tables, so it was also the destruction most likely to break
+// the plugin that was being protected.
+if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+	$tables = array(
+		'ms_video_tags',
+		'ms_playlist_items',
+		'ms_milestones',
+		'ms_watch_sessions_archive',
+		'ms_watch_sessions',
+		'ms_tags',
+	);
 
-foreach ( $tables as $table ) {
-	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall drop tables.
+	foreach ( $tables as $table ) {
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall drop tables.
+	}
 }
 
 // Delete free plugin options — derived from the settings schema, never a

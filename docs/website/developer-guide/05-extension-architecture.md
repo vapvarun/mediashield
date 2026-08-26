@@ -153,7 +153,7 @@ interface DriverInterface {
 }
 ```
 
-`upload()` is expected to create the `mediashield_video` post and return its ID, or to fill in the post passed as `$options['attach_to']`. `delete()` is called by the cascade when a video is permanently deleted, so a driver that owns remote media should remove it there.
+`upload()` is expected to create the `mediashield_video` post and return its ID, or to fill in the post passed as `$options['attach_to']`. `delete()` is called by the cascade **only for self-hosted media** - a file this plugin put in the site's own uploads folder. A driver for a remote platform should implement it as a refusal that returns `false`: MediaShield deliberately never deletes media from a hosting platform, so removing a video here leaves the master in place and it can be linked back by importing it again. These services have no trash and no undo, and the master is usually something the owner pays to store and may use elsewhere.
 
 The `mediashield_upload_started`, `mediashield_upload_complete`, and `mediashield_upload_failed` actions fire around the driver's `upload()` call regardless of which driver is active.
 

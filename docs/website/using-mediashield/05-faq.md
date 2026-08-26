@@ -62,6 +62,14 @@ When a viewer opens browser developer tools while watching, MediaShield detects 
 
 Yes. Set that video's Protection Level to "None". It then plays with no gate, no watermark, and no session tracking, while every other video keeps its settings. Bear in mind that "Basic" also skips the watermark and records nothing - if you want analytics, use Standard or Strict.
 
+**If I delete a video in MediaShield, is it deleted from Bunny, Vimeo, YouTube or Wistia?**
+
+No. Deleting a video in MediaShield removes this site's record of it and nothing else. The original stays on the platform, so you can add it back at any time from Videos > Import.
+
+That is deliberate. Those services have no trash and no undo, so a mistake would be permanent, and the master is usually something you pay to store and may be using elsewhere. If you genuinely want a video gone from the platform, delete it in that platform's own dashboard, where you can see what else uses it.
+
+The one exception is a **self-hosted** video: that file lives in this site's own uploads folder, was put there by MediaShield, and is deleted along with the video.
+
 ## Sessions and Access
 
 **How do concurrent stream limits work?**

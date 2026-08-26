@@ -56,7 +56,7 @@ Anything that can make an authenticated WordPress REST request as an administrat
 
 ## Domain whitelist
 
-**Allowed Domains** - a comma-separated list of domains that may embed your videos. Leave empty to allow embeds from any domain.
+**Allowed Domains** - the domains that may embed your videos. Put one per line, or separate them with commas - both work. Pasting a full web address is fine too; only the domain part is used. Leave empty to allow embeds from any domain.
 
 When a list is set:
 - Requests from your own site's domain are always allowed
