@@ -179,6 +179,7 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 * Improve  - Removed the Custom URL Patterns setting. It asked for a regular expression, silently ignored any pattern containing a slash, and could not match a video in the first place.
 * Improve  - The watermark Position Swap Interval no longer offers "0 = static", which was never honoured and produced a watermark that moved every second. The field now explains what the interval is for.
 * Improve  - The Upload and Storage settings card is hidden when no cloud platform is connected, instead of rendering empty, and no longer claims that connecting a platform stops files being stored locally.
+* Fix      - The Dashboard and Milestones screens now load on sites using plain permalinks, WordPress's default setting. They requested an address the site could not match and showed an error instead of your figures. Every other screen was unaffected.
 * Fix      - Deleting a video no longer deletes it from Bunny, Vimeo, YouTube or Wistia. Tidying a video list could destroy the original on a service you pay for, with no warning and no way to get it back. The video is now left in place, so you can add it again whenever you want.
 * Fix      - Videos placed on a page as a plain Bunny embed are now protected. They were not recognised, so they played with no watermark, no protection and no viewing figures.
 * Fix      - Deleting the plugin no longer removes your videos while the Pro version is still installed, and no longer leaves the video files behind on your server.
