@@ -2368,84 +2368,39 @@
   ],
   "hooks_fired": [
     {
-      "hook": "mediashield_can_watch",
-      "type": "filter",
-      "file": "includes/Access/AccessControl.php:75"
-    },
-    {
-      "hook": "mediashield_allow_empty_referer",
-      "type": "filter",
-      "file": "includes/Access/AccessControl.php:139"
-    },
-    {
-      "hook": "mediashield_concurrent_limit_reached",
+      "hook": "edd_sl_sdk_license_control_after_{$args[",
       "type": "action",
-      "file": "includes/Access/SessionManager.php:133"
+      "file": "libs/edd-sl-sdk/templates/license-control.php:47"
     },
     {
-      "hook": "mediashield_session_started",
+      "hook": "edd_sl_sdk_license_control_before_{$args[",
       "type": "action",
-      "file": "includes/Access/SessionManager.php:209"
+      "file": "libs/edd-sl-sdk/templates/license-control.php:11"
     },
     {
-      "hook": "mediashield_session_started",
+      "hook": "edd_sl_sdk_registry",
       "type": "action",
-      "file": "includes/Access/SessionManager.php:275"
+      "file": "libs/edd-sl-sdk/edd-sl-sdk.php:51"
     },
     {
-      "hook": "mediashield_session_ended",
+      "hook": "edd_sl_sdk_templates_path",
+      "type": "filter",
+      "file": "libs/edd-sl-sdk/src/Templates.php:35"
+    },
+    {
+      "hook": "edd_sl_sdk_translate_string",
+      "type": "filter",
+      "file": "libs/edd-sl-sdk/src/Messenger.php:603"
+    },
+    {
+      "hook": "https_ssl_verify",
+      "type": "filter",
+      "file": "libs/edd-sl-sdk/src/Requests/API.php:71"
+    },
+    {
+      "hook": "in_plugin_update_message-{$file}",
       "type": "action",
-      "file": "includes/Access/SessionManager.php:410"
-    },
-    {
-      "hook": "mediashield_user_access_revoked",
-      "type": "action",
-      "file": "includes/Access/SessionManager.php:445"
-    },
-    {
-      "hook": "mediashield_shortcode_source_url",
-      "type": "filter",
-      "file": "includes/Block/Shortcode.php:61"
-    },
-    {
-      "hook": "mediashield_protection_levels",
-      "type": "filter",
-      "file": "includes/CPT/VideoPostType.php:431"
-    },
-    {
-      "hook": "mediashield_enqueue_frontend",
-      "type": "filter",
-      "file": "includes/Core/Assets.php:81"
-    },
-    {
-      "hook": "mediashield_loaded",
-      "type": "action",
-      "file": "includes/Core/Plugin.php:131"
-    },
-    {
-      "hook": "mediashield_frontend_config",
-      "type": "filter",
-      "file": "includes/Core/Settings.php:440"
-    },
-    {
-      "hook": "mediashield_restore_archive_batch_size",
-      "type": "filter",
-      "file": "includes/Cron/Cleanup.php:416"
-    },
-    {
-      "hook": "mediashield_embed_url",
-      "type": "filter",
-      "file": "includes/Embed/EmbedLink.php:78"
-    },
-    {
-      "hook": "mediashield_video_ad_breaks",
-      "type": "filter",
-      "file": "includes/Integrations/AdManagerBridge.php:13"
-    },
-    {
-      "hook": "mediashield_video_ads",
-      "type": "filter",
-      "file": "includes/Integrations/AdManagerBridge.php:104"
+      "file": "libs/edd-sl-sdk/src/Updaters/Plugin.php:174"
     },
     {
       "hook": "mediashield_ad_break_plan",
@@ -2453,74 +2408,19 @@
       "file": "includes/Integrations/AdManagerBridge.php:119"
     },
     {
-      "hook": "mediashield_milestone_thresholds",
+      "hook": "mediashield_adaptive_platforms",
       "type": "filter",
-      "file": "includes/Milestones/MilestoneTracker.php:54"
+      "file": "includes/Support/Platforms.php:62"
     },
     {
-      "hook": "mediashield_milestone_reached",
+      "hook": "mediashield_after_player",
       "type": "action",
-      "file": "includes/Milestones/MilestoneTracker.php:138"
+      "file": "includes/Player/Renderer.php:371"
     },
     {
-      "hook": "mediashield_milestone_{$pct}",
-      "type": "action",
-      "file": "includes/Milestones/MilestoneTracker.php:150"
-    },
-    {
-      "hook": "mediashield_enable_output_buffer",
+      "hook": "mediashield_allow_empty_referer",
       "type": "filter",
-      "file": "includes/Player/PlayerWrapper.php:51"
-    },
-    {
-      "hook": "mediashield_force_output_buffer",
-      "type": "filter",
-      "file": "includes/Player/PlayerWrapper.php:123"
-    },
-    {
-      "hook": "mediashield_player_type",
-      "type": "filter",
-      "file": "includes/Player/PlayerWrapper.php:266"
-    },
-    {
-      "hook": "mediashield_needs_shaka",
-      "type": "action",
-      "file": "includes/Player/PlayerWrapper.php:270"
-    },
-    {
-      "hook": "mediashield_player_access_type",
-      "type": "filter",
-      "file": "includes/Player/PlayerWrapper.php:319"
-    },
-    {
-      "hook": "mediashield_player_type",
-      "type": "filter",
-      "file": "includes/Player/PlaylistRenderer.php:78"
-    },
-    {
-      "hook": "mediashield_protection_config",
-      "type": "filter",
-      "file": "includes/Player/Protection.php:120"
-    },
-    {
-      "hook": "mediashield_unprotected_player_html",
-      "type": "filter",
-      "file": "includes/Player/Renderer.php:107"
-    },
-    {
-      "hook": "mediashield_video_stream_url",
-      "type": "filter",
-      "file": "includes/Player/Renderer.php:164"
-    },
-    {
-      "hook": "mediashield_player_type",
-      "type": "filter",
-      "file": "includes/Player/Renderer.php:171"
-    },
-    {
-      "hook": "mediashield_needs_shaka",
-      "type": "action",
-      "file": "includes/Player/Renderer.php:208"
+      "file": "includes/Access/AccessControl.php:139"
     },
     {
       "hook": "mediashield_before_player",
@@ -2528,9 +2428,84 @@
       "file": "includes/Player/Renderer.php:218"
     },
     {
-      "hook": "mediashield_player_classes",
+      "hook": "mediashield_can_watch",
       "type": "filter",
-      "file": "includes/Player/Renderer.php:228"
+      "file": "includes/Access/AccessControl.php:75"
+    },
+    {
+      "hook": "mediashield_concurrent_limit_reached",
+      "type": "action",
+      "file": "includes/Access/SessionManager.php:133"
+    },
+    {
+      "hook": "mediashield_default_upload_driver",
+      "type": "filter",
+      "file": "includes/Upload/UploadManager.php:94"
+    },
+    {
+      "hook": "mediashield_devtools_detected",
+      "type": "action",
+      "file": "includes/REST/ProtectionController.php:154"
+    },
+    {
+      "hook": "mediashield_embed_url",
+      "type": "filter",
+      "file": "includes/Embed/EmbedLink.php:78"
+    },
+    {
+      "hook": "mediashield_enable_output_buffer",
+      "type": "filter",
+      "file": "includes/Player/PlayerWrapper.php:51"
+    },
+    {
+      "hook": "mediashield_enqueue_frontend",
+      "type": "filter",
+      "file": "includes/Core/Assets.php:81"
+    },
+    {
+      "hook": "mediashield_force_output_buffer",
+      "type": "filter",
+      "file": "includes/Player/PlayerWrapper.php:123"
+    },
+    {
+      "hook": "mediashield_frontend_config",
+      "type": "filter",
+      "file": "includes/Core/Settings.php:440"
+    },
+    {
+      "hook": "mediashield_loaded",
+      "type": "action",
+      "file": "includes/Core/Plugin.php:131"
+    },
+    {
+      "hook": "mediashield_milestone_reached",
+      "type": "action",
+      "file": "includes/Milestones/MilestoneTracker.php:138"
+    },
+    {
+      "hook": "mediashield_milestone_thresholds",
+      "type": "filter",
+      "file": "includes/Milestones/MilestoneTracker.php:54"
+    },
+    {
+      "hook": "mediashield_milestone_{$pct}",
+      "type": "action",
+      "file": "includes/Milestones/MilestoneTracker.php:150"
+    },
+    {
+      "hook": "mediashield_needs_shaka",
+      "type": "action",
+      "file": "includes/Player/PlayerWrapper.php:270"
+    },
+    {
+      "hook": "mediashield_needs_shaka",
+      "type": "action",
+      "file": "includes/Player/Renderer.php:208"
+    },
+    {
+      "hook": "mediashield_player_access_type",
+      "type": "filter",
+      "file": "includes/Player/PlayerWrapper.php:319"
     },
     {
       "hook": "mediashield_player_access_type",
@@ -2538,9 +2513,9 @@
       "file": "includes/Player/Renderer.php:242"
     },
     {
-      "hook": "mediashield_video_ad_breaks",
+      "hook": "mediashield_player_classes",
       "type": "filter",
-      "file": "includes/Player/Renderer.php:256"
+      "file": "includes/Player/Renderer.php:228"
     },
     {
       "hook": "mediashield_player_html",
@@ -2548,9 +2523,29 @@
       "file": "includes/Player/Renderer.php:353"
     },
     {
-      "hook": "mediashield_after_player",
-      "type": "action",
-      "file": "includes/Player/Renderer.php:371"
+      "hook": "mediashield_player_overrides",
+      "type": "filter",
+      "file": "includes/Player/FeatureOverrides.php:50"
+    },
+    {
+      "hook": "mediashield_player_type",
+      "type": "filter",
+      "file": "includes/Player/PlayerWrapper.php:266"
+    },
+    {
+      "hook": "mediashield_player_type",
+      "type": "filter",
+      "file": "includes/Player/PlaylistRenderer.php:78"
+    },
+    {
+      "hook": "mediashield_player_type",
+      "type": "filter",
+      "file": "includes/Player/Renderer.php:171"
+    },
+    {
+      "hook": "mediashield_player_type",
+      "type": "filter",
+      "file": "includes/REST/SessionController.php:369"
     },
     {
       "hook": "mediashield_privacy_before_erase",
@@ -2568,14 +2563,19 @@
       "file": "includes/Privacy/PrivacyExporter.php:121"
     },
     {
-      "hook": "mediashield_devtools_detected",
-      "type": "action",
-      "file": "includes/REST/ProtectionController.php:154"
+      "hook": "mediashield_protection_config",
+      "type": "filter",
+      "file": "includes/Player/Protection.php:120"
     },
     {
-      "hook": "mediashield_trusted_ip_headers",
+      "hook": "mediashield_protection_levels",
       "type": "filter",
-      "file": "includes/REST/ProtectionController.php:165"
+      "file": "includes/CPT/VideoPostType.php:431"
+    },
+    {
+      "hook": "mediashield_restore_archive_batch_size",
+      "type": "filter",
+      "file": "includes/Cron/Cleanup.php:416"
     },
     {
       "hook": "mediashield_session_allow_anonymous_start",
@@ -2583,24 +2583,19 @@
       "file": "includes/REST/SessionController.php:219"
     },
     {
-      "hook": "mediashield_watermark_config",
-      "type": "filter",
-      "file": "includes/REST/SessionController.php:311"
+      "hook": "mediashield_session_ended",
+      "type": "action",
+      "file": "includes/Access/SessionManager.php:410"
     },
     {
-      "hook": "mediashield_player_type",
-      "type": "filter",
-      "file": "includes/REST/SessionController.php:369"
+      "hook": "mediashield_session_started",
+      "type": "action",
+      "file": "includes/Access/SessionManager.php:209"
     },
     {
-      "hook": "mediashield_video_stream_url",
-      "type": "filter",
-      "file": "includes/REST/SessionController.php:379"
-    },
-    {
-      "hook": "mediashield_trusted_ip_headers",
-      "type": "filter",
-      "file": "includes/REST/SessionController.php:493"
+      "hook": "mediashield_session_started",
+      "type": "action",
+      "file": "includes/Access/SessionManager.php:275"
     },
     {
       "hook": "mediashield_settings_response",
@@ -2613,29 +2608,29 @@
       "file": "includes/REST/SettingsController.php:112"
     },
     {
+      "hook": "mediashield_shortcode_source_url",
+      "type": "filter",
+      "file": "includes/Block/Shortcode.php:61"
+    },
+    {
       "hook": "mediashield_stored_filename",
       "type": "filter",
       "file": "includes/Upload/Drivers/SelfHosted.php:144"
     },
     {
-      "hook": "mediashield_upload_drivers",
+      "hook": "mediashield_trusted_ip_headers",
       "type": "filter",
-      "file": "includes/Upload/UploadManager.php:48"
+      "file": "includes/REST/ProtectionController.php:165"
     },
     {
-      "hook": "mediashield_default_upload_driver",
+      "hook": "mediashield_trusted_ip_headers",
       "type": "filter",
-      "file": "includes/Upload/UploadManager.php:94"
+      "file": "includes/REST/SessionController.php:493"
     },
     {
-      "hook": "mediashield_upload_started",
-      "type": "action",
-      "file": "includes/Upload/UploadManager.php:160"
-    },
-    {
-      "hook": "mediashield_upload_failed",
-      "type": "action",
-      "file": "includes/Upload/UploadManager.php:174"
+      "hook": "mediashield_unprotected_player_html",
+      "type": "filter",
+      "file": "includes/Player/Renderer.php:107"
     },
     {
       "hook": "mediashield_upload_complete",
@@ -2643,39 +2638,54 @@
       "file": "includes/Upload/UploadManager.php:185"
     },
     {
-      "hook": "edd_sl_sdk_registry",
-      "type": "action",
-      "file": "libs/edd-sl-sdk/edd-sl-sdk.php:51"
-    },
-    {
-      "hook": "edd_sl_sdk_translate_string",
+      "hook": "mediashield_upload_drivers",
       "type": "filter",
-      "file": "libs/edd-sl-sdk/src/Messenger.php:603"
+      "file": "includes/Upload/UploadManager.php:48"
     },
     {
-      "hook": "https_ssl_verify",
+      "hook": "mediashield_upload_failed",
+      "type": "action",
+      "file": "includes/Upload/UploadManager.php:174"
+    },
+    {
+      "hook": "mediashield_upload_started",
+      "type": "action",
+      "file": "includes/Upload/UploadManager.php:160"
+    },
+    {
+      "hook": "mediashield_user_access_revoked",
+      "type": "action",
+      "file": "includes/Access/SessionManager.php:445"
+    },
+    {
+      "hook": "mediashield_video_ad_breaks",
       "type": "filter",
-      "file": "libs/edd-sl-sdk/src/Requests/API.php:71"
+      "file": "includes/Integrations/AdManagerBridge.php:13"
     },
     {
-      "hook": "edd_sl_sdk_templates_path",
+      "hook": "mediashield_video_ad_breaks",
       "type": "filter",
-      "file": "libs/edd-sl-sdk/src/Templates.php:35"
+      "file": "includes/Player/Renderer.php:256"
     },
     {
-      "hook": "in_plugin_update_message-{$file}",
-      "type": "action",
-      "file": "libs/edd-sl-sdk/src/Updaters/Plugin.php:174"
+      "hook": "mediashield_video_ads",
+      "type": "filter",
+      "file": "includes/Integrations/AdManagerBridge.php:104"
     },
     {
-      "hook": "edd_sl_sdk_license_control_before_{$args[",
-      "type": "action",
-      "file": "libs/edd-sl-sdk/templates/license-control.php:11"
+      "hook": "mediashield_video_stream_url",
+      "type": "filter",
+      "file": "includes/Player/Renderer.php:164"
     },
     {
-      "hook": "edd_sl_sdk_license_control_after_{$args[",
-      "type": "action",
-      "file": "libs/edd-sl-sdk/templates/license-control.php:47"
+      "hook": "mediashield_video_stream_url",
+      "type": "filter",
+      "file": "includes/REST/SessionController.php:379"
+    },
+    {
+      "hook": "mediashield_watermark_config",
+      "type": "filter",
+      "file": "includes/REST/SessionController.php:311"
     }
   ],
   "cron": [
@@ -2888,7 +2898,8 @@
   "notes": {
     "generator_blind_spots": [
       "tables: ms_watch_sessions_archive is created by str_replace() on the sessions schema (DB/Schema.php:84-88), not a literal CREATE TABLE, so write-manifest.mjs cannot see it. Patched in from ground truth; re-patch after every regeneration until the generator learns this pattern.",
-      "admin_pages: SetupWizard's add_submenu_page (includes/Admin/SetupWizard.php) was missed; only Menu.php's add_menu_page was found. Patched in from ground truth."
+      "admin_pages: SetupWizard's add_submenu_page (includes/Admin/SetupWizard.php) was missed; only Menu.php's add_menu_page was found. Patched in from ground truth.",
+      "hooks_fired: multi-line apply_filters( \\n 'hook', ... ) calls are missed by write-manifest.mjs — mediashield_adaptive_platforms (Support/Platforms.php) and mediashield_player_overrides (Player/FeatureOverrides.php) were patched in from ground truth for 1.3.0. Re-check multi-line firings after every regeneration."
     ]
   }
 }

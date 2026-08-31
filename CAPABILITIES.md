@@ -2,7 +2,7 @@
 
 What this plugin actually does for a site owner, in their language, verified against code.
 
-**Last verified against code:** 2026-08-25 (branch `1.3.0`)
+**Last verified against code:** 2026-08-31 (branch `1.3.0`)
 **Scope:** MediaShield is a **player for cloud video in member-gated courses and lessons**. See [`plan/PRODUCT_SCOPE.md`](plan/PRODUCT_SCOPE.md).
 **Pro capabilities:** [`../mediashield-pro/CAPABILITIES.md`](../mediashield-pro/CAPABILITIES.md)
 
@@ -75,6 +75,7 @@ What this plugin actually does for a site owner, in their language, verified aga
 | Resume where they left off? | **YES** | Default on. | `ms_player_resume` |
 | Change playback speed? | **PARTIAL** | Setting exists — but the custom fullscreen button **sits on top of Chrome's ⋮ menu**, which is where native speed *and* PiP live. We take away what the browser gave them free. | `ms_player_speed_control` |
 | Keep the video visible while scrolling? | **YES** | Sticky player. | `ms_player_sticky` |
+| Be stopped from skipping ahead? | **YES** (1.3.0) | Seeking past the furthest point watched is blocked; rewinding still works. Site-wide setting plus a per-video override, like every other player feature. The behaviour shipped in an earlier version with no way to switch it on. | `ms_player_prevent_forward_seek`; `Player/FeatureOverrides.php:57`; `player-wrapper.js:622` |
 | **Turn on captions/subtitles?** | **NO** | **No `<track>`, no `.vtt`, no `textTrack` anywhere.** We cannot render captions even if the customer supplies a file. | exhaustive search of player JS |
 | Pick a quality / watch on weak mobile data? | **NO** | No transcoding, no adaptive bitrate, no quality UI. One file, one bitrate. | — |
 | Pop the video out (picture-in-picture)? | **NO** | No `requestPictureInPicture`, and our button covers the browser's own. | — |
