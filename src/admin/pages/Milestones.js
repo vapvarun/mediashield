@@ -12,6 +12,7 @@ import { Button, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import Icon from '../components/Icon';
+import { restUrl } from '../utils/rest';
 
 const config = window.mediashieldAdmin || {};
 const PER_PAGE = 20;
@@ -84,7 +85,7 @@ const Milestones = () => {
 		setError( '' );
 
 		apiFetch( {
-			url: `${ config.restUrl }analytics/milestones?page=${ page }&per_page=${ PER_PAGE }`,
+			url: restUrl( 'analytics/milestones', { page, per_page: PER_PAGE } ),
 			headers: { 'X-WP-Nonce': config.nonce },
 			parse: false,
 		} )

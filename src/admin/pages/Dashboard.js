@@ -13,6 +13,7 @@ import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import Chart from 'chart.js/auto';
 import Icon from '../components/Icon';
+import { restUrl } from '../utils/rest';
 
 const config = window.mediashieldAdmin || {};
 
@@ -68,7 +69,7 @@ const Dashboard = () => {
 		setError( '' );
 
 		apiFetch( {
-			url: `${ config.restUrl }analytics/overview?period=${ period }`,
+			url: restUrl( 'analytics/overview', { period } ),
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
 			.then( ( res ) => {
