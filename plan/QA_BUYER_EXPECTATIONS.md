@@ -121,7 +121,7 @@ Goal: take a cold prospect from "what is this?" to "I need this" in 5 minutes.
 ### Minute 4–5: Unified Multi-Platform (the killer feature)
 - [ ] Show importing a video from Bunny → YouTube → Vimeo — same workflow
 - [ ] Say: "You keep your existing video hosting. We add the protection layer."
-- [ ] Close: "$99/yr, WordPress-native, 14-day refund. Works tonight."
+- [ ] Close: "$99/yr, WordPress-native, 30-day money-back guarantee. Works tonight."
 
 Verify:
 - [ ] Demo site has 3+ sample videos already loaded (not "no data" empty states)
