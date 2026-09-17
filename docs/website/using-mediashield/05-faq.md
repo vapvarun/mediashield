@@ -117,4 +117,4 @@ Treat it as a preview. Before 1.3.0 it could not be enabled at all, because noth
 
 **What is the refund policy?**
 
-14-day money-back guarantee on MediaShield Pro. Email `support@wbcomdesigns.com` with your license key for a refund within 48 hours. The free plugin is GPL-licensed.
+30-day money-back guarantee on MediaShield Pro. Email `support@wbcomdesigns.com` with your license key for a refund within 48 hours. The free plugin is GPL-licensed.

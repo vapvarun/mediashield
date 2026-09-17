@@ -132,7 +132,7 @@ Settings, Watermark, **Show MediaShield Badge**, toggle off. This works in both 
 
 ### Refund policy
 
-14-day money-back guarantee on MediaShield Pro. No questions asked. Email `support@wbcomdesigns.com` with your license key and we'll process the refund within 48 hours. The free plugin is GPL-licensed and always free.
+30-day money-back guarantee on MediaShield Pro. Email `support@wbcomdesigns.com` with your license key and we'll process the refund within 48 hours. The free plugin is GPL-licensed and always free.
 
 ---
 
