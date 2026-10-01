@@ -79,6 +79,53 @@ class Platforms {
 	}
 
 	/**
+	 * Read the library id and video GUID out of any Bunny Stream URL.
+	 *
+	 * The one Bunny parser. The CPT editor, the block and the auto-wrap path
+	 * each carried their own regex, they drifted, and the same URL was saved as
+	 * `self` with no id on one screen and as `bunny` on another
+	 * (BC#10341091646). Everything that needs to recognise a Bunny URL asks
+	 * this method instead.
+	 *
+	 * Recognised: {iframe,player}.mediadelivery.net/{embed,play}/{library}/{guid},
+	 * vz-{library}.b-cdn.net/{guid}/..., and the dashboard address
+	 * dash.bunny.net/stream/{library}/library/{guid}. A dashboard collection
+	 * URL is not a video and returns nothing.
+	 *
+	 * @param string $url Any URL.
+	 * @return array{library:string, guid:string}|array{} Empty when not a Bunny video URL.
+	 */
+	public static function bunny_from_url( string $url ): array {
+		$patterns = array(
+			'#(?:iframe|player)\.mediadelivery\.net/(?:embed|play)/(\d+)/([a-f0-9-]{36})#i',
+			'#vz-(\d+)\.b-cdn\.net/([a-f0-9-]{36})#i',
+			'#dash\.bunny\.net/stream/(\d+)/library/([a-f0-9-]{36})#i',
+		);
+
+		foreach ( $patterns as $pattern ) {
+			if ( preg_match( $pattern, $url, $m ) ) {
+				return array(
+					'library' => $m[1],
+					'guid'    => strtolower( $m[2] ),
+				);
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * The stable, unsigned embed address for a Bunny video - what `_ms_source_url` stores.
+	 *
+	 * @param string $library Library id.
+	 * @param string $guid    Video GUID.
+	 * @return string
+	 */
+	public static function bunny_embed_url( string $library, string $guid ): string {
+		return "https://iframe.mediadelivery.net/embed/{$library}/{$guid}";
+	}
+
+	/**
 	 * Every platform slug this install can store on a video.
 	 *
 	 * Derived from the registered upload drivers plus self-hosted, rather than

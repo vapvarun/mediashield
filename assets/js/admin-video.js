@@ -24,7 +24,9 @@
 		vimeo: [ /(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/ ],
 		wistia: [ /(?:wistia\.com\/medias\/|fast\.wistia\.net\/embed\/iframe\/)([a-z0-9]+)/ ],
 		bunny: [
-			/(?:iframe\.mediadelivery\.net\/embed\/\d+\/)([a-f0-9-]+)/,
+			// Mirrors Platforms::bunny_from_url() in PHP, which re-derives and
+			// stores the canonical shape on save; this only drives the label.
+			/(?:iframe|player)\.mediadelivery\.net\/(?:embed|play)\/\d+\/([a-f0-9-]{36})/i,
 			/(?:b-cdn\.net\/)([a-f0-9-]+)/,
 			// The Bunny dashboard URL — what you get by copying the address bar
 			// while looking at a video in Bunny Stream. It is the single most

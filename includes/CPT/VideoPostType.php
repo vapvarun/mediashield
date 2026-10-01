@@ -28,6 +28,15 @@ class VideoPostType {
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_boxes' ) );
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'save_meta_box' ), 10, 2 );
+		// After the meta box (10) on the edit screen, and after REST has written
+		// meta for the block and the wizard - both routes end in one normalizer.
+		add_action( 'save_post_mediashield_video', array( __CLASS__, 'normalize_platform' ), 20 );
+		add_action(
+			'rest_after_insert_mediashield_video',
+			static function ( \WP_Post $post ): void {
+				self::normalize_platform( $post->ID );
+			}
+		);
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_edit_assets' ) );
 		// Hide WP's default Custom Fields meta box on the video edit screen —
 		// it surfaces raw post-meta key/value pairs and confuses site owners
@@ -758,6 +767,28 @@ class VideoPostType {
 			<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'Upgrade', 'mediashield' ); ?> &rarr;</a>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Re-derive the platform from the stored source URL, server side.
+	 *
+	 * Whatever the browser guessed, a URL the server recognises is stored in one
+	 * canonical shape, so two creation screens can no longer save the same URL
+	 * as two different records (BC#10341091646). Only Bunny needs this today:
+	 * it is the platform whose URL shapes the screens disagreed on.
+	 *
+	 * @param int $post_id Video post ID.
+	 */
+	public static function normalize_platform( int $post_id ): void {
+		$bunny = \MediaShield\Support\Platforms::bunny_from_url( (string) get_post_meta( $post_id, '_ms_source_url', true ) );
+		if ( ! $bunny ) {
+			return;
+		}
+
+		update_post_meta( $post_id, '_ms_platform', 'bunny' );
+		update_post_meta( $post_id, '_ms_platform_video_id', $bunny['guid'] );
+		update_post_meta( $post_id, '_ms_library_id', $bunny['library'] );
+		update_post_meta( $post_id, '_ms_source_url', \MediaShield\Support\Platforms::bunny_embed_url( $bunny['library'], $bunny['guid'] ) );
 	}
 
 	/**

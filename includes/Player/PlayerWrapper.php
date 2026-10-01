@@ -140,6 +140,7 @@ class PlayerWrapper {
 			'youtube-nocookie.com/embed' => 'youtube',
 			'player.vimeo.com/video'     => 'vimeo',
 			'iframe.mediadelivery.net'   => 'bunny',
+			'player.mediadelivery.net'   => 'bunny',
 			'wistia_async_'              => 'wistia',
 			'<video'                     => Platforms::SELF_HOSTED,
 		);
@@ -208,7 +209,7 @@ class PlayerWrapper {
 		// Bunny Stream iframes.
 		$html = self::wrap_platform(
 			$html,
-			'/<iframe[^>]*\ssrc=["\']([^"\']*iframe\.mediadelivery\.net[^"\']*)["\'][^>]*><\/iframe>/i',
+			'/<iframe[^>]*\ssrc=["\']([^"\']*(?:iframe|player)\.mediadelivery\.net[^"\']*)["\'][^>]*><\/iframe>/i',
 			'bunny'
 		);
 
@@ -413,10 +414,7 @@ class PlayerWrapper {
 				// Bunny embeds went out unwrapped, with no watermark, no
 				// protection overlay and no session tracking. The library id is
 				// not lost - it is stored separately as `_ms_library_id`.
-				if ( preg_match( '/embed\/\d+\/([a-f0-9-]+)/', $url, $m ) ) {
-					return $m[1];
-				}
-				return '';
+				return Platforms::bunny_from_url( $url )['guid'] ?? '';
 
 			case 'wistia':
 				// For Wistia, the video ID is in the class name (captured by regex group 1).

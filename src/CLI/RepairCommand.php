@@ -35,11 +35,11 @@ use WP_Query;
 final class RepairCommand {
 
 	/**
-	 * Finds videos saved as self-hosted from a Bunny dashboard URL and repairs them.
+	 * Finds videos whose stored Bunny URL disagrees with their platform meta and repairs them.
 	 *
-	 * Extracts the video GUID from the stored URL, then sets the platform to
-	 * `bunny` and the platform video id to that GUID - the same shape the
-	 * records that DID detect correctly already carry.
+	 * Re-reads the library id and GUID from the stored URL, then stores the
+	 * canonical shape: platform `bunny`, the bare GUID as the video id, the
+	 * library id, and the unsigned iframe embed URL.
 	 *
 	 * Collection URLs are reported but never rewritten. A collection is a folder
 	 * of videos and its GUID is not a video GUID, so "repairing" one would swap
@@ -102,31 +102,31 @@ final class RepairCommand {
 			$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
 			$source   = (string) get_post_meta( $video_id, '_ms_source_url', true );
 
-			// Only touch records detection got wrong. A video already saved as
-			// bunny is either correct or was fixed by hand; either way it is not
-			// ours to rewrite.
-			if ( '' === $source || ( '' !== $platform && 'self' !== $platform ) ) {
-				continue;
-			}
-
-			if ( ! preg_match( '#dash\.bunny\.net/#i', $source ) ) {
-				continue;
-			}
-
 			if ( preg_match( '#dash\.bunny\.net/stream/\d+/library/collections/#i', $source ) ) {
-				$collections[] = $video_id;
+				// Only an unrecognised record is flagged; a video saved as bunny
+				// with a collection URL was set by hand and is not ours to judge.
+				if ( '' === $platform || 'self' === $platform ) {
+					$collections[] = $video_id;
+				}
 				continue;
 			}
 
-			// Both halves are in the URL. dash.bunny.net/stream/{library}/library/{guid}
-			// carries the library id as well as the GUID, so the embed address can
-			// be rebuilt from the broken value itself - no Bunny connection needed,
-			// and no guessing which library the video belongs to.
-			if ( preg_match( '#dash\.bunny\.net/stream/(\d+)/library/([a-f0-9-]{36})#i', $source, $m ) ) {
-				$repairable[ $video_id ] = array(
-					'library' => $m[1],
-					'guid'    => strtolower( $m[2] ),
-				);
+			// Any record whose stored meta disagrees with what its own URL says.
+			// Covers dashboard and player.mediadelivery.net pastes saved as
+			// self-hosted, and block-created rows that stored "{library}/{guid}"
+			// as the video id (BC#10341091646). Both halves are in the URL, so
+			// no Bunny connection and no guessing which library it belongs to.
+			$bunny = \MediaShield\Support\Platforms::bunny_from_url( $source );
+			if ( ! $bunny ) {
+				continue;
+			}
+
+			$canonical = \MediaShield\Support\Platforms::bunny_embed_url( $bunny['library'], $bunny['guid'] );
+			if ( 'bunny' !== $platform
+				|| get_post_meta( $video_id, '_ms_platform_video_id', true ) !== $bunny['guid']
+				|| get_post_meta( $video_id, '_ms_library_id', true ) !== $bunny['library']
+				|| $source !== $canonical ) {
+				$repairable[ $video_id ] = $bunny;
 			}
 		}
 
@@ -145,7 +145,7 @@ final class RepairCommand {
 			// X-Frame-Options refusal. The record came out correctly labelled
 			// and still did not play, so the symptom the owner reported survived
 			// the repair written for it.
-			$embed_url = "https://iframe.mediadelivery.net/embed/{$parts['library']}/{$guid}";
+			$embed_url = \MediaShield\Support\Platforms::bunny_embed_url( $parts['library'], $guid );
 
 			WP_CLI::log(
 				sprintf(
