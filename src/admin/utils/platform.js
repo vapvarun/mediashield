@@ -16,7 +16,7 @@ export function detectPlatform( url ) {
 	if ( ! url || typeof url !== 'string' ) return 'iframe';
 	if ( /youtube\.com|youtu\.be|youtube-nocookie\.com/.test( url ) ) return 'youtube';
 	if ( /vimeo\.com/.test( url ) ) return 'vimeo';
-	if ( /mediadelivery\.net|b-cdn\.net|dash\.bunny\.net\/stream\/\d+\/library\/[a-f0-9-]{36}/i.test( url ) ) return 'bunny';
+	if ( /mediadelivery\.net|video\.bunnycdn\.com\/(?:embed|play)\/|b-cdn\.net|dash\.bunny\.net\/stream\/\d+\/library\/[a-f0-9-]{36}/i.test( url ) ) return 'bunny';
 	if ( /wistia\.com|wistia\.net|wi\.st/.test( url ) ) return 'wistia';
 	if ( /\.(mp4|webm|mov|m4v|ogv)(\?|$)/i.test( url ) ) return 'self';
 	return 'iframe';
@@ -45,7 +45,7 @@ export function extractVideoId( url, platform ) {
 			return m ? m[ 1 ] : '';
 		}
 		case 'bunny': {
-			const m = url.match( /(?:mediadelivery\.net\/(?:embed|play)\/\d+|vz-\d+\.b-cdn\.net|dash\.bunny\.net\/stream\/\d+\/library)\/([a-f0-9-]{36})/i );
+			const m = url.match( /(?:(?:mediadelivery\.net|video\.bunnycdn\.com)\/(?:embed|play)\/\d+|dash\.bunny\.net\/stream\/\d+\/library)\/([a-f0-9-]{36})/i );
 			return m ? m[ 1 ].toLowerCase() : '';
 		}
 		case 'wistia': {

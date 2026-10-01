@@ -87,18 +87,21 @@ class Platforms {
 	 * (BC#10341091646). Everything that needs to recognise a Bunny URL asks
 	 * this method instead.
 	 *
-	 * Recognised: {iframe,player}.mediadelivery.net/{embed,play}/{library}/{guid},
-	 * vz-{library}.b-cdn.net/{guid}/..., and the dashboard address
-	 * dash.bunny.net/stream/{library}/library/{guid}. A dashboard collection
-	 * URL is not a video and returns nothing.
+	 * Recognised: {iframe,player}.mediadelivery.net and the older
+	 * video.bunnycdn.com, each as /{embed,play}/{library}/{guid}, and the
+	 * dashboard address dash.bunny.net/stream/{library}/library/{guid}. A
+	 * dashboard collection URL is not a video and returns nothing.
+	 *
+	 * Pull-zone file URLs (vz-xxxx.b-cdn.net/{guid}/playlist.m3u8) are NOT
+	 * matched: the pull-zone name does not contain the library id, so no
+	 * embed URL can be built from one.
 	 *
 	 * @param string $url Any URL.
 	 * @return array{library:string, guid:string}|array{} Empty when not a Bunny video URL.
 	 */
 	public static function bunny_from_url( string $url ): array {
 		$patterns = array(
-			'#(?:iframe|player)\.mediadelivery\.net/(?:embed|play)/(\d+)/([a-f0-9-]{36})#i',
-			'#vz-(\d+)\.b-cdn\.net/([a-f0-9-]{36})#i',
+			'#(?:(?:iframe|player)\.mediadelivery\.net|video\.bunnycdn\.com)/(?:embed|play)/(\d+)/([a-f0-9-]{36})#i',
 			'#dash\.bunny\.net/stream/(\d+)/library/([a-f0-9-]{36})#i',
 		);
 

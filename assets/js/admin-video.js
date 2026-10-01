@@ -26,7 +26,7 @@
 		bunny: [
 			// Mirrors Platforms::bunny_from_url() in PHP, which re-derives and
 			// stores the canonical shape on save; this only drives the label.
-			/(?:iframe|player)\.mediadelivery\.net\/(?:embed|play)\/\d+\/([a-f0-9-]{36})/i,
+			/(?:(?:iframe|player)\.mediadelivery\.net|video\.bunnycdn\.com)\/(?:embed|play)\/\d+\/([a-f0-9-]{36})/i,
 			/(?:b-cdn\.net\/)([a-f0-9-]+)/,
 			// The Bunny dashboard URL — what you get by copying the address bar
 			// while looking at a video in Bunny Stream. It is the single most
