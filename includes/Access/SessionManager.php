@@ -305,6 +305,23 @@ class SessionManager {
 	}
 
 	/**
+	 * The duration to measure progress against.
+	 *
+	 * The stored `_ms_duration` is an anti-spoof floor, not a prerequisite:
+	 * with none set, the length the player reports is used. Every detector that
+	 * needs a duration asks this, so none silently switches off on a video whose
+	 * Duration field was left at 0 (BC#10317812134).
+	 *
+	 * @param int   $video_id        Video post ID.
+	 * @param float $client_duration Duration reported by the player.
+	 * @return float
+	 */
+	public static function effective_duration( int $video_id, float $client_duration ): float {
+		$stored = (float) get_post_meta( $video_id, '_ms_duration', true );
+		return $stored > 0 ? max( $stored, $client_duration ) : $client_duration;
+	}
+
+	/**
 	 * Process a heartbeat from the client.
 	 *
 	 * @param string $token    HMAC session token.
@@ -333,8 +350,7 @@ class SessionManager {
 		// denominator so completion can never be over-reported. (If no stored
 		// duration exists we fall back to the client value, preserving behaviour
 		// for videos whose length is unknown.)
-		$stored_duration    = (float) get_post_meta( $parsed['video_id'], '_ms_duration', true );
-		$effective_duration = $stored_duration > 0 ? max( $stored_duration, $duration ) : $duration;
+		$effective_duration = self::effective_duration( (int) $parsed['video_id'], $duration );
 
 		$completion_pct = $effective_duration > 0 ? min( 100, ( $position / $effective_duration ) * 100 ) : 0;
 
