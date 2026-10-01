@@ -10,6 +10,7 @@
 
 	var data = window.mediashieldVideoAdmin || {};
 	var labels = data.labels || {};
+	var pullZones = data.bunnyPullZones || {};
 
 	// 1) Auto-detect the platform + video id from the source URL.
 	var urlField = document.getElementById( 'ms-video-url' );
@@ -27,7 +28,6 @@
 			// Mirrors Platforms::bunny_from_url() in PHP, which re-derives and
 			// stores the canonical shape on save; this only drives the label.
 			/(?:(?:iframe|player)\.mediadelivery\.net|video\.bunnycdn\.com)\/(?:embed|play)\/\d+\/([a-f0-9-]{36})/i,
-			/(?:b-cdn\.net\/)([a-f0-9-]+)/,
 			// The Bunny dashboard URL — what you get by copying the address bar
 			// while looking at a video in Bunny Stream. It is the single most
 			// common thing a customer pastes, and it used to match nothing and
@@ -76,6 +76,17 @@
 				}
 			}
 
+			// A pull-zone file (vz-xxxx.b-cdn.net/{guid}/...) names no library,
+			// so it is Bunny only when the host is one of this site's connected
+			// pull zones - the same map Platforms::bunny_from_url() reads.
+			if ( ! vid ) {
+				var zone = url.match( /^https?:\/\/([^\/?#]+)\/([a-f0-9-]{36})(?:[\/?#]|$)/i );
+				if ( zone && pullZones[ zone[ 1 ].toLowerCase() ] ) {
+					detected = 'bunny';
+					vid = zone[ 2 ].toLowerCase();
+				}
+			}
+
 			platformField.value = detected;
 			videoIdField.value = vid;
 			platformLabel.textContent = ( labels[ detected ] || detected ) + ( vid ? ' (' + vid + ')' : '' );
@@ -96,6 +107,10 @@
 							message = unplayable[ u ].msg || '';
 							break;
 						}
+					}
+
+					if ( ! message && /\.b-cdn\.net\//i.test( url ) ) {
+						message = labels.bunnyStreamFile || '';
 					}
 
 					if ( ! message && 'self' === detected && /^https?:\/\//i.test( url ) && ! /\.(mp4|webm|ogg|ogv|mov|m3u8|mpd)(\?|#|$)/i.test( url ) ) {

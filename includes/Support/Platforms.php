@@ -92,9 +92,10 @@ class Platforms {
 	 * dashboard address dash.bunny.net/stream/{library}/library/{guid}. A
 	 * dashboard collection URL is not a video and returns nothing.
 	 *
-	 * Pull-zone file URLs (vz-xxxx.b-cdn.net/{guid}/playlist.m3u8) are NOT
-	 * matched: the pull-zone name does not contain the library id, so no
-	 * embed URL can be built from one.
+	 * Pull-zone file URLs (vz-xxxx.b-cdn.net/{guid}/playlist.m3u8) carry no
+	 * library id, so they match only when their host is one of this site's
+	 * own pull zones - see bunny_pull_zones(). Anything else on a pull zone is
+	 * a direct stream file and stays self-hosted.
 	 *
 	 * @param string $url Any URL.
 	 * @return array{library:string, guid:string}|array{} Empty when not a Bunny video URL.
@@ -114,7 +115,41 @@ class Platforms {
 			}
 		}
 
+		$zones = self::bunny_pull_zones();
+		$host  = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		if ( isset( $zones[ $host ] ) && preg_match( '#^/([a-f0-9-]{36})(?:/|$)#i', (string) wp_parse_url( $url, PHP_URL_PATH ), $m ) ) {
+			return array(
+				'library' => (string) $zones[ $host ],
+				'guid'    => strtolower( $m[1] ),
+			);
+		}
+
 		return array();
+	}
+
+	/**
+	 * This site's Bunny pull-zone hostnames, mapped to their library ids.
+	 *
+	 * Empty in Free. Pro fills it from the connected Bunny library, which is
+	 * the only thing that knows which library a pull zone belongs to.
+	 *
+	 * @return array<string,string> Lowercase hostname => library id.
+	 */
+	public static function bunny_pull_zones(): array {
+		static $zones = null;
+
+		if ( null === $zones ) {
+			/**
+			 * Filter the Bunny pull zones this site's videos are served from.
+			 *
+			 * @since 1.3.1
+			 *
+			 * @param array<string,string> $zones Lowercase hostname => library id.
+			 */
+			$zones = array_change_key_case( (array) apply_filters( 'mediashield_bunny_pull_zones', array() ), CASE_LOWER );
+		}
+
+		return $zones;
 	}
 
 	/**

@@ -16,9 +16,12 @@ export function detectPlatform( url ) {
 	if ( ! url || typeof url !== 'string' ) return 'iframe';
 	if ( /youtube\.com|youtu\.be|youtube-nocookie\.com/.test( url ) ) return 'youtube';
 	if ( /vimeo\.com/.test( url ) ) return 'vimeo';
-	if ( /mediadelivery\.net|video\.bunnycdn\.com\/(?:embed|play)\/|b-cdn\.net|dash\.bunny\.net\/stream\/\d+\/library\/[a-f0-9-]{36}/i.test( url ) ) return 'bunny';
+	// No b-cdn.net here: a pull-zone file names no library. It is saved as a
+	// direct stream, and the server upgrades it to Bunny on save when the host
+	// is one of this site's connected pull zones (Platforms::bunny_from_url).
+	if ( /mediadelivery\.net|video\.bunnycdn\.com\/(?:embed|play)\/|dash\.bunny\.net\/stream\/\d+\/library\/[a-f0-9-]{36}/i.test( url ) ) return 'bunny';
 	if ( /wistia\.com|wistia\.net|wi\.st/.test( url ) ) return 'wistia';
-	if ( /\.(mp4|webm|mov|m4v|ogv)(\?|$)/i.test( url ) ) return 'self';
+	if ( /\.(mp4|webm|mov|m4v|ogv|m3u8)(\?|$)/i.test( url ) ) return 'self';
 	return 'iframe';
 }
 

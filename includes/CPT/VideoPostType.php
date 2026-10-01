@@ -198,17 +198,20 @@ class VideoPostType {
 					'bunnyCollection' => __( 'That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL.', 'mediashield' ),
 					'bunnyDashboard'  => __( 'That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL.', 'mediashield' ),
 					'unrecognised'    => __( 'This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. It will be saved as self-hosted, which only works if the URL serves the video file itself.', 'mediashield' ),
+					'bunnyStreamFile' => __( 'This is a Bunny stream file from a library this site is not connected to, so it will be saved as a direct stream. That only plays if token authentication is off for the library. To use Bunny\'s player instead, paste the video\'s embed URL.', 'mediashield' ),
 					'uploading'       => __( 'Uploading…', 'mediashield' ),
 					'uploadDone'      => __( 'Uploaded. Save the video to keep this file.', 'mediashield' ),
 					'uploadFailed'    => __( 'Upload failed:', 'mediashield' ),
 					'uploadNetwork'   => __( 'Upload failed: the connection dropped or the file is larger than this server accepts.', 'mediashield' ),
 				),
-				'restUrl' => esc_url_raw( rest_url( 'mediashield/v1/' ) ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'restUrl'        => esc_url_raw( rest_url( 'mediashield/v1/' ) ),
+				// Object, not array: an empty PHP array would reach JS as [].
+				'bunnyPullZones' => (object) \MediaShield\Support\Platforms::bunny_pull_zones(),
+				'nonce'          => wp_create_nonce( 'wp_rest' ),
 				// The post being edited. get_the_ID() is not dependable this
 				// early on post-new.php, so read the screen's own post object,
 				// which WordPress has already set up by admin_enqueue_scripts.
-				'postId'  => isset( $GLOBALS['post']->ID ) ? (int) $GLOBALS['post']->ID : 0,
+				'postId'         => isset( $GLOBALS['post']->ID ) ? (int) $GLOBALS['post']->ID : 0,
 			)
 		);
 	}
@@ -780,8 +783,20 @@ class VideoPostType {
 	 * @param int $post_id Video post ID.
 	 */
 	public static function normalize_platform( int $post_id ): void {
-		$bunny = \MediaShield\Support\Platforms::bunny_from_url( (string) get_post_meta( $post_id, '_ms_source_url', true ) );
+		$source = (string) get_post_meta( $post_id, '_ms_source_url', true );
+		$bunny  = \MediaShield\Support\Platforms::bunny_from_url( $source );
+
 		if ( ! $bunny ) {
+			// Saved as Bunny, but we cannot tell which library it belongs to -
+			// a pull-zone file from a library this site is not connected to.
+			// Kept as Bunny it would load an .m3u8 inside an iframe and never
+			// play; as a direct stream our own player plays it.
+			if ( 'bunny' === get_post_meta( $post_id, '_ms_platform', true )
+				&& preg_match( '/\.(m3u8|mp4|webm|mov|m4v)(\?|#|$)/i', $source ) ) {
+				update_post_meta( $post_id, '_ms_platform', \MediaShield\Support\Platforms::SELF_HOSTED );
+				delete_post_meta( $post_id, '_ms_platform_video_id' );
+				delete_post_meta( $post_id, '_ms_library_id' );
+			}
 			return;
 		}
 
