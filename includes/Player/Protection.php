@@ -150,7 +150,12 @@ class Protection {
 	 * @return array{source_url:string, stream_url:string} URLs safe to print.
 	 */
 	public static function filter_player_urls( int $video_id, string $platform, string $source_url, string $stream_url ): array {
-		if ( 'self' !== $platform || ! get_option( 'ms_hide_source', true ) ) {
+		// Only route through /stream/ when it can serve the file: an explicit
+		// stream URL, or one we can find on disk. An external direct URL has
+		// no local file, and routing it there was a guaranteed 404
+		// (BC#10258678064).
+		if ( 'self' !== $platform || ! get_option( 'ms_hide_source', true )
+			|| ( '' === $stream_url && '' === \MediaShield\REST\StreamController::resolve_file( $video_id ) ) ) {
 			return array(
 				'source_url' => $source_url,
 				'stream_url' => $stream_url,

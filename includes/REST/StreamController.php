@@ -153,20 +153,59 @@ class StreamController extends WP_REST_Controller {
 			return new WP_Error( 'not_self_hosted', __( 'This endpoint only serves self-hosted videos.', 'mediashield' ), array( 'status' => 400 ) );
 		}
 
-		// Resolve the file path from the platform video ID (filename).
-		$filename = get_post_meta( $video_id, '_ms_platform_video_id', true );
-		if ( empty( $filename ) ) {
-			return new WP_Error( 'missing_file', __( 'Video file reference is missing.', 'mediashield' ), array( 'status' => 404 ) );
-		}
-
-		$wp_upload = wp_upload_dir();
-		$file_path = trailingslashit( $wp_upload['basedir'] ) . 'mediashield/' . sanitize_file_name( $filename );
-
-		if ( ! file_exists( $file_path ) || ! is_readable( $file_path ) ) {
+		$file_path = self::resolve_file( $video_id );
+		if ( '' === $file_path ) {
 			return new WP_Error( 'file_not_found', __( 'Video file not found on disk.', 'mediashield' ), array( 'status' => 404 ) );
 		}
 
 		$this->serve_file( $file_path );
+	}
+
+	/**
+	 * The local file a self-hosted video plays from, or '' when it has none.
+	 *
+	 * An uploaded video names its file in `_ms_platform_video_id`. A video made
+	 * by pasting a URL has only `_ms_source_url`, and this used to 404 on it as
+	 * soon as Hide Source routed playback here (BC#10258678064). That URL is
+	 * served from disk when it points into this site's uploads directory. An
+	 * external URL has no local file and returns '' - Protection then leaves it
+	 * unrouted, because we cannot gate a file we do not host.
+	 *
+	 * @param int $video_id Video post ID.
+	 * @return string Absolute readable path, or ''.
+	 */
+	public static function resolve_file( int $video_id ): string {
+		$uploads  = wp_upload_dir();
+		$filename = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+
+		if ( '' !== $filename ) {
+			$path = trailingslashit( $uploads['basedir'] ) . 'mediashield/' . sanitize_file_name( $filename );
+		} else {
+			// Compare without the scheme: a URL pasted as http on an https site
+			// is still the same file.
+			$source = preg_replace( '#^https?:#i', '', (string) get_post_meta( $video_id, '_ms_source_url', true ) );
+			$base   = trailingslashit( preg_replace( '#^https?:#i', '', $uploads['baseurl'] ) );
+			if ( '' === $source || 0 !== strpos( $source, $base ) ) {
+				return '';
+			}
+			$path = $uploads['basedir'] . '/' . rawurldecode( (string) wp_parse_url( substr( $source, strlen( $base ) ), PHP_URL_PATH ) );
+
+			// Video types only: a pasted URL must not turn this into a reader
+			// for whatever else lives in uploads (exports, backups).
+			if ( ! isset( self::MIME_TYPES[ strtolower( pathinfo( $path, PATHINFO_EXTENSION ) ) ] ) ) {
+				return '';
+			}
+		}
+
+		// realpath() inside the uploads root, so a "../" in a pasted URL cannot
+		// reach wp-config.php or anything else outside it.
+		$real = realpath( $path );
+		$root = realpath( $uploads['basedir'] );
+		if ( ! $real || ! $root || 0 !== strpos( $real, trailingslashit( $root ) ) || ! is_readable( $real ) ) {
+			return '';
+		}
+
+		return $real;
 	}
 
 	/**
