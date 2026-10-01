@@ -129,8 +129,14 @@ class HealthCheck {
 		// support round-trip to obtain four lines is a poor use of everyone's
 		// time. Playback is unaffected because the player never requests this
 		// path - it goes through /stream/.
+		// The site's real path, not the default one: on a subdirectory install,
+		// Bedrock or a custom UPLOADS constant a hardcoded /wp-content/uploads/
+		// rule matches nothing, and the owner re-runs this check to the same
+		// critical result with no idea why.
+		$location = trailingslashit( (string) wp_parse_url( wp_upload_dir()['baseurl'], PHP_URL_PATH ) ) . 'mediashield/';
+
 		$result['actions'] = '<p>' . esc_html__( 'Add this to your nginx server block, or send it to your host, then re-run this check:', 'mediashield' ) . '</p>'
-			. '<pre><code>location ^~ /wp-content/uploads/mediashield/ {' . "\n"
+			. '<pre><code>location ^~ ' . esc_html( $location ) . ' {' . "\n"
 			. '    deny all;' . "\n"
 			. '    return 403;' . "\n"
 			. '}</code></pre>'
