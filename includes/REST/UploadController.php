@@ -183,7 +183,13 @@ class UploadController extends WP_REST_Controller {
 			array(
 				'video_id'          => $result['video_id'],
 				'platform_video_id' => $result['platform_video_id'],
-				'embed_url'         => esc_url( $result['embed_url'] ),
+				// What the video now stores, not the driver's playback link: the
+				// edit screen writes this into the source field it then saves.
+				// Bunny's link is signed for an hour when a token key is set, so
+				// echoing it got an expiring URL persisted on save. esc_url_raw,
+				// not esc_url - this is JSON, and esc_url turns & into &#038;.
+				'embed_url'         => esc_url_raw( (string) get_post_meta( $result['video_id'], '_ms_source_url', true ) ),
+				'platform'          => (string) get_post_meta( $result['video_id'], '_ms_platform', true ),
 				'status'            => 'complete',
 			),
 			201

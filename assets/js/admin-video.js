@@ -198,14 +198,17 @@
 				if ( urlField && body.embed_url ) {
 					urlField.value = body.embed_url;
 				}
+				// The driver the server chose - Pro's default upload target may
+				// be Bunny or Vimeo, not this site.
+				var uploaded = body.platform || 'self';
 				if ( platformField ) {
-					platformField.value = 'self';
+					platformField.value = uploaded;
 				}
 				if ( videoIdField && body.platform_video_id ) {
 					videoIdField.value = body.platform_video_id;
 				}
 				if ( platformLabel ) {
-					platformLabel.textContent = labels.self || 'Self-hosted / Direct URL';
+					platformLabel.textContent = labels[ uploaded ] || uploaded;
 				}
 				if ( platformRow ) {
 					platformRow.style.display = '';
