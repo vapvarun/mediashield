@@ -55,6 +55,14 @@ class PlaylistRenderer {
 		// Only enqueue assets once we know we have something to render.
 		Assets::enqueue();
 
+		// The queue script is the block's view module. The shortcode renders
+		// the same markup without the block, so nothing loaded it and the list
+		// under the player did nothing when clicked (BC#10370649108).
+		$block = \WP_Block_Type_Registry::get_instance()->get_registered( 'mediashield/playlist' );
+		foreach ( $block ? $block->view_script_module_ids : array() as $module_id ) {
+			wp_enqueue_script_module( $module_id );
+		}
+
 		$autoplay         = (bool) get_post_meta( $playlist_id, '_ms_autoplay', true );
 		$ms_countdown_raw = get_post_meta( $playlist_id, '_ms_countdown', true );
 		$countdown        = (int) ( $ms_countdown_raw ? $ms_countdown_raw : 5 );
