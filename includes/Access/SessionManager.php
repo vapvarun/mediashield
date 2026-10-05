@@ -77,14 +77,23 @@ class SessionManager {
 		$wpdb->query( 'START TRANSACTION' );
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table with row locking.
+		// Count the OTHER devices this account is watching on, not its sessions.
+		// The limit exists to stop one login being shared, and every player on
+		// a page opens its own session on load - so counting sessions refused
+		// the third video on a lesson page before anything played
+		// (BC#10370648695). A device is an IP + browser pair; the caller's own
+		// is left out, so one viewer is never refused for their own tabs.
 		$active_count = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table}
+				"SELECT COUNT(DISTINCT ip_address, user_agent) FROM {$table}
 			 WHERE user_id = %d AND is_active = 1
 			 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
+			 AND NOT (ip_address = %s AND user_agent = %s)
 			 FOR UPDATE",
 				$user_id,
-				$now
+				$now,
+				$ip,
+				mb_substr( $ua, 0, 500 )
 			)
 		);
 
@@ -115,7 +124,7 @@ class SessionManager {
 			);
 		}
 
-		// Subtract 1 from active count if we're replacing a session on same video (not the case here).
+		// This device would be one more on top of the others.
 		if ( $active_count >= $max_concurrent ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction rollback.
 			$wpdb->query( 'ROLLBACK' );
@@ -127,7 +136,7 @@ class SessionManager {
 			 *
 			 * @param int $user_id          User ID.
 			 * @param int $video_id         Video they tried to watch.
-			 * @param int $active_count     Current active session count.
+			 * @param int $active_count     Other devices currently watching.
 			 * @param int $max_concurrent   Configured limit.
 			 */
 			do_action( 'mediashield_concurrent_limit_reached', $user_id, $video_id, $active_count, $max_concurrent );
