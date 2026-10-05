@@ -13,6 +13,12 @@
 	'use strict';
 
 	var config = window.mediashieldConfig || {};
+
+	// Viewer-facing text, translated in PHP (Settings::frontend_config()).
+	// The fallback covers a page cached before a key existed.
+	function t( key, fallback ) {
+		return ( config.messages && config.messages[ key ] ) || fallback;
+	}
 	var sdkLoading = {};
 
 	// ─── SDK Loader ──────────────────────────────────────────────
@@ -499,7 +505,7 @@
 
 		var speedBtn = document.createElement( 'button' );
 		speedBtn.className = 'ms-speed-btn';
-		speedBtn.setAttribute( 'aria-label', 'Playback speed' );
+		speedBtn.setAttribute( 'aria-label', t( 'speed', 'Playback speed' ) );
 		speedBtn.textContent = '1x';
 		speedControl.appendChild( speedBtn );
 
@@ -552,7 +558,7 @@
 		content.className = 'ms-endscreen__content';
 
 		var msg = document.createElement( 'p' );
-		msg.textContent = ( endscreenConfig && endscreenConfig.text ) || 'Thanks for watching!';
+		msg.textContent = ( endscreenConfig && endscreenConfig.text ) || t( 'endscreen', 'Thanks for watching!' );
 		content.appendChild( msg );
 
 		var endUrl = endscreenConfig && endscreenConfig.url;
@@ -560,13 +566,13 @@
 			var cta = document.createElement( 'a' );
 			cta.href = endUrl;
 			cta.className = 'ms-endscreen__cta';
-			cta.textContent = 'Continue \u2192';
+			cta.textContent = t( 'continue', 'Continue' ) + ' \u2192';
 			content.appendChild( cta );
 		}
 
 		var replayBtn = document.createElement( 'button' );
 		replayBtn.className = 'ms-endscreen__replay';
-		replayBtn.textContent = 'Replay';
+		replayBtn.textContent = t( 'replay', 'Replay' );
 		replayBtn.addEventListener( 'click', function () {
 			overlay.remove();
 			adapter.seekTo( 0 );
@@ -715,7 +721,7 @@
 							var closeBtn = document.createElement( 'button' );
 							closeBtn.className = 'ms-sticky-close';
 							closeBtn.textContent = '\u00D7';
-							closeBtn.setAttribute( 'aria-label', 'Close sticky player' );
+							closeBtn.setAttribute( 'aria-label', t( 'closeSticky', 'Close sticky player' ) );
 							closeBtn.addEventListener( 'click', function ( e ) {
 								e.stopPropagation();
 								container.classList.remove( 'ms-sticky-player' );
@@ -872,7 +878,7 @@
 				// message inline so the viewer knows why the player is idle. The
 				// REST handler returns the localised text in `data.message`.
 				if ( status === 429 || data.code === 'concurrent_limit' ) {
-					showErrorOverlay( el, data.message || 'Too many active streams. Please close another video first.' );
+					showErrorOverlay( el, data.message || t( 'concurrentLimit', 'Too many active streams. Please close another video first.' ) );
 					window.dispatchEvent( new CustomEvent( 'mediashield:concurrent-limit', {
 						bubbles: true,
 						detail: { el: el, videoId: videoId, message: data.message },
@@ -903,7 +909,7 @@
 					var handled = ! window.dispatchEvent( ev );
 
 					if ( ! handled ) {
-						var msg = data.message || ( config.messages && config.messages.accessDenied ) || 'You do not have access to this video.';
+						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
 						showErrorOverlay( el, msg );
 					}
 					return;
@@ -971,8 +977,7 @@
 			if ( settled ) return;
 			settled = true;
 			clearTimeout( timer );
-			showErrorOverlay( container, ( config.messages && config.messages.loadFailed ) ||
-				'This video could not be loaded.' );
+			showErrorOverlay( container, t( 'loadFailed', 'This video could not be loaded.' ) );
 		}
 
 		var timer = setTimeout( function () {
@@ -1029,26 +1034,24 @@
 	// ─── Login Overlay ───────────────────────────────────────────
 
 	function showLoginOverlay( el ) {
-		var messages = config.messages || {};
-
 		var overlay = document.createElement( 'div' );
 		overlay.className = 'ms-login-overlay';
 		overlay.setAttribute( 'role', 'dialog' );
 		overlay.setAttribute( 'aria-modal', 'true' );
 		// Screen-reader label mirrors the admin-configured overlay text so it
 		// stays in sync with the visible message (not a separate hardcoded key).
-		overlay.setAttribute( 'aria-label', messages.loginOverlay || 'Login required' );
+		overlay.setAttribute( 'aria-label', t( 'loginOverlay', 'Login required' ) );
 
 		var message = document.createElement( 'div' );
 		message.className = 'ms-login-message';
 
 		var text = document.createElement( 'p' );
-		text.textContent = messages.loginOverlay || 'Please log in to watch this video.';
+		text.textContent = t( 'loginOverlay', 'Please log in to watch this video.' );
 
 		var link = document.createElement( 'a' );
 		link.href = config.loginUrl || '/wp-login.php';
 		link.className = 'ms-login-button';
-		link.textContent = messages.loginButton || 'Log In';
+		link.textContent = t( 'loginButton', 'Log In' );
 
 		message.appendChild( text );
 		message.appendChild( link );
@@ -1098,11 +1101,11 @@
 		toast.className = 'ms-resume-toast';
 
 		var span = document.createElement( 'span' );
-		span.textContent = 'Resume from ' + timeStr + '?';
+		span.textContent = t( 'resumePrompt', 'Resume from %s?' ).replace( '%s', timeStr );
 
 		var yesBtn = document.createElement( 'button' );
 		yesBtn.className = 'ms-resume-yes';
-		yesBtn.textContent = 'Resume';
+		yesBtn.textContent = t( 'resume', 'Resume' );
 		yesBtn.addEventListener( 'click', function () {
 			adapter.seekTo( position );
 			adapter.play();
@@ -1111,7 +1114,7 @@
 
 		var noBtn = document.createElement( 'button' );
 		noBtn.className = 'ms-resume-no';
-		noBtn.textContent = 'Start Over';
+		noBtn.textContent = t( 'startOver', 'Start Over' );
 		noBtn.addEventListener( 'click', function () { toast.remove(); } );
 
 		toast.appendChild( span );

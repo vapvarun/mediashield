@@ -101,7 +101,7 @@
 
 		var badge = document.createElement('div');
 		badge.className = 'ms-badge';
-		badge.textContent = 'Protected by MediaShield';
+		badge.textContent = ( config.messages && config.messages.badge ) || 'Protected by MediaShield';
 		el.appendChild(badge);
 	}
 

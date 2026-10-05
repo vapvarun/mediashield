@@ -381,6 +381,23 @@ class Settings {
 	}
 
 	/**
+	 * An owner-editable message, translated while it is still the default.
+	 *
+	 * The defaults are seeded as English literals (see schema()), so a site
+	 * in another language showed English until the owner retyped each one.
+	 * A value the owner has changed is theirs and is returned untouched.
+	 *
+	 * @param string $key        Option key.
+	 * @param string $translated The schema default, already translated.
+	 * @return string
+	 */
+	public static function message( string $key, string $translated ): string {
+		$value = (string) self::get( $key );
+
+		return ( self::schema()[ $key ]['default'] ?? null ) === $value ? $translated : $value;
+	}
+
+	/**
 	 * Build the frontend config payload exposed to JS as `mediashieldConfig`.
 	 *
 	 * Carries only the keys the frontend actually needs (player options, badge
@@ -417,14 +434,39 @@ class Settings {
 				'endscreenText' => self::get( 'ms_player_endscreen_text' ),
 				'endscreenUrl'  => self::get( 'ms_player_endscreen_url' ),
 			),
+			// Every string the player shows a viewer. The player scripts are
+			// plain scripts with no wp.i18n, so this is the one place their
+			// text is translated; each key has an English fallback in the JS
+			// for a page cached before the key existed.
 			'messages'   => array(
-				'loginOverlay' => self::get( 'ms_login_overlay_text' ),
-				'loginButton'  => self::get( 'ms_login_button_text' ),
-				'accessDenied' => self::get( 'ms_access_denied_text' ),
+				'loginOverlay'    => self::message( 'ms_login_overlay_text', __( 'Please log in to watch this video', 'mediashield' ) ),
+				'loginButton'     => self::message( 'ms_login_button_text', __( 'Log In', 'mediashield' ) ),
+				'accessDenied'    => self::message( 'ms_access_denied_text', __( 'You do not have access to this video', 'mediashield' ) ),
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL
 				// produces. Without it the viewer just stares at a dead player.
-				'loadFailed'   => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
+				'loadFailed'      => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
+				'concurrentLimit' => __( 'Too many active streams. Please close another video first.', 'mediashield' ),
+				'badge'           => __( 'Protected by MediaShield', 'mediashield' ),
+				'speed'           => __( 'Playback speed', 'mediashield' ),
+				'closeSticky'     => __( 'Close sticky player', 'mediashield' ),
+				'endscreen'       => __( 'Thanks for watching!', 'mediashield' ),
+				'continue'        => __( 'Continue', 'mediashield' ),
+				'replay'          => __( 'Replay', 'mediashield' ),
+				/* translators: %s: playback position, for example 12:34. */
+				'resumePrompt'    => __( 'Resume from %s?', 'mediashield' ),
+				'resume'          => __( 'Resume', 'mediashield' ),
+				'startOver'       => __( 'Start Over', 'mediashield' ),
+				'adBreaks'        => __( 'Ad breaks', 'mediashield' ),
+				'ad'              => __( 'Ad', 'mediashield' ),
+				'advertisement'   => __( 'Advertisement', 'mediashield' ),
+				'preRoll'         => __( 'Pre-roll', 'mediashield' ),
+				'postRoll'        => __( 'Post-roll', 'mediashield' ),
+				'skipAd'          => __( 'Skip Ad', 'mediashield' ),
+				/* translators: %s: number of seconds until the ad can be skipped. */
+				'skipIn'          => __( 'Skip in %ss', 'mediashield' ),
+				/* translators: %s: number of seconds left in the ad. */
+				'adRemaining'     => __( 'Ad · %ss', 'mediashield' ),
 			),
 		);
 

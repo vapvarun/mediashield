@@ -106,8 +106,8 @@ class Protection {
 			'hide_source'       => (bool) Settings::get( 'ms_hide_source' ),
 			'detect_devtools'   => (bool) Settings::get( 'ms_detect_devtools' ),
 			'pause_on_devtools' => (bool) Settings::get( 'ms_pause_on_devtools' ),
-			'devtools_title'    => (string) Settings::get( 'ms_devtools_title' ),
-			'devtools_message'  => (string) Settings::get( 'ms_devtools_message' ),
+			'devtools_title'    => Settings::message( 'ms_devtools_title', __( 'Developer Tools Detected', 'mediashield' ) ),
+			'devtools_message'  => Settings::message( 'ms_devtools_message', __( 'Please close developer tools to continue watching this video.', 'mediashield' ) ),
 		);
 
 		/**
