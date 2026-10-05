@@ -19,10 +19,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 class HealthCheck {
 
 	/**
+	 * Test slug as the Site Health screen sends it. Hyphens only: the screen
+	 * swaps just the first underscore when it builds the ajax action name.
+	 */
+	private const TEST = 'mediashield-upload-dir-protected';
+
+	/**
 	 * Hook the Site Health test.
 	 */
 	public static function register(): void {
 		add_filter( 'site_status_tests', array( __CLASS__, 'add_tests' ) );
+		add_action( 'wp_ajax_health-check-' . self::TEST, array( __CLASS__, 'ajax_test' ) );
+	}
+
+	/**
+	 * Answer the Site Health screen's request for this test.
+	 *
+	 * The screen runs an async test by posting `health-check-{test}` to
+	 * admin-ajax. Nothing answered, so the request came back 400 and the
+	 * warning never reached the screen - only the background run that feeds the
+	 * issue count ever executed it (BC#10231033764).
+	 */
+	public static function ajax_test(): void {
+		check_ajax_referer( 'health-check-site-status' );
+
+		if ( ! current_user_can( 'view_site_health_checks' ) ) {
+			wp_send_json_error();
+		}
+
+		wp_send_json_success( self::test_upload_dir_protected() );
 	}
 
 	/**
@@ -37,7 +62,7 @@ class HealthCheck {
 	public static function add_tests( array $tests ): array {
 		$tests['async']['mediashield_upload_dir_protected'] = array(
 			'label'     => __( 'MediaShield video files are not publicly downloadable', 'mediashield' ),
-			'test'      => 'mediashield_upload_dir_protected',
+			'test'      => self::TEST,
 			'has_rest'  => false,
 			'async_direct_test' => array( __CLASS__, 'test_upload_dir_protected' ),
 		);
@@ -136,10 +161,14 @@ class HealthCheck {
 		$location = trailingslashit( (string) wp_parse_url( wp_upload_dir()['baseurl'], PHP_URL_PATH ) ) . 'mediashield/';
 
 		$result['actions'] = '<p>' . esc_html__( 'Add this to your nginx server block, or send it to your host, then re-run this check:', 'mediashield' ) . '</p>'
-			. '<pre><code>location ^~ ' . esc_html( $location ) . ' {' . "\n"
-			. '    deny all;' . "\n"
-			. '    return 403;' . "\n"
-			. '}</code></pre>'
+			// <code> with line breaks, not <pre>: a <pre> does not wrap, and on
+			// a phone it pushed the whole Site Health screen sideways. No
+			// indent, because the only way to keep one here is a non-breaking
+			// space, and nginx rejects a config that contains them.
+			. '<p><code>location ^~ ' . esc_html( $location ) . ' {<br>'
+			. 'deny all;<br>'
+			. 'return 403;<br>'
+			. '}</code></p>'
 			. '<p>' . esc_html__( 'Video playback keeps working, because the player never requests that address - it streams through MediaShield, which checks permissions on every request.', 'mediashield' ) . '</p>';
 
 		return $result;

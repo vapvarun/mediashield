@@ -2340,6 +2340,15 @@
       "hasNonceCheck": false,
       "file": "includes/Admin/Menu.php",
       "line": 33
+    },
+    {
+      "action": "health-check-mediashield-upload-dir-protected",
+      "callback": "ajax_test",
+      "loggedIn": true,
+      "loggedOut": false,
+      "hasNonceCheck": true,
+      "file": "includes/Admin/HealthCheck.php",
+      "line": 33
     }
   ],
   "admin_pages": [

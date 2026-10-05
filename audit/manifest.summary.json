@@ -15,7 +15,7 @@
   },
   "counts": {
     "rest_endpoints": 23,
-    "ajax": 1,
+    "ajax": 2,
     "admin_pages": 2,
     "tables": 6,
     "hooks_fired": 62,
