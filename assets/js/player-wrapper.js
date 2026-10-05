@@ -270,6 +270,7 @@
 			video.muted    = options.muted === true;
 			video.setAttribute( 'controlsList', 'nodownload nofullscreen noremoteplayback' );
 			video.preload = 'metadata';
+			if ( options.poster ) video.poster = options.poster;
 			video.style.width = '100%';
 			video.style.display = 'block';
 			target.appendChild( video );
@@ -463,6 +464,7 @@
 			loop:     tri( target.dataset.loop ),
 			muted:    tri( target.dataset.muted ),
 			controls: tri( target.dataset.controls ),
+			poster:   target.dataset.poster || '',
 		};
 
 		switch ( platform ) {
@@ -1057,6 +1059,14 @@
 		// Screen-reader label mirrors the admin-configured overlay text so it
 		// stays in sync with the visible message (not a separate hardcoded key).
 		overlay.setAttribute( 'aria-label', t( 'loginOverlay', 'Login required' ) );
+
+		// The video's poster behind the message, darkened so the text stays
+		// readable, instead of an empty black box.
+		var posterTarget = el.querySelector( '.ms-player-target' );
+		var poster = posterTarget ? posterTarget.dataset.poster : '';
+		if ( poster ) {
+			overlay.style.backgroundImage = 'linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url("' + poster.replace( /"/g, '%22' ) + '")';
+		}
 
 		var message = document.createElement( 'div' );
 		message.className = 'ms-login-message';

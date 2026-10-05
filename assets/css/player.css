@@ -161,7 +161,7 @@ iframe.ms-player-target {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: rgba(0, 0, 0, 0.85);
+	background: rgba(0, 0, 0, 0.85) center / cover no-repeat;
 }
 
 .ms-login-message {

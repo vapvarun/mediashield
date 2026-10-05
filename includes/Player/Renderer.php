@@ -317,6 +317,14 @@ class Renderer {
 				data-source-url="<?php echo esc_url( $source_url ); ?>"
 				data-stream-url="<?php echo esc_url( $stream_url ); ?>"
 				data-duration="<?php echo esc_attr( $duration ); ?>"
+				<?php
+				// The video's featured image: shown before a self-hosted video
+				// plays, and behind the login message, instead of a black box.
+				$poster = get_the_post_thumbnail_url( $video_id, 'large' );
+				if ( $poster ) :
+					?>
+					data-poster="<?php echo esc_url( $poster ); ?>"
+				<?php endif; ?>
 				<?php echo $playback_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes pre-escaped above. ?>
 				<?php if ( ! empty( $video_overrides ) ) : ?>
 					data-player-overrides="<?php echo esc_attr( wp_json_encode( $video_overrides ) ); ?>"

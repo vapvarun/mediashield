@@ -329,6 +329,12 @@ class PlayerWrapper {
 					if ( ! empty( $video_overrides ) ) {
 						$overrides_attr = ' data-player-overrides="' . esc_attr( wp_json_encode( $video_overrides ) ) . '"';
 					}
+
+					// Same poster attribute Renderer::render() prints.
+					$poster = get_the_post_thumbnail_url( $video_post_id, 'large' );
+					if ( $poster ) {
+						$overrides_attr .= ' data-poster="' . esc_url( $poster ) . '"';
+					}
 				}
 
 				// Auto-wrapped players must advertise the access type exactly as
