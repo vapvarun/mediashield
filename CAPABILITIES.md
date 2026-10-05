@@ -94,7 +94,7 @@ Ranked by how likely a buyer is to *assume* it already exists.
 3. **Adaptive streaming / quality selector.** HLS *playback* works from 1.3.0, but we do not transcode and there is no quality UI — so a single 1080p file is still unwatchable on weak mobile data with no lower rung to fall to. Owners get rungs only if their host (Bunny) made them.
 4. **Picture-in-picture** — and our redundant fullscreen button actively occludes the browser's native PiP/speed menu. Cheapest fix on this list.
 5. **Chapters / markers.** A 40-minute lesson without them is a scrub-hunt.
-6. **Playlist autoplay / countdown.** The whole engine is written and works; **no UI writes the settings.**
+6. **Playlist autoplay / countdown.** The admin control exists from 1.4.0 (Playlists > Manage items, and the playlist edit screen) and writes the four options over REST. **But the playlist player itself is not a protected player:** it renders a bare iframe or video with no session, watermark or tracking, and only a self-hosted `<video>` reports that it ended, so autoplay does not advance on YouTube, Vimeo, Wistia or Bunny items. Rebuilding it on the shared renderer is the open work.
 7. ~~**A translated player.**~~ **Done in 1.4.0** - the player's text is translatable; no translations are bundled yet.
 8. **Page-builder support.** A large share of WP course sites are Elementor or Divi.
 

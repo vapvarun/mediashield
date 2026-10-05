@@ -154,7 +154,10 @@ class PlaylistPostType {
 					'slug'       => 'playlist',
 					'with_front' => false,
 				),
-				'supports'        => array( 'title', 'editor', 'thumbnail' ),
+				// custom-fields is what puts registered meta in the REST response.
+				// Without it the four playback options below could be read by
+				// the player and written by nothing - the admin only displayed them.
+				'supports'        => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),
 				'menu_icon'       => 'dashicons-playlist-video',
 				'show_in_menu'    => false,
 				'capability_type' => 'post',
