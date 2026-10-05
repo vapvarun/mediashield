@@ -16,7 +16,7 @@ The page is a stack of cards, in this order:
 | Concurrent Streams | How many devices one account can watch on at once |
 | Analytics Retention | How long watch history stays in the live table |
 | Login & Access Messages | Overlay and denial wording |
-| Player Controls | Speed control, keyboard shortcuts, resume, sticky player, end screen |
+| Player Controls | Speed control, keyboard shortcuts, resume, sticky player, end screen, brand color (unset follows the theme) |
 | Video Ads | In-video ad break placement |
 
 ## General
