@@ -154,7 +154,16 @@ class Protection {
 		// stream URL, or one we can find on disk. An external direct URL has
 		// no local file, and routing it there was a guaranteed 404
 		// (BC#10258678064).
-		if ( 'self' !== $platform || ! get_option( 'ms_hide_source', true )
+		//
+		// An uploaded file is the exception to the setting: its only address
+		// IS the gated endpoint, and a <video> cannot send a login cookie the
+		// REST API will accept. With Hide Source off it went out unsigned and
+		// every logged-in viewer was refused (BC#10370649456), so it is always
+		// signed.
+		$is_gated_source = false !== strpos( $source_url, 'mediashield/v1/stream/' . $video_id );
+
+		if ( 'self' !== $platform
+			|| ( ! $is_gated_source && ! get_option( 'ms_hide_source', true ) )
 			|| ( '' === $stream_url && '' === \MediaShield\REST\StreamController::resolve_file( $video_id ) ) ) {
 			return array(
 				'source_url' => $source_url,
