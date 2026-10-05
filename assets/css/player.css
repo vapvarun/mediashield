@@ -40,7 +40,7 @@
 
 	/* Accent — bridges to the active theme's primary colour (theme.json),
 	 * falling back to the WP admin blue so buttons/links/focus match the site. */
-	--ms-accent: var(--wp--preset--color--primary, var(--ms-accent));
+	--ms-accent: var(--wp--preset--color--primary, #2271b1);
 	--ms-accent-hover: #135e96; /* hex fallback before color-mix() */
 	--ms-accent-hover: color-mix(in srgb, var(--ms-accent) 82%, #000);
 
@@ -691,7 +691,7 @@ iframe.ms-player-target {
 
 .ms-playlist-item.is-active {
 	background: color-mix(in srgb, currentColor 10%, transparent);
-	border-inline-start-color: currentColor;
+	border-inline-start-color: var(--ms-accent);
 }
 
 .ms-playlist-item:focus-visible {

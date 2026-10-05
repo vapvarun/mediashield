@@ -174,6 +174,12 @@ class Settings {
 				'type'    => 'boolean',
 				'default' => false,
 			),
+			// Empty = follow the theme's primary colour (the stylesheet default).
+			'ms_player_accent_color'     => array(
+				'type'     => 'string',
+				'default'  => '',
+				'validate' => static fn( $value ) => '' === trim( (string) $value ) ? '' : $hex_color( $value ),
+			),
 			'ms_player_endscreen_text'   => array(
 				'type'    => 'string',
 				'default' => '',

@@ -16,6 +16,7 @@ import {
 	TextareaControl,
 	SelectControl,
 	Spinner,
+	Button,
 } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch } from '@wordpress/data';
@@ -514,6 +515,28 @@ const Settings = () => {
 						/>
 					</>
 				) }
+				<div className="mediashield-settings__color-field">
+					<label>{ __( 'Brand Color', 'mediashield' ) }</label>
+					<p className="mediashield-settings__color-help">
+						{ settings?.ms_player_accent_color
+							? __( 'Used for the player\'s buttons, focus outlines and the current playlist item.', 'mediashield' )
+							: __( 'Following your theme\'s primary color. Pick a color to use your own for the player\'s buttons, focus outlines and the current playlist item.', 'mediashield' ) }
+					</p>
+					<ColorPicker
+						color={ settings?.ms_player_accent_color || '#2271b1' }
+						onChange={ ( val ) => updateSetting( 'ms_player_accent_color', val ) }
+						enableAlpha={ false }
+					/>
+					{ !! settings?.ms_player_accent_color && (
+						<Button
+							variant="secondary"
+							onClick={ () => updateSetting( 'ms_player_accent_color', '' ) }
+							__next40pxDefaultSize
+						>
+							{ __( 'Use the theme color', 'mediashield' ) }
+						</Button>
+					) }
+				</div>
 			</SectionCard>
 
 			<SectionCard
