@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-05T08:59:10+00:00\n"
+"POT-Creation-Date: 2026-10-05T09:23:05+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -149,77 +149,81 @@ msgid "Too many active streams. Please close another video first."
 msgstr ""
 
 #: includes/Core/Settings.php:450
-msgid "Protected by MediaShield"
+msgid "This video could not be loaded. Please try again."
 msgstr ""
 
 #: includes/Core/Settings.php:451
-msgid "Playback speed"
+msgid "Protected by MediaShield"
 msgstr ""
 
 #: includes/Core/Settings.php:452
-msgid "Close sticky player"
+msgid "Playback speed"
 msgstr ""
 
 #: includes/Core/Settings.php:453
-msgid "Thanks for watching!"
+msgid "Close sticky player"
 msgstr ""
 
 #: includes/Core/Settings.php:454
-msgid "Continue"
+msgid "Thanks for watching!"
 msgstr ""
 
 #: includes/Core/Settings.php:455
+msgid "Continue"
+msgstr ""
+
+#: includes/Core/Settings.php:456
 msgid "Replay"
 msgstr ""
 
 #. translators: %s: playback position, for example 12:34.
-#: includes/Core/Settings.php:457
+#: includes/Core/Settings.php:458
 #, php-format
 msgid "Resume from %s?"
 msgstr ""
 
-#: includes/Core/Settings.php:458
+#: includes/Core/Settings.php:459
 #: src/blocks/my-videos/render.php:104
 msgid "Resume"
 msgstr ""
 
-#: includes/Core/Settings.php:459
+#: includes/Core/Settings.php:460
 msgid "Start Over"
 msgstr ""
 
-#: includes/Core/Settings.php:460
+#: includes/Core/Settings.php:461
 msgid "Ad breaks"
 msgstr ""
 
-#: includes/Core/Settings.php:461
+#: includes/Core/Settings.php:462
 msgid "Ad"
 msgstr ""
 
-#: includes/Core/Settings.php:462
+#: includes/Core/Settings.php:463
 msgid "Advertisement"
 msgstr ""
 
-#: includes/Core/Settings.php:463
+#: includes/Core/Settings.php:464
 #: src/admin/pages/Settings.js:534
 msgid "Pre-roll"
 msgstr ""
 
-#: includes/Core/Settings.php:464
+#: includes/Core/Settings.php:465
 msgid "Post-roll"
 msgstr ""
 
-#: includes/Core/Settings.php:465
+#: includes/Core/Settings.php:466
 msgid "Skip Ad"
 msgstr ""
 
 #. translators: %s: number of seconds until the ad can be skipped.
-#: includes/Core/Settings.php:467
+#: includes/Core/Settings.php:468
 #, php-format
 msgid "Skip in %ss"
 msgstr ""
 
 #. translators: %s: number of seconds left in the ad.
-#: includes/Core/Settings.php:469
+#: includes/Core/Settings.php:470
 #, php-format
 msgid "Ad · %ss"
 msgstr ""
@@ -249,7 +253,7 @@ msgstr ""
 
 #: includes/CPT/PlaylistPostType.php:130
 #: includes/CPT/PlaylistPostType.php:131
-#: src/admin/pages/Playlists.js:63
+#: src/admin/pages/Playlists.js:65
 msgid "Add New Playlist"
 msgstr ""
 
@@ -636,7 +640,7 @@ msgid "These options apply to self-hosted and Bunny videos. YouTube, Vimeo, and 
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:663
-#: src/admin/pages/Playlists.js:105
+#: src/admin/pages/Playlists.js:107
 msgid "Autoplay"
 msgstr ""
 
@@ -645,7 +649,7 @@ msgid "Start playing automatically (muted in most browsers)."
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:670
-#: src/admin/pages/Playlists.js:106
+#: src/admin/pages/Playlists.js:108
 msgid "Loop"
 msgstr ""
 
@@ -812,7 +816,7 @@ msgstr ""
 msgid "This playlist has no videos yet."
 msgstr ""
 
-#: includes/Player/PlaylistRenderer.php:128
+#: includes/Player/PlaylistRenderer.php:98
 msgid "Next video in"
 msgstr ""
 
@@ -911,11 +915,15 @@ msgstr ""
 msgid "Earned At"
 msgstr ""
 
-#: includes/REST/PlaylistController.php:145
+#: includes/REST/PlaylistController.php:154
+msgid "Video not found in this playlist."
+msgstr ""
+
+#: includes/REST/PlaylistController.php:206
 msgid "Playlist not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:224
+#: includes/REST/PlaylistController.php:285
 #: includes/REST/SessionController.php:255
 #: includes/REST/StreamController.php:143
 #: includes/REST/TagController.php:320
@@ -923,15 +931,15 @@ msgstr ""
 msgid "Video not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:254
+#: includes/REST/PlaylistController.php:315
 msgid "Could not add video to playlist."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:294
+#: includes/REST/PlaylistController.php:355
 msgid "Playlist item not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:316
+#: includes/REST/PlaylistController.php:377
 msgid "Order must be an array."
 msgstr ""
 
@@ -1106,7 +1114,7 @@ msgid "Videos"
 msgstr ""
 
 #: src/admin/App.js:44
-#: src/admin/pages/Playlists.js:52
+#: src/admin/pages/Playlists.js:54
 msgid "Playlists"
 msgstr ""
 
@@ -1126,7 +1134,7 @@ msgid "Milestones"
 msgstr ""
 
 #: src/admin/App.js:68
-#: src/admin/pages/Playlists.js:88
+#: src/admin/pages/Playlists.js:90
 #: src/admin/pages/Settings.js:183
 msgid "Settings"
 msgstr ""
@@ -1143,90 +1151,122 @@ msgstr ""
 msgid "Go to Dashboard"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:59
-#: src/admin/components/PlaylistItemsPanel.js:54
+#: src/admin/components/PlaylistItemsModal.js:60
+#: src/admin/components/PlaylistItemsPanel.js:55
 msgid "Could not load playlist items."
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:78
-#: src/admin/components/PlaylistItemsPanel.js:71
+#: src/admin/components/PlaylistItemsModal.js:79
+#: src/admin/components/PlaylistItemsPanel.js:72
 msgid "Added."
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:80
-#: src/admin/components/PlaylistItemsPanel.js:73
+#: src/admin/components/PlaylistItemsModal.js:81
+#: src/admin/components/PlaylistItemsPanel.js:74
 msgid "Add failed."
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:86
-#: src/admin/components/PlaylistItemsPanel.js:79
+#: src/admin/components/PlaylistItemsModal.js:87
+#: src/admin/components/PlaylistItemsPanel.js:80
 msgid "Remove this video from the playlist?"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:97
-#: src/admin/components/PlaylistItemsPanel.js:90
+#: src/admin/components/PlaylistItemsModal.js:98
+#: src/admin/components/PlaylistItemsPanel.js:91
 msgid "Removed."
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:99
-#: src/admin/components/PlaylistItemsPanel.js:92
+#: src/admin/components/PlaylistItemsModal.js:100
+#: src/admin/components/PlaylistItemsPanel.js:93
 msgid "Remove failed."
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:123
-#: src/admin/components/PlaylistItemsPanel.js:112
+#: src/admin/components/PlaylistItemsModal.js:124
+#: src/admin/components/PlaylistItemsPanel.js:113
 msgid "Reorder failed."
 msgstr ""
 
 #. translators: %s: playlist title
-#: src/admin/components/PlaylistItemsModal.js:132
+#: src/admin/components/PlaylistItemsModal.js:133
 #, js-format
 msgid "Manage items — %s"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:142
-#: src/admin/components/PlaylistItemsPanel.js:123
+#: src/admin/components/PlaylistItemsModal.js:143
+#: src/admin/components/PlaylistItemsPanel.js:124
 msgid "Loading items…"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:151
-#: src/admin/components/PlaylistItemsPanel.js:135
+#: src/admin/components/PlaylistItemsModal.js:152
+#: src/admin/components/PlaylistItemsPanel.js:136
 msgid "No videos yet"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:154
-#: src/admin/components/PlaylistItemsPanel.js:138
+#: src/admin/components/PlaylistItemsModal.js:155
+#: src/admin/components/PlaylistItemsPanel.js:139
 msgid "Add videos from your library to build the playlist. They will play in this order."
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:190
-#: src/admin/components/PlaylistItemsPanel.js:174
+#: src/admin/components/PlaylistItemsModal.js:191
+#: src/admin/components/PlaylistItemsPanel.js:175
 msgid "Move up"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:197
-#: src/admin/components/PlaylistItemsPanel.js:181
+#: src/admin/components/PlaylistItemsModal.js:198
+#: src/admin/components/PlaylistItemsPanel.js:182
 msgid "Move down"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:204
-#: src/admin/components/PlaylistItemsPanel.js:188
+#: src/admin/components/PlaylistItemsModal.js:205
+#: src/admin/components/PlaylistItemsPanel.js:189
 msgid "Remove"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:224
-#: src/admin/components/PlaylistItemsPanel.js:208
+#: src/admin/components/PlaylistItemsModal.js:225
+#: src/admin/components/PlaylistItemsPanel.js:209
 msgid "Add video"
 msgstr ""
 
-#: src/admin/components/PlaylistItemsModal.js:231
+#: src/admin/components/PlaylistItemsModal.js:232
 msgid "Done"
 msgstr ""
 
 #. translators: %s: playlist title
-#: src/admin/components/PlaylistItemsPanel.js:213
+#: src/admin/components/PlaylistItemsPanel.js:214
 #, js-format
 msgid "Managing items for \"%s\"."
+msgstr ""
+
+#: src/admin/components/PlaylistPlaybackOptions.js:36
+msgid "Could not load playback options."
+msgstr ""
+
+#: src/admin/components/PlaylistPlaybackOptions.js:54
+msgid "Playback options saved."
+msgstr ""
+
+#: src/admin/components/PlaylistPlaybackOptions.js:58
+msgid "Could not save playback options."
+msgstr ""
+
+#: src/admin/components/PlaylistPlaybackOptions.js:77
+msgid "Playback"
+msgstr ""
+
+#: src/admin/components/PlaylistPlaybackOptions.js:79
+msgid "Play the next video automatically"
+msgstr ""
+
+#: src/admin/components/PlaylistPlaybackOptions.js:87
+msgid "Seconds before the next video starts"
+msgstr ""
+
+#: src/admin/components/PlaylistPlaybackOptions.js:99
+msgid "Start again from the first video after the last"
+msgstr ""
+
+#: src/admin/components/PlaylistPlaybackOptions.js:105
+msgid "Play in random order"
 msgstr ""
 
 #: src/admin/components/Sidebar.js:17
@@ -1499,63 +1539,63 @@ msgstr ""
 msgid "Learn more"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:37
+#: src/admin/pages/Playlists.js:39
 msgid "Failed to load playlists."
 msgstr ""
 
-#: src/admin/pages/Playlists.js:55
+#: src/admin/pages/Playlists.js:57
 msgid "playlist"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:55
+#: src/admin/pages/Playlists.js:57
 msgid "playlists"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:71
+#: src/admin/pages/Playlists.js:73
 msgid "Loading playlists..."
 msgstr ""
 
-#: src/admin/pages/Playlists.js:87
+#: src/admin/pages/Playlists.js:89
 #: src/admin/pages/Videos.js:288
 #: src/admin/pages/Videos.js:317
 msgid "Title"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:89
+#: src/admin/pages/Playlists.js:91
 #: src/admin/pages/Videos.js:291
 #: src/admin/pages/Videos.js:328
 msgid "Date"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:90
+#: src/admin/pages/Playlists.js:92
 #: src/admin/pages/Tags.js:160
 #: src/admin/pages/Videos.js:292
 #: src/admin/pages/Videos.js:337
 msgid "Actions"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:98
+#: src/admin/pages/Playlists.js:100
 msgid "No playlists yet. Create one to group your videos."
 msgstr ""
 
-#: src/admin/pages/Playlists.js:107
+#: src/admin/pages/Playlists.js:109
 msgid "Shuffle"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:129
+#: src/admin/pages/Playlists.js:131
 msgid "Default"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:152
+#: src/admin/pages/Playlists.js:154
 msgid "Manage items"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:158
+#: src/admin/pages/Playlists.js:160
 #: src/admin/pages/Videos.js:342
 msgid "Edit"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:167
+#: src/admin/pages/Playlists.js:169
 msgid "View"
 msgstr ""
 

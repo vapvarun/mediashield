@@ -275,9 +275,12 @@
 			target.appendChild( video );
 			adapter._video = video;
 
+			// Once: metadata loads again whenever the browser re-fetches the
+			// source, and a second "ready" started a second session and built
+			// the player controls twice.
 			video.addEventListener( 'loadedmetadata', function () {
 				if ( adapter._readyCb ) adapter._readyCb();
-			} );
+			}, { once: true } );
 			video.addEventListener( 'ended', function () {
 				if ( adapter._endedCb ) adapter._endedCb();
 			} );
@@ -426,7 +429,20 @@
 
 	// ─── Adapter Factory ─────────────────────────────────────────
 
+	// Every adapter keeps a single "ended" callback. It is claimed here, once,
+	// and turned into a DOM event on the player so any number of listeners
+	// (the end screen, a playlist queue) can react on every platform.
 	function createAdapter( el ) {
+		var adapter = buildAdapter( el );
+		if ( adapter ) {
+			adapter.onEnded( function () {
+				el.dispatchEvent( new CustomEvent( 'mediashield:ended', { bubbles: true } ) );
+			} );
+		}
+		return adapter;
+	}
+
+	function buildAdapter( el ) {
 		var target = el.querySelector( '.ms-player-target' );
 		if ( ! target ) return null;
 
@@ -746,7 +762,7 @@
 				text: featText( 'endscreenText' ),
 				url: featText( 'endscreenUrl' ),
 			};
-			adapter.onEnded( function () {
+			el.addEventListener( 'mediashield:ended', function () {
 				buildEndScreen( container, adapter, endscreenConfig );
 			} );
 		}
@@ -1127,23 +1143,29 @@
 
 	// ─── Custom Fullscreen ───────────────────────────────────────
 
+	// Delegated, so a player added after page load (a playlist switching
+	// video) gets a working button without being wired up one by one.
 	function initFullscreenButtons() {
-		document.querySelectorAll( '.ms-fullscreen-btn' ).forEach( function ( btn ) {
-			if ( btn.dataset.msInit ) return;
-			btn.dataset.msInit = '1';
+		document.addEventListener( 'click', function ( e ) {
+			var btn = e.target.closest ? e.target.closest( '.ms-fullscreen-btn' ) : null;
+			var container = btn ? btn.closest( '.ms-protected-player' ) : null;
+			if ( ! container ) return;
 
-			btn.addEventListener( 'click', function () {
-				var container = btn.closest( '.ms-protected-player' );
-				if ( ! container ) return;
-
-				if ( document.fullscreenElement ) {
-					document.exitFullscreen();
-				} else {
-					container.requestFullscreen().catch( function () {} );
-				}
-			} );
+			if ( document.fullscreenElement ) {
+				document.exitFullscreen();
+			} else {
+				container.requestFullscreen().catch( function () {} );
+			}
 		} );
 	}
+
+	// A player about to be removed from the page: release what its adapter holds.
+	window.addEventListener( 'mediashield:player-destroy', function ( e ) {
+		var adapter = e.detail && e.detail.el && e.detail.el._msAdapter;
+		if ( adapter && adapter.destroy ) {
+			try { adapter.destroy(); } catch ( err ) {} // eslint-disable-line no-empty
+		}
+	} );
 
 	// ─── Dynamic Embed Observer ──────────────────────────────────
 

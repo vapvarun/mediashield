@@ -69,22 +69,6 @@ class PlaylistRenderer {
 		$loop             = (bool) get_post_meta( $playlist_id, '_ms_loop', true );
 		$shuffle          = (bool) get_post_meta( $playlist_id, '_ms_shuffle', true );
 
-		$first             = $items[0];
-		$first_platform    = $first->platform ? $first->platform : 'self';
-		$first_protection  = $first->protection_level ? $first->protection_level : Protection::default_level();
-
-		// Hide Video Source URL applies to the opening video too, not just the
-		// sidebar list. Both are on this page, so missing either one leaks the
-		// file address the setting exists to keep out of the markup.
-		$first_urls        = Protection::filter_player_urls(
-			(int) $first->video_id,
-			(string) $first_platform,
-			(string) ( $first->source_url ? $first->source_url : '' ),
-			''
-		);
-		$first_source_url  = '' !== $first_urls['source_url'] ? $first_urls['source_url'] : $first_urls['stream_url'];
-		$first_player_type = apply_filters( 'mediashield_player_type', 'standard', (int) $first->video_id );
-
 		// If the caller didn't pass block wrapper attributes, build the same
 		// shape manually so shortcode markup matches the block.
 		if ( '' === $wrapper_attrs ) {
@@ -102,27 +86,13 @@ class PlaylistRenderer {
 		?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wrapper attrs are built from sanitized data + get_block_wrapper_attributes(). ?>>
 	<div class="ms-playlist-main">
-		<div class="ms-protected-player"
-			data-video-id="<?php echo esc_attr( $first->video_id ); ?>"
-			data-platform="<?php echo esc_attr( $first_platform ); ?>"
-			data-protection-level="<?php echo esc_attr( $first_protection ); ?>"
-			data-player-type="<?php echo esc_attr( $first_player_type ); ?>">
-			<div class="ms-player-inner">
-				<?php if ( 'self' === $first_platform ) : ?>
-					<video controls controlsList="nodownload" preload="metadata">
-						<source src="<?php echo esc_url( $first_source_url ); ?>" type="video/mp4">
-					</video>
-				<?php elseif ( $first_source_url ) : ?>
-					<iframe
-						src="<?php echo esc_url( $first_source_url ); ?>"
-						frameborder="0"
-						allow="autoplay; fullscreen; picture-in-picture"
-						allowfullscreen></iframe>
-				<?php endif; ?>
-			</div>
-			<canvas class="ms-watermark-canvas"></canvas>
-			<div class="ms-protection-overlay"></div>
-		</div>
+		<?php
+		// The same protected player a single video gets. This used to print a
+		// bare iframe or <video> of its own, which the player script could not
+		// attach to: playlist viewing ran no session, watermark or tracking,
+		// and only the badge suggested otherwise (BC#10370790450).
+		echo Renderer::render( (int) $items[0]->video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Renderer output is internally escaped.
+		?>
 
 		<div class="ms-playlist-countdown" style="display:none;">
 			<span class="ms-countdown-text"><?php esc_html_e( 'Next video in', 'mediashield' ); ?></span>
@@ -135,28 +105,11 @@ class PlaylistRenderer {
 		<div class="ms-playlist-items">
 			<?php
 			foreach ( $items as $idx => $item ) :
-				$thumb = get_the_post_thumbnail_url( (int) $item->video_id, 'thumbnail' );
+				$thumb = get_the_post_thumbnail_url( (int) $item->video_id, 'medium' );
 
-				// Apply "Hide Video Source URL" here too. The 1.3.0 fix covered
-				// Renderer and PlayerWrapper but not this path, so a self-hosted
-				// video inside a playlist still printed its real file address
-				// with the setting on - the whole point of that setting, missed
-				// on one of three render paths.
-				$item_urls   = Protection::filter_player_urls(
-					(int) $item->video_id,
-					(string) ( $item->platform ? $item->platform : 'self' ),
-					(string) ( $item->source_url ? $item->source_url : '' ),
-					''
-				);
-				$item_source = $item_urls['source_url'];
-				$item_stream = $item_urls['stream_url'];
 				?>
 				<div class="ms-playlist-item <?php echo esc_attr( 0 === $idx ? 'is-active' : '' ); ?>"
 					data-video-id="<?php echo esc_attr( $item->video_id ); ?>"
-					data-source-url="<?php echo esc_url( $item_source ); ?>"
-					data-stream-url="<?php echo esc_url( $item_stream ); ?>"
-					data-platform="<?php echo esc_attr( $item->platform ? $item->platform : 'self' ); ?>"
-					data-protection-level="<?php echo esc_attr( $item->protection_level ? $item->protection_level : Protection::default_level() ); ?>"
 					data-index="<?php echo esc_attr( (string) $idx ); ?>">
 					<span class="ms-playlist-item-num"><?php echo esc_html( (string) ( $idx + 1 ) ); ?></span>
 					<?php if ( $thumb ) : ?>
@@ -175,7 +128,14 @@ class PlaylistRenderer {
 					<?php endif; ?>
 					<div class="ms-playlist-item-info">
 						<span class="ms-playlist-item-title"><?php echo esc_html( $item->video_title ); ?></span>
-						<span class="ms-playlist-item-platform"><?php echo esc_html( $item->platform ? $item->platform : 'self' ); ?></span>
+						<?php
+						// Length, when known. This used to print the raw platform
+						// slug ("youtube", "self"), which tells a viewer nothing.
+						$seconds = (int) $item->duration;
+						if ( $seconds > 0 ) :
+							?>
+							<span class="ms-playlist-item-duration"><?php echo esc_html( $seconds >= HOUR_IN_SECONDS ? gmdate( 'G:i:s', $seconds ) : ltrim( gmdate( 'i:s', $seconds ), '0' ) ); ?></span>
+						<?php endif; ?>
 					</div>
 				</div>
 			<?php endforeach; ?>
@@ -256,12 +216,12 @@ class PlaylistRenderer {
 					p.post_title AS video_title,
 					pm_platform.meta_value AS platform,
 					pm_url.meta_value AS source_url,
-					pm_protection.meta_value AS protection_level
+					pm_duration.meta_value AS duration
 				 FROM {$wpdb->prefix}ms_playlist_items pi
 				 INNER JOIN {$wpdb->posts} p ON pi.video_id = p.ID AND p.post_status = 'publish'
 				 LEFT JOIN {$wpdb->postmeta} pm_platform ON pi.video_id = pm_platform.post_id AND pm_platform.meta_key = '_ms_platform'
 				 LEFT JOIN {$wpdb->postmeta} pm_url ON pi.video_id = pm_url.post_id AND pm_url.meta_key = '_ms_source_url'
-				 LEFT JOIN {$wpdb->postmeta} pm_protection ON pi.video_id = pm_protection.post_id AND pm_protection.meta_key = '_ms_protection_level'
+				 LEFT JOIN {$wpdb->postmeta} pm_duration ON pi.video_id = pm_duration.post_id AND pm_duration.meta_key = '_ms_duration'
 				 WHERE pi.playlist_id = %d
 				 ORDER BY pi.sort_order ASC, pi.id ASC",
 				$playlist_id

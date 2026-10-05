@@ -447,6 +447,7 @@ class Settings {
 				// produces. Without it the viewer just stares at a dead player.
 				'loadFailed'      => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
 				'concurrentLimit' => __( 'Too many active streams. Please close another video first.', 'mediashield' ),
+				'playlistFailed'  => __( 'This video could not be loaded. Please try again.', 'mediashield' ),
 				'badge'           => __( 'Protected by MediaShield', 'mediashield' ),
 				'speed'           => __( 'Playback speed', 'mediashield' ),
 				'closeSticky'     => __( 'Close sticky player', 'mediashield' ),

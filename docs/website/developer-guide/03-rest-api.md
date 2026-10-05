@@ -69,6 +69,7 @@ A `<video>` element cannot send an `X-WP-Nonce` header, so the player appends a 
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
+| GET | `/playlists/{playlist_id}/player/{video_id}` | public | The protected player markup (`html`) for one published video in a published playlist. Used by the playlist page when the viewer moves to another video. 404 if the video is not in that playlist. Who may watch is still decided by `/session/start` and `/stream`. |
 | GET | `/playlists/{playlist_id}/items` | logged in | List items in a playlist in sort order. |
 | POST | `/playlists/{playlist_id}/items` | edit_posts | Add a video to a playlist. Body: `{ video_id }`. |
 | DELETE | `/playlists/{playlist_id}/items/{item_id}` | edit_posts | Remove a video from a playlist. |

@@ -10,16 +10,18 @@ Give the playlist a title, then click **Add video** to pick videos from your lib
 
 ## Playback options
 
-A playlist carries four playback options: **autoplay**, **countdown** (seconds between videos, default 5), **loop**, and **shuffle**. The player honours all four, and the Playlists list shows which are on as badges next to the title.
+A playlist has four playback options. Set them under **Playback**, either in the **Manage items** popup on the Playlists screen or in the **Playlist Items** panel on the playlist's edit screen. Each one saves as you change it.
 
-There is no UI to change them in this release. A new playlist gets the defaults: autoplay off, countdown 5, loop off, shuffle off. Until an editing screen exists, they can be set through the WordPress REST API on the playlist's meta:
+- **Play the next video automatically** - when a video ends, a short countdown runs and the next one starts.
+- **Seconds before the next video starts** - the length of that countdown, 1 to 30. Default is 5.
+- **Start again from the first video after the last** - loop the playlist.
+- **Play in random order** - shuffle.
 
-```
-POST /wp-json/wp/v2/mediashield-playlists/15
-{ "meta": { "_ms_autoplay": true, "_ms_countdown": 8 } }
-```
+A new playlist starts with all of them off. The Playlists list shows which are on as badges next to the title.
 
-or with `update_post_meta()` in code. The meta keys are `_ms_autoplay`, `_ms_countdown`, `_ms_loop`, and `_ms_shuffle`.
+Every video in a playlist plays in the same protected player as a single video: it is watermarked, tracked, counted towards milestones, and checked against the video's access rules. Autoplay works for every platform.
+
+Developers can also set the options through the REST API (`POST /wp-json/wp/v2/mediashield-playlists/{id}` with `meta`) or `update_post_meta()`. The meta keys are `_ms_autoplay`, `_ms_countdown`, `_ms_loop`, and `_ms_shuffle`.
 
 ## Embedding a playlist
 

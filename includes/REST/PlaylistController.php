@@ -43,6 +43,17 @@ class PlaylistController extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
+		// GET /playlists/<id>/player/<video_id>.
+		register_rest_route(
+			$this->namespace,
+			'/playlists/(?P<playlist_id>\d+)/player/(?P<video_id>\d+)',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_player' ),
+				'permission_callback' => array( $this, 'player_permissions_check' ),
+			)
+		);
+
 		// GET + POST /playlists/<id>/items.
 		register_rest_route(
 			$this->namespace,
@@ -109,6 +120,56 @@ class PlaylistController extends WP_REST_Controller {
 						),
 					),
 				),
+			)
+		);
+	}
+
+	/**
+	 * Player permissions: the video must be a published item of a published playlist.
+	 *
+	 * Open to guests on purpose - the response is the same markup the playlist
+	 * page already printed for its first video, and who may actually watch is
+	 * decided where it always is, at /session/start and /stream. The membership
+	 * check is what stops this being a way to look up any video by id.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return true|WP_Error
+	 */
+	public function player_permissions_check( WP_REST_Request $request ) {
+		global $wpdb;
+
+		$playlist_id = (int) $request['playlist_id'];
+		$video_id    = (int) $request['video_id'];
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table lookup on idx_playlist.
+		$in_playlist = (bool) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT 1 FROM {$wpdb->prefix}ms_playlist_items WHERE playlist_id = %d AND video_id = %d LIMIT 1",
+				$playlist_id,
+				$video_id
+			)
+		);
+
+		if ( ! $in_playlist || 'publish' !== get_post_status( $playlist_id ) || 'publish' !== get_post_status( $video_id ) ) {
+			return new WP_Error( 'not_found', __( 'Video not found in this playlist.', 'mediashield' ), array( 'status' => 404 ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * GET /playlists/<id>/player/<video_id> — the protected player for one item.
+	 *
+	 * The playlist page swaps this in when the viewer moves to another video,
+	 * so every item plays in the same player a single video gets.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
+	public function get_player( WP_REST_Request $request ): WP_REST_Response {
+		return rest_ensure_response(
+			array(
+				'html' => \MediaShield\Player\Renderer::render( (int) $request['video_id'] ),
 			)
 		);
 	}

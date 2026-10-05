@@ -236,6 +236,17 @@
       },
       {
         "namespace": "mediashield/v1",
+        "route": "/playlists/(?P<playlist_id>\\d+)/player/(?P<video_id>\\d+)",
+        "methods": [
+          "GET"
+        ],
+        "permissionCallback": "player_permissions_check",
+        "file": "includes/REST/PlaylistController.php",
+        "line": 47,
+        "requestArgs": []
+      },
+      {
+        "namespace": "mediashield/v1",
         "route": "/playlists/(?P<playlist_id>\\d+)/items",
         "methods": [
           "GET",

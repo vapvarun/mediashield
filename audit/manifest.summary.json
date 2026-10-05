@@ -14,7 +14,7 @@
     "verified_by": "wp-plugin-onboard --refresh 2026-08-26; coverage gate run against grep ground truth, two categories hand-patched (see notes.generator_blind_spots)"
   },
   "counts": {
-    "rest_endpoints": 23,
+    "rest_endpoints": 24,
     "ajax": 2,
     "admin_pages": 2,
     "tables": 6,
