@@ -310,6 +310,33 @@ const Settings = () => {
 				title={ __( 'Watermark', 'mediashield' ) }
 				description={ __( 'Dynamic overlay that identifies the viewer.', 'mediashield' ) }
 			>
+				{ /* What a viewer sees, from the values on this screen. A sketch of
+				     the player, not the player: it needs no video and no session. */ }
+				<div className="mediashield-settings__preview" aria-hidden="true">
+					{ !! settings?.ms_show_badge && (
+						<span className="mediashield-settings__preview-badge">
+							{ __( 'Protected by MediaShield', 'mediashield' ) }
+						</span>
+					) }
+					<span
+						className="mediashield-settings__preview-watermark"
+						style={ {
+							color: settings?.ms_watermark_color || '#ffffff',
+							opacity: settings?.ms_watermark_opacity ?? 0.5,
+						} }
+					>
+						{ __( 'Viewer Name', 'mediashield' ) } · 203.0.113.7
+					</span>
+					<span
+						className="mediashield-settings__preview-button"
+						style={ settings?.ms_player_accent_color ? { background: settings.ms_player_accent_color } : undefined }
+					>
+						{ settings?.ms_login_button_text || __( 'Log In', 'mediashield' ) }
+					</span>
+				</div>
+				<p className="mediashield-settings__preview-caption">
+					{ __( 'Preview. The watermark shows each viewer\'s own name and IP address and moves around the video.', 'mediashield' ) }
+				</p>
 				<RangeControl
 					label={ __( 'Opacity', 'mediashield' ) }
 					value={ settings?.ms_watermark_opacity ?? 0.5 }
