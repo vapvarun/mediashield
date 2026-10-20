@@ -43,6 +43,12 @@ class AccessGatesTest extends WP_UnitTestCase {
 			)
 		);
 
+		// Protection only routes through /stream/ when it can serve a file, so
+		// the fixture needs the one it names on disk.
+		$dir = trailingslashit( wp_upload_dir()['basedir'] ) . 'mediashield';
+		wp_mkdir_p( $dir );
+		file_put_contents( $dir . '/test.mp4', 'x' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test fixture.
+
 		update_post_meta( $this->video_id, '_ms_platform', 'self' );
 		update_post_meta( $this->video_id, '_ms_platform_video_id', 'test.mp4' );
 		update_post_meta( $this->video_id, '_ms_source_url', 'https://example.test/uploads/mediashield/test.mp4' );

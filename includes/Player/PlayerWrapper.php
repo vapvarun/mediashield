@@ -138,7 +138,13 @@ class PlayerWrapper {
 		$signatures = array(
 			'youtube.com/embed'          => 'youtube',
 			'youtube-nocookie.com/embed' => 'youtube',
-			'player.vimeo.com/video'     => 'vimeo',
+			// The plain links an embed block or a bare URL line store: the
+			// iframe only appears at render time through oEmbed, so its own
+			// signature is never in the saved content. 'vimeo.com/' also
+			// covers player.vimeo.com/video.
+			'youtube.com/watch'          => 'youtube',
+			'youtu.be/'                  => 'youtube',
+			'vimeo.com/'                 => 'vimeo',
 			'iframe.mediadelivery.net'   => 'bunny',
 			'player.mediadelivery.net'   => 'bunny',
 			'wistia_async_'              => 'wistia',

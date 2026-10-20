@@ -107,7 +107,8 @@ class GuestSessionTest extends WP_UnitTestCase {
 		);
 
 		$first  = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'UA' );
-		$second = SessionManager::start( $other_video, $user, '203.0.113.9', 'UA' );
+		// A different device: the same address and browser counts as one.
+		$second = SessionManager::start( $other_video, $user, '203.0.113.10', 'Other UA' );
 
 		$this->assertIsArray( $first );
 		$this->assertFalse( $second, 'A second concurrent stream for one user must be refused.' );

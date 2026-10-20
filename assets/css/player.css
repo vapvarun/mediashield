@@ -89,6 +89,15 @@ iframe.ms-player-target {
 	border: none;
 }
 
+/* The core embed block reserves the video's room with a ::before spacer and
+   expects its iframe to sit absolutely on top of it. Wrapping replaces that
+   iframe with an in-flow player, so the spacer is left behind as an empty gap
+   exactly one video tall above it. The player sizes itself. */
+.wp-block-embed .wp-block-embed__wrapper:has(.ms-protected-player)::before {
+	content: none;
+	padding-top: 0;
+}
+
 /* Legacy .ms-player-inner for backward compat */
 .ms-player-inner {
 	position: relative;
