@@ -11,7 +11,6 @@
 namespace MediaShield\Player;
 
 use MediaShield\Core\Settings;
-use MediaShield\Embed\EmbedLink;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -181,16 +180,29 @@ class Protection {
 		// logged-in member to log in. The token names the viewer; the endpoint
 		// still runs can_watch() for them on every range request.
 		if ( '' === $stream_url ) {
-			$stream_url = add_query_arg(
-				'ms_token',
-				EmbedLink::token( $video_id, get_current_user_id(), EmbedLink::STREAM_TTL ),
-				rest_url( 'mediashield/v1/stream/' . $video_id )
-			);
+			$stream_url = \MediaShield\REST\StreamController::signed_url( $video_id, get_current_user_id() );
+			self::skip_page_cache();
 		}
 
 		return array(
 			'source_url' => '',
 			'stream_url' => $stream_url,
 		);
+	}
+
+	/**
+	 * Keep the page out of page caches once it prints a viewer's stream token.
+	 *
+	 * The token names whoever the page was rendered for. A cached copy would
+	 * hand that identity to every later visitor, or - once the token expires -
+	 * leave members with a player that is refused (Zoho #42193).
+	 */
+	private static function skip_page_cache(): void {
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- The cache plugins' own flag.
+		}
+		if ( ! headers_sent() ) {
+			nocache_headers();
+		}
 	}
 }

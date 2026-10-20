@@ -109,6 +109,14 @@
 
 	// ─── Vimeo Adapter ───────────────────────────────────────────
 
+	// Vimeo's own full screen button takes only its iframe full screen and
+	// leaves the watermark behind, and next to ours it is a second control for
+	// one job. Withdrawing the iframe's permission removes it.
+	function withdrawFullscreen( iframe ) {
+		iframe.removeAttribute( 'allowfullscreen' );
+		iframe.setAttribute( 'allow', ( iframe.getAttribute( 'allow' ) || '' ).replace( /\bfullscreen\s*;?\s*/, '' ) );
+	}
+
 	var VimeoAdapter = {
 		create: function ( target, videoId, options ) {
 			options = options || {};
@@ -133,6 +141,14 @@
 					if ( options.loop === true ) vimeoOpts.loop = true;
 					if ( options.muted === true ) vimeoOpts.muted = true;
 					if ( options.controls === false ) vimeoOpts.controls = false;
+					// The SDK adds its iframe asynchronously; take the permission
+					// away the moment it appears, before the frame navigates.
+					new MutationObserver( function ( records, observer ) {
+						var frame = target.querySelector( 'iframe' );
+						if ( ! frame ) return;
+						withdrawFullscreen( frame );
+						observer.disconnect();
+					} ).observe( target, { childList: true } );
 					adapter._player = new Vimeo.Player( target, vimeoOpts );
 
 					adapter._player.on( 'timeupdate', function ( data ) {
@@ -163,8 +179,7 @@
 						iframe.style.width = '100%';
 						iframe.style.aspectRatio = '16/9';
 						iframe.style.border = '0';
-						iframe.setAttribute( 'allow', 'autoplay; fullscreen; picture-in-picture' );
-						iframe.setAttribute( 'allowfullscreen', 'true' );
+						iframe.setAttribute( 'allow', 'autoplay; picture-in-picture' );
 						target.appendChild( iframe );
 					}
 					if ( typeof console !== 'undefined' && console.warn ) {
@@ -288,6 +303,37 @@
 
 			var url        = streamUrl || sourceUrl;
 			var isAdaptive = !! url && ( url.indexOf( '.m3u8' ) > -1 || url.indexOf( '.mpd' ) > -1 );
+
+			// A stream URL carries a signed token minted when the page was built.
+			// When the page outlives it (cached HTML, a tab left open, rotated
+			// salts) the endpoint refuses the viewer, so ask for a fresh URL
+			// once and carry on from where playback stopped. Registered before
+			// the load watchdog so a recoverable refusal never shows its overlay.
+			if ( ! isAdaptive && url.indexOf( 'ms_token=' ) > -1 ) {
+				var refreshed = false;
+				video.addEventListener( 'error', function ( e ) {
+					if ( refreshed ) return;
+					refreshed = true;
+					e.stopImmediatePropagation();
+					var resumeAt   = video.currentTime;
+					var wasPlaying = ! video.paused;
+					fetch( url.split( '?' )[ 0 ] + '/url', {
+						headers: { 'X-WP-Nonce': config.nonce },
+					} )
+						.then( function ( res ) { return res.ok ? res.json() : Promise.reject( res ); } )
+						.then( function ( data ) {
+							video.src = data.url;
+							video.addEventListener( 'loadedmetadata', function () {
+								video.currentTime = resumeAt;
+								if ( wasPlaying ) video.play().catch( function () {} );
+							}, { once: true } );
+						} )
+						.catch( function () {
+							var container = target.closest ? target.closest( '.ms-protected-player' ) : null;
+							if ( container ) showErrorOverlay( container, t( 'loadFailed', 'This video could not be loaded.' ) );
+						} );
+				} );
+			}
 
 			watchForLoadFailure( video, target );
 
