@@ -65,6 +65,7 @@ Heartbeat interval: 30 seconds, emitted as `interval: 30000` in the frontend con
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
 | GET | `/stream/{video_id}` | `stream_permissions_check` | Streams a self-hosted file with HTTP range support, after `AccessControl::can_watch()`. Accepts an optional signed `ms_token` query arg (since 1.3.0) - a `<video src>` cannot send an `X-WP-Nonce` header, so WordPress ignores the session cookie and every viewer would otherwise arrive as user 0. The token names the viewer; `can_watch()` still runs per request, so revoked access is refused on the next range request. Mint one with `EmbedLink::token( $video_id, $user_id, EmbedLink::STREAM_TTL )`. |
+| GET | `/stream/{video_id}/url` | `stream_url_permissions_check` | Returns `{ "url": ... }`, a freshly signed stream URL for the current viewer after `AccessControl::can_watch()`. Authenticated with `X-WP-Nonce`; the player calls it once when the URL printed in the page has expired and resumes from where it stopped. |
 
 ---
 

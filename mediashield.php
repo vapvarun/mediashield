@@ -3,7 +3,7 @@
  * Plugin Name: MediaShield
  * Plugin URI:  https://wbcomdesigns.com/mediashield
  * Description: Video protection for WordPress — dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
- * Version:     1.3.0
+ * Version:     1.4.0
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author:      Wbcom Designs
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'MEDIASHIELD_VERSION', '1.3.0' );
+define( 'MEDIASHIELD_VERSION', '1.4.0' );
 define( 'MEDIASHIELD_DB_VERSION', 5 );
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
@@ -134,16 +134,18 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	}
 }
 
-// Auto-activate the preset license key on first load so downloads work.
-//
-// Three guards keep a slow or refusing license server from being hit on every
-// admin request (one install sent 933 activations in 23 hours):
-//   1. The activated flag is final. A `valid` reply, or any definitive refusal
-//      (invalid, disabled, expired, no activations left), ends the attempts.
-//   2. A one-day lock is set on every attempt, so a timeout or an unreadable
-//      reply is retried once a day, not once a request.
-//   3. admin_init also fires for admin-ajax (Heartbeat), cron and REST, where
-//      no one benefits from activating, so those requests skip it.
+/*
+ * Auto-activate the preset license key on first load so downloads work.
+ *
+ * Three guards keep a slow or refusing license server from being hit on every
+ * admin request (one install sent 933 activations in 23 hours):
+ *   1. The activated flag is final. A `valid` reply, or any definitive refusal
+ *      (invalid, disabled, expired, no activations left), ends the attempts.
+ *   2. A one-day lock is set on every attempt, so a timeout or an unreadable
+ *      reply is retried once a day, not once a request.
+ *   3. admin_init also fires for admin-ajax (Heartbeat), cron and REST, where
+ *      no one benefits from activating, so those requests skip it.
+ */
 add_action(
 	'admin_init',
 	function () {

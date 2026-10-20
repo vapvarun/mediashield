@@ -444,6 +444,17 @@
       },
       {
         "namespace": "mediashield/v1",
+        "route": "/stream/(?P<video_id>\\d+)/url",
+        "methods": [
+          "GET"
+        ],
+        "permissionCallback": "closure",
+        "file": "includes/REST/StreamController.php",
+        "line": 90,
+        "requestArgs": []
+      },
+      {
+        "namespace": "mediashield/v1",
         "route": "/tags",
         "methods": [
           "GET",
@@ -2278,6 +2289,15 @@
         "permission": "closure",
         "gated_by": null,
         "file": "includes/REST/StreamController.php:63"
+      },
+      {
+        "route": "/mediashield/v1/stream/(?P<video_id>\\d+)/url",
+        "methods": [
+          "GET"
+        ],
+        "permission": "closure",
+        "gated_by": null,
+        "file": "includes/REST/StreamController.php:90"
       },
       {
         "route": "/mediashield/v1/tags",

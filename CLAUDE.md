@@ -8,13 +8,13 @@
 >
 > Two categories are hand-patched because the generator cannot see them, and **must be re-patched after any regeneration**: `ms_watch_sessions_archive` (created by `str_replace()` on the sessions schema, not a literal `CREATE TABLE`) and the Setup Wizard's `add_submenu_page`. Four more (`post_types`, `capabilities`, `settings`, `wp_cli`) come back 0 from the generator and are ground-truthed in the summary. All of it is recorded under `notes.generator_blind_spots` and `notes.summary_hand_verified` - read those before trusting a count that looks wrong.
 >
-> **24 REST routes** in `mediashield/v1` (incl. `/wizard/complete` and `/playlists/{id}/player/{video_id}`); WP core adds 6 more `wp/v2` routes for the two CPTs. **2 AJAX** (`ms_dismiss_pro_notice`, `health-check-mediashield-upload-dir-protected` for the Site Health screen), **2 admin pages**, **6 tables**, **3 blocks**, **3 shortcodes**, **2 CPTs**, **3 cron jobs** (2 recurring: `ms_cleanup_inactive_sessions` hourly, `ms_archive_old_sessions` monthly; 1 one-off: `ms_restore_archived_sessions` — plus the bundled EDD SDK's weekly WP-Cron licence check), **45 hooks fired** (14 actions + 31 filters, verified by scanning `do_action`/`apply_filters` in `includes/` and `src/`, excluding docblocks and line comments) plus the JS-side `mediashield_admin_routes` `wp.hooks` filter, **35 settings** (authoritative source: `array_keys( Settings::schema() )`), **1 capability** (`upload_mediashield`), **2 WP-CLI commands** (`mediashield scale`, `mediashield repair`). Service count is a manifest-only concept and **has not been re-verified for 1.3.0** — do not quote the manifest's `34` as current. **Release-ready as of the 2026-05-26 wppqa baseline** — which was taken against 1.2.0 and has NOT been re-run for 1.3.0; treat it as "no known blockers carried forward", not as a 1.3.0 sign-off — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
+> **25 REST routes** in `mediashield/v1` (incl. `/wizard/complete`, `/playlists/{id}/player/{video_id}` and `/stream/{id}/url`); WP core adds 6 more `wp/v2` routes for the two CPTs. **2 AJAX** (`ms_dismiss_pro_notice`, `health-check-mediashield-upload-dir-protected` for the Site Health screen), **2 admin pages**, **6 tables**, **3 blocks**, **3 shortcodes**, **2 CPTs**, **3 cron jobs** (2 recurring: `ms_cleanup_inactive_sessions` hourly, `ms_archive_old_sessions` monthly; 1 one-off: `ms_restore_archived_sessions` — plus the bundled EDD SDK's weekly WP-Cron licence check), **45 hooks fired** (14 actions + 31 filters, verified by scanning `do_action`/`apply_filters` in `includes/` and `src/`, excluding docblocks and line comments) plus the JS-side `mediashield_admin_routes` `wp.hooks` filter, **35 settings** (authoritative source: `array_keys( Settings::schema() )`), **1 capability** (`upload_mediashield`), **2 WP-CLI commands** (`mediashield scale`, `mediashield repair`). Service count is a manifest-only concept and **has not been re-verified for 1.3.0** — do not quote the manifest's `34` as current. **Release-ready as of the 2026-05-26 wppqa baseline** — which was taken against 1.2.0 and has NOT been re-run for 1.3.0; treat it as "no known blockers carried forward", not as a 1.3.0 sign-off — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
 
 > **Verifying a Ready-for-Testing card?** Follow [`docs/standards/rft-verification.md`](docs/standards/rft-verification.md) — five questions per card, a verdict format that stays comparable across the whole column, and the standing traps. The cards change every cycle; the method does not. Pre-RFT gating is the companion [`docs/standards/qa-catalog.md`](docs/standards/qa-catalog.md).
 
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
-- **Version:** 1.3.0
+- **Version:** 1.4.0
 - **Requires:** PHP 8.1, WordPress 6.5
 - **Text Domain:** mediashield
 - **Namespace:** `MediaShield\`
@@ -65,7 +65,7 @@ includes/
     SettingsController.php   /settings GET + PUT
     AnalyticsController.php  /analytics/overview, milestones, users, my-videos. Overview payload includes `recent_milestones` + `site_timezone`; date grouping uses MySQL CONVERT_TZ() so daily counts honour the WP site timezone.
     ProtectionController.php /protection/devtools-event beacon
-    StreamController.php     /stream/{video_id} signed-URL handoff
+    StreamController.php     /stream/{video_id} signed-URL handoff, /stream/{video_id}/url refresh
   Access/
     AccessControl.php        Permission checks — login gate, per-video `_ms_access_role`, allowed-domain whitelist (default-deny empty referer + `mediashield_allow_empty_referer` filter), `mediashield_can_watch` filter chain. Consumed by SessionController and StreamController.
     SessionManager.php       HMAC token generation, concurrent stream limits
@@ -256,13 +256,14 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/stream/{video_id}` | Authenticated streaming handoff (permission: `stream_permissions_check`); used to gate self-hosted media URLs. Accepts a signed `ms_token` for media elements, which cannot send `X-WP-Nonce`. |
+| GET | `/stream/{video_id}/url` | A freshly signed stream URL for the viewer (permission: `stream_url_permissions_check`, `can_watch()`); the player calls it once when the URL printed in the page has gone stale. `StreamController::signed_url()` is the only place that mints one. |
 
 ### Wizard
 | Method | Route | Description |
 |--------|-------|-------------|
 | POST | `/wizard/complete` | Marks the first-run setup wizard finished |
 
-That is 23 routes in `mediashield/v1`. Registering the two CPTs with `show_in_rest` adds 6 more under `wp/v2` (`mediashield-videos`, `mediashield-playlists`, and their autosave routes) — those are WordPress's, not ours, but they are live and permission-checked by WP core.
+That is 25 routes in `mediashield/v1`. Registering the two CPTs with `show_in_rest` adds 6 more under `wp/v2` (`mediashield-videos`, `mediashield-playlists`, and their autosave routes) — those are WordPress's, not ours, but they are live and permission-checked by WP core.
 
 ---
 
