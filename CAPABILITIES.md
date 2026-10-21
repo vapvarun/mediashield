@@ -80,7 +80,7 @@ What this plugin actually does for a site owner, in their language, verified aga
 | Pick a quality / watch on weak mobile data? | **NO** | No transcoding, no adaptive bitrate, no quality UI. One file, one bitrate. | — |
 | Pop the video out (picture-in-picture)? | **NO** | No `requestPictureInPicture`, and our button covers the browser's own. | — |
 | Jump to a chapter? | **NO** | No occurrence of "chapter" in either plugin. | — |
-| Read the player in their own language? | **NO** | The admin is translated; the **student-facing player is not** — zero `wp.i18n`, never passed to `wp_set_script_translations()`. | `assets/js/player-wrapper.js` |
+| Read the player in their own language? | **YES** (1.4.0) | Every viewer-facing string (login message, badge, resume prompt, end screen, speed and sticky labels, error messages, ad labels) is translated in PHP and handed to the player scripts through `mediashieldConfig.messages`. The owner-editable messages are translated while still at their default and left alone once the owner changes them. **The catch:** the plugin ships a `.pot` only, no translations, so a site needs a language pack or its own `.po`. | `Core/Settings.php` (`frontend_config()`, `message()`); `assets/js/player-wrapper.js` (`t()`) |
 | Watch an HLS/DASH self-hosted video? | **PARTIAL** (1.3.0) | **HLS now works everywhere.** `hls.js` 1.5.20 is bundled (`assets/vendor/hls.min.js`), registered separately, and enqueued both from the `mediashield_needs_shaka` action and from `Assets::enqueue()` — the flag used to be set one step too late, so no streaming library ever loaded and HLS played only in Safari. **DASH is still dead everywhere**: nothing ships a DASH player. | `Core/Assets.php:44-58,149-155,190-197` |
 
 ---
@@ -94,8 +94,8 @@ Ranked by how likely a buyer is to *assume* it already exists.
 3. **Adaptive streaming / quality selector.** HLS *playback* works from 1.3.0, but we do not transcode and there is no quality UI — so a single 1080p file is still unwatchable on weak mobile data with no lower rung to fall to. Owners get rungs only if their host (Bunny) made them.
 4. **Picture-in-picture** — and our redundant fullscreen button actively occludes the browser's native PiP/speed menu. Cheapest fix on this list.
 5. **Chapters / markers.** A 40-minute lesson without them is a scrub-hunt.
-6. **Playlist autoplay / countdown.** The whole engine is written and works; **no UI writes the settings.**
-7. **A translated player.** WordPress buyers are disproportionately non-English.
+6. ~~**Playlist autoplay / countdown.**~~ **Done in 1.4.0** - admin control added, and the playlist now plays every item in the ordinary protected player (session, watermark, tracking, access rules), so autoplay advances on every platform. Before 1.4.0 the playlist printed a bare iframe with none of that.
+7. ~~**A translated player.**~~ **Done in 1.4.0** - the player's text is translatable; no translations are bundled yet.
 8. **Page-builder support.** A large share of WP course sites are Elementor or Divi.
 
 ---

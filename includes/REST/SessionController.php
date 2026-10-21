@@ -289,10 +289,11 @@ class SessionController extends WP_REST_Controller {
 			'opacity'       => (float) get_option( 'ms_watermark_opacity', 0.3 ),
 			'color'         => get_option( 'ms_watermark_color', '#ffffff' ),
 			'swap_interval' => (int) get_option( 'ms_watermark_swap_interval', 20 ),
-			// Key is `text` (not `username`) to match Watermark::get_config() and
-			// what assets/js/watermark.js reads; otherwise the overlay renders the
-			// IP only on desktop and is blank on mobile. Pro's AdvancedConfig filter
-			// overwrites `text` when active.
+			// Key is `text` (not `username`) to match what assets/js/watermark.js
+			// reads; otherwise the overlay renders the IP only on desktop and is
+			// blank on mobile. Pro's AdvancedConfig filter overwrites `text` when
+			// active. This response is the only place a viewer's name and IP are
+			// sent: the page config must stay cacheable.
 			'text'          => wp_get_current_user()->display_name,
 			'ip'            => $ip,
 		);
@@ -392,18 +393,20 @@ class SessionController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function heartbeat( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		// Rate limiting: max 4 heartbeats per minute per viewer.
+		// Rate limiting: max 4 heartbeats per minute per session.
 		// Increment first to close TOCTOU race window.
 		//
-		// Keyed on the session token for guests: every anonymous viewer is
-		// user_id 0, so a user-id key would put the entire logged-out audience
-		// in one bucket and throttle the whole site at 4 heartbeats a minute.
-		// The token is per-session, which is the correct granularity, and it is
-		// hashed so a session token never becomes an option name.
-		$user_id  = get_current_user_id();
-		$rate_key = $user_id > 0
-			? 'ms_rate_' . $user_id
-			: 'ms_rate_g_' . hash( 'sha256', (string) $request->get_param( 'token' ) );
+		// Keyed on the session token, not the viewer: every anonymous viewer is
+		// user_id 0, and a member with several players on one page (each beats
+		// about twice a minute) would share one bucket and lose progress beats.
+		// The token is hashed so it never becomes an option name.
+		//
+		// Only a token we signed picks its own bucket. Anything else shares one
+		// bucket per caller, so a flood of made-up tokens is limited and writes
+		// one transient, not one per request.
+		$token    = (string) $request->get_param( 'token' );
+		$bucket   = SessionManager::validate_token( $token ) ? $token : 'invalid|' . ( get_current_user_id() ? get_current_user_id() : self::get_client_ip() );
+		$rate_key = 'ms_rate_' . hash( 'sha256', $bucket );
 		$count    = (int) get_transient( $rate_key );
 		++$count;
 		set_transient( $rate_key, $count, 60 );

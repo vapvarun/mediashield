@@ -23,6 +23,7 @@ import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
 import Icon from './Icon';
 import VideoPickerModal from './VideoPickerModal';
+import PlaylistPlaybackOptions from './PlaylistPlaybackOptions';
 
 const config = window.mediashieldAdmin || {};
 
@@ -233,6 +234,8 @@ export default function PlaylistItemsModal( { playlistId, playlistTitle, onClose
 					</div>
 				</>
 			) }
+
+			<PlaylistPlaybackOptions playlistId={ playlistId } />
 
 			{ pickerOpen && (
 				<VideoPickerModal

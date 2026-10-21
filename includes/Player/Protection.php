@@ -11,7 +11,6 @@
 namespace MediaShield\Player;
 
 use MediaShield\Core\Settings;
-use MediaShield\Embed\EmbedLink;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -106,8 +105,8 @@ class Protection {
 			'hide_source'       => (bool) Settings::get( 'ms_hide_source' ),
 			'detect_devtools'   => (bool) Settings::get( 'ms_detect_devtools' ),
 			'pause_on_devtools' => (bool) Settings::get( 'ms_pause_on_devtools' ),
-			'devtools_title'    => (string) Settings::get( 'ms_devtools_title' ),
-			'devtools_message'  => (string) Settings::get( 'ms_devtools_message' ),
+			'devtools_title'    => Settings::message( 'ms_devtools_title', __( 'Developer Tools Detected', 'mediashield' ) ),
+			'devtools_message'  => Settings::message( 'ms_devtools_message', __( 'Please close developer tools to continue watching this video.', 'mediashield' ) ),
 		);
 
 		/**
@@ -154,7 +153,16 @@ class Protection {
 		// stream URL, or one we can find on disk. An external direct URL has
 		// no local file, and routing it there was a guaranteed 404
 		// (BC#10258678064).
-		if ( 'self' !== $platform || ! get_option( 'ms_hide_source', true )
+		//
+		// An uploaded file is the exception to the setting: its only address
+		// IS the gated endpoint, and a <video> cannot send a login cookie the
+		// REST API will accept. With Hide Source off it went out unsigned and
+		// every logged-in viewer was refused (BC#10370649456), so it is always
+		// signed.
+		$is_gated_source = false !== strpos( $source_url, 'mediashield/v1/stream/' . $video_id );
+
+		if ( 'self' !== $platform
+			|| ( ! $is_gated_source && ! get_option( 'ms_hide_source', true ) )
 			|| ( '' === $stream_url && '' === \MediaShield\REST\StreamController::resolve_file( $video_id ) ) ) {
 			return array(
 				'source_url' => $source_url,
@@ -172,16 +180,29 @@ class Protection {
 		// logged-in member to log in. The token names the viewer; the endpoint
 		// still runs can_watch() for them on every range request.
 		if ( '' === $stream_url ) {
-			$stream_url = add_query_arg(
-				'ms_token',
-				EmbedLink::token( $video_id, get_current_user_id(), EmbedLink::STREAM_TTL ),
-				rest_url( 'mediashield/v1/stream/' . $video_id )
-			);
+			$stream_url = \MediaShield\REST\StreamController::signed_url( $video_id, get_current_user_id() );
+			self::skip_page_cache();
 		}
 
 		return array(
 			'source_url' => '',
 			'stream_url' => $stream_url,
 		);
+	}
+
+	/**
+	 * Keep the page out of page caches once it prints a viewer's stream token.
+	 *
+	 * The token names whoever the page was rendered for. A cached copy would
+	 * hand that identity to every later visitor, or - once the token expires -
+	 * leave members with a player that is refused (Zoho #42193).
+	 */
+	private static function skip_page_cache(): void {
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- The cache plugins' own flag.
+		}
+		if ( ! headers_sent() ) {
+			nocache_headers();
+		}
 	}
 }

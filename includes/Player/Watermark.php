@@ -2,8 +2,9 @@
 /**
  * Watermark configuration — provides server-side config for the canvas overlay.
  *
- * Free: display_name + IP. Pro hooks mediashield_watermark_config to add
- * email, timestamp, custom text, font size, badge toggle.
+ * Free: display_name + IP, supplied per viewer by /session/start. Pro hooks
+ * mediashield_watermark_config to add email, timestamp, custom text, font size,
+ * badge toggle.
  *
  * @package MediaShield\Player
  */
@@ -26,36 +27,21 @@ use MediaShield\Core\Settings;
 class Watermark {
 
 	/**
-	 * Get the watermark configuration array for the current user.
+	 * Get the site-wide watermark configuration for the page.
+	 *
+	 * Nothing here may name a viewer. This array is printed into the page HTML,
+	 * and a page cache would serve the first visitor's name and IP to everyone
+	 * after. The viewer's own text and IP come from /session/start.
 	 *
 	 * @return array Watermark config for JS.
 	 */
 	public static function get_config(): array {
-		$user = wp_get_current_user();
-
 		return array(
 			'enabled'       => Settings::get( 'ms_enabled' ),
-			'text'          => $user->ID ? $user->display_name : __( 'Guest', 'mediashield' ),
-			'ip'            => self::get_client_ip(),
 			'opacity'       => Settings::get( 'ms_watermark_opacity' ),
 			'color'         => Settings::get( 'ms_watermark_color' ),
 			'swap_interval' => Settings::get( 'ms_watermark_swap_interval' ),
 			'show_badge'    => Settings::get( 'ms_show_badge' ),
 		);
-	}
-
-	/**
-	 * Get client IP for watermark display.
-	 *
-	 * @return string
-	 */
-	private static function get_client_ip(): string {
-		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-				return $ip;
-			}
-		}
-		return '';
 	}
 }

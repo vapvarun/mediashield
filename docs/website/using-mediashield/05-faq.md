@@ -30,6 +30,8 @@ Yes, if you turn off Settings > General > Require Login. Guests then play the vi
 
 For platform videos (YouTube, Vimeo, Wistia, Bunny), the thumbnail is fetched automatically from the platform when the video is saved, unless you have already set a Featured Image. For self-hosted videos, MediaShield does not generate one - set the Featured Image on the video edit screen manually.
 
+From 1.4.0 the featured image is also the video's poster: a self-hosted video shows it before playback starts, and a logged-out visitor sees it, dimmed, behind the login message instead of a black box. It also appears next to the video in a playlist.
+
 **Does it work with caching plugins?**
 
 Yes, with one configuration step: exclude `/wp-json/mediashield/` from your cache. Most caching plugins handle REST API exclusion by default. Check your caching plugin's documentation. For Cloudflare, add a Page Rule to bypass cache for `*yoursite.com/wp-json/*`.

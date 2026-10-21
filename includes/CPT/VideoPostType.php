@@ -946,8 +946,12 @@ class VideoPostType {
 				'default' => '',
 			),
 			'_ms_source_url'        => array(
-				'type'    => 'string',
-				'default' => '',
+				'type'     => 'string',
+				'default'  => '',
+				// A URL, not text: sanitize_text_field() strips %-encoded
+				// octets, so "my%20lesson.mp4" was stored as "mylesson.mp4"
+				// (BC#10370649823).
+				'sanitize' => 'esc_url_raw',
 			),
 			'_ms_protection_level'  => array(
 				'type'    => 'string',
@@ -967,8 +971,9 @@ class VideoPostType {
 				'default' => 0,
 			),
 			'_ms_stream_url'        => array(
-				'type'    => 'string',
-				'default' => '',
+				'type'     => 'string',
+				'default'  => '',
+				'sanitize' => 'esc_url_raw',
 			),
 		);
 
@@ -981,7 +986,7 @@ class VideoPostType {
 					'single'            => true,
 					'type'              => $args['type'],
 					'default'           => $args['default'],
-					'sanitize_callback' => 'string' === $args['type'] ? 'sanitize_text_field' : 'absint',
+					'sanitize_callback' => $args['sanitize'] ?? ( 'string' === $args['type'] ? 'sanitize_text_field' : 'absint' ),
 					'auth_callback'     => function () {
 						return current_user_can( 'edit_posts' );
 					},

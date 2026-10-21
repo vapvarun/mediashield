@@ -13,6 +13,12 @@
 	'use strict';
 
 	var config = window.mediashieldConfig || {};
+
+	// Viewer-facing text, translated in PHP (Settings::frontend_config()).
+	// The fallback covers a page cached before a key existed.
+	function t( key, fallback ) {
+		return ( config.messages && config.messages[ key ] ) || fallback;
+	}
 	var sdkLoading = {};
 
 	// ─── SDK Loader ──────────────────────────────────────────────
@@ -103,6 +109,14 @@
 
 	// ─── Vimeo Adapter ───────────────────────────────────────────
 
+	// Vimeo's own full screen button takes only its iframe full screen and
+	// leaves the watermark behind, and next to ours it is a second control for
+	// one job. Withdrawing the iframe's permission removes it.
+	function withdrawFullscreen( iframe ) {
+		iframe.removeAttribute( 'allowfullscreen' );
+		iframe.setAttribute( 'allow', ( iframe.getAttribute( 'allow' ) || '' ).replace( /\bfullscreen\s*;?\s*/, '' ) );
+	}
+
 	var VimeoAdapter = {
 		create: function ( target, videoId, options ) {
 			options = options || {};
@@ -127,6 +141,14 @@
 					if ( options.loop === true ) vimeoOpts.loop = true;
 					if ( options.muted === true ) vimeoOpts.muted = true;
 					if ( options.controls === false ) vimeoOpts.controls = false;
+					// The SDK adds its iframe asynchronously; take the permission
+					// away the moment it appears, before the frame navigates.
+					new MutationObserver( function ( records, observer ) {
+						var frame = target.querySelector( 'iframe' );
+						if ( ! frame ) return;
+						withdrawFullscreen( frame );
+						observer.disconnect();
+					} ).observe( target, { childList: true } );
 					adapter._player = new Vimeo.Player( target, vimeoOpts );
 
 					adapter._player.on( 'timeupdate', function ( data ) {
@@ -157,8 +179,7 @@
 						iframe.style.width = '100%';
 						iframe.style.aspectRatio = '16/9';
 						iframe.style.border = '0';
-						iframe.setAttribute( 'allow', 'autoplay; fullscreen; picture-in-picture' );
-						iframe.setAttribute( 'allowfullscreen', 'true' );
+						iframe.setAttribute( 'allow', 'autoplay; picture-in-picture' );
 						target.appendChild( iframe );
 					}
 					if ( typeof console !== 'undefined' && console.warn ) {
@@ -264,20 +285,64 @@
 			video.muted    = options.muted === true;
 			video.setAttribute( 'controlsList', 'nodownload nofullscreen noremoteplayback' );
 			video.preload = 'metadata';
+			if ( options.poster ) video.poster = options.poster;
 			video.style.width = '100%';
 			video.style.display = 'block';
 			target.appendChild( video );
 			adapter._video = video;
 
+			// Once: metadata loads again whenever the browser re-fetches the
+			// source, and a second "ready" started a second session and built
+			// the player controls twice.
 			video.addEventListener( 'loadedmetadata', function () {
 				if ( adapter._readyCb ) adapter._readyCb();
-			} );
+			}, { once: true } );
 			video.addEventListener( 'ended', function () {
 				if ( adapter._endedCb ) adapter._endedCb();
 			} );
 
 			var url        = streamUrl || sourceUrl;
 			var isAdaptive = !! url && ( url.indexOf( '.m3u8' ) > -1 || url.indexOf( '.mpd' ) > -1 );
+
+			// A stream URL carries a signed token minted when the page was built.
+			// When the page outlives it (cached HTML, a tab left open, rotated
+			// salts) the endpoint refuses the viewer, so ask for a fresh URL
+			// once and carry on from where playback stopped. Registered before
+			// the load watchdog so a recoverable refusal never shows its overlay.
+			if ( ! isAdaptive && url.indexOf( 'ms_token=' ) > -1 ) {
+				var refreshed = false;
+				video.addEventListener( 'error', function ( e ) {
+					if ( refreshed ) return;
+					refreshed = true;
+					e.stopImmediatePropagation();
+					var resumeAt   = video.currentTime;
+					var wasPlaying = ! video.paused;
+					// The refresh route sits next to the stream route. On plain
+					// permalinks the route lives in ?rest_route=, not the path.
+					var refreshUrl = new URL( url, window.location.href );
+					refreshUrl.searchParams.delete( 'ms_token' );
+					if ( refreshUrl.searchParams.has( 'rest_route' ) ) {
+						refreshUrl.searchParams.set( 'rest_route', refreshUrl.searchParams.get( 'rest_route' ) + '/url' );
+					} else {
+						refreshUrl.pathname += '/url';
+					}
+					fetch( refreshUrl.toString(), {
+						headers: { 'X-WP-Nonce': config.nonce },
+					} )
+						.then( function ( res ) { return res.ok ? res.json() : Promise.reject( res ); } )
+						.then( function ( data ) {
+							video.src = data.url;
+							video.addEventListener( 'loadedmetadata', function () {
+								video.currentTime = resumeAt;
+								if ( wasPlaying ) video.play().catch( function () {} );
+							}, { once: true } );
+						} )
+						.catch( function () {
+							var container = target.closest ? target.closest( '.ms-protected-player' ) : null;
+							if ( container ) showErrorOverlay( container, t( 'loadFailed', 'This video could not be loaded.' ) );
+						} );
+				} );
+			}
 
 			watchForLoadFailure( video, target );
 
@@ -420,7 +485,20 @@
 
 	// ─── Adapter Factory ─────────────────────────────────────────
 
+	// Every adapter keeps a single "ended" callback. It is claimed here, once,
+	// and turned into a DOM event on the player so any number of listeners
+	// (the end screen, a playlist queue) can react on every platform.
 	function createAdapter( el ) {
+		var adapter = buildAdapter( el );
+		if ( adapter ) {
+			adapter.onEnded( function () {
+				el.dispatchEvent( new CustomEvent( 'mediashield:ended', { bubbles: true } ) );
+			} );
+		}
+		return adapter;
+	}
+
+	function buildAdapter( el ) {
 		var target = el.querySelector( '.ms-player-target' );
 		if ( ! target ) return null;
 
@@ -441,6 +519,7 @@
 			loop:     tri( target.dataset.loop ),
 			muted:    tri( target.dataset.muted ),
 			controls: tri( target.dataset.controls ),
+			poster:   target.dataset.poster || '',
 		};
 
 		switch ( platform ) {
@@ -499,7 +578,7 @@
 
 		var speedBtn = document.createElement( 'button' );
 		speedBtn.className = 'ms-speed-btn';
-		speedBtn.setAttribute( 'aria-label', 'Playback speed' );
+		speedBtn.setAttribute( 'aria-label', t( 'speed', 'Playback speed' ) );
 		speedBtn.textContent = '1x';
 		speedControl.appendChild( speedBtn );
 
@@ -552,7 +631,7 @@
 		content.className = 'ms-endscreen__content';
 
 		var msg = document.createElement( 'p' );
-		msg.textContent = ( endscreenConfig && endscreenConfig.text ) || 'Thanks for watching!';
+		msg.textContent = ( endscreenConfig && endscreenConfig.text ) || t( 'endscreen', 'Thanks for watching!' );
 		content.appendChild( msg );
 
 		var endUrl = endscreenConfig && endscreenConfig.url;
@@ -560,13 +639,13 @@
 			var cta = document.createElement( 'a' );
 			cta.href = endUrl;
 			cta.className = 'ms-endscreen__cta';
-			cta.textContent = 'Continue \u2192';
+			cta.textContent = t( 'continue', 'Continue' ) + ' \u2192';
 			content.appendChild( cta );
 		}
 
 		var replayBtn = document.createElement( 'button' );
 		replayBtn.className = 'ms-endscreen__replay';
-		replayBtn.textContent = 'Replay';
+		replayBtn.textContent = t( 'replay', 'Replay' );
 		replayBtn.addEventListener( 'click', function () {
 			overlay.remove();
 			adapter.seekTo( 0 );
@@ -715,7 +794,7 @@
 							var closeBtn = document.createElement( 'button' );
 							closeBtn.className = 'ms-sticky-close';
 							closeBtn.textContent = '\u00D7';
-							closeBtn.setAttribute( 'aria-label', 'Close sticky player' );
+							closeBtn.setAttribute( 'aria-label', t( 'closeSticky', 'Close sticky player' ) );
 							closeBtn.addEventListener( 'click', function ( e ) {
 								e.stopPropagation();
 								container.classList.remove( 'ms-sticky-player' );
@@ -740,7 +819,7 @@
 				text: featText( 'endscreenText' ),
 				url: featText( 'endscreenUrl' ),
 			};
-			adapter.onEnded( function () {
+			el.addEventListener( 'mediashield:ended', function () {
 				buildEndScreen( container, adapter, endscreenConfig );
 			} );
 		}
@@ -872,7 +951,7 @@
 				// message inline so the viewer knows why the player is idle. The
 				// REST handler returns the localised text in `data.message`.
 				if ( status === 429 || data.code === 'concurrent_limit' ) {
-					showErrorOverlay( el, data.message || 'Too many active streams. Please close another video first.' );
+					showErrorOverlay( el, data.message || t( 'concurrentLimit', 'Too many active streams. Please close another video first.' ) );
 					window.dispatchEvent( new CustomEvent( 'mediashield:concurrent-limit', {
 						bubbles: true,
 						detail: { el: el, videoId: videoId, message: data.message },
@@ -903,7 +982,7 @@
 					var handled = ! window.dispatchEvent( ev );
 
 					if ( ! handled ) {
-						var msg = data.message || ( config.messages && config.messages.accessDenied ) || 'You do not have access to this video.';
+						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
 						showErrorOverlay( el, msg );
 					}
 					return;
@@ -971,8 +1050,7 @@
 			if ( settled ) return;
 			settled = true;
 			clearTimeout( timer );
-			showErrorOverlay( container, ( config.messages && config.messages.loadFailed ) ||
-				'This video could not be loaded.' );
+			showErrorOverlay( container, t( 'loadFailed', 'This video could not be loaded.' ) );
 		}
 
 		var timer = setTimeout( function () {
@@ -1029,26 +1107,32 @@
 	// ─── Login Overlay ───────────────────────────────────────────
 
 	function showLoginOverlay( el ) {
-		var messages = config.messages || {};
-
 		var overlay = document.createElement( 'div' );
 		overlay.className = 'ms-login-overlay';
 		overlay.setAttribute( 'role', 'dialog' );
 		overlay.setAttribute( 'aria-modal', 'true' );
 		// Screen-reader label mirrors the admin-configured overlay text so it
 		// stays in sync with the visible message (not a separate hardcoded key).
-		overlay.setAttribute( 'aria-label', messages.loginOverlay || 'Login required' );
+		overlay.setAttribute( 'aria-label', t( 'loginOverlay', 'Login required' ) );
+
+		// The video's poster behind the message, darkened so the text stays
+		// readable, instead of an empty black box.
+		var posterTarget = el.querySelector( '.ms-player-target' );
+		var poster = posterTarget ? posterTarget.dataset.poster : '';
+		if ( poster ) {
+			overlay.style.backgroundImage = 'linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url("' + poster.replace( /"/g, '%22' ) + '")';
+		}
 
 		var message = document.createElement( 'div' );
 		message.className = 'ms-login-message';
 
 		var text = document.createElement( 'p' );
-		text.textContent = messages.loginOverlay || 'Please log in to watch this video.';
+		text.textContent = t( 'loginOverlay', 'Please log in to watch this video.' );
 
 		var link = document.createElement( 'a' );
 		link.href = config.loginUrl || '/wp-login.php';
 		link.className = 'ms-login-button';
-		link.textContent = messages.loginButton || 'Log In';
+		link.textContent = t( 'loginButton', 'Log In' );
 
 		message.appendChild( text );
 		message.appendChild( link );
@@ -1098,11 +1182,11 @@
 		toast.className = 'ms-resume-toast';
 
 		var span = document.createElement( 'span' );
-		span.textContent = 'Resume from ' + timeStr + '?';
+		span.textContent = t( 'resumePrompt', 'Resume from %s?' ).replace( '%s', timeStr );
 
 		var yesBtn = document.createElement( 'button' );
 		yesBtn.className = 'ms-resume-yes';
-		yesBtn.textContent = 'Resume';
+		yesBtn.textContent = t( 'resume', 'Resume' );
 		yesBtn.addEventListener( 'click', function () {
 			adapter.seekTo( position );
 			adapter.play();
@@ -1111,7 +1195,7 @@
 
 		var noBtn = document.createElement( 'button' );
 		noBtn.className = 'ms-resume-no';
-		noBtn.textContent = 'Start Over';
+		noBtn.textContent = t( 'startOver', 'Start Over' );
 		noBtn.addEventListener( 'click', function () { toast.remove(); } );
 
 		toast.appendChild( span );
@@ -1124,23 +1208,29 @@
 
 	// ─── Custom Fullscreen ───────────────────────────────────────
 
+	// Delegated, so a player added after page load (a playlist switching
+	// video) gets a working button without being wired up one by one.
 	function initFullscreenButtons() {
-		document.querySelectorAll( '.ms-fullscreen-btn' ).forEach( function ( btn ) {
-			if ( btn.dataset.msInit ) return;
-			btn.dataset.msInit = '1';
+		document.addEventListener( 'click', function ( e ) {
+			var btn = e.target.closest ? e.target.closest( '.ms-fullscreen-btn' ) : null;
+			var container = btn ? btn.closest( '.ms-protected-player' ) : null;
+			if ( ! container ) return;
 
-			btn.addEventListener( 'click', function () {
-				var container = btn.closest( '.ms-protected-player' );
-				if ( ! container ) return;
-
-				if ( document.fullscreenElement ) {
-					document.exitFullscreen();
-				} else {
-					container.requestFullscreen().catch( function () {} );
-				}
-			} );
+			if ( document.fullscreenElement ) {
+				document.exitFullscreen();
+			} else {
+				container.requestFullscreen().catch( function () {} );
+			}
 		} );
 	}
+
+	// A player about to be removed from the page: release what its adapter holds.
+	window.addEventListener( 'mediashield:player-destroy', function ( e ) {
+		var adapter = e.detail && e.detail.el && e.detail.el._msAdapter;
+		if ( adapter && adapter.destroy ) {
+			try { adapter.destroy(); } catch ( err ) {} // eslint-disable-line no-empty
+		}
+	} );
 
 	// ─── Dynamic Embed Observer ──────────────────────────────────
 

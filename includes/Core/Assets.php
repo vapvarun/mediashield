@@ -164,6 +164,13 @@ class Assets {
 			$dev ? (string) filemtime( MEDIASHIELD_PATH . 'assets/css/player.css' ) : MEDIASHIELD_VERSION
 		);
 
+		// The owner's brand colour, when set. Buttons, the active speed option,
+		// focus rings and the playlist's current row all read this one token.
+		$accent = (string) Settings::get( 'ms_player_accent_color' );
+		if ( '' !== $accent ) {
+			wp_add_inline_style( 'mediashield-player', '.ms-protected-player,.ms-playlist-player{--ms-accent:' . sanitize_hex_color( $accent ) . '}' );
+		}
+
 		// Localize config for all scripts. Player options + messages come from
 		// the central Settings service; watermark/protection keep their own
 		// shape because they have additional runtime-derived fields (IP, etc.).

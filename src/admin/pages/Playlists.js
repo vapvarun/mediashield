@@ -21,6 +21,8 @@ const Playlists = () => {
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const [ itemsModal, setItemsModal ] = useState( null );
+	// Bumped when the modal closes, so the Settings column shows what was just changed in it.
+	const [ refresh, setRefresh ] = useState( 0 );
 
 	useEffect( () => {
 		let cancelled = false;
@@ -43,7 +45,7 @@ const Playlists = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [] );
+	}, [ refresh ] );
 
 	return (
 		<div className="mediashield-page mediashield-playlists">
@@ -180,7 +182,10 @@ const Playlists = () => {
 				<PlaylistItemsModal
 					playlistId={ itemsModal.id }
 					playlistTitle={ itemsModal.title }
-					onClose={ () => setItemsModal( null ) }
+					onClose={ () => {
+						setItemsModal( null );
+						setRefresh( ( n ) => n + 1 );
+					} }
 				/>
 			) }
 		</div>

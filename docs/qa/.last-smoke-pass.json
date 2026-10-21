@@ -1,0 +1,74 @@
+{
+  "mode": "combo",
+  "release_version": "1.4.0",
+  "pro_version": "1.4.0",
+  "ran_at": "2026-10-21T12:02:49+05:30",
+  "site": "http://lms.local",
+  "sections": {
+    "A_fresh_install": {
+      "pass": 6,
+      "fail": 0,
+      "skipped": 0,
+      "note": "Docker pristine install of the built zips: Free alone and Free + Pro, SDK classes and assets, degrade check"
+    },
+    "B_upgrade": {
+      "pass": 0,
+      "fail": 0,
+      "skipped": 1,
+      "note": "upgrade from the 1.3.0 zip not run"
+    },
+    "C_core_flows": {
+      "pass": 8,
+      "fail": 0,
+      "skipped": 1,
+      "note": "C1 17 routes at 1280 and 390, C2 to C8 on lms.local; C9 import and playlist funnel by unit test and UI; Bunny live upload skipped by the owner"
+    },
+    "D_regression_guards": {
+      "pass": 80,
+      "fail": 0,
+      "skipped": 0,
+      "note": "Free PHPUnit 71 tests, Pro PHPUnit 9 tests"
+    },
+    "F_release_gates": {
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0,
+      "note": "PHPStan, WPCS, contract audit, functional cert 16/16 and 25/25, security sweep, Plugin Check, docs lint"
+    }
+  },
+  "hard_fails": [],
+  "untested": [
+    {
+      "id": "C.bunny.live-upload",
+      "reason": "owner decision: skipped for 1.4.0",
+      "needs": "an approved upload to the live Bunny library"
+    },
+    {
+      "id": "B.upgrade-from-1.3.0",
+      "reason": "not run",
+      "needs": "the 1.3.0 zip on a clean site"
+    },
+    {
+      "id": "E.nginx-direct-download",
+      "reason": "lms.local is Apache",
+      "needs": "an nginx host"
+    },
+    {
+      "id": "F.large-site",
+      "reason": "no 1000+ video seed run",
+      "needs": "wp-cli seed of 1000+ videos"
+    }
+  ],
+  "coverage": {
+    "multisite": "not run",
+    "rtl": "not run",
+    "concurrency": "not run",
+    "uninstall": "not run"
+  },
+  "verdict": "WARN",
+  "top3": [
+    "QA pass on the 3 Ready for Testing cards is still open",
+    "Upgrade from 1.3.0 and the large-site seed have not been run",
+    "Walked by the developer, not by an independent QA walk"
+  ]
+}

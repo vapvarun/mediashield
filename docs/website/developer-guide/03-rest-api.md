@@ -58,6 +58,7 @@ Starting a session beyond the concurrent limit returns HTTP 429 with code `concu
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
 | GET | `/stream/{video_id}` | `mediashield_can_watch` for the resolved viewer | Streams a self-hosted video file with range support. |
+| GET | `/stream/{video_id}/url` | `mediashield_can_watch` for the logged-in viewer | Returns `{ "url": ... }`, a freshly signed stream URL. The player asks for it once when the URL printed in the page has expired (cached page, long-open tab, changed salts) and resumes from where it stopped. |
 
 This endpoint serves the file itself; it does not redirect to one. It runs the same access check as the player on every request, including every range request, so access revoked mid-playback is refused on the next seek.
 
@@ -69,6 +70,7 @@ A `<video>` element cannot send an `X-WP-Nonce` header, so the player appends a 
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
+| GET | `/playlists/{playlist_id}/player/{video_id}` | public | The protected player markup (`html`) for one published video in a published playlist. Used by the playlist page when the viewer moves to another video. 404 if the video is not in that playlist. Who may watch is still decided by `/session/start` and `/stream`. |
 | GET | `/playlists/{playlist_id}/items` | logged in | List items in a playlist in sort order. |
 | POST | `/playlists/{playlist_id}/items` | edit_posts | Add a video to a playlist. Body: `{ video_id }`. |
 | DELETE | `/playlists/{playlist_id}/items/{item_id}` | edit_posts | Remove a video from a playlist. |

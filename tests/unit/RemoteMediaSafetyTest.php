@@ -115,6 +115,7 @@ class RemoteMediaSafetyTest extends WP_UnitTestCase {
 
 		update_post_meta( $video_id, '_ms_platform', 'self' );
 		update_post_meta( $video_id, '_ms_platform_video_id', $filename );
+		update_post_meta( $video_id, '_ms_owned_file', $filename );
 
 		$this->assertFileExists( $dir . $filename );
 

@@ -16,6 +16,7 @@ import {
 	TextareaControl,
 	SelectControl,
 	Spinner,
+	Button,
 } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch } from '@wordpress/data';
@@ -309,6 +310,33 @@ const Settings = () => {
 				title={ __( 'Watermark', 'mediashield' ) }
 				description={ __( 'Dynamic overlay that identifies the viewer.', 'mediashield' ) }
 			>
+				{ /* What a viewer sees, from the values on this screen. A sketch of
+				     the player, not the player: it needs no video and no session. */ }
+				<div className="mediashield-settings__preview" aria-hidden="true">
+					{ !! settings?.ms_show_badge && (
+						<span className="mediashield-settings__preview-badge">
+							{ __( 'Protected by MediaShield', 'mediashield' ) }
+						</span>
+					) }
+					<span
+						className="mediashield-settings__preview-watermark"
+						style={ {
+							color: settings?.ms_watermark_color || '#ffffff',
+							opacity: settings?.ms_watermark_opacity ?? 0.5,
+						} }
+					>
+						{ __( 'Viewer Name', 'mediashield' ) } · 203.0.113.7
+					</span>
+					<span
+						className="mediashield-settings__preview-button"
+						style={ settings?.ms_player_accent_color ? { background: settings.ms_player_accent_color } : undefined }
+					>
+						{ settings?.ms_login_button_text || __( 'Log In', 'mediashield' ) }
+					</span>
+				</div>
+				<p className="mediashield-settings__preview-caption">
+					{ __( 'Preview. The watermark shows each viewer\'s own name and IP address and moves around the video.', 'mediashield' ) }
+				</p>
 				<RangeControl
 					label={ __( 'Opacity', 'mediashield' ) }
 					value={ settings?.ms_watermark_opacity ?? 0.5 }
@@ -514,6 +542,28 @@ const Settings = () => {
 						/>
 					</>
 				) }
+				<div className="mediashield-settings__color-field">
+					<label>{ __( 'Brand Color', 'mediashield' ) }</label>
+					<p className="mediashield-settings__color-help">
+						{ settings?.ms_player_accent_color
+							? __( 'Used for the player\'s buttons, focus outlines and the current playlist item.', 'mediashield' )
+							: __( 'Following your theme\'s primary color. Pick a color to use your own for the player\'s buttons, focus outlines and the current playlist item.', 'mediashield' ) }
+					</p>
+					<ColorPicker
+						color={ settings?.ms_player_accent_color || '#2271b1' }
+						onChange={ ( val ) => updateSetting( 'ms_player_accent_color', val ) }
+						enableAlpha={ false }
+					/>
+					{ !! settings?.ms_player_accent_color && (
+						<Button
+							variant="secondary"
+							onClick={ () => updateSetting( 'ms_player_accent_color', '' ) }
+							__next40pxDefaultSize
+						>
+							{ __( 'Use the theme color', 'mediashield' ) }
+						</Button>
+					) }
+				</div>
 			</SectionCard>
 
 			<SectionCard

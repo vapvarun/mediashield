@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Access\AccessControl;
 use MediaShield\Core\Assets;
 
 /**
@@ -164,6 +165,17 @@ class Renderer {
 		 * @param string $platform_video_id Provider-side video id / GUID.
 		 */
 		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
+
+		// Only our own /stream route is gated: it re-checks the viewer on every
+		// request. Any other stream URL (a CDN address, Bunny direct play, an
+		// operator's pasted playlist) plays without touching /session/start, so
+		// printing it hands the file to someone who may not watch, and this
+		// output is also served to anyone by the playlist player route.
+		if ( '' !== $stream_url
+			&& 0 !== strpos( $stream_url, rest_url( 'mediashield/v1/stream/' . $video_id ) )
+			&& ! AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
+			$stream_url = '';
+		}
 
 		// Per-video override, then the owner's global default, then 'standard'.
 		// Shared with PlayerWrapper so the auto-wrap path cannot resolve this
@@ -317,6 +329,14 @@ class Renderer {
 				data-source-url="<?php echo esc_url( $source_url ); ?>"
 				data-stream-url="<?php echo esc_url( $stream_url ); ?>"
 				data-duration="<?php echo esc_attr( $duration ); ?>"
+				<?php
+				// The video's featured image: shown before a self-hosted video
+				// plays, and behind the login message, instead of a black box.
+				$poster = get_the_post_thumbnail_url( $video_id, 'large' );
+				if ( $poster ) :
+					?>
+					data-poster="<?php echo esc_url( $poster ); ?>"
+				<?php endif; ?>
 				<?php echo $playback_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes pre-escaped above. ?>
 				<?php if ( ! empty( $video_overrides ) ) : ?>
 					data-player-overrides="<?php echo esc_attr( wp_json_encode( $video_overrides ) ); ?>"

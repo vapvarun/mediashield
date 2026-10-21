@@ -3,7 +3,7 @@
  * Plugin Name: MediaShield
  * Plugin URI:  https://wbcomdesigns.com/mediashield
  * Description: Video protection for WordPress — dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
- * Version:     1.3.0
+ * Version:     1.4.0
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author:      Wbcom Designs
@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'MEDIASHIELD_VERSION', '1.3.0' );
-define( 'MEDIASHIELD_DB_VERSION', 5 );
+define( 'MEDIASHIELD_VERSION', '1.4.0' );
+define( 'MEDIASHIELD_DB_VERSION', 6 );
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );
@@ -134,18 +134,36 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	}
 }
 
-// Auto-activate the preset license key on first load so downloads work.
+/*
+ * Auto-activate the preset license key on first load so downloads work.
+ *
+ * Three guards keep a slow or refusing license server from being hit on every
+ * admin request (one install sent 933 activations in 23 hours):
+ *   1. The activated flag is final. A `valid` reply, or any definitive refusal
+ *      (invalid, disabled, expired, no activations left), ends the attempts.
+ *   2. A one-day lock is set on every attempt, so a timeout or an unreadable
+ *      reply is retried once a day, not once a request.
+ *   3. admin_init also fires for admin-ajax (Heartbeat), cron and REST, where
+ *      no one benefits from activating, so those requests skip it.
+ */
 add_action(
 	'admin_init',
 	function () {
+		if ( wp_doing_ajax() || wp_doing_cron() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+			return;
+		}
+
 		$preset_key      = 'mediasheild7c2a9e5d1f8b4c6a3e0d9b2f7c1a8e12';
 		$option          = 'mediashield_license_key';
 		$status_option   = 'mediashield_license';
 		$activated       = 'mediashield_preset_activated';
+		$lock            = 'mediashield_preset_activate_lock';
 
-		if ( get_option( $activated ) ) {
+		if ( get_option( $activated ) || get_site_transient( $lock ) ) {
 			return;
 		}
+
+		set_site_transient( $lock, 1, DAY_IN_SECONDS );
 
 		update_option( $option, $preset_key, false );
 
@@ -169,11 +187,19 @@ add_action(
 		$raw = wp_remote_retrieve_body( $response );
 		$body = json_decode( $raw, true );
 
-		if ( 'valid' !== ( $body['license'] ?? '' ) ) {
+		$license = $body['license'] ?? '';
+
+		// No verdict in the reply (an error page, a 403 from a firewall): try
+		// again tomorrow.
+		if ( ! is_string( $license ) || '' === $license ) {
 			return;
 		}
 
 		update_option( $activated, 1, false );
+
+		if ( 'valid' !== $license ) {
+			return;
+		}
 
 		// Sync the SDK's expected status-object option so the "Manage License"
 		// modal shows the valid customer + expiry immediately, instead of

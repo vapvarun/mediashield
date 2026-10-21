@@ -177,6 +177,7 @@ class SelfHosted implements DriverInterface {
 
 			update_post_meta( $post_id, '_ms_platform', 'self' );
 			update_post_meta( $post_id, '_ms_platform_video_id', $filename );
+			update_post_meta( $post_id, '_ms_owned_file', $filename );
 
 			// No protection level is stamped here on purpose. Writing one makes
 			// it a per-video override, and an override wins over the owner's
@@ -200,6 +201,7 @@ class SelfHosted implements DriverInterface {
 					'meta_input'  => array(
 						'_ms_platform'          => 'self',
 						'_ms_platform_video_id' => $filename,
+						'_ms_owned_file'        => $filename,
 					),
 				)
 			);

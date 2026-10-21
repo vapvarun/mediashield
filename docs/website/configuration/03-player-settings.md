@@ -18,6 +18,8 @@ The Player Controls section of **MediaShield > Settings** tunes how the video pl
 
 **End Screen Button URL** - The destination for the call-to-action button. Leave blank to disable the button.
 
+**Brand Color** - The accent colour of the player's controls, watermark text and badge. Leave it unset to follow your theme's colour. A live preview next to the field shows the result before you save.
+
 ## Per-video overrides
 
 Speed Control, Keyboard Shortcuts, Resume Playback, Sticky Player, and End Screen each have a Default / On / Off selector on every video, under Player Options in the sidebar of the video edit screen. The per-video value wins over the global default. This lets you keep speed control off site-wide and enable it for one specific course, for example. End screen text and URL can be overridden there too.
@@ -35,6 +37,7 @@ Four more options exist only per video, with no global equivalent: **Autoplay**,
 | End Screen | Off | Configure message and URL to enable |
 | End Screen Message | Empty | Global fallback |
 | End Screen Button URL | Empty | Global fallback |
+| Brand Color | Unset | Follows the theme when unset |
 
 ## Not in the settings UI
 

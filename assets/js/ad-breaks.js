@@ -22,6 +22,12 @@
 ( function () {
 	'use strict';
 
+	// Viewer-facing text, translated in PHP (Settings::frontend_config()).
+	function t( key, fallback ) {
+		var messages = ( window.mediashieldConfig || {} ).messages || {};
+		return messages[ key ] || fallback;
+	}
+
 	// A mid-roll fires once its time is reached; tolerance avoids missing the
 	// exact frame between timeupdate ticks.
 	var MID_TOLERANCE = 1.0;
@@ -287,7 +293,7 @@
 
 		var caption = document.createElement( 'span' );
 		caption.className = 'ms-ad-timeline__caption';
-		caption.textContent = 'Ad breaks';
+		caption.textContent = t( 'adBreaks', 'Ad breaks' );
 		wrap.appendChild( caption );
 
 		var track = document.createElement( 'div' );
@@ -312,9 +318,9 @@
 			var mark = document.createElement( 'span' );
 			mark.className = 'ms-ad-timeline__marker ms-ad-timeline__marker--' + b.type;
 			mark.style.left = pct + '%';
-			var when = b.type === 'pre' ? 'Pre-roll' : ( b.type === 'post' ? 'Post-roll' : fmtTime( b.at ) );
-			mark.setAttribute( 'title', 'Ad' + ( b.label ? ' · ' + b.label : '' ) + ' · ' + when );
-			mark.setAttribute( 'data-label', ( b.label || 'Ad' ) + ' · ' + when );
+			var when = b.type === 'pre' ? t( 'preRoll', 'Pre-roll' ) : ( b.type === 'post' ? t( 'postRoll', 'Post-roll' ) : fmtTime( b.at ) );
+			mark.setAttribute( 'title', t( 'ad', 'Ad' ) + ( b.label ? ' · ' + b.label : '' ) + ' · ' + when );
+			mark.setAttribute( 'data-label', ( b.label || t( 'ad', 'Ad' ) ) + ' · ' + when );
 			b._marker = mark;
 			track.appendChild( mark );
 		} );
@@ -419,11 +425,11 @@
 		var overlay = document.createElement( 'div' );
 		overlay.className = 'ms-ad-overlay';
 		overlay.setAttribute( 'role', 'dialog' );
-		overlay.setAttribute( 'aria-label', 'Advertisement' );
+		overlay.setAttribute( 'aria-label', t( 'advertisement', 'Advertisement' ) );
 
 		var label = document.createElement( 'span' );
 		label.className = 'ms-ad-overlay__label';
-		label.textContent = 'Ad';
+		label.textContent = t( 'ad', 'Ad' );
 		overlay.appendChild( label );
 
 		var body = document.createElement( 'div' );
@@ -492,13 +498,13 @@
 			var remain = Math.max( 0, Math.ceil( ( adVideo && isFinite( adVideo.duration ) ? adVideo.duration : duration ) - ( adVideo ? adVideo.currentTime : elapsed ) ) );
 			if ( skipAt !== null && elapsed >= skipAt ) {
 				skipBtn.disabled = false;
-				skipBtn.textContent = 'Skip Ad →';
+				skipBtn.textContent = t( 'skipAd', 'Skip Ad' ) + ' →';
 			} else if ( skipAt !== null ) {
 				skipBtn.disabled = true;
-				skipBtn.textContent = 'Skip in ' + Math.max( 0, skipAt - elapsed ) + 's';
+				skipBtn.textContent = t( 'skipIn', 'Skip in %ss' ).replace( '%s', Math.max( 0, skipAt - elapsed ) );
 			} else {
 				skipBtn.disabled = true;
-				skipBtn.textContent = 'Ad · ' + remain + 's';
+				skipBtn.textContent = t( 'adRemaining', 'Ad · %ss' ).replace( '%s', remain );
 			}
 			if ( ! adVideo && elapsed >= duration ) {
 				finish();
@@ -508,10 +514,10 @@
 		// Initialise the button label immediately.
 		if ( skipAt !== null ) {
 			skipBtn.disabled = skipAt > 0;
-			skipBtn.textContent = skipAt > 0 ? ( 'Skip in ' + skipAt + 's' ) : 'Skip Ad →';
+			skipBtn.textContent = skipAt > 0 ? t( 'skipIn', 'Skip in %ss' ).replace( '%s', skipAt ) : t( 'skipAd', 'Skip Ad' ) + ' →';
 		} else {
 			skipBtn.disabled = true;
-			skipBtn.textContent = 'Ad';
+			skipBtn.textContent = t( 'ad', 'Ad' );
 		}
 		skipBtn.addEventListener( 'click', function () {
 			if ( ! skipBtn.disabled ) { finish(); }

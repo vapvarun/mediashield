@@ -82,6 +82,70 @@ class StreamController extends WP_REST_Controller {
 				),
 			)
 		);
+
+		// A fresh stream URL for a player whose printed one went stale: the
+		// page HTML outlived the signed token (page cache, long-open tab,
+		// rotated salts). Unlike the stream itself this is called by script,
+		// so the REST nonce authenticates the viewer and can_watch() decides.
+		register_rest_route(
+			$this->namespace,
+			'/stream/(?P<video_id>\d+)/url',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'stream_url' ),
+				'permission_callback' => array( $this, 'stream_url_permissions_check' ),
+				'args'                => array(
+					'video_id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * The gated stream URL for a viewer, carrying a signed identity token.
+	 *
+	 * The one place that mints it, for the URL printed into the page and the
+	 * one handed out again when that copy expires.
+	 *
+	 * @param int $video_id Video post ID.
+	 * @param int $user_id  Viewer the token names (0 for a guest).
+	 * @return string Absolute URL.
+	 */
+	public static function signed_url( int $video_id, int $user_id ): string {
+		return add_query_arg(
+			'ms_token',
+			EmbedLink::token( $video_id, $user_id, EmbedLink::STREAM_TTL ),
+			rest_url( 'mediashield/v1/stream/' . $video_id )
+		);
+	}
+
+	/**
+	 * Permission check for the URL refresh: the viewer must be allowed to watch.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool|WP_Error
+	 */
+	public function stream_url_permissions_check( WP_REST_Request $request ): bool|WP_Error {
+		$access = AccessControl::can_watch( (int) $request->get_param( 'video_id' ), get_current_user_id() );
+		if ( ! $access['allowed'] ) {
+			return new WP_Error( 'mediashield_access_denied', $access['reason'], array( 'status' => 403 ) );
+		}
+		return true;
+	}
+
+	/**
+	 * Hand out a freshly signed stream URL.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
+	public function stream_url( WP_REST_Request $request ): WP_REST_Response {
+		$video_id = (int) $request->get_param( 'video_id' );
+		return rest_ensure_response( array( 'url' => self::signed_url( $video_id, get_current_user_id() ) ) );
 	}
 
 	/**
@@ -203,6 +267,25 @@ class StreamController extends WP_REST_Controller {
 		$root = realpath( $uploads['basedir'] );
 		if ( ! $real || ! $root || 0 !== strpos( $real, trailingslashit( $root ) ) || ! is_readable( $real ) ) {
 			return '';
+		}
+
+		// Files in our protected folder play only for the video that uploaded
+		// them. Otherwise anyone who may edit one video could name another
+		// video's file in their own and stream it past that video's rules.
+		// stripos, not strpos: on a case-insensitive disk the folder can be
+		// spelled another way, and over-matching only ever asks for a claim.
+		//
+		// While the upgrade backfill runs, a video that existed at the update
+		// and has no claim row yet keeps playing so an update never breaks a
+		// lesson. Later videos get no such grace.
+		$private = realpath( trailingslashit( $uploads['basedir'] ) . 'mediashield' );
+		if ( $private && 0 === stripos( $real, trailingslashit( $private ) ) ) {
+			$owned   = get_post_meta( $video_id, '_ms_owned_file', true );
+			$grace   = (int) get_option( 'ms_file_claims_pending', 0 );
+			$legacy  = $grace > 0 && $video_id <= $grace && ! metadata_exists( 'post', $video_id, '_ms_owned_file' );
+			if ( basename( $real ) !== $owned && ! $legacy ) {
+				return '';
+			}
 		}
 
 		return $real;

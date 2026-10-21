@@ -172,6 +172,24 @@
 		} );
 	}
 
+	// One player is going away while the page stays (a playlist moved to its
+	// next video): close that session now instead of leaving it to time out.
+	window.addEventListener( 'mediashield:player-destroy', function ( e ) {
+		var el = e.detail && e.detail.el;
+		activeSessions = activeSessions.filter( function ( session ) {
+			if ( session.el !== el ) return true;
+
+			if ( session.intervalId ) clearInterval( session.intervalId );
+			fetch( config.restUrl + 'session/end', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
+				body: JSON.stringify( { token: session.token } ),
+				keepalive: true,
+			} ).catch( function () {} );
+			return false;
+		} );
+	} );
+
 	window.addEventListener( 'beforeunload', endAllSessions );
 
 	window.addEventListener( 'pagehide', endAllSessions );
