@@ -1,47 +1,123 @@
 {
-  "parent_category": "mediashield",
-  "subcategories": [
+  "product": "MediaShield",
+  "productType": "plugin",
+  "shortId": "mediashield",
+  "slug": "mediashield",
+  "tagline": "Video protection for WordPress.",
+  "covers": [
+    "mediashield (Free)",
+    "mediashield-pro (Pro)"
+  ],
+  "note": "GitHub-only documentation. Metadata only. No publish or sync target.",
+  "images_dir": "images",
+  "pro_badge": "> **Pro feature.** Available in MediaShield Pro.",
+  "sections": [
     {
-      "slug": "getting-started-ms",
       "name": "Getting Started",
-      "docs": [
-        "getting-started/01-introduction.md",
-        "getting-started/02-installation.md",
-        "getting-started/03-setup-wizard.md",
-        "getting-started/04-add-your-first-video.md"
+      "folder": "getting-started",
+      "description": "Install MediaShield, run the setup wizard and add your first protected video.",
+      "pages": [
+        {
+          "slug": "01-introduction",
+          "title": "Introduction to MediaShield"
+        },
+        {
+          "slug": "02-installation",
+          "title": "Installation"
+        },
+        {
+          "slug": "03-setup-wizard",
+          "title": "Setup Wizard"
+        },
+        {
+          "slug": "04-add-your-first-video",
+          "title": "Add Your First Video"
+        }
       ]
     },
     {
-      "slug": "configuration-ms",
       "name": "Configuration",
-      "docs": [
-        "configuration/01-settings-overview.md",
-        "configuration/02-protection-settings.md",
-        "configuration/03-player-settings.md",
-        "configuration/04-access-control.md",
-        "configuration/05-shortcodes-and-blocks.md"
+      "folder": "configuration",
+      "description": "Every setting, from protection and player options to access control, shortcodes and blocks.",
+      "pages": [
+        {
+          "slug": "01-settings-overview",
+          "title": "Settings Overview"
+        },
+        {
+          "slug": "02-protection-settings",
+          "title": "Protection Settings"
+        },
+        {
+          "slug": "03-player-settings",
+          "title": "Player Settings"
+        },
+        {
+          "slug": "04-access-control",
+          "title": "Access Control"
+        },
+        {
+          "slug": "05-shortcodes-and-blocks",
+          "title": "Shortcodes and Blocks"
+        }
       ]
     },
     {
-      "slug": "using-mediashield-ms",
       "name": "Using MediaShield",
-      "docs": [
-        "using-mediashield/01-watermarks.md",
-        "using-mediashield/02-analytics-and-milestones.md",
-        "using-mediashield/03-playlists.md",
-        "using-mediashield/04-troubleshooting.md",
-        "using-mediashield/05-faq.md"
+      "folder": "using-mediashield",
+      "description": "Watermarks, analytics, playlists, troubleshooting and common questions.",
+      "pages": [
+        {
+          "slug": "01-watermarks",
+          "title": "Watermarks"
+        },
+        {
+          "slug": "02-analytics-and-milestones",
+          "title": "Analytics and Milestones"
+        },
+        {
+          "slug": "03-playlists",
+          "title": "Playlists"
+        },
+        {
+          "slug": "04-troubleshooting",
+          "title": "Troubleshooting"
+        },
+        {
+          "slug": "05-faq",
+          "title": "Frequently Asked Questions"
+        },
+        {
+          "slug": "06-whats-new-in-1-4-0",
+          "title": "What's New in 1.4.0"
+        }
       ]
     },
     {
-      "slug": "developer-guide-ms",
       "name": "Developer Guide",
-      "docs": [
-        "developer-guide/01-overview.md",
-        "developer-guide/02-hooks-and-filters.md",
-        "developer-guide/03-rest-api.md",
-        "developer-guide/04-database-tables.md",
-        "developer-guide/05-extension-architecture.md"
+      "folder": "developer-guide",
+      "description": "Hooks, filters, the REST API, database tables and how to extend MediaShield.",
+      "pages": [
+        {
+          "slug": "01-overview",
+          "title": "Developer Guide Overview"
+        },
+        {
+          "slug": "02-hooks-and-filters",
+          "title": "Hooks and Filters"
+        },
+        {
+          "slug": "03-rest-api",
+          "title": "REST API Reference"
+        },
+        {
+          "slug": "04-database-tables",
+          "title": "Database Tables"
+        },
+        {
+          "slug": "05-extension-architecture",
+          "title": "Extension Architecture"
+        }
       ]
     }
   ]

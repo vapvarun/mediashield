@@ -168,11 +168,14 @@ Playback fixes for cached pages, playlists and the core embed block, plus a play
 * Fix      - A protected self-hosted video no longer returns access denied to logged-in members, administrators included, when the page was cached or left open for hours. The player asks for a fresh address and resumes where it stopped.
 * Fix      - Pages that print a protected player are marked not cacheable, so a cached copy can no longer carry one viewer's access to another.
 * Fix      - The empty gap above a video added with the embed block is gone.
+* Fix      - A YouTube video added with the embed block keeps its full size instead of collapsing to nothing.
 * Fix      - Uploaded video files play for logged-in viewers when Hide Video Source URL is off and Require Login is on.
 * Fix      - Video addresses keep encoded characters such as %20 when saved.
 * Fix      - The video folder warning now appears on the Site Health screen, and the nginx rule uses the site's real uploads path.
 * Fix      - Pasted self-hosted URLs play when Hide Video Source URL is on.
 * Fix      - Bunny addresses are recognised the same way on every screen, including video.bunnycdn.com links.
+* Security - The page no longer prints the visitor's name or IP address in the watermark settings, so a page cache cannot show one visitor's details to the next. The watermark still shows both while a video plays.
+* Security - Playback heartbeats with an invalid session token are rate limited per visitor instead of per token, so a flood of made-up tokens is refused.
 * Fix      - Licence and update screen assets load on hosts with a symlinked or non-standard document root, and a failed update check no longer breaks the plugin list on PHP 8.
 * Fix      - The licence key that ships with the plugin is no longer sent to the licence server on every admin request. A refused or unreachable server is retried once a day, and admin-ajax, cron and REST requests skip it.
 * Dev      - GET /mediashield/v1/stream/{id}/url returns a freshly signed stream address for the current viewer.
