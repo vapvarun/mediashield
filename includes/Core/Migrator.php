@@ -76,7 +76,11 @@ class Migrator {
 			return;
 		}
 
-		update_option( 'ms_file_claims_pending', 1, false );
+		// The newest video id at the update: only videos up to it get the grace.
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off MAX() at upgrade.
+		$newest = (int) $wpdb->get_var( "SELECT MAX(ID) FROM {$wpdb->posts} WHERE post_type = 'mediashield_video'" );
+		update_option( 'ms_file_claims_pending', max( 1, $newest ), false );
 		\MediaShield\Cron\Cleanup::schedule_single( 'ms_claim_uploaded_files', time() + MINUTE_IN_SECONDS );
 	}
 

@@ -272,12 +272,18 @@ class StreamController extends WP_REST_Controller {
 		// Files in our protected folder play only for the video that uploaded
 		// them. Otherwise anyone who may edit one video could name another
 		// video's file in their own and stream it past that video's rules.
-		// While the upgrade backfill is still running, a video with no claim
-		// row yet keeps playing so an update never breaks existing lessons.
+		// stripos, not strpos: on a case-insensitive disk the folder can be
+		// spelled another way, and over-matching only ever asks for a claim.
+		//
+		// While the upgrade backfill runs, a video that existed at the update
+		// and has no claim row yet keeps playing so an update never breaks a
+		// lesson. Later videos get no such grace.
 		$private = realpath( trailingslashit( $uploads['basedir'] ) . 'mediashield' );
-		if ( $private && 0 === strpos( $real, trailingslashit( $private ) ) ) {
-			$owned = get_post_meta( $video_id, '_ms_owned_file', true );
-			if ( basename( $real ) !== $owned && ! ( '' === $owned && ! metadata_exists( 'post', $video_id, '_ms_owned_file' ) && get_option( 'ms_file_claims_pending' ) ) ) {
+		if ( $private && 0 === stripos( $real, trailingslashit( $private ) ) ) {
+			$owned   = get_post_meta( $video_id, '_ms_owned_file', true );
+			$grace   = (int) get_option( 'ms_file_claims_pending', 0 );
+			$legacy  = $grace > 0 && $video_id <= $grace && ! metadata_exists( 'post', $video_id, '_ms_owned_file' );
+			if ( basename( $real ) !== $owned && ! $legacy ) {
 				return '';
 			}
 		}

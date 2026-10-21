@@ -188,7 +188,7 @@ class ReleaseSecurityTest extends WP_UnitTestCase {
 		$file   = 'legacy-' . wp_generate_password( 8, false ) . '.mp4';
 		$first  = $this->uploaded_video( $file, false );
 		$second = $this->uploaded_video( $file, false );
-		update_option( 'ms_file_claims_pending', 1 );
+		update_option( 'ms_file_claims_pending', max( $first, $second ) );
 
 		$this->assertNotSame( '', StreamController::resolve_file( $first ) );
 		$this->assertNotSame( '', StreamController::resolve_file( $second ) );
@@ -216,5 +216,25 @@ class ReleaseSecurityTest extends WP_UnitTestCase {
 
 		wp_delete_post( $owner, true );
 		$this->assertFileDoesNotExist( $path );
+	}
+
+	/**
+	 * Fails before the fix: during the backfill a new video, or an old one that
+	 * was re-pointed, played another video's file.
+	 */
+	public function test_the_upgrade_window_does_not_let_a_new_or_edited_video_borrow_a_file(): void {
+		$file  = 'window-' . wp_generate_password( 8, false ) . '.mp4';
+		$owner = $this->uploaded_video( $file, false );
+		$old   = $this->uploaded_video( 'x-' . $file, false );
+		update_option( 'ms_file_claims_pending', $old );
+
+		$new = $this->uploaded_video( $file, false );
+		$this->assertSame( '', StreamController::resolve_file( $new ), 'A video created after the update gets no grace.' );
+
+		update_post_meta( $old, '_ms_platform_video_id', $file );
+		$this->assertSame( '', StreamController::resolve_file( $old ), 'Re-pointing an unclaimed video forfeits its claim.' );
+
+		Cleanup::claim_uploaded_files();
+		$this->assertNotSame( '', StreamController::resolve_file( $owner ) );
 	}
 }

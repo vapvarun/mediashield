@@ -44,6 +44,7 @@ class Cleanup {
 		add_action( 'ms_archive_old_sessions', array( __CLASS__, 'archive_old_sessions' ) );
 		add_action( 'ms_restore_archived_sessions', array( __CLASS__, 'restore_archived_sessions' ) );
 		add_action( 'ms_claim_uploaded_files', array( __CLASS__, 'claim_uploaded_files' ) );
+		add_filter( 'update_post_metadata', array( __CLASS__, 'forfeit_claim_on_edit' ), 10, 4 );
 
 		// Register monthly schedule for WP-Cron fallback.
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_monthly_schedule' ) );
@@ -551,6 +552,38 @@ class Cleanup {
 		}
 
 		self::schedule_single( 'ms_claim_uploaded_files', time() + MINUTE_IN_SECONDS );
+	}
+
+	/**
+	 * While the backfill runs, editing which file an unclaimed video names gives
+	 * up its claim.
+	 *
+	 * Without this, someone who may edit an older video could point it at
+	 * another video's file before the job reads it, and be handed the file.
+	 * Every write path goes through the post meta API, so one filter covers the
+	 * meta box, REST and imports. The upload driver writes the claim right after
+	 * the file name, so a real upload still ends up owning its file.
+	 *
+	 * @since 1.4.0
+	 *
+	 * @param null|bool $check    Passed through.
+	 * @param int       $post_id  Post ID.
+	 * @param string    $meta_key Meta key.
+	 * @param mixed     $value    New value.
+	 * @return null|bool
+	 */
+	public static function forfeit_claim_on_edit( $check, $post_id, $meta_key, $value ) {
+		if ( ! in_array( $meta_key, array( '_ms_platform_video_id', '_ms_source_url' ), true ) || ! get_option( 'ms_file_claims_pending' ) ) {
+			return $check;
+		}
+
+		if ( 'mediashield_video' === get_post_type( $post_id )
+			&& ! metadata_exists( 'post', $post_id, '_ms_owned_file' )
+			&& (string) get_post_meta( $post_id, $meta_key, true ) !== (string) $value ) {
+			update_post_meta( $post_id, '_ms_owned_file', '' );
+		}
+
+		return $check;
 	}
 
 	/**
