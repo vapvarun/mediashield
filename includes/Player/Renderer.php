@@ -166,12 +166,14 @@ class Renderer {
 		 */
 		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
 
-		// Only a self-hosted address is gated: /stream re-checks the viewer on
-		// every request. Any other stream URL (a CDN address, Bunny direct play)
-		// plays without touching /session/start, so printing it hands the file
-		// to someone who may not watch, and this output is also served to
-		// anyone by the playlist player route.
-		if ( '' !== $stream_url && 'self' !== $platform && ! AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
+		// Only our own /stream route is gated: it re-checks the viewer on every
+		// request. Any other stream URL (a CDN address, Bunny direct play, an
+		// operator's pasted playlist) plays without touching /session/start, so
+		// printing it hands the file to someone who may not watch, and this
+		// output is also served to anyone by the playlist player route.
+		if ( '' !== $stream_url
+			&& 0 !== strpos( $stream_url, rest_url( 'mediashield/v1/stream/' . $video_id ) )
+			&& ! AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
 			$stream_url = '';
 		}
 

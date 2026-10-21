@@ -53,6 +53,29 @@ class ReleaseSecurityTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A self-hosted video with an explicit CDN playlist is not behind /stream either.
+	 * Fails when the gate is keyed on the platform instead of on the address.
+	 */
+	public function test_explicit_cdn_address_on_a_self_hosted_video_is_withheld_too(): void {
+		update_option( 'ms_require_login', true );
+		$video = self::factory()->post->create(
+			array(
+				'post_type'   => 'mediashield_video',
+				'post_status' => 'publish',
+			)
+		);
+		update_post_meta( $video, '_ms_platform', 'self' );
+		update_post_meta( $video, '_ms_stream_url', 'https://cdn.example.test/lesson.m3u8' );
+		update_post_meta( $video, '_ms_platform_video_id', 'lesson.mp4' );
+
+		wp_set_current_user( 0 );
+		$this->assertStringNotContainsString( 'lesson.m3u8', Renderer::render( $video ) );
+
+		wp_set_current_user( self::factory()->user->create() );
+		$this->assertStringContainsString( 'lesson.m3u8', Renderer::render( $video ) );
+	}
+
+	/**
 	 * Fails before the fix: a playlist password did not stop the player route.
 	 */
 	public function test_player_route_respects_a_playlist_password(): void {
