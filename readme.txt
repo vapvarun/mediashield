@@ -173,6 +173,7 @@ Playback fixes for cached pages, playlists and the core embed block, plus a play
 * Fix      - The video folder warning now appears on the Site Health screen, and the nginx rule uses the site's real uploads path.
 * Fix      - Pasted self-hosted URLs play when Hide Video Source URL is on.
 * Fix      - Bunny addresses are recognised the same way on every screen, including video.bunnycdn.com links.
+* Fix      - Licence and update screen assets load on hosts with a symlinked or non-standard document root, and a failed update check no longer breaks the plugin list on PHP 8.
 * Fix      - The licence key that ships with the plugin is no longer sent to the licence server on every admin request. A refused or unreachable server is retried once a day, and admin-ajax, cron and REST requests skip it.
 * Dev      - GET /mediashield/v1/stream/{id}/url returns a freshly signed stream address for the current viewer.
 * Dev      - StreamController::signed_url() is the one place a stream address is signed.
