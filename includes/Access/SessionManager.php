@@ -569,7 +569,7 @@ class SessionManager {
 		if ( str_contains( $ua, 'Firefox/' ) ) {
 			return 'Firefox';
 		}
-		if ( str_contains( $ua, 'Safari/' ) && ! str_contains( $ua, 'Chrome/' ) ) {
+		if ( str_contains( $ua, 'Safari/' ) ) {
 			return 'Safari';
 		}
 
