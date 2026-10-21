@@ -392,18 +392,14 @@ class SessionController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function heartbeat( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		// Rate limiting: max 4 heartbeats per minute per viewer.
+		// Rate limiting: max 4 heartbeats per minute per session.
 		// Increment first to close TOCTOU race window.
 		//
-		// Keyed on the session token for guests: every anonymous viewer is
-		// user_id 0, so a user-id key would put the entire logged-out audience
-		// in one bucket and throttle the whole site at 4 heartbeats a minute.
-		// The token is per-session, which is the correct granularity, and it is
-		// hashed so a session token never becomes an option name.
-		$user_id  = get_current_user_id();
-		$rate_key = $user_id > 0
-			? 'ms_rate_' . $user_id
-			: 'ms_rate_g_' . hash( 'sha256', (string) $request->get_param( 'token' ) );
+		// Keyed on the session token, not the viewer: every anonymous viewer is
+		// user_id 0, and a member with several players on one page (each beats
+		// about twice a minute) would share one bucket and lose progress beats.
+		// The token is hashed so it never becomes an option name.
+		$rate_key = 'ms_rate_' . hash( 'sha256', (string) $request->get_param( 'token' ) );
 		$count    = (int) get_transient( $rate_key );
 		++$count;
 		set_transient( $rate_key, $count, 60 );
