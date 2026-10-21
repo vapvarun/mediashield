@@ -237,4 +237,22 @@ class ReleaseSecurityTest extends WP_UnitTestCase {
 		Cleanup::claim_uploaded_files();
 		$this->assertNotSame( '', StreamController::resolve_file( $owner ) );
 	}
+
+	/**
+	 * Fails before the fix: the backfill was queued on plugins_loaded, before
+	 * Action Scheduler is ready, so it was dropped and the flag never cleared.
+	 */
+	public function test_pending_backfill_is_queued_after_plugins_load_and_requeued_if_lost(): void {
+		update_option( 'ms_file_claims_pending', 5 );
+		wp_clear_scheduled_hook( 'ms_claim_uploaded_files' );
+
+		Cleanup::ensure_claim_job();
+
+		$queued = function_exists( 'as_next_scheduled_action' )
+			? false !== as_next_scheduled_action( 'ms_claim_uploaded_files' )
+			: false !== wp_next_scheduled( 'ms_claim_uploaded_files' );
+		$this->assertTrue( $queued );
+
+		delete_option( 'ms_file_claims_pending' );
+	}
 }

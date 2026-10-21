@@ -69,6 +69,9 @@ class Migrator {
 	 * finishes, `StreamController::resolve_file()` lets an unclaimed video keep
 	 * playing, so the update never breaks existing lessons.
 	 *
+	 * Only the flag is set here. This runs on plugins_loaded, before Action
+	 * Scheduler is ready, so the job is queued on init by Cleanup::ensure_claim_job().
+	 *
 	 * @param int $installed DB version before this run.
 	 */
 	private static function claim_uploaded_files( int $installed ): void {
@@ -81,7 +84,6 @@ class Migrator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off MAX() at upgrade.
 		$newest = (int) $wpdb->get_var( "SELECT MAX(ID) FROM {$wpdb->posts} WHERE post_type = 'mediashield_video'" );
 		update_option( 'ms_file_claims_pending', max( 1, $newest ), false );
-		\MediaShield\Cron\Cleanup::schedule_single( 'ms_claim_uploaded_files', time() + MINUTE_IN_SECONDS );
 	}
 
 	/**
@@ -101,16 +103,15 @@ class Migrator {
 			return;
 		}
 
-		if ( function_exists( 'as_schedule_single_action' ) ) {
-			if ( false === as_next_scheduled_action( 'ms_restore_archived_sessions' ) ) {
-				as_schedule_single_action( time() + MINUTE_IN_SECONDS, 'ms_restore_archived_sessions', array(), 'mediashield' );
-			}
-			return;
-		}
-
-		if ( ! wp_next_scheduled( 'ms_restore_archived_sessions' ) ) {
-			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'ms_restore_archived_sessions' );
-		}
+		// Queued on init, not here: this runs on plugins_loaded, before Action
+		// Scheduler is ready, and a call made now is silently dropped.
+		add_action(
+			'init',
+			static function () {
+				\MediaShield\Cron\Cleanup::schedule_single( 'ms_restore_archived_sessions', time() + MINUTE_IN_SECONDS );
+			},
+			20
+		);
 	}
 
 	/**

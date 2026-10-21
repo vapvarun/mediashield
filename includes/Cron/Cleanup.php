@@ -44,6 +44,7 @@ class Cleanup {
 		add_action( 'ms_archive_old_sessions', array( __CLASS__, 'archive_old_sessions' ) );
 		add_action( 'ms_restore_archived_sessions', array( __CLASS__, 'restore_archived_sessions' ) );
 		add_action( 'ms_claim_uploaded_files', array( __CLASS__, 'claim_uploaded_files' ) );
+		add_action( 'init', array( __CLASS__, 'ensure_claim_job' ), 20 );
 		add_filter( 'update_post_metadata', array( __CLASS__, 'forfeit_claim_on_edit' ), 10, 4 );
 
 		// Register monthly schedule for WP-Cron fallback.
@@ -485,6 +486,20 @@ class Cleanup {
 
 		if ( $remaining > 0 ) {
 			self::schedule_single( 'ms_restore_archived_sessions', time() + MINUTE_IN_SECONDS );
+		}
+	}
+
+	/**
+	 * Queue the ownership backfill while it is pending and nothing is queued.
+	 *
+	 * On init, after Action Scheduler is ready, and it repairs itself: if the
+	 * queued action is ever lost the next request queues it again.
+	 *
+	 * @since 1.4.0
+	 */
+	public static function ensure_claim_job(): void {
+		if ( get_option( 'ms_file_claims_pending' ) ) {
+			self::schedule_single( 'ms_claim_uploaded_files', time() + MINUTE_IN_SECONDS );
 		}
 	}
 
