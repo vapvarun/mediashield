@@ -509,16 +509,19 @@ class SessionManager {
 
 		list( $session_id, $video_id, $user_id, $ts, $hmac ) = $parts;
 
-		// Check token expiration.
-		$ts = (int) $ts;
-		if ( ( time() - $ts ) > $max_age_seconds ) {
-			return false;
-		}
-
+		// Sign the fields exactly as received. Casting the timestamp first let
+		// "1700000000x" and "+1700000000" validate as the same token, so one
+		// session had endless spellings (and endless rate-limit buckets).
 		$payload       = "{$session_id}|{$video_id}|{$user_id}|{$ts}";
 		$expected_hmac = hash_hmac( 'sha256', $payload, AUTH_SALT );
 
 		if ( ! hash_equals( $expected_hmac, $hmac ) ) {
+			return false;
+		}
+
+		// Check token expiration.
+		$ts = (int) $ts;
+		if ( ( time() - $ts ) > $max_age_seconds ) {
 			return false;
 		}
 

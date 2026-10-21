@@ -87,4 +87,26 @@ class HeartbeatRateLimitTest extends WP_UnitTestCase {
 		}
 		$this->assertSame( 429, $this->beat( $session['session_token'] ) );
 	}
+
+	/**
+	 * The bucket is keyed on the token text, so a token must have exactly one
+	 * valid spelling. The timestamp used to be cast before it was signed, so
+	 * "<ts>x" validated as the same session and each spelling got a fresh bucket.
+	 */
+	public function test_a_respelled_token_is_not_valid(): void {
+		$user    = self::factory()->user->create();
+		$video   = self::factory()->post->create(
+			array(
+				'post_type'   => 'mediashield_video',
+				'post_status' => 'publish',
+			)
+		);
+		$session = SessionManager::start( $video, $user, '203.0.113.6', 'UA' );
+
+		$this->assertIsArray( SessionManager::validate_token( $session['session_token'] ) );
+
+		$parts    = explode( '|', $session['session_token'] );
+		$parts[3] = $parts[3] . 'x';
+		$this->assertFalse( SessionManager::validate_token( implode( '|', $parts ) ) );
+	}
 }
