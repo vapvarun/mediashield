@@ -43,6 +43,7 @@ class Cleanup {
 		add_action( 'ms_cleanup_inactive_sessions', array( __CLASS__, 'cleanup_inactive_sessions' ) );
 		add_action( 'ms_archive_old_sessions', array( __CLASS__, 'archive_old_sessions' ) );
 		add_action( 'ms_restore_archived_sessions', array( __CLASS__, 'restore_archived_sessions' ) );
+		add_action( 'ms_claim_uploaded_files', array( __CLASS__, 'claim_uploaded_files' ) );
 
 		// Register monthly schedule for WP-Cron fallback.
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_monthly_schedule' ) );
@@ -162,7 +163,25 @@ class Cleanup {
 		$platform          = get_post_meta( $post_id, '_ms_platform', true );
 		$platform_video_id = get_post_meta( $post_id, '_ms_platform_video_id', true );
 
-		if ( 'self' === $platform && ! empty( $platform_video_id ) ) {
+		// Only the video that owns the file may remove it, and only when no
+		// other video shares it. A video that merely names a file must never
+		// delete it: that is how deleting a stray record destroyed the real
+		// video's file. An unclaimed file is left in place, which is harmless.
+		$sharing = get_posts(
+			array(
+				'post_type'        => 'mediashield_video',
+				'post_status'      => 'any',
+				'fields'           => 'ids',
+				'numberposts'      => 1,
+				'post__not_in'     => array( $post_id ),
+				'no_found_rows'    => true,
+				'suppress_filters' => true,
+				'meta_key'         => '_ms_owned_file', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'       => (string) $platform_video_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			)
+		);
+
+		if ( 'self' === $platform && ! empty( $platform_video_id ) && (string) get_post_meta( $post_id, '_ms_owned_file', true ) === (string) $platform_video_id && ! $sharing ) {
 			$driver = UploadManager::get_driver( 'self_hosted' );
 			if ( $driver ) {
 				$driver->delete( (string) $platform_video_id );
@@ -469,12 +488,78 @@ class Cleanup {
 	}
 
 	/**
+	 * Record which video owns each uploaded file (the 1.4.0 upgrade backfill).
+	 *
+	 * Oldest video first, so when two videos name one file the one that was
+	 * there first keeps it. A video with no file, or whose file another video
+	 * already owns, gets an empty claim: it is checked once and never again.
+	 * Batched and self-rescheduling; the pending flag clears when none are left.
+	 *
+	 * @since 1.4.0
+	 */
+	public static function claim_uploaded_files(): void {
+		$batch = max( 50, min( 1000, (int) apply_filters( 'mediashield_claim_files_batch_size', 200 ) ) );
+
+		// A one-off background walk of the videos that have no claim row yet.
+		$ids = get_posts(
+			array(
+				'post_type'        => 'mediashield_video',
+				'post_status'      => 'any',
+				'fields'           => 'ids',
+				'numberposts'      => $batch,
+				'orderby'          => 'ID',
+				'order'            => 'ASC',
+				'no_found_rows'    => true,
+				'suppress_filters' => true,
+				'meta_query'       => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					array(
+						'key'     => '_ms_owned_file',
+						'compare' => 'NOT EXISTS',
+					),
+				),
+			)
+		);
+
+		if ( empty( $ids ) ) {
+			delete_option( 'ms_file_claims_pending' );
+			return;
+		}
+
+		$dir = trailingslashit( wp_upload_dir()['basedir'] ) . 'mediashield/';
+
+		foreach ( $ids as $id ) {
+			$file  = (string) get_post_meta( $id, '_ms_platform_video_id', true );
+			$claim = '';
+
+			if ( 'self' === get_post_meta( $id, '_ms_platform', true ) && '' !== $file && is_file( $dir . sanitize_file_name( $file ) ) ) {
+				$taken = get_posts(
+					array(
+						'post_type'        => 'mediashield_video',
+						'post_status'      => 'any',
+						'fields'           => 'ids',
+						'numberposts'      => 1,
+						'no_found_rows'    => true,
+						'suppress_filters' => true,
+						'meta_key'         => '_ms_owned_file', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+						'meta_value'       => sanitize_file_name( $file ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+					)
+				);
+				$claim = $taken ? '' : sanitize_file_name( $file );
+			}
+
+			update_post_meta( $id, '_ms_owned_file', $claim );
+		}
+
+		self::schedule_single( 'ms_claim_uploaded_files', time() + MINUTE_IN_SECONDS );
+	}
+
+	/**
 	 * Schedule a one-off action, preferring Action Scheduler.
 	 *
 	 * @param string $hook Hook name.
 	 * @param int    $when Unix timestamp.
 	 */
-	private static function schedule_single( string $hook, int $when ): void {
+	public static function schedule_single( string $hook, int $when ): void {
 		if ( function_exists( 'as_schedule_single_action' ) ) {
 			if ( false === as_next_scheduled_action( $hook ) ) {
 				as_schedule_single_action( $when, $hook, array(), 'mediashield' );

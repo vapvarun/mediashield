@@ -51,6 +51,7 @@ class AccessGatesTest extends WP_UnitTestCase {
 
 		update_post_meta( $this->video_id, '_ms_platform', 'self' );
 		update_post_meta( $this->video_id, '_ms_platform_video_id', 'test.mp4' );
+		update_post_meta( $this->video_id, '_ms_owned_file', 'test.mp4' );
 		update_post_meta( $this->video_id, '_ms_source_url', 'https://example.test/uploads/mediashield/test.mp4' );
 	}
 

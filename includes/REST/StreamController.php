@@ -269,6 +269,19 @@ class StreamController extends WP_REST_Controller {
 			return '';
 		}
 
+		// Files in our protected folder play only for the video that uploaded
+		// them. Otherwise anyone who may edit one video could name another
+		// video's file in their own and stream it past that video's rules.
+		// While the upgrade backfill is still running, a video with no claim
+		// row yet keeps playing so an update never breaks existing lessons.
+		$private = realpath( trailingslashit( $uploads['basedir'] ) . 'mediashield' );
+		if ( $private && 0 === strpos( $real, trailingslashit( $private ) ) ) {
+			$owned = get_post_meta( $video_id, '_ms_owned_file', true );
+			if ( basename( $real ) !== $owned && ! ( '' === $owned && ! metadata_exists( 'post', $video_id, '_ms_owned_file' ) && get_option( 'ms_file_claims_pending' ) ) ) {
+				return '';
+			}
+		}
+
 		return $real;
 	}
 

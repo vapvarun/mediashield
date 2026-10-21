@@ -54,7 +54,30 @@ class Migrator {
 		// moment to block on an unbounded table copy.
 		self::restore_archived_sessions();
 
+		// v6 - record which video owns each uploaded file. Only an upgrade has
+		// videos to claim; a fresh install writes the claim at upload.
+		self::claim_uploaded_files( $installed );
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+	}
+
+	/**
+	 * Queue the one-off claim of every uploaded file by the video that holds it.
+	 *
+	 * Scheduled, not inline, for the same reason as the archive restore: a
+	 * large library should not be walked during an upgrade request. Until it
+	 * finishes, `StreamController::resolve_file()` lets an unclaimed video keep
+	 * playing, so the update never breaks existing lessons.
+	 *
+	 * @param int $installed DB version before this run.
+	 */
+	private static function claim_uploaded_files( int $installed ): void {
+		if ( $installed < 1 || $installed >= 6 ) {
+			return;
+		}
+
+		update_option( 'ms_file_claims_pending', 1, false );
+		\MediaShield\Cron\Cleanup::schedule_single( 'ms_claim_uploaded_files', time() + MINUTE_IN_SECONDS );
 	}
 
 	/**
