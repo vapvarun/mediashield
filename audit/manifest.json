@@ -1220,11 +1220,18 @@
     "metaBoxes": [],
     "cronJobs": [
       {
+        "hook": "ms_claim_uploaded_files",
+        "recurrence": "single",
+        "callback": "ms_claim_uploaded_files",
+        "file": "includes/Cron/Cleanup.php",
+        "line": 502
+      },
+      {
         "hook": "ms_restore_archived_sessions",
         "recurrence": "single",
         "callback": "ms_restore_archived_sessions",
         "file": "includes/Core/Migrator.php",
-        "line": 85
+        "line": 111
       },
       {
         "hook": "ms_cleanup_inactive_sessions",
@@ -1670,6 +1677,12 @@
           "hookName": "edd_sl_sdk_license_control_after_{$args[",
           "file": "libs/edd-sl-sdk/templates/license-control.php",
           "line": 47
+        },
+        {
+          "type": "filter",
+          "hookName": "mediashield_claim_files_batch_size",
+          "file": "includes/Cron/Cleanup.php",
+          "line": 517
         }
       ],
       "consumed": [
@@ -2729,6 +2742,7 @@
     }
   ],
   "cron": [
+    "ms_claim_uploaded_files",
     "ms_restore_archived_sessions",
     "ms_cleanup_inactive_sessions",
     "ms_archive_old_sessions",
