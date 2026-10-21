@@ -177,7 +177,6 @@ class Cleanup {
 				'numberposts'      => 1,
 				'post__not_in'     => array( $post_id ),
 				'no_found_rows'    => true,
-				'suppress_filters' => true,
 				'meta_key'         => '_ms_owned_file', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 				'meta_value'       => (string) $platform_video_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 			)
@@ -526,7 +525,6 @@ class Cleanup {
 				'orderby'          => 'ID',
 				'order'            => 'ASC',
 				'no_found_rows'    => true,
-				'suppress_filters' => true,
 				'meta_query'       => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					array(
 						'key'     => '_ms_owned_file',
@@ -555,7 +553,6 @@ class Cleanup {
 						'fields'           => 'ids',
 						'numberposts'      => 1,
 						'no_found_rows'    => true,
-						'suppress_filters' => true,
 						'meta_key'         => '_ms_owned_file', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 						'meta_value'       => sanitize_file_name( $file ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 					)
