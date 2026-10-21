@@ -150,7 +150,7 @@ class PlaylistController extends WP_REST_Controller {
 			)
 		);
 
-		if ( ! $in_playlist || 'publish' !== get_post_status( $playlist_id ) || 'publish' !== get_post_status( $video_id ) ) {
+		if ( ! $in_playlist || 'publish' !== get_post_status( $playlist_id ) || 'publish' !== get_post_status( $video_id ) || post_password_required( $playlist_id ) ) {
 			return new WP_Error( 'not_found', __( 'Video not found in this playlist.', 'mediashield' ), array( 'status' => 404 ) );
 		}
 

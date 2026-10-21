@@ -134,9 +134,13 @@ class EmbedLink {
 
 		list( $video_id, $user_id, $expires, $signature ) = $parts;
 
-		$video_id = absint( $video_id );
-		$user_id  = absint( $user_id );
-		$expires  = absint( $expires );
+		// A token has one spelling. Casting "5x" or "+5" to 5 would let one
+		// token wear endless copies that all verify.
+		$claim = array( absint( $video_id ), absint( $user_id ), absint( $expires ) );
+		if ( implode( '.', $claim ) !== implode( '.', array( $video_id, $user_id, $expires ) ) ) {
+			return null;
+		}
+		list( $video_id, $user_id, $expires ) = $claim;
 
 		if ( ! $video_id || ! $expires ) {
 			return null;

@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Access\AccessControl;
 use MediaShield\Core\Assets;
 
 /**
@@ -164,6 +165,15 @@ class Renderer {
 		 * @param string $platform_video_id Provider-side video id / GUID.
 		 */
 		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
+
+		// Only a self-hosted address is gated: /stream re-checks the viewer on
+		// every request. Any other stream URL (a CDN address, Bunny direct play)
+		// plays without touching /session/start, so printing it hands the file
+		// to someone who may not watch, and this output is also served to
+		// anyone by the playlist player route.
+		if ( '' !== $stream_url && 'self' !== $platform && ! AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
+			$stream_url = '';
+		}
 
 		// Per-video override, then the owner's global default, then 'standard'.
 		// Shared with PlayerWrapper so the auto-wrap path cannot resolve this

@@ -317,7 +317,16 @@
 					e.stopImmediatePropagation();
 					var resumeAt   = video.currentTime;
 					var wasPlaying = ! video.paused;
-					fetch( url.split( '?' )[ 0 ] + '/url', {
+					// The refresh route sits next to the stream route. On plain
+					// permalinks the route lives in ?rest_route=, not the path.
+					var refreshUrl = new URL( url, window.location.href );
+					refreshUrl.searchParams.delete( 'ms_token' );
+					if ( refreshUrl.searchParams.has( 'rest_route' ) ) {
+						refreshUrl.searchParams.set( 'rest_route', refreshUrl.searchParams.get( 'rest_route' ) + '/url' );
+					} else {
+						refreshUrl.pathname += '/url';
+					}
+					fetch( refreshUrl.toString(), {
 						headers: { 'X-WP-Nonce': config.nonce },
 					} )
 						.then( function ( res ) { return res.ok ? res.json() : Promise.reject( res ); } )
