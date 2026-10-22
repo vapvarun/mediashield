@@ -73,7 +73,7 @@ Early renewals often include a discount. Watch for emails from us.
 
 ## Refund and cancellation
 
-**14-day money-back guarantee.** Email `support@wbcomdesigns.com` with:
+**30-day money-back guarantee.** Email `support@wbcomdesigns.com` with:
 
 * Your license key.
 * The email you purchased with.
