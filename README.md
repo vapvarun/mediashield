@@ -2,6 +2,13 @@
 
 Protect your video content with dynamic watermarking, session tracking, DRM encryption, and multi-platform support. Host videos on Bunny Stream, YouTube, Vimeo, or Wistia -- MediaShield wraps the player with protection while videos stream from their CDN. No video files stored on your server.
 
+## Get it
+
+MediaShield is free. MediaShield Pro adds advanced protection, analytics and platform tools.
+
+- Download: [wbcomdesigns.com/downloads/mediashield](https://wbcomdesigns.com/downloads/mediashield/)
+- Pro: [wbcomdesigns.com/downloads/mediashield-pro](https://wbcomdesigns.com/downloads/mediashield-pro/)
+
 ## Free vs Pro Comparison
 
 | Feature | Free | Pro |
@@ -121,6 +128,11 @@ Protect your video content with dynamic watermarking, session tracking, DRM encr
 
 ## Documentation
 
+- Docs: [docs.wbcomdesigns.com/wordpress-family/mediashield](https://docs.wbcomdesigns.com/wordpress-family/mediashield/)
+- Release notes: [wbcomdesigns.com/release-notes/mediashield](https://wbcomdesigns.com/release-notes/mediashield/)
+
+In this repo:
+
 - [Installation & Setup](docs/free/installation.md)
 - [Configuration](docs/free/configuration.md)
 - [Shortcodes & Blocks](docs/free/shortcodes-blocks.md)
@@ -163,6 +175,11 @@ add_action( 'mediashield_milestone_reached', function( $user_id, $video_id, $pct
 ```
 
 See [Full Hooks Reference](docs/free/hooks-filters.md) for all available hooks.
+
+## Support
+
+- [Support ticket](https://wbcomdesigns.com/support/)
+- [Bug reports and feature requests](https://github.com/vapvarun/mediashield/issues)
 
 ## License
 
