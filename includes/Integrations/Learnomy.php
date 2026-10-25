@@ -40,6 +40,19 @@ class Learnomy {
 	 */
 	public static function register(): void {
 		add_filter( 'learnomy_rest_lesson_payload', array( __CLASS__, 'add_embed_to_payload' ), 10, 3 );
+		add_filter( 'mediashield_show_badge', array( __CLASS__, 'hide_badge_on_lessons' ) );
+	}
+
+	/**
+	 * No MediaShield badge on a Learnomy lesson: the academy is the site owner's
+	 * brand, and a partner's name is not shown to their students. A site that
+	 * wants it back returns true from `mediashield_show_badge` at a later priority.
+	 *
+	 * @param bool $show Value so far.
+	 * @return bool
+	 */
+	public static function hide_badge_on_lessons( $show ) {
+		return 'lesson' === (string) get_query_var( 'learnomy_route', '' ) ? false : $show;
 	}
 
 	/**

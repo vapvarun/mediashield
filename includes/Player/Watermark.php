@@ -41,7 +41,12 @@ class Watermark {
 			'opacity'       => Settings::get( 'ms_watermark_opacity' ),
 			'color'         => Settings::get( 'ms_watermark_color' ),
 			'swap_interval' => Settings::get( 'ms_watermark_swap_interval' ),
-			'show_badge'    => Settings::get( 'ms_show_badge' ),
+			/**
+			 * Filter whether the "Protected by MediaShield" badge is shown.
+			 *
+			 * @param bool $show Value of the Show MediaShield Badge setting.
+			 */
+			'show_badge'    => (bool) apply_filters( 'mediashield_show_badge', Settings::get( 'ms_show_badge' ) ),
 		);
 	}
 }

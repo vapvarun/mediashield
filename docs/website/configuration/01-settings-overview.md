@@ -48,7 +48,7 @@ The watermark is a text overlay drawn on top of the video while it plays. It sho
 
 **Position Swap Interval** - How many seconds the watermark stays in one place before moving, default 30. The watermark cycles through four corners and the center, so a shorter interval covers more of the frame over time and makes cropping harder.
 
-**Show MediaShield Badge** - Displays a "Protected by MediaShield" badge on the player. On by default. Toggle off for a cleaner look. Works in both free and Pro.
+**Show MediaShield Badge** - Displays a "Protected by MediaShield" badge on the player. On by default. Toggle off for a cleaner look. Works in both free and Pro. On a Learnomy lesson the badge is not shown, so a student sees the academy's own brand. To show it there, return `true` from the `mediashield_show_badge` filter.
 
 The free watermark shows display name and IP. Pro extends this to 7 configurable fields.
 
