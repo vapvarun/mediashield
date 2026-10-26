@@ -165,7 +165,6 @@ Playback fixes for cached pages, playlists and the core embed block, plus a play
 * Improve  - Vimeo videos show only MediaShield's full screen button. Vimeo's own button took only the picture full screen and left the watermark behind.
 * Improve  - The stream limit counts the other devices an account is watching on, not its players, so a page with several videos no longer shows "Too many active streams".
 * Improve  - The player's text is translatable.
-* Improve  - The MediaShield badge is not shown on a Learnomy lesson, where the academy is the site's own brand. The mediashield_show_badge filter turns it back on.
 * Fix      - A protected self-hosted video no longer returns access denied to logged-in members, administrators included, when the page was cached or left open for hours. The player asks for a fresh address and resumes where it stopped.
 * Fix      - Pages that print a protected player are marked not cacheable, so a cached copy can no longer carry one viewer's access to another.
 * Fix      - The empty gap above a video added with the embed block is gone.
