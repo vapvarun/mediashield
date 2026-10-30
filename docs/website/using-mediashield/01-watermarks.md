@@ -2,6 +2,10 @@
 
 The watermark is the core forensic tool in MediaShield. It renders the viewer's identity as a text overlay on top of the video while it plays.
 
+## Why use it
+
+If a recording of your video turns up online, the name and IP address on screen point to the account it came from. Knowing viewers can be identified also discourages casual sharing. It identifies a leaker. It does not stop a determined copier.
+
 ## What the watermark shows
 
 In the free plugin, the watermark displays:
@@ -42,6 +46,10 @@ The watermark renders on videos at **Standard** or **Strict** protection level o
 To see the watermark:
 - Settings > General > Default Protection Level set to Standard or higher, OR
 - The individual video's Protection Level set to Standard or higher
+
+## What viewers see
+
+Viewers see their display name and IP address as text over the video, moving to a new position at the swap interval you set. Guests see "Guest" and their IP address.
 
 ## Honest limits
 

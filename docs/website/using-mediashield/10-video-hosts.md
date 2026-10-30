@@ -4,6 +4,10 @@
 
 MediaShield does not host your videos by default. You keep the host you already use, and MediaShield wraps the player in its protection layer. You can also store files on your own server.
 
+## Why use it
+
+You keep the host you already pay for and its delivery, and still get MediaShield's protected player, access rules and watch data.
+
 ## Before you start
 
 - Open the video's own page on the host, not your account dashboard, to copy its address.
@@ -45,7 +49,11 @@ MediaShield does not host your videos by default. You keep the host you already 
 
 ## With MediaShield Pro
 
-Pro connects your Bunny, YouTube, Vimeo and Wistia accounts so you can browse their libraries and bulk-import videos, and send uploads to a connected platform. See the Pro documentation.
+Pro connects your Bunny, YouTube, Vimeo and Wistia accounts so you can browse their libraries and bulk-import videos, and send uploads to a connected platform. See [Connect a Video Platform](https://wpmediashield.com/docs/pro/features/01-platform-connections/). Every integration, with its edition, is listed in [Integrations](18-integrations.md).
+
+## What viewers see
+
+Viewers see the video in the host's player, wrapped in MediaShield's protection, or in the MediaShield player for self-hosted and HLS video.
 
 ## Check it worked
 

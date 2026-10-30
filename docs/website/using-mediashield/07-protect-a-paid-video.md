@@ -4,6 +4,10 @@
 
 This guide takes one video from "anyone can see it" to "only signed-in members can watch it, and a leaked recording shows who it came from". It covers the whole job in order.
 
+## Why use it
+
+Paid video stays for paying members, and a leaked copy can be traced to an account. You set it up once for the video, not page by page.
+
 ## What you get, and what you do not
 
 MediaShield puts a protected player around videos in your library. It checks who may watch, overlays the viewer's name and IP address, stops casual saving, and records who watched how much. It does not stop a determined person recording their screen, and it is not forensic watermarking. The overlay is drawn on top of the picture, not into the file.
@@ -43,6 +47,10 @@ If you want analytics, use Standard or Strict. Basic protects the player but rec
 - Limit shared logins with **Max Concurrent Streams**. See [Limit Streams and Stop Sharing](09-limit-streams-and-stop-sharing.md).
 - Restrict where videos can be embedded with **Allowed Domains**. See [Restrict Who Can Watch](08-restrict-who-can-watch.md).
 - If you host files yourself on nginx, add the server rule from **Tools > Site Health**. See [Upload a Video File](11-upload-a-video-file.md).
+
+## What viewers see
+
+Signed-in members see the player with their name and IP address over it. Visitors who are signed out see the login prompt, not the video.
 
 ## Check it worked
 

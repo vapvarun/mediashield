@@ -4,6 +4,10 @@
 
 Account sharing is the commonest leak. MediaShield limits how many videos one account can play at once, and can cut off an account's active streams.
 
+## Why use it
+
+One paid login stays one viewer at a time, so sharing a password costs the sharer. You can also cut off an account you suspect.
+
 ## Before you start
 
 - The limit applies to logged-in accounts on Standard or Strict videos, because those start watch sessions.

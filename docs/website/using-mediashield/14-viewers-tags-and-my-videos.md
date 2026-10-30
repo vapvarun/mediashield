@@ -4,6 +4,10 @@
 
 This guide covers the three places where you, and your members, see who watched what.
 
+## Why use it
+
+You can see how an individual member is doing, group members by what they have completed, and let members see their own progress, which supports questions such as who has finished the training.
+
 ## Before you start
 
 - Watch data exists only for videos at **Standard** or **Strict** protection.
@@ -36,6 +40,10 @@ Place the **My Videos** block, or the shortcode:
 ```
 
 It shows a grid of the videos the signed-in member has watched, with a progress bar and the filters All, In Progress and Completed. Visitors who are not logged in are asked to log in. Only videos that are published and recorded at Standard or Strict appear.
+
+## What viewers see
+
+Members see only their own list of watched videos with progress. They never see other members.
 
 ## Check it worked
 

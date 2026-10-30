@@ -4,6 +4,10 @@
 
 This page says who can manage MediaShield and who can watch.
 
+## Why use it
+
+Staff get the access they need and no more, and members can only see their own progress.
+
 ## Managing MediaShield
 
 | Task | Who can do it |

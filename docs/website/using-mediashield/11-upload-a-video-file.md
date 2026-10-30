@@ -1,8 +1,12 @@
 # Upload a Video File
 
-**Included in Free.** Uploading to a connected cloud platform instead needs MediaShield Pro.
+**Included in Free.** Uploading to a connected cloud platform instead needs MediaShield Pro, see [Upload Queue and Default Upload Target](https://wpmediashield.com/docs/pro/features/13-upload-queue/).
 
 Use this when you want the video file on your own server.
+
+## Why use it
+
+You can host a video yourself with no outside account. It suits short clips and small libraries, and the file is served only to people allowed to watch it.
 
 ## Before you start
 
@@ -35,6 +39,10 @@ On Apache, MediaShield writes an `.htaccess` rule that blocks direct access. ngi
 - "Upload failed: the connection dropped or the file is larger than this server accepts." Raise `upload_max_filesize` and `post_max_size`, or use a video platform.
 - The Upload button stays grey until a file is chosen.
 - See [Error Messages](../troubleshooting/02-error-messages.md).
+
+## What viewers see
+
+Viewers see the normal protected player. They never see the real file address while Hide Video Source URL is on.
 
 ## Next steps
 

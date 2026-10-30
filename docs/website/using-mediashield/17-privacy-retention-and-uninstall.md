@@ -2,6 +2,10 @@
 
 **Included in Free.** Pro adds its own tables to the same export and erase tools.
 
+## Why use it
+
+You can answer a data request with WordPress's own tools, decide how long watch history is kept, and remove everything cleanly when you stop using the plugin.
+
 ## What MediaShield stores
 
 For each watch session: user ID, video ID, IP address, browser details, device type, start time, last report time, total seconds watched, furthest position and completion percentage. It also stores milestones, tags and playlist items. All of it stays in your own WordPress database. The free plugin sends nothing to outside servers.

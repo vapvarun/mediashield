@@ -4,6 +4,10 @@
 
 Learnomy can place a MediaShield video inside a lesson, so the lesson plays in the protected player.
 
+## Why use it
+
+Lessons in Learnomy play in the protected player, so the same rules, watermark and watch data apply to course content without extra setup per lesson.
+
 ## Before you start
 
 - Learnomy and MediaShield are both active.
@@ -33,5 +37,6 @@ Open the lesson as an enrolled student. The protected player appears with your w
 
 ## Next steps
 
+- [Integrations](18-integrations.md)
 - [Restrict Who Can Watch](08-restrict-who-can-watch.md)
 - [Analytics and Milestones](02-analytics-and-milestones.md)

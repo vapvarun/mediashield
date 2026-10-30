@@ -2,6 +2,10 @@
 
 MediaShield provides three shortcodes and three Gutenberg blocks for embedding video content. Each shortcode has a matching block.
 
+## Why use it
+
+You place a protected video, a playlist or a member's own progress list on any page or post, in the block editor or with a shortcode, and the protection comes with it.
+
 ## Shortcodes
 
 ### [mediashield] - Embed a single video
@@ -71,6 +75,8 @@ MediaShield Pro used to register a fourth shortcode, `[mediashield_upload]`, for
 The shortcode is still registered so it does not print as literal text on pages that still contain it. It now shows visitors nothing, and shows editors a note explaining the retirement. Remove it from your content when convenient. Uploading is done from **Videos > Add New** in the admin.
 
 ## Using shortcodes in page builders
+
+See also [Integrations](../using-mediashield/18-integrations.md).
 
 MediaShield has no Elementor or Divi widget of its own. It works inside any builder that supports shortcodes or a raw HTML widget. Place `[mediashield id=X]` in a text or shortcode widget.
 

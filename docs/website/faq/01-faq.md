@@ -4,15 +4,19 @@
 
 **Which video platforms does MediaShield support?**
 
-Five, out of the box: self-hosted files (MP4, WebM, MOV, M4V), YouTube, Vimeo, Bunny Stream, and Wistia. The free plugin protects embeds from all five. Pro adds direct API connections for browsing, importing, and uploading through each platform's own API.
+Five, out of the box: self-hosted files (MP4, WebM, MOV, M4V), YouTube, Vimeo, Bunny Stream, and Wistia. The free plugin plays and protects videos from all five, once the video is in your MediaShield library. Pro adds direct API connections for browsing, importing, and uploading through each platform's own API.
 
 **Does MediaShield work with page builders?**
 
-Yes. MediaShield scans page output and wraps video embeds automatically, regardless of how they were inserted, so it works with Elementor, Beaver Builder, Divi, WPBakery, and anything else that outputs standard `<video>` or `<iframe>` elements. Two caveats: only videos that exist in your MediaShield library are wrapped, and builders that render video via JavaScript after page load need the MediaShield block or shortcode instead of a raw URL.
+There is no Elementor or Divi widget, so nothing appears in a builder's widget panel. Put `[mediashield id=X]` in the builder's shortcode, text or HTML widget, or use the MediaShield Video block. A builder that prints an ordinary video or a YouTube, Vimeo, Bunny or Wistia embed for a video that is already in your library is also picked up and wrapped. Only videos in your MediaShield library are protected, and builders that render video with JavaScript after the page loads need the block or shortcode instead of a raw address. See [Integrations](../using-mediashield/18-integrations.md).
 
 **Does it work with LMS plugins?**
 
-Yes. MediaShield works alongside LearnDash, LifterLMS, Tutor LMS, Sensei, and others. The free plugin fires milestone actions that you can hook for LMS completion tracking. Pro ships pre-built adapters for LearnDash, LifterLMS, and TutorLMS.
+Learnomy: yes, in Free. A Learnomy lesson can use a protected MediaShield video. See [Courses with Learnomy](../using-mediashield/15-courses-with-learnomy.md). LearnDash, Tutor LMS and LifterLMS: yes, with MediaShield Pro, which links a video to a lesson and can complete it and require enrolment. Other course plugins have no built-in connector. A developer can use the milestone hooks or the `mediashield_can_watch` filter. See [Integrations](../using-mediashield/18-integrations.md).
+
+**What does MediaShield connect to?**
+
+Video hosts (YouTube, Vimeo, Wistia, Bunny Stream, your own server), Learnomy, LearnDash, Tutor LMS, LifterLMS, WB Ad Manager for video ads, and any service that accepts a web address call (Zapier, Make) at a milestone. Membership plugins have no built-in connector. Each one is listed with its edition and setup steps in [Integrations](../using-mediashield/18-integrations.md).
 
 **Will MediaShield slow down my site?**
 

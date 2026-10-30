@@ -4,6 +4,10 @@
 
 Use this guide to limit a video to members, to one role, or to your own websites. The full order of checks is in [Access Control](../configuration/04-access-control.md).
 
+## Why use it
+
+The right people watch and nobody else, without creating a separate page or site for each group. It also stops other websites embedding your videos.
+
 ## Before you start
 
 - Administrators are never blocked. Test with another account or a private window.
@@ -41,6 +45,10 @@ This is a Referer check. A Referer can be forged, so treat it as a fence, not a 
 ## Gate by membership level or course enrolment
 
 Free has no built-in membership connector. Use the `mediashield_can_watch` filter. MediaShield Pro includes adapters for LearnDash, Tutor LMS and LifterLMS. Learnomy places MediaShield videos in lessons itself: see [Courses with Learnomy](15-courses-with-learnomy.md).
+
+## What viewers see
+
+A viewer who fails a check sees your **Access Denied Text** or the login prompt instead of the video. On another website that is not on your list, the video does not play.
 
 ## Check it worked
 

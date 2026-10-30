@@ -4,6 +4,10 @@
 
 Set the player's behaviour for the whole site, then override single videos.
 
+## Why use it
+
+The player matches how your viewers learn: resume where they left off, a speed selector, a sticky mini view, an end screen that points to the next step, and wording in your own voice.
+
 ## Before you start
 
 - Several controls apply only to self-hosted and Bunny videos. YouTube, Vimeo and Wistia use their own player controls.
@@ -42,6 +46,10 @@ Under **Settings > Login and Access Messages** edit the login message, login but
 ## What is not available
 
 MediaShield has no captions or subtitles track, no quality selector, no picture-in-picture button and no chapters.
+
+## What viewers see
+
+Viewers see the controls, end screen and messages you chose. Controls the host's own player provides (YouTube, Vimeo, Wistia) are the host's.
 
 ## Check it worked
 

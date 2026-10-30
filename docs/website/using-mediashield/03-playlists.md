@@ -2,6 +2,10 @@
 
 Playlists are groups of videos played in sequence. Use them for course modules, tutorial series, chapter sequences, or any content that has a natural order.
 
+## Why use it
+
+A series plays in order in the protected player, with the same access rules, watermark and tracking on every video. Viewers do not have to pick the next lesson.
+
 ## Creating a playlist
 
 Go to **MediaShield > Playlists** and click **Add New Playlist**. That opens a standard WordPress edit screen with a **Playlist Items** panel.

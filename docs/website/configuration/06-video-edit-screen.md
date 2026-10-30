@@ -4,6 +4,10 @@
 
 Every video in your library is a WordPress post of type "video". Open one from **MediaShield > Videos > Edit**, or choose **Add New Video**. This page explains every box on that screen.
 
+## Why use it
+
+Everything about one video is on one screen: where it comes from, who may watch, how it behaves and what milestones it rewards.
+
 ## Before you start
 
 - A video must be **Published** to play on your site. A draft shows nothing to visitors and a short note to editors.

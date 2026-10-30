@@ -2,6 +2,10 @@
 
 Analytics only exist for videos at **Standard** or **Strict** protection level. Those are the levels that start a watch session. Videos set to None or Basic play without recording anything, and never appear in any of the screens below.
 
+## Why use it
+
+You see which videos people start, how far they get and who finished, without a separate analytics tool. Milestones record progress points you can act on, for example by tagging members who finished.
+
 ## The Dashboard
 
 Go to **MediaShield > Dashboard** to see your analytics overview.

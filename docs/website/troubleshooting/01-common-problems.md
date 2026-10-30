@@ -150,6 +150,18 @@ The first stream may still count. A session stops counting 5 minutes after its l
 
 The video behind the lesson is not published, or was deleted. Open it under **MediaShield > Videos** and publish it, then pick it again in the lesson.
 
+## No ads play
+
+1. WB Ad Manager must be active with at least one enabled ad of type Video Ad.
+2. **Enable In-Video Ads** must be on under **MediaShield > Settings > Video Ads**.
+3. The video must play in the MediaShield player. A video in YouTube's embedded player, or in Bunny's own embed, cannot carry in-video ads.
+4. For mid-rolls, the video needs a **Duration**. Set it on the video if the player does not report one.
+5. Test as a member. See [Video Ads](../using-mediashield/13-video-ads.md) and [Integrations](../using-mediashield/18-integrations.md).
+
+## A page-builder page shows an unprotected video
+
+MediaShield protects only videos that are in your library. Add the video under **MediaShield > Videos**, then place it with `[mediashield id=X]` or the MediaShield Video block. See [Integrations](../using-mediashield/18-integrations.md).
+
 ## Still stuck?
 
 1. Enable WordPress debug logging. Add to `wp-config.php`:

@@ -79,4 +79,4 @@ Examples of what you can gate on:
 
 MediaShield Pro ships pre-built adapters for LearnDash, LifterLMS, and TutorLMS. Free users wire via the filter manually.
 
-For the filter signature and examples, see the [Developer Guide - Hooks and Filters](../developer-guide/02-hooks-and-filters.md).
+A ready-made snippet and the list of everything MediaShield connects to are in [Integrations](../using-mediashield/18-integrations.md). For the filter signature and examples, see the [Developer Guide - Hooks and Filters](../developer-guide/02-hooks-and-filters.md).
