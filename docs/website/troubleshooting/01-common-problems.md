@@ -1,4 +1,4 @@
-# Troubleshooting
+# Common Problems
 
 Start with this checklist before investigating further. It covers the most common reports.
 
@@ -130,6 +130,26 @@ Visitors see the login gate even on pages you intended to be public.
 
 4. **CDN caching the stream endpoint.** The self-hosted stream endpoint should not be cached. If you use Cloudflare or another CDN, add a bypass rule for your stream URL.
 
+## A video title in My Videos opens a "not found" page
+
+Video entries are private library records, not public pages. The My Videos block and shortcode link each title to the video's own address, which has no public page, so that link shows your theme's not-found page. The progress bar and percentage are correct. Show the video where you want it with `[mediashield id=X]` or the MediaShield Video block instead of relying on that link.
+
+## Embeds are refused on a partner site
+
+Allowed Domains is filled in and the partner's page shows "You do not have access to this video".
+
+1. Check the partner's domain is in the list. A subdomain of a listed domain is accepted.
+2. Some browsers and privacy tools remove the Referer header. A request with no Referer is refused whenever the list is not empty. Developers can change that with the `mediashield_allow_empty_referer` filter.
+3. Clear the list to allow embeds from anywhere.
+
+## A member on a second device is told "Too many active streams"
+
+The first stream may still count. A session stops counting 5 minutes after its last report. Close the other tab, or raise **Max Concurrent Streams**.
+
+## Learnomy lesson shows "uses a protected video that cannot be played right now"
+
+The video behind the lesson is not published, or was deleted. Open it under **MediaShield > Videos** and publish it, then pick it again in the lesson.
+
 ## Still stuck?
 
 1. Enable WordPress debug logging. Add to `wp-config.php`:
@@ -145,4 +165,4 @@ define( 'WP_DEBUG_LOG', true );
 
 4. Email `support@wbcomdesigns.com` with the relevant log lines and your environment: WordPress version, PHP version, active theme, active plugins.
 
-For Pro customers, SLA is 48 business hours. For free users, the WordPress.org plugin forum is monitored.
+Support is handled by email for both Free and Pro. Say which product and version you run.

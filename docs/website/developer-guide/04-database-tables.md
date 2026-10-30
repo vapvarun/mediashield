@@ -1,5 +1,7 @@
 # Database Tables
 
+**Included in Free** - Pro adds its own tables, documented in the Pro developer guide.
+
 MediaShield creates 6 tables in the free plugin. All table names use the `{$wpdb->prefix}` prefix (typically `wp_`). Tables are created via `dbDelta` on activation, re-run by `Core\Migrator` whenever `MEDIASHIELD_DB_VERSION` increases, and dropped on full uninstall (Plugins > Delete) - unless Pro is still installed, in which case they are left alone along with the settings and the video records.
 
 ---
@@ -110,7 +112,7 @@ Indexes: PRIMARY (id), KEY `idx_playlist` (playlist_id, sort_order), KEY `idx_vi
 
 ## Scheduled jobs
 
-Jobs are registered on `init` through Action Scheduler when it is available (it ships with the plugin), and fall back to WP-Cron otherwise. The monthly interval is registered on `cron_schedules` for the fallback path.
+The full list of jobs, with the upgrade jobs, is on [Background Jobs and WP-CLI](07-background-jobs-and-wp-cli.md). In short, jobs are registered on `init` through Action Scheduler when it is available (it ships with the plugin), and fall back to WP-Cron otherwise. The monthly interval is registered on `cron_schedules` for the fallback path.
 
 **`ms_cleanup_inactive_sessions` - hourly.** Sets `is_active = 0` on sessions whose `last_heartbeat` is more than **10 minutes** old. It only flips the flag; it does not move, archive, or delete anything. Note this is a different threshold from the 5 minutes used at read time by the concurrent-stream check and the Active Viewers card, which ignore stale sessions without waiting for the job.
 
@@ -122,6 +124,8 @@ Until 1.3.0 this job archived at 24 months unconditionally, into a table nothing
 
 There is no five-minute cron. If you need to react to session expiry sooner than the hourly job, read `last_heartbeat` yourself.
 
+**`ms_claim_uploaded_files` - one-off, self-rescheduling.** Queued after the 1.4.0 upgrade while the `ms_file_claims_pending` option is set. Records which video owns each uploaded file (`_ms_owned_file` post meta) so deleting a video never removes a file another video still uses. Batch size 200 by default (filter `mediashield_claim_files_batch_size`, clamped 50-1000). It clears the option when no unclaimed videos are left.
+
 **Cascade delete.** Not a cron job: `before_delete_post` cleans up when a video or playlist is permanently deleted. Deleting a video removes its tag links (and any tag left with no videos), its sessions in both tables, its milestones, its playlist entries, and the matching entries in each user's earned-tag meta. For self-hosted videos it also deletes the stored file - that file is in this site's own uploads folder and nothing else references it. **For platform videos it does not touch the platform.** A master on Bunny, Vimeo, YouTube or Wistia is left exactly where it is, so the same video can be linked back at any time by importing it again. With Pro active it clears the Pro tables that reference the video or its sessions. Deleting a playlist removes its items.
 
-Deactivating the plugin unschedules the recurring jobs and leaves all data in place. Deleting the plugin drops all six tables and permanently deletes every video and playlist post.
+Deactivating the plugin unschedules the recurring jobs and leaves all data in place. Deleting the plugin drops all six tables, deletes every video and playlist post, the stored files in `uploads/mediashield/`, the schema options and the `upload_mediashield` capability. If Pro is still installed, the tables, options, posts and files are left alone; only the capability is removed.

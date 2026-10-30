@@ -1,12 +1,14 @@
 # Hooks and Filters
 
-All hooks are in the `mediashield` namespace and fire from the free plugin core. This page documents the actions and filters available in version 1.3.0. Pro adds its own on top; those are listed in the Pro reference.
+**Free + Pro** - These hooks fire from the free plugin. Pro attaches to several of them and adds its own, which are listed in the Pro developer guide.
+
+This page documents the 15 actions and 35 filters the free plugin fires in version 1.4.0, verified against the source. Browser events are on [JavaScript Events and Player Config](08-javascript-events-and-config.md).
 
 ## Actions
 
 ### mediashield_loaded
 
-Fires after the core plugin is fully initialized and all hooks are registered. Use this to initialize any code that depends on MediaShield being ready.
+Fires at the end of `Plugin::instance()`, which Free runs on `plugins_loaded` at priority 10. Code that depends on MediaShield being ready should boot on `plugins_loaded` at priority 20 or later (as Pro does) or check `did_action( 'mediashield_loaded' )`; a callback added on `plugins_loaded` at priority 10 by a plugin that loads after Free would miss the action. Nothing in Pro listens to it.
 
 ```php
 add_action( 'mediashield_loaded', function() {
@@ -40,7 +42,7 @@ Fires when a watch session is finalized.
 
 ### mediashield_concurrent_limit_reached
 
-Fires when a user tries to start a stream beyond their allowed concurrent limit. Never fires for guests, who are not subject to the limit.
+Fires when a logged-in user tries to start a stream beyond their allowed concurrent limit (`ms_max_concurrent_streams`). Never fires for guests, who are not subject to the limit.
 
 **Parameters:** `$user_id` (int), `$video_id` (int), `$active_count` (int), `$max` (int)
 
@@ -56,7 +58,7 @@ Fires when all sessions for a user are revoked (`POST /session/revoke-user`).
 
 ### mediashield_milestone_reached
 
-Fires when any milestone percentage is reached for a user and video. Fires once per user per video per threshold.
+Fires when any milestone percentage is reached for a user and video. Fires once per user per video per threshold. Never fires for guests (user ID 0).
 
 **Parameters:** `$user_id` (int), `$video_id` (int), `$pct` (int), `$session_id` (int)
 
@@ -72,7 +74,7 @@ add_action( 'mediashield_milestone_reached', function( $user_id, $video_id, $pct
 
 ### mediashield_milestone_{pct}
 
-Fires for a specific milestone percentage. `mediashield_milestone_25`, `_50`, `_75`, and `_100` always exist; a video with milestone tags enabled at other percentages (10% is offered in the admin) gets those too, and `mediashield_milestone_thresholds` can add any value.
+Fires for a specific milestone percentage, right after `mediashield_milestone_reached`. `mediashield_milestone_25`, `_50`, `_75`, and `_100` always exist; a video with milestone tags at other percentages (1 to 100) gets those too, and `mediashield_milestone_thresholds` can add any value.
 
 **Parameters:** `$user_id` (int), `$video_id` (int)
 
@@ -126,7 +128,7 @@ Fires when an upload finishes successfully.
 
 ### mediashield_needs_shaka
 
-Fires while rendering a self-hosted or Bunny player, to flag that adaptive-streaming support may be needed. In free this is what causes the bundled HLS library to be enqueued. Despite the name, free does not load Shaka Player.
+Fires while rendering a player whose platform needs adaptive streaming (self-hosted or Bunny by default, see `mediashield_adaptive_platforms`), from both the shortcode/block renderer and the auto-wrapper. In free this is what causes the bundled hls.js library to be enqueued. Despite the name, free does not load Shaka Player.
 
 **Parameters:** none
 
@@ -134,7 +136,7 @@ Fires while rendering a self-hosted or Bunny player, to flag that adaptive-strea
 
 ### mediashield_devtools_detected
 
-*Since 1.1.0.* Fires when the devtools beacon receives a detection event from the browser. Rate limited to one event per user per hour per IP.
+*Since 1.1.0.* Fires when the devtools beacon receives a detection event from the browser. Rate limited to one event per user and IP per hour; a rate-limited request does not fire the action. Free does nothing else with the event (it does not log it or write a row); Pro listens and records a suspicious-activity alert.
 
 **Parameters:** `$context` (array with keys: `user_id`, `ip`, `url`, `strategy`, `ua`, `screen`, `at`)
 
@@ -175,11 +177,13 @@ add_filter( 'mediashield_can_watch', function( $result, $video_id, $user_id ) {
 
 Pro attaches its own gates at priority 20 (role re-check) and 25 (LMS enrollment). Pick a priority outside that range, or be ready for a decision one of them has already made.
 
+The filter does not run for administrators: `manage_options` users are allowed before any other check.
+
 ---
 
 ### mediashield_watermark_config
 
-Customize the watermark configuration handed to the browser when a session starts.
+Customize the watermark configuration handed to the browser in the `POST /session/start` response.
 
 **Parameters:** `$config` (array with keys `enabled`, `opacity`, `color`, `swap_interval`, `text`, `ip`), `$video_id` (int), `$user_id` (int)
 
@@ -222,7 +226,7 @@ add_filter( 'mediashield_upload_drivers', function( $drivers ) {
 
 ### mediashield_player_type
 
-Override the player type for a video. Free renders `standard` for every video; Pro uses `drm` for DRM playback.
+Override the player type for a video. Free renders `standard` for every video; the value is emitted as `data-player-type` on the player container. Pro returns `drm` for videos set to its experimental DRM level.
 
 **Parameters:** `$type` (string), `$video_id` (int)
 
@@ -279,7 +283,7 @@ The watermark overlay reads `REMOTE_ADDR` directly and is not affected by this f
 
 ### mediashield_enable_output_buffer
 
-Control whether output buffering runs on the current request.
+Control whether the output-buffer scan that wraps library videos in a pasted embed runs on the current request. Return `false` to turn the scan off for the request. See also `mediashield_force_output_buffer`.
 
 **Parameters:** `$enabled` (bool)
 
@@ -297,7 +301,7 @@ add_filter( 'mediashield_enable_output_buffer', function( $enabled ) {
 
 ### mediashield_player_html
 
-Filter the final rendered player HTML.
+Filter the final rendered player HTML of the shortcode, block and playlist player.
 
 **Parameters:** `$html` (string), `$video_id` (int), `$atts` (array with keys `platform`, `protection_level`, `player_type`)
 
@@ -305,7 +309,7 @@ Filter the final rendered player HTML.
 
 ### mediashield_unprotected_player_html
 
-*Since 1.2.0.* Filter the plain player markup emitted when MediaShield is switched off site-wide.
+*Since 1.2.0.* Filter the plain player markup emitted when MediaShield is switched off site-wide (`ms_enabled` off).
 
 **Parameters:** `$html` (string), `$video_id` (int), `$platform` (string)
 
@@ -337,7 +341,7 @@ Filter the final rendered player HTML.
 
 ### mediashield_protection_config
 
-*Since 1.1.0.* Filter the protection JavaScript config before it is passed to `protection.js`.
+*Since 1.1.0.* Filter the protection JavaScript config before it is passed to `protection.js`. Keys are the booleans and strings built from the `ms_block_*`, `ms_hide_source` and `ms_*devtools*` settings.
 
 **Parameters:** `$config` (array with keys `block_right_click`, `block_keyboard`, `hide_source`, `detect_devtools`, `pause_on_devtools`, `devtools_title`, `devtools_message`)
 
@@ -433,36 +437,61 @@ Filter the final GDPR erasure result before WordPress processes it. Append messa
 
 ---
 
-## JavaScript Events
+### mediashield_player_overrides
 
-The frontend player dispatches DOM `CustomEvent`s on `window`. Listen with `window.addEventListener( name, handler )`.
+*Since 1.3.0.* Which player features an editor can override per video. Maps a post meta key to the config key the player reads. Default: `_ms_player_speed` => `speedControl`, `_ms_player_keyboard` => `keyboard`, `_ms_player_resume` => `resume`, `_ms_player_sticky` => `sticky`, `_ms_player_endscreen` => `endscreen`, `_ms_player_prevent_forward_seek` => `preventForwardSeek`. A meta value of `on` or `off` wins over the site setting; empty means follow the setting.
 
-### mediashield:player-ready
+**Parameters:** `$map` (array, meta key => config key)
 
-Dispatched once a watch session has started and the player is wired up. This is the event the watermark and tracker scripts key off, so it is the right place to hang your own per-player behaviour.
+---
 
-**Detail:** `el` (HTMLElement), `videoId` (number), `token` (string), `resumePosition` (number), `watermarkConfig` (object), `video` (object), `adapter` (object)
+### mediashield_adaptive_platforms
 
-### mediashield:access-denied
+*Since 1.3.0.* Platforms that load the adaptive-streaming (hls.js) player. Default: `array( 'self', 'bunny' )`.
 
-*Since 1.1.0, this event is cancelable.* Dispatched when `POST /session/start` returns 403 or a denial code. Call `event.preventDefault()` to suppress the default error overlay if you're rendering your own gate UI.
+**Parameters:** `$platforms` (string[], platform slugs)
 
-**Detail:** `el` (HTMLElement), `videoId` (number), `reason` (string - `access_denied`, `login_required`, etc.)
+---
 
-### mediashield:concurrent-limit
+### mediashield_bunny_pull_zones
 
-Dispatched when session start is refused because the viewer is at their concurrent stream limit.
+*Since 1.3.1.* Bunny pull-zone hostnames this site's videos are served from, so a Bunny stream URL can be matched to its library. Hostnames are lower-cased.
 
-**Detail:** `el` (HTMLElement), `videoId` (number), `message` (string)
+**Parameters:** `$zones` (array, hostname => library ID, default empty)
 
-### mediashield:devtools-detected
+```php
+add_filter( 'mediashield_bunny_pull_zones', function( $zones ) {
+    $zones['vz-12345678-abc.b-cdn.net'] = '12345';
+    return $zones;
+} );
+```
 
-Dispatched in the browser the moment developer tools are detected, before the beacon is sent to the server.
+---
 
-**Detail:** `strategy` (string - `size_delta` or `debugger_timing`)
+### mediashield_default_upload_driver
 
-### mediashield:playlist-switch
+*Since 1.3.0.* The upload driver used when `ms_default_upload_target` is `auto`. Default `self_hosted`. Pro answers with its first connected platform. If the returned name is not a registered driver, `self_hosted` is used.
 
-Dispatched by the playlist player when the queue advances to another video.
+**Parameters:** `$driver` (string)
 
-**Detail:** `el` (HTMLElement - the main player), `videoId` (number)
+---
+
+### mediashield_force_output_buffer
+
+*Since 1.3.0.* The output-buffer scan only starts when the page's own content contains a recognised embed. Return `true` to buffer every front-end request, for themes and page builders that print embeds outside post content. Costs one buffered page per request.
+
+**Parameters:** `$force` (bool, default `false`)
+
+---
+
+### mediashield_claim_files_batch_size
+
+*Since 1.4.0.* Videos handled per pass of the one-off job that records which video owns each uploaded file. Default 200, clamped to 50-1000.
+
+**Parameters:** `$batch` (int)
+
+---
+
+## JavaScript events
+
+The player dispatches browser events (`mediashield:player-ready`, `mediashield:access-denied` and others). They are documented on [JavaScript Events and Player Config](08-javascript-events-and-config.md).

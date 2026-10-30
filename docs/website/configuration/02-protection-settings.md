@@ -41,7 +41,7 @@ If you upgraded: before 1.3.0 this setting was cosmetic. The server printed the 
 
 ## What detection does and does not do
 
-A detection sends a beacon to `POST /mediashield/v1/protection/devtools-event`, which writes an entry to the PHP error log and fires the `mediashield_devtools_detected` action. Pro turns those into suspicious activity alerts; on free you can hook the action for your own logging. There is no devtools report in the free admin.
+A detection sends a beacon to `POST /mediashield/v1/protection/devtools-event`, which fires the `mediashield_devtools_detected` action. Free does not store it anywhere: hook the action if you want your own logging. Pro records each detection as a suspicious-activity entry. There is no devtools report in the free admin.
 
 The beacon is rate limited to one event per user per hour per IP, so a viewer who opens and closes devtools repeatedly does not flood your log.
 

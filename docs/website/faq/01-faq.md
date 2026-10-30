@@ -58,7 +58,7 @@ On nginx, `.htaccess` is ignored and those files are directly downloadable until
 
 **What does developer-tools detection do?**
 
-When a viewer opens browser developer tools while watching, MediaShield detects it, records the event, and can optionally pause the video. In the free plugin the event is written to the WordPress debug log and exposed as an action for your own logging - there is no report screen. Pro turns it into a suspicious activity alert. Events are rate limited to one per viewer per hour, and detection is skipped on mobile and small screens.
+When a viewer opens browser developer tools while watching, MediaShield detects it, records the event, and can optionally pause the video. In the free plugin the event is exposed as an action for your own logging - nothing is stored and there is no report screen. Pro records it as a suspicious-activity entry. Events are rate limited to one per viewer per hour, and detection is skipped on mobile and small screens.
 
 **Can I disable protection for a specific video?**
 
@@ -91,9 +91,9 @@ Their streams stop immediately. To stop them starting new ones, change what they
 
 ## GDPR and Privacy
 
-**Is MediaShield GDPR compliant?**
+**Does MediaShield work with GDPR requests?**
 
-Yes. MediaShield registers with WordPress's built-in privacy tools. Personal Data Export returns all watch sessions, milestones, and earned milestone tags for a user. Personal Data Erasure anonymizes IP addresses and user agents in watch sessions (the sessions themselves are kept for aggregate analytics), and deletes milestone records and the user's earned-tag data.
+It supports them. MediaShield registers with WordPress's built-in privacy tools. Personal Data Export returns all watch sessions, milestones, and earned milestone tags for a user. Personal Data Erasure anonymizes IP addresses and user agents in watch sessions (the sessions themselves are kept for aggregate analytics), and deletes milestone records and the user's earned-tag data.
 
 **What data does MediaShield collect?**
 
@@ -113,10 +113,11 @@ In the free plugin you can adjust opacity, color, and swap interval, but the wat
 
 Settings > Watermark > Show MediaShield Badge. Toggle it off. Works in both free and Pro.
 
-**Is the Pro DRM feature ready to use?**
+**Does MediaShield encrypt my videos?**
 
-Treat it as a preview. Before 1.3.0 it could not be enabled at all, because nothing in the admin could store the DRM protection level. It is selectable now, but playback has not been verified end to end, so do not build a launch around it.
+No. Encryption is done by the video host, for example Bunny Stream. MediaShield does not encrypt or package anything. MediaShield Pro can play a host-encrypted Bunny stream through its encrypted player, and that part is experimental. Do not build a launch around it. The Pro documentation explains the encrypted player in detail.
 
 **What is the refund policy?**
 
-14-day money-back guarantee on MediaShield Pro. Email `support@wbcomdesigns.com` with your license key for a refund within 48 hours. The free plugin is GPL-licensed.
+The refund terms are published with the Pro product on wbcomdesigns.com. Email `support@wbcomdesigns.com` with your order details if you need help. The free plugin is GPL-licensed.
+

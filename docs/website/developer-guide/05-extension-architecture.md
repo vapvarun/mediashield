@@ -1,5 +1,7 @@
 # Extension Architecture
 
+**Free + Pro** - The seams below are in the free plugin. Sections marked Pro describe code in MediaShield Pro.
+
 How to build add-ons and integrations on top of MediaShield.
 
 ## Free / Pro contract
@@ -11,12 +13,15 @@ The same contract applies to third-party add-ons. Build against the hooks - not 
 ## Boot order
 
 ```
-plugins_loaded
+plugins_loaded (priority 10)
   - free: Migrator::run() -> Plugin::instance() -> ... -> do_action('mediashield_loaded')
-                                                             - Pro or add-on: initialize here
+plugins_loaded (priority 20)
+  - Pro and add-ons: initialize here
+plugins_loaded (priority 30)
+  - Pro: LMSManager::detect_lms()
 ```
 
-`Migrator::run()` goes first so that schema changes and newly declared option defaults are in place before anything reads them. `mediashield_loaded` fires at the end of the free plugin's own hook registration, which is why Pro and add-ons should use it rather than `plugins_loaded` directly.
+`Migrator::run()` goes first so that schema changes and newly declared option defaults are in place before anything reads them. `mediashield_loaded` fires at the end of the free plugin's own hook registration, inside the priority-10 callback. Pro does not listen to it: it boots on `plugins_loaded` at priority 20, which is the pattern to copy. An add-on that adds its `mediashield_loaded` callback after Free has booted has missed it, so use priority 20 or test `did_action( 'mediashield_loaded' )`.
 
 ## The access decision
 
@@ -45,6 +50,8 @@ Return shape: `array{ allowed: bool, reason: string }`. Custom callbacks must re
 
 ## LMS adapters (Pro, since 1.1.0)
 
+**PRO** - requires MediaShield Pro. The adapter registry and `MediaShieldPro\LMS\LMSAdapterInterface` live in Pro.
+
 Pro auto-detects LearnDash, Tutor LMS, and LifterLMS. Anything else registers through the `mediashield_lms_adapters` filter.
 
 The filter passes a map of **slug => adapter instance**, not class names, and each instance must implement `MediaShieldPro\LMS\LMSAdapterInterface`. Entries that fail the type check are dropped with a `_doing_it_wrong()` notice so the mistake is visible during development.
@@ -56,7 +63,7 @@ add_filter( 'mediashield_lms_adapters', function( $adapters ) {
 } );
 ```
 
-The interface requires `register()`, `get_name()`, and the rest of the contract in `includes/LMS/LMSAdapterInterface.php`.
+The interface requires `register()`, `get_name()`, and the rest of the contract in Pro's `includes/LMS/LMSAdapterInterface.php`. Adapters are registered on `plugins_loaded` at priority 30, so add your filter before then.
 
 There is also a `mediashield_lms_adapters_loaded` action, which fires after adapters are wired up. It is read-only - an action cannot change the array - so use the filter to register anything new.
 
@@ -155,6 +162,8 @@ interface DriverInterface {
 
 `upload()` is expected to create the `mediashield_video` post and return its ID, or to fill in the post passed as `$options['attach_to']`. `delete()` is called by the cascade **only for self-hosted media** - a file this plugin put in the site's own uploads folder. A driver for a remote platform should implement it as a refusal that returns `false`: MediaShield deliberately never deletes media from a hosting platform, so removing a video here leaves the master in place and it can be linked back by importing it again. These services have no trash and no undo, and the master is usually something the owner pays to store and may use elsewhere.
 
+Which driver runs when the request does not name one comes from the `ms_default_upload_target` option: `self` means `self_hosted`, a driver name means that driver, and `auto` asks the `mediashield_default_upload_driver` filter (default `self_hosted`). An unregistered name falls back to `self_hosted`.
+
 The `mediashield_upload_started`, `mediashield_upload_complete`, and `mediashield_upload_failed` actions fire around the driver's `upload()` call regardless of which driver is active.
 
 ## Player type extension
@@ -172,9 +181,23 @@ add_filter( 'mediashield_player_type', function( $type, $video_id ) {
 
 The value is emitted as `data-player-type` on the player container for client-side code to act on. Free itself renders `standard` for every video and does not ship a DRM player; what it does load, on self-hosted and Bunny sources, is the bundled HLS library, triggered by the `mediashield_needs_shaka` action. The name is historical - free does not use Shaka Player.
 
-Pro registers its own `drm-player.js` whenever its DRM method setting is anything other than `none`, and enqueues it alongside the free player assets. It is not keyed on the player type.
+**PRO** - Pro registers its own `drm-player.js` whenever its DRM method setting is anything other than `none`, and enqueues it alongside the free player assets. It is not keyed on the player type.
 
 To make a new protection level selectable in the admin at all, pair this with the `mediashield_protection_levels` filter - the level list on the video edit screen was a closed array before 1.3.0, which is why Pro's DRM level could never be stored.
+
+## Learnomy integration
+
+*Since 1.3.0.* Free filters Learnomy's `learnomy_rest_lesson_payload`. For a lesson whose `content_type` is `mediashield` and whose `video_url` holds a MediaShield video ID, and for a logged-in requester, it adds a `mediashield` block to the payload so an app that cannot run the shortcode can still play the video:
+
+```json
+{ "mediashield": { "video_id": 291, "embed_url": "https://example.com/?mediashield_embed=...", "expires_in": 900, "poster_url": "https://..." } }
+```
+
+The block is omitted when the video does not exist, is not published, or the requester is a guest. `embed_url` is a signed embed link (next section), so the same 15 minute lifetime and access re-check apply. Nothing runs when Learnomy is not active.
+
+## In-video ads (WB Ad Manager)
+
+`Integrations\AdManagerBridge` fills `mediashield_video_ad_breaks` from WB Ad Manager video creatives. To feed breaks from another source, return the break list from that filter yourself; to change what the bridge plans, use `mediashield_video_ads` (creative pool) and `mediashield_ad_break_plan` (`pre`, `mid_count`, `post`). Without a source that returns breaks, `ad-breaks.js` is never enqueued.
 
 ## Signed embed links
 

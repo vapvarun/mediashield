@@ -32,7 +32,7 @@ Renders a protected playlist player: the current video, plus a sidebar list of t
 |-----------|----------|-------------|
 | `id` | Yes | The ID number of the playlist from your MediaShield library |
 
-Access control, session tracking, milestones, and the watermark all apply per video as the queue advances, using each video's own protection level. One exception: "Hide Video Source URL" is not applied to the playlist markup, so a self-hosted video's file address is visible in the page source of a playlist even when it would be hidden on a single-video embed. If that matters for a particular video, embed it on its own with `[mediashield id=X]`.
+Access control, session tracking, milestones, the watermark and "Hide Video Source URL" all apply per video as the queue advances, using each video's own protection level.
 
 ### [mediashield_my_videos] - User's watched videos
 
@@ -72,7 +72,7 @@ The shortcode is still registered so it does not print as literal text on pages 
 
 ## Using shortcodes in page builders
 
-MediaShield works with Elementor, Beaver Builder, Divi, WPBakery, and any builder that supports shortcodes or raw HTML widgets. Place `[mediashield id=X]` in a text or shortcode widget.
+MediaShield has no Elementor or Divi widget of its own. It works inside any builder that supports shortcodes or a raw HTML widget. Place `[mediashield id=X]` in a text or shortcode widget.
 
 For builders that render video via JavaScript after the page loads (which can run after MediaShield's output buffer has already finished), use the block or shortcode rather than pasting a raw video URL. That guarantees the protection wrapper is applied.
 

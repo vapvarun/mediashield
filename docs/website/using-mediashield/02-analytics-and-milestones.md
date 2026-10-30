@@ -4,9 +4,6 @@ Analytics only exist for videos at **Standard** or **Strict** protection level. 
 
 ## The Dashboard
 
-![MediaShield admin dashboard showing videos, sessions, average completion, an activity bar chart, Top Videos list, and Recent Milestones panel](../images/mediashield-dashboard.png)
-*The MediaShield Dashboard. The daily activity chart, Top Videos, and Recent Milestones all follow the selected date range.*
-
 Go to **MediaShield > Dashboard** to see your analytics overview.
 
 The date range selector at the top offers Today, Last 7 days (the default), Last 30 days, and Last 90 days. "Today" means the last 24 hours. Daily bars in the chart are grouped by your WordPress site timezone, so late-evening sessions land on the right calendar day.
@@ -32,9 +29,6 @@ The most recent milestones reached across all videos, within the same date range
 
 ## Per-viewer analytics
 
-![MediaShield Viewers page listing students with completion progress bars and last-active timestamps](../images/mediashield-viewers.png)
-*The Viewers page. Each row shows a viewer's average completion and last active time. Click a row for their watch history.*
-
 Go to **MediaShield > Viewers** to see per-user watch activity. (This section was called Students in earlier versions; old links still resolve.)
 
 The list shows every user who has watched at least one video, with videos watched, average completion, and last active time, and a search box for name or email.
@@ -44,9 +38,6 @@ Click a viewer to see their watch history: every video they have started, their 
 This is the page to open when a learner says their progress did not register. If their video is set to Basic or None, nothing was ever recorded, and that is the answer.
 
 ## Milestones
-
-![MediaShield Milestones admin page showing recent milestone achievements per viewer and video](../images/mediashield-milestones.png)
-*The Milestones page. A paginated log of who reached which threshold, and when.*
 
 **MediaShield > Milestones** is a log, not a settings screen. It lists each milestone that has been reached - viewer, video, percentage, and how long ago - newest first, 20 per page.
 

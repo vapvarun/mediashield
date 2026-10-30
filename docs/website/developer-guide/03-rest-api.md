@@ -1,5 +1,7 @@
 # REST API Reference
 
+**Included in Free** - 25 routes in `mediashield/v1`, plus the core `wp/v2` routes for the two post types. Pro's own namespace, `mediashield-pro/v1`, is documented in the Pro developer guide.
+
 ## Free plugin - `mediashield/v1`
 
 Base URL: `/wp-json/mediashield/v1/`
@@ -39,7 +41,7 @@ PUT behavior: known keys are type-cast to their schema type, then run through th
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
 | POST | `/session/start` | logged in, or anonymous when allowed | Start a watch session. Body: `{ video_id }`. Returns the session token, resume position, watermark config, and video details. |
-| POST | `/session/heartbeat` | logged in, or a valid session token | Update progress. Body: `{ token, position, duration?, playing?, focused? }`. |
+| POST | `/session/heartbeat` | logged in, or a valid session token | Update progress. Body: `{ token, position, duration, playing?, focused? }`. `token`, `position` and `duration` are required; `playing` and `focused` default to true. |
 | POST | `/session/end` | logged in, or a valid session token | End session and finalize stats. Body: `{ token }`. |
 | POST | `/session/revoke-user` | manage_options | End all active sessions for a user. Body: `{ user_id }`. |
 
@@ -49,7 +51,7 @@ Heartbeat and end accept a signed token instead of a login, because a guest who 
 
 The parameter is named `token`, not `session_token`. Heartbeat interval is 30 seconds. A session with no heartbeat for 5 minutes stops counting toward the concurrent-stream limit, and an hourly job marks sessions inactive after 10 minutes.
 
-Starting a session beyond the concurrent limit returns HTTP 429 with code `concurrent_limit`.
+Starting a session beyond the concurrent limit returns HTTP 429 with code `concurrent_limit`. Heartbeats are also rate limited: more than 4 requests in 60 seconds from one session returns 429 `rate_limited`.
 
 ---
 
@@ -60,7 +62,7 @@ Starting a session beyond the concurrent limit returns HTTP 429 with code `concu
 | GET | `/stream/{video_id}` | `mediashield_can_watch` for the resolved viewer | Streams a self-hosted video file with range support. |
 | GET | `/stream/{video_id}/url` | `mediashield_can_watch` for the logged-in viewer | Returns `{ "url": ... }`, a freshly signed stream URL. The player asks for it once when the URL printed in the page has expired (cached page, long-open tab, changed salts) and resumes from where it stopped. |
 
-This endpoint serves the file itself; it does not redirect to one. It runs the same access check as the player on every request, including every range request, so access revoked mid-playback is refused on the next seek.
+This endpoint serves the file itself; it does not redirect to one. It runs the same access check as the player on every request, including every range request, so access revoked mid-playback is refused on the next seek. Files inside `uploads/mediashield/` are served only to the video recorded as their owner (`_ms_owned_file`), so one video's URL cannot be pointed at another video's file.
 
 A `<video>` element cannot send an `X-WP-Nonce` header, so the player appends a signed `ms_token` query parameter naming the viewer the URL was minted for. The token is identity, not authorisation - the access check still runs for that viewer. Stream tokens are valid for 6 hours.
 
@@ -70,9 +72,9 @@ A `<video>` element cannot send an `X-WP-Nonce` header, so the player appends a 
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/playlists/{playlist_id}/player/{video_id}` | public | The protected player markup (`html`) for one published video in a published playlist. Used by the playlist page when the viewer moves to another video. 404 if the video is not in that playlist. Who may watch is still decided by `/session/start` and `/stream`. |
+| GET | `/playlists/{playlist_id}/player/{video_id}` | public | The protected player markup (`html`) for one video in a playlist. Used by the playlist page when the viewer moves to another video. 404 unless the video is in that playlist, both are published, and the playlist is not password protected. Who may watch is still decided by `/session/start` and `/stream`. |
 | GET | `/playlists/{playlist_id}/items` | logged in | List items in a playlist in sort order. |
-| POST | `/playlists/{playlist_id}/items` | edit_posts | Add a video to a playlist. Body: `{ video_id }`. |
+| POST | `/playlists/{playlist_id}/items` | edit_posts | Add a video to a playlist. Body: `{ video_id, sort_order? }`. |
 | DELETE | `/playlists/{playlist_id}/items/{item_id}` | edit_posts | Remove a video from a playlist. |
 | PUT | `/playlists/{playlist_id}/items/reorder` | edit_posts | Reorder items. Body: `{ order: [ { item_id, sort_order }, ... ] }`. |
 
@@ -118,9 +120,9 @@ The `upload_mediashield` capability is separate from `manage_options` so instruc
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| POST | `/protection/devtools-event` | valid `wp_rest` nonce (guests allowed) | Beacon endpoint for client-side devtools detection. Args: `strategy`, `url`, `ua`, `screen`. Writes to the error log and fires `mediashield_devtools_detected`. |
+| POST | `/protection/devtools-event` | valid `wp_rest` nonce (guests allowed) | Beacon endpoint for client-side devtools detection. Args: `strategy`, `url`, `ua`, `screen`. Responds `{ recorded: true }` and fires `mediashield_devtools_detected`; free does not log it or store it. `strategy` is required and must be `size_delta` or `debugger_timing`. |
 
-Rate limited to one recorded event per user per hour per IP.
+Rate limited to one recorded event per user and IP per hour. A limited request still returns 200 with `{ recorded: false, reason: "rate_limited" }`.
 
 ---
 

@@ -18,11 +18,13 @@ The Player Controls section of **MediaShield > Settings** tunes how the video pl
 
 **End Screen Button URL** - The destination for the call-to-action button. Leave blank to disable the button.
 
-**Brand Color** - The accent colour of the player's controls, watermark text and badge. Leave it unset to follow your theme's colour. A live preview next to the field shows the result before you save.
+**Prevent Skipping Ahead** - Stops viewers seeking past the furthest point they have already watched, including with the keyboard. Rewinding is still allowed. Off by default. Use it for compliance and certified training. It also has a per-video On/Off override.
+
+**Brand Color** - The accent colour used for the player's buttons, focus outlines and the current playlist item. Leave it unset to follow your theme's colour. A live preview next to the field shows the result before you save.
 
 ## Per-video overrides
 
-Speed Control, Keyboard Shortcuts, Resume Playback, Sticky Player, and End Screen each have a Default / On / Off selector on every video, under Player Options in the sidebar of the video edit screen. The per-video value wins over the global default. This lets you keep speed control off site-wide and enable it for one specific course, for example. End screen text and URL can be overridden there too.
+Speed Control, Keyboard Shortcuts, Resume Playback, Sticky Player, End Screen and Prevent Skipping Ahead each have a Default / On / Off selector on every video, under Player Options in the sidebar of the video edit screen. The per-video value wins over the global default. This lets you keep speed control off site-wide and enable it for one specific course, for example. End screen text and URL can be overridden there too.
 
 Four more options exist only per video, with no global equivalent: **Autoplay**, **Loop**, **Start muted**, and **Show player controls**. Like speed control, they apply to self-hosted and Bunny videos; platform embeds use their own controls.
 
@@ -38,7 +40,4 @@ Four more options exist only per video, with no global equivalent: **Autoplay**,
 | End Screen Message | Empty | Global fallback |
 | End Screen Button URL | Empty | Global fallback |
 | Brand Color | Unset | Follows the theme when unset |
-
-## Not in the settings UI
-
-**Prevent Skipping Ahead** stops viewers seeking past the furthest point they have already watched, including via the keyboard skip-forward shortcut. Rewinding is still allowed. It is used for watch-enforcement and compliance training. Added to the Settings screen in 1.3.0 - the feature was already built and shipped before that with no way to switch it on.
+| Prevent Skipping Ahead | Off | Blocks seeking past the furthest point watched; rewinding stays allowed |

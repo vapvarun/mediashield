@@ -4,9 +4,6 @@ After completing the setup wizard, you're ready to register and embed your first
 
 ## Step 1 - Create a video in the library
 
-![MediaShield Videos admin list showing videos across YouTube, Vimeo, and self-hosted with Standard and Strict protection badges](../images/mediashield-videos-list.png)
-*The Videos list in the MediaShield admin. Each row shows the platform, protection level badge, and date added.*
-
 Go to **MediaShield > Videos** and click **Add New Video**. That opens the standard WordPress edit screen for a MediaShield video.
 
 Fill in the fields:

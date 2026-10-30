@@ -50,7 +50,7 @@ Each video in the queue is treated on its own terms:
 - Milestones are tracked per video
 - Access is checked per video: a video the viewer may not watch is refused when it comes up, and the rest of the playlist still works
 
-One gap to be aware of: "Hide Video Source URL" is **not** applied to playlist markup. A self-hosted video's file address appears in the page source of a playlist even when the setting is on. If a particular video needs that protection, embed it on its own with `[mediashield id=X]`.
+"Hide Video Source URL" applies to playlists as well, because each video in the queue is drawn by the same player code as a single embed.
 
 ## Playlist thumbnails
 

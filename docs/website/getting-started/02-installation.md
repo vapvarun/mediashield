@@ -6,20 +6,18 @@
 - PHP 8.1 or higher
 - A modern browser for the admin (Chrome, Firefox, Safari, Edge)
 
-## Install from WordPress.org
+## Before you start
 
-1. Go to **Plugins > Add New** in your WordPress admin.
-2. Search for "MediaShield".
-3. Click **Install Now**, then **Activate**.
+- You need administrator access to the site.
+- Download the `mediashield` ZIP from the MediaShield download page on wbcomdesigns.com (the free plugin is not listed in the WordPress.org directory).
 
-That's it. After activation, MediaShield redirects you to the setup wizard.
+## Install the plugin
 
-## Manual upload
+1. Go to **Plugins > Add New > Upload Plugin**.
+2. Choose the ZIP file and click **Install Now**.
+3. Click **Activate Plugin**.
 
-1. Download the `mediashield` ZIP from WordPress.org or your account.
-2. Go to **Plugins > Add New > Upload Plugin**.
-3. Choose the ZIP file and click **Install Now**.
-4. Click **Activate Plugin**.
+After activation, MediaShield redirects you to the setup wizard.
 
 Alternatively, unzip the file and upload the `mediashield` folder to `/wp-content/plugins/` via FTP, then activate from **Plugins**.
 
@@ -66,4 +64,4 @@ Upgrading to 1.3.0 also queues a one-off background job that moves previously ar
 ## Uninstalling
 
 - **Deactivating** the plugin unschedules its background jobs but preserves all data, settings, videos, and playlists.
-- **Deleting** the plugin (Plugins > Delete) is destructive. It drops all 6 tables, **permanently deletes every MediaShield video and playlist post**, removes the `upload_mediashield` capability from all roles, and clears MediaShield's options and transients. Options and transients are left in place when MediaShield Pro is still active, so Pro keeps working; the tables and posts are removed either way. Export anything you want to keep before deleting.
+- **Deleting** the plugin (Plugins > Delete) is destructive. It drops all 6 tables, **permanently deletes every MediaShield video and playlist post and the uploaded video files**, removes the `upload_mediashield` capability from all roles, and clears MediaShield's options. If MediaShield Pro is still active, tables, posts, files and options are kept so Pro keeps working, and only the capability is removed. Export anything you want to keep before deleting. More in [Privacy, Retention and Uninstall](../using-mediashield/17-privacy-retention-and-uninstall.md).

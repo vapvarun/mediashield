@@ -38,7 +38,7 @@
     {
       "name": "Configuration",
       "folder": "configuration",
-      "description": "Every setting, from protection and player options to access control, shortcodes and blocks.",
+      "description": "Every setting with its default, the video edit screen, access control, player options, shortcodes and blocks.",
       "pages": [
         {
           "slug": "01-settings-overview",
@@ -59,33 +59,77 @@
         {
           "slug": "05-shortcodes-and-blocks",
           "title": "Shortcodes and Blocks"
+        },
+        {
+          "slug": "06-video-edit-screen",
+          "title": "The Video Edit Screen"
+        },
+        {
+          "slug": "07-admin-screens",
+          "title": "Every Admin Screen"
         }
       ]
     },
     {
       "name": "Using MediaShield",
       "folder": "using-mediashield",
-      "description": "Watermarks, analytics, playlists, troubleshooting and common questions.",
+      "description": "Task guides: protect a video, control access, host and upload video, customise the player, run playlists and ads, read analytics, privacy.",
       "pages": [
+        {
+          "slug": "07-protect-a-paid-video",
+          "title": "Protect a Paid Video"
+        },
+        {
+          "slug": "08-restrict-who-can-watch",
+          "title": "Restrict Who Can Watch"
+        },
+        {
+          "slug": "09-limit-streams-and-stop-sharing",
+          "title": "Limit Streams and Stop Sharing"
+        },
         {
           "slug": "01-watermarks",
           "title": "Watermarks"
         },
         {
-          "slug": "02-analytics-and-milestones",
-          "title": "Analytics and Milestones"
+          "slug": "10-video-hosts",
+          "title": "Video Hosts"
+        },
+        {
+          "slug": "11-upload-a-video-file",
+          "title": "Upload a Video File"
+        },
+        {
+          "slug": "12-customise-the-player",
+          "title": "Customise the Player"
         },
         {
           "slug": "03-playlists",
           "title": "Playlists"
         },
         {
-          "slug": "04-troubleshooting",
-          "title": "Troubleshooting"
+          "slug": "13-video-ads",
+          "title": "Video Ads"
         },
         {
-          "slug": "05-faq",
-          "title": "Frequently Asked Questions"
+          "slug": "15-courses-with-learnomy",
+          "title": "Courses with Learnomy"
+        },
+        {
+          "slug": "02-analytics-and-milestones",
+          "title": "Analytics and Milestones"
+        },
+        {
+          "slug": "14-viewers-tags-and-my-videos",
+          "title": "Viewers, Tags and My Videos"
+        },
+        {
+          "slug": "16-roles-and-permissions",
+          "title": "Roles and Permissions"
+        },
+        {
+          "slug": "17-privacy-retention-and-uninstall",
+          "title": "Privacy, Retention and Uninstall"
         },
         {
           "slug": "06-whats-new-in-1-4-0",
@@ -96,7 +140,7 @@
     {
       "name": "Developer Guide",
       "folder": "developer-guide",
-      "description": "Hooks, filters, the REST API, database tables and how to extend MediaShield.",
+      "description": "Hooks, REST routes, database tables, post meta and options, background jobs, WP-CLI and extension points, checked against the code.",
       "pages": [
         {
           "slug": "01-overview",
@@ -117,6 +161,44 @@
         {
           "slug": "05-extension-architecture",
           "title": "Extension Architecture"
+        },
+        {
+          "slug": "06-post-meta-and-options",
+          "title": "Post Meta and Options Reference"
+        },
+        {
+          "slug": "07-background-jobs-and-wp-cli",
+          "title": "Background Jobs and WP-CLI"
+        },
+        {
+          "slug": "08-javascript-events-and-config",
+          "title": "JavaScript Events and Player Config"
+        }
+      ]
+    },
+    {
+      "name": "FAQ",
+      "folder": "faq",
+      "description": "Short answers to the questions asked most often.",
+      "pages": [
+        {
+          "slug": "01-faq",
+          "title": "Frequently Asked Questions"
+        }
+      ]
+    },
+    {
+      "name": "Troubleshooting",
+      "folder": "troubleshooting",
+      "description": "Fix playback, access, tracking and upload problems, and look up error messages.",
+      "pages": [
+        {
+          "slug": "01-common-problems",
+          "title": "Common Problems"
+        },
+        {
+          "slug": "02-error-messages",
+          "title": "Error Messages"
         }
       ]
     }
