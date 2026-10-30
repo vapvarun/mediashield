@@ -70,7 +70,7 @@ Displays the current logged-in user's watched video history with completion prog
 
 ## A retired Pro shortcode
 
-MediaShield Pro used to register a fourth shortcode, `[mediashield_upload]`, for a member-facing upload form. It never worked in any released version - the form rendered, but submitting it could not reach the upload endpoint - and it was retired in 1.3.0.
+MediaShield Pro has a retired shortcode, `[mediashield_upload]`,.
 
 The shortcode is still registered so it does not print as literal text on pages that still contain it. It now shows visitors nothing, and shows editors a note explaining the retirement. Remove it from your content when convenient. Uploading is done from **Videos > Add New** in the admin.
 
@@ -89,7 +89,7 @@ Besides shortcodes and blocks, MediaShield scans page output for video embeds: `
 Two rules govern what it does with them:
 
 - **Only videos in your MediaShield library are wrapped.** An embed MediaShield does not recognise is left exactly as your theme or another plugin emitted it. Wrapping a video you do not own would burn a viewer's watermark onto somebody else's embed.
-- **Auto-wrapped players use the video's own protection level**, falling back to the site-wide default when it has none - the same answer the shortcode and block give. Before 1.3.0 this path ignored the per-video setting, so the same video could be protected differently depending on how it reached the page.
+- **Auto-wrapped players use the video's own protection level**, falling back to the site-wide default when it has none - the same answer the shortcode and block give.
 - **The scan only runs on pages whose content contains an embed.** MediaShield checks the page's own content first and skips the scan entirely when there is nothing to find, which keeps it off pages with no video. The trade-off is that a video printed by your theme or page builder, rather than saved in the page content, is not detected - use the block or shortcode for those, or have a developer switch the `mediashield_force_output_buffer` filter on.
 
 To exclude a specific embed from the scan, add `data-ms-skip` or the class `ms-skip` to it.
@@ -102,6 +102,6 @@ MediaShield's CSS and JavaScript are registered on every frontend page but only 
 2. A MediaShield block renders output
 3. The page's content contains a video embed, which is what starts the output-buffer scan
 
-Point 3 changed in 1.3.0. The decision used to be made during the scan itself, which runs after the page's scripts have already been written out - so the assets never actually loaded and an auto-detected embed was replaced with a player that had no player behind it. Deciding before the page is built means MediaShield only ever replaces an embed on a page where it can also load the code to play it.
+Deciding before the page is built means MediaShield only ever replaces an embed on a page where it can also load the code to play it.
 
 Note the third case is deliberately broad: the scan enqueues on any page carrying a video or iframe element, including iframes that have nothing to do with MediaShield. Pages with no video and no iframe at all load nothing. Developers who want tighter control can use the `mediashield_enable_output_buffer` and `mediashield_enqueue_frontend` filters.

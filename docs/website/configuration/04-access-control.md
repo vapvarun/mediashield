@@ -12,7 +12,7 @@ MediaShield decides who can watch a video with a single check that runs when a w
 
 **Require Login** (Settings > General) is on by default. While it is on, visitors who are not logged in see a login overlay instead of the player.
 
-Turn it off and guests can watch: the player asks the server, the server allows it, and the watch session is recorded like any other. Before 1.3.0 this setting did nothing when off - the player refused guests locally before the server was ever consulted - so if you tried it in an earlier version and nothing changed, that was the bug, not your configuration.
+Turn it off and guests can watch: the player asks the server, the server allows it, and the watch session is recorded like any other.
 
 Customise the overlay under Settings > Login & Access Messages:
 

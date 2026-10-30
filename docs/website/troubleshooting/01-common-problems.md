@@ -101,7 +101,7 @@ Stat cards all read 0. Chart is empty.
 
 2. **Date range filter.** Check the period selector at the top of the dashboard. Make sure your test activity falls within the selected range. Total Videos and Active Viewers ignore the range; everything else follows it.
 
-3. **Older history looks missing.** Versions before 1.3.0 archived sessions older than 24 months into a table no report reads. Updating to 1.3.0 queues a background job that moves those rows back; give it a few minutes on a large site. Archiving is now off unless you set a retention window under Settings > Analytics Retention.
+3. **Older history looks missing.** If you set a retention window under Settings > Analytics Retention, sessions older than that window are archived and reports no longer include them.
 
 ## "Log in to watch" overlay on public pages
 
@@ -129,10 +129,6 @@ Visitors see the login gate even on pages you intended to be public.
    Playback is unaffected: the player streams through MediaShield, never that address.
 
 4. **CDN caching the stream endpoint.** The self-hosted stream endpoint should not be cached. If you use Cloudflare or another CDN, add a bypass rule for your stream URL.
-
-## A video title in My Videos opens a "not found" page
-
-Video entries are private library records, not public pages. The My Videos block and shortcode link each title to the video's own address, which has no public page, so that link shows your theme's not-found page. The progress bar and percentage are correct. Show the video where you want it with `[mediashield id=X]` or the MediaShield Video block instead of relying on that link.
 
 ## Embeds are refused on a partner site
 

@@ -81,15 +81,13 @@ Setting names such as `ms_watermark_opacity` are listed for developers in the [S
 - Standard - Login gate, watermark, tracking and milestones.
 - Strict - Standard, plus developer-tools detection, pause on detection and source hiding forced on.
 
-**Require Login** is on by default. Per-video roles, the domain list and any custom rules still apply when it is off. Before 1.3.0 switching it off did nothing, so if you tried it on an old version, try again.
+**Require Login** is on by default. Per-video roles, the domain list and any custom rules still apply when it is off.
 
 ## Analytics Retention
 
 **Keep watch history for (months)** defaults to 0, which keeps every session forever. That is the recommended value.
 
 If you enter a number, every month MediaShield moves older sessions into an archive table. Reports do not read that archive, so views, completion rates and top videos stop including anything older. This cannot be undone from the screen. The privacy export and erase tools do read the archive. The screen shows a warning while the value is above 0.
-
-If you upgraded from a version before 1.3.0, sessions that older versions archived automatically are moved back into the live table by a one-off background job.
 
 ## Login and Access Messages
 

@@ -183,7 +183,7 @@ The value is emitted as `data-player-type` on the player container for client-si
 
 **PRO** - Pro registers its own `drm-player.js` whenever its DRM method setting is anything other than `none`, and enqueues it alongside the free player assets. It is not keyed on the player type.
 
-To make a new protection level selectable in the admin at all, pair this with the `mediashield_protection_levels` filter - the level list on the video edit screen was a closed array before 1.3.0, which is why Pro's DRM level could never be stored.
+To make a new protection level selectable in the admin at all, pair this with the `mediashield_protection_levels` filter so the level appears in the level list on the video edit screen.
 
 ## Learnomy integration
 
