@@ -45,7 +45,7 @@ A row for each of 10%, 25%, 50%, 75% and 100%. Type a tag name and tick **Active
 
 ## Player Options
 
-These apply to self-hosted and Bunny videos. YouTube, Vimeo and Wistia use their own controls.
+These apply to self-hosted videos and to Bunny videos played through Pro direct playback. YouTube, Vimeo, Wistia and Bunny's own embedded player use their own controls.
 
 | Option | Default | What it does |
 |--------|---------|--------------|

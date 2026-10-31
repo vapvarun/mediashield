@@ -25,7 +25,7 @@ Saved from the video edit screen. Not registered for REST.
 
 | Meta key | Values | Purpose |
 |----------|--------|---------|
-| `_ms_autoplay`, `_ms_loop`, `_ms_muted`, `_ms_show_controls` | `1` or `0` | Per-video player options (self-hosted and Bunny only). |
+| `_ms_autoplay`, `_ms_loop`, `_ms_muted`, `_ms_show_controls` | `1` or `0` | Per-video player options (self-hosted, and Bunny with Pro direct playback). |
 | `_ms_player_speed`, `_ms_player_keyboard`, `_ms_player_resume`, `_ms_player_sticky`, `_ms_player_endscreen`, `_ms_player_prevent_forward_seek` | `on`, `off`, or absent | Per-video override of the matching site setting. Absent follows the site. The list is filterable with `mediashield_player_overrides`. |
 | `_ms_player_endscreen_text`, `_ms_player_endscreen_url` | string | Per-video end screen message and link. |
 | `_ms_library_id` | string | Bunny library ID, read from the pasted URL. |
@@ -70,7 +70,7 @@ Registered with `show_in_rest`; edited through `/wp/v2/mediashield-playlists/{id
 | `ms_login_overlay_text` | string | `Please log in to watch this video` | Translated while it is still the default. |
 | `ms_login_button_text` | string | `Log In` | Same. |
 | `ms_access_denied_text` | string | `You do not have access to this video` | Same. |
-| `ms_player_speed_control` | boolean | `true` | Speed menu on self-hosted and Bunny. |
+| `ms_player_speed_control` | boolean | `true` | Speed menu on self-hosted, and on Bunny with Pro direct playback. |
 | `ms_player_prevent_forward_seek` | boolean | `false` | Blocks seeking past the furthest point watched. |
 | `ms_player_sticky` | boolean | `false` | Floating player on scroll. |
 | `ms_player_keyboard` | boolean | `true` | Keyboard shortcuts. |
