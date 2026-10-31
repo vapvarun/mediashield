@@ -25,7 +25,7 @@ Fill in the fields:
 
 **Restrict to Role** (optional) - Restrict playback to one WordPress role. The match is exact: a video restricted to `subscriber` is not watchable by an `author`. Administrators always pass. Leave it on "Any logged-in user" to allow every signed-in viewer.
 
-**Player Options** (sidebar) - Autoplay, Loop, Start muted, and Show player controls. These apply to self-hosted and Bunny videos; YouTube, Vimeo, and Wistia use their own player controls.
+**Player Options** (sidebar) - Autoplay, Loop, Start muted, and Show player controls. These apply to self-hosted videos and to Bunny videos played through Pro direct playback; YouTube, Vimeo, Wistia and Bunny's own embedded player use their own controls.
 
 **Feature Overrides** (sidebar) - Set Speed Control, Keyboard Shortcuts, Resume Playback, Sticky Player, and End Screen to On or Off for this video, or leave them on "Default (global)". End screen text and URL can also be set per video.
 

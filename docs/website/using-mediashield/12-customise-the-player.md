@@ -10,7 +10,7 @@ The player matches how your viewers learn: resume where they left off, a speed s
 
 ## Before you start
 
-- Several controls apply only to self-hosted and Bunny videos. YouTube, Vimeo and Wistia use their own player controls.
+- Several controls apply only to self-hosted videos and to Bunny videos played through Pro direct playback. YouTube, Vimeo, Wistia and Bunny's own embedded player use their own controls.
 - Settings take effect when the page is built, so clear any page cache after changing them.
 
 ## Change the site-wide behaviour
