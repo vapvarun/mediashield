@@ -173,13 +173,15 @@ class PlaylistPostType {
 	 * The same player and video list as the [mediashield_playlist] shortcode
 	 * and block. The items live in the playlist table, not in post_content, so
 	 * without this the page printed only the title. Access is decided where it
-	 * always is: the player asks /session/start, which runs can_watch().
+	 * always is: the player asks /session/start, which runs can_watch(). A
+	 * password-protected playlist shows only WordPress's password form until
+	 * the visitor enters it.
 	 *
 	 * @param string $content Post content.
 	 * @return string Content followed by the playlist, or unchanged elsewhere.
 	 */
 	public static function render_single( $content ) {
-		if ( ! is_singular( 'mediashield_playlist' ) || ! in_the_loop() || ! is_main_query() ) {
+		if ( ! is_singular( 'mediashield_playlist' ) || ! in_the_loop() || ! is_main_query() || post_password_required() ) {
 			return $content;
 		}
 
