@@ -51,19 +51,18 @@ If those are critical, keep Presto for specific videos and run them without Medi
 
 **What changes:**
 
-* VdoCipher's Widevine L1 hardware DRM (hardware-backed encryption that prevents screen capture on supported devices) is replaced by MediaShield Pro's ClearKey DRM (software-based). This is a downgrade in cryptographic strength. It's usually a 90 percent cost reduction ($350+ per year down to $99 per year).
-* If your threat model strictly requires Widevine L1, do not migrate. Use VdoCipher or Bunny Stream MediaCage Enterprise instead.
+* VdoCipher's Widevine L1 hardware DRM (hardware-backed encryption that prevents screen capture on supported devices) has no MediaShield equivalent. MediaShield does not encrypt video. It controls who can start playback and traces leaks with the watermark.
+* If your threat model strictly requires Widevine L1, do not migrate. Use VdoCipher or Bunny Stream MediaCage Enterprise instead, or host on Bunny Stream and use its own DRM with MediaShield on top.
 * VdoCipher's player is replaced by MediaShield's player wrapper.
 
 **Migration steps:**
 
-1. Be honest about your DRM need. Read `docs/pro/drm-types-explained.md`. If ClearKey is enough for your threat model, continue. If not, stay with VdoCipher.
-2. Export your videos from VdoCipher. If your plan allows, download originals from the VdoCipher dashboard. Alternative: move the video files to Bunny Stream, which is cheaper and works with MediaShield Pro DRM.
+1. Be honest about your DRM need. If a watermark plus access control is enough for your threat model, continue. If not, stay with VdoCipher.
+2. Export your videos from VdoCipher. If your plan allows, download originals from the VdoCipher dashboard. Alternative: move the video files to Bunny Stream, which is cheaper and offers its own DRM.
 3. Connect Bunny Stream to MediaShield Pro under **MediaShield > Platforms**.
 4. Upload or import your videos from **MediaShield > Bunny Library**.
-5. Enable DRM under **MediaShield > DRM** and set Encryption Method to **Cloud - Bunny Stream**.
-6. Replace embed codes in your content with `[mediashield id=X]` shortcodes.
-7. Cancel VdoCipher after 30 days of clean MediaShield operation. Keep it as fallback during cutover.
+5. Replace embed codes in your content with `[mediashield id=X]` shortcodes.
+6. Cancel VdoCipher after 30 days of clean MediaShield operation. Keep it as fallback during cutover.
 
 **Downloading your content:** VdoCipher typically holds encrypted copies. You need to request originals from them or re-upload from your source files.
 

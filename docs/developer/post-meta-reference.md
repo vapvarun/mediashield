@@ -18,7 +18,7 @@ Registered scalar meta uses `auth_callback => current_user_can( 'edit_posts' )` 
 | `_ms_platform_video_id` | string | `''` | External platform video ID (extracted from the URL). |
 | `_ms_source_url` | string | `''` | Direct video URL. For self-hosted videos this is the uploaded file URL; for platform videos it is the original pasted URL. |
 | `_ms_stream_url` | string | `''` | Resolved playback URL when it differs from the source (Pro's Bunny driver writes signed CDN URLs here). Feeds the `mediashield_video_stream_url` filter. |
-| `_ms_protection_level` | string | `''` | Per-video protection level: `none`, `basic`, `standard`, `strict`, plus any slug added via `mediashield_protection_levels` (Pro adds `drm`). **The default is the empty string, meaning "inherit `ms_default_protection`"** - a literal default here would mask the global setting. |
+| `_ms_protection_level` | string | `''` | Per-video protection level: `none`, `basic`, `standard`, `strict`, plus any slug added via `mediashield_protection_levels` (Pro no longer adds `drm`; older `_ms_drm_*` keys are unused and can be deleted). **The default is the empty string, meaning "inherit `ms_default_protection`"** - a literal default here would mask the global setting. |
 | `_ms_access_role` | string | `''` | Required WordPress role slug. Empty string or `any` disables the role gate. Enforced by free's `AccessControl::check_role()`, and again by Pro's `Access\RoleAccess` at priority 20. |
 | `_ms_duration` | int | `0` | Video duration in seconds. |
 
@@ -78,10 +78,6 @@ Written by the Pro plugin. Listed here for completeness; the authoritative list 
 | `_ms_library_id` | BunnyStream driver | Bunny library ID. |
 | `_ms_wistia_numeric_id` | WistiaApi driver | Wistia numeric ID. |
 | `_ms_bunny_encode_status` | BunnyWebhookController | Latest encode state reported by the Bunny webhook. |
-| `_ms_drm_enabled` | _(writer removed in 1.3.0)_ | Whether DRM packaging has completed for this video. Note Pro's player-type override reads `_ms_protection_level === 'drm'`, not this key. |
-| `_ms_drm_method` | _(writer removed in 1.3.0)_ | DRM method used: `cloud_bunny` or `local_shaka`. |
-| `_ms_drm_output_dir` | _(writer removed in 1.3.0)_ | Absolute path to the Shaka Packager DASH output directory (local method only). |
-| `_ms_drm_packaged_at` | _(writer removed in 1.3.0)_ | UTC timestamp of last successful packaging. |
 | `_ms_linked_lesson` | LMS\LMSMetaBox | Lesson/topic post ID this video is bound to. Validated against the owning adapter's `owns_post()`. |
 | `_ms_lms_require_enrollment` | LMS\LMSMetaBox | Per-video override of `ms_lms_enrollment_check`. |
 | `_ms_lms_complete_pct` | LMS\LMSMetaBox | Per-video override of `ms_lms_complete_pct`. |

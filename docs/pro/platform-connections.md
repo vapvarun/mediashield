@@ -4,12 +4,12 @@ Platform connections let you browse, import, and upload videos to external hosti
 
 ## Supported Platforms
 
-| Platform | Upload Support | Browse & Import | DRM Support |
-|----------|--------------|----------------|-------------|
-| Bunny Stream | Yes (large files won't fail if your connection drops) | Yes | Yes (cloud) |
-| Vimeo | Yes (large files won't fail if your connection drops) | Yes | No |
-| YouTube | Yes | Yes | No |
-| Wistia | Yes | Yes | No |
+| Platform | Upload Support | Browse & Import |
+|----------|--------------|----------------|
+| Bunny Stream | Yes (large files won't fail if your connection drops) | Yes |
+| Vimeo | Yes (large files won't fail if your connection drops) | Yes |
+| YouTube | Yes | Yes |
+| Wistia | Yes | Yes |
 
 ## Connecting a Platform
 
@@ -24,7 +24,7 @@ Your credentials are encrypted before being stored -- they're never readable in 
 ### Bunny Stream
 
 **Required credentials:**
-- **API Key** -- Your Bunny.net API key (Account > API Keys in the Bunny dashboard).
+- **API Key** -- The Stream API key for your library (Stream > your library > API in the Bunny dashboard). Do not use the account key from Account > API Keys. It grants full account access.
 - **Library ID** -- The video library ID (Stream > Library > Settings).
 - **Pull Zone Hostname** -- e.g., `vz-abc123.b-cdn.net` (shown in your Bunny Stream library settings).
 - **CDN Token Key** -- For signed URL playback (optional; required if your Bunny library has token authentication enabled).
@@ -35,7 +35,7 @@ Your credentials are encrypted before being stored -- they're never readable in 
 - Upload new videos with progress tracking.
 - Automatically generate streaming URLs.
 - Signed/token-authenticated playback URLs.
-- Cloud DRM via Bunny's built-in Widevine support.
+- Encryption and DRM, if you want them, come from Bunny Stream itself. MediaShield controls who can start playback.
 
 ### YouTube
 

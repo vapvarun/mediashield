@@ -48,7 +48,7 @@ What works and what does not:
 - YouTube, Vimeo and Wistia play in the host's own player, so the speed selector, volume keys and source hiding belong to the host.
 - Source hiding works for self-hosted files only.
 - Bunny videos play in Bunny's own embed unless Pro direct playback is on. Direct playback brings the watermark, speed control, accurate progress and in-video ads to Bunny.
-- MediaShield does not convert video, add captions or add a quality selector. It does not encrypt: if a stream is encrypted, the host did that.
+- MediaShield does not convert video, add captions or add a quality selector. It does not encrypt: MediaShield controls who can start playback, and encryption or DRM comes from your video host.
 
 ## Learnomy
 

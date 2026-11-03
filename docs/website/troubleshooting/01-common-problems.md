@@ -85,7 +85,7 @@ Videos play but the Dashboard shows zero sessions and milestones never fire.
 3. **Caching plugin is caching security tokens.** Full-page caching serves the same nonce (one-time security token) to every visitor, so each new viewer's session start fails.
 
    Quick fixes by caching plugin:
-   - **LiteSpeed Cache:** Settings > Cache > Do Not Cache URIs. Add `/wp-json/mediashield/`.
+   - **LiteSpeed Cache:** Settings > Cache > Do Not Cache URIs. Add `/wp-json/mediashield` (no trailing slash, so the Pro routes under `/wp-json/mediashield-pro/` are excluded too).
    - **WP Rocket:** REST API is excluded by default. Verify under Advanced Rules.
    - **W3 Total Cache:** Performance > Page Cache > Reject URIs. Add `/wp-json/`.
    - **WP Super Cache:** Advanced > Rejected URL Strings. Add `/wp-json/`.

@@ -39,7 +39,7 @@ Place the **My Videos** block, or the shortcode:
 [mediashield_my_videos]
 ```
 
-It shows a grid of the videos the signed-in member has watched, with a progress bar and the filters All, In Progress and Completed. Visitors who are not logged in are asked to log in. Only videos that are published and recorded at Standard or Strict appear.
+It shows a grid of the videos the signed-in member has watched, with a progress bar and the filters All, In Progress and Completed. Visitors who are not logged in are asked to log in. Only videos that are published and recorded at Standard or Strict appear. Titles link to a watch page only when an integration supplies one. Full steps are in [Show Members Their Progress with My Videos](20-my-videos-block.md).
 
 ## What viewers see
 

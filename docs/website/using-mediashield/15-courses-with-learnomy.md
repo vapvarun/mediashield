@@ -26,6 +26,8 @@ Learnomy stores the video's ID in the lesson and shows it with the MediaShield p
 
 - The Learnomy lesson editor lists a limited number of videos in a dropdown. If your library is very large and the video is missing, check that it is published.
 - Learnomy's "minimum video watch percentage" rule does not apply to MediaShield lessons. The MediaShield player does not report watch percentage to Learnomy, so the lesson completes through Learnomy's other rules or the student's mark-complete action.
+- Free-preview lessons: with **Require Login** on, guests normally see the login prompt on every MediaShield video. From Learnomy 2.2.0 with MediaShield 1.4.1, Learnomy tells MediaShield which videos sit in a free-preview lesson, so guests can watch those and still need an account for the rest. See [Access Control](../configuration/04-access-control.md).
+- In the My Videos block, a Learnomy member's video titles link to the lesson that holds the video. See [Viewers, Tags and My Videos](14-viewers-tags-and-my-videos.md).
 - MediaShield still records the session, completion percentage and milestones. See them under **MediaShield > Viewers** and **Milestones**.
 - If the video cannot play, the lesson shows a message that it uses a protected video that cannot be played right now. Check the video is published.
 - The LMS adapters in MediaShield Pro cover LearnDash, Tutor LMS and LifterLMS. Learnomy is not one of them.

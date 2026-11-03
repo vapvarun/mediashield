@@ -210,30 +210,6 @@ Suspicious viewing pattern alerts.
 
 ---
 
-### `ms_drm_licenses`
-
-DRM license records issued to users.
-
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | BIGINT UNSIGNED, PK, AUTO_INCREMENT | |
-| `video_id` | BIGINT UNSIGNED NOT NULL | CPT post ID |
-| `user_id` | BIGINT UNSIGNED NOT NULL | WordPress user ID |
-| `license_type` | ENUM('streaming','persistent') NOT NULL DEFAULT 'streaming' | `persistent` is legacy only: offline licensing was removed in 1.2.0 and nothing issues one now. |
-| `license_token` | VARCHAR(255) NOT NULL | Issued license token |
-| `device_id` | VARCHAR(255) NOT NULL DEFAULT '' | Optional `device_id` from the license request |
-| `expires_at` | DATETIME NOT NULL | UTC. `ms_drm_license_duration_streaming` (default 86400) after issue. |
-| `created_at` | DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP | UTC |
-| `revoked_at` | DATETIME DEFAULT NULL | NULL unless revoked. Any non-NULL row for a user+video pair denies all future issues (`WidevineLicense::is_revoked()`). |
-
-**Indexes:** PRIMARY (`id`), KEY `idx_video_user` (`video_id`, `user_id`), KEY `idx_expires` (`expires_at`).
-
-There is no `key_id` column here (that lives on `ms_drm_keys`) and no `issued_at` (it is `created_at`).
-
-> The column comments in `Schema.php` are deliberately kept out of the SQL string: `dbDelta` parses `CREATE TABLE` line by line and a trailing `-- comment` becomes part of the column definition, silently failing the whole statement. That is what stopped fresh 1.2.0 installs from getting this table.
-
----
-
 ### `ms_heatmap_cache`
 
 Aggregated heatmap data per video, written by the `ms_heatmap_aggregation` cron.
@@ -253,24 +229,9 @@ Aggregated heatmap data per video, written by the `ms_heatmap_aggregation` cron.
 
 ---
 
-### `ms_drm_keys`
-
-Encrypted AES-128 content keys for DRM-packaged videos.
-
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | BIGINT UNSIGNED, PK, AUTO_INCREMENT | |
-| `video_id` | BIGINT UNSIGNED NOT NULL | One key per video (enforced by the unique key below) |
-| `key_id` | VARCHAR(255) NOT NULL | 32-char hex key ID (16 random bytes) |
-| `content_key_encrypted` | TEXT NOT NULL | Hex content key, encrypted at rest with AES-256-CBC using `SECURE_AUTH_SALT`. Named `content_key_encrypted`, not `content_key`. |
-| `created_at` | DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP | UTC |
-
-**Indexes:** PRIMARY (`id`), UNIQUE `uk_video` (`video_id`).
-
-A legacy `iv VARCHAR(32)` column existed in DB v1 but was never read - the IV is embedded in the OpenSSL ciphertext. `Migrator::run()` drops it at DB v2 and fresh installs never create it.
-
----
-
 ## Removed tables
 
-`ms_email_captures` was dropped when the email gate was removed in 1.2.0. Pro's `Migrator` drops it on upgrade and `Schema::drop_tables()` still names it so an uninstall on a never-upgraded install cleans it up.
+- `ms_email_captures` belonged to the Email Gate, which no longer exists.
+- `ms_drm_licenses` and `ms_drm_keys` belonged to the DRM layer, removed in 1.4.1. No code reads or writes them.
+
+On a site upgraded from an older version these tables stay in place and untouched; deleting MediaShield Pro (Plugins > Delete) removes them. MediaShield controls who can start playback. Use your video host's own DRM.

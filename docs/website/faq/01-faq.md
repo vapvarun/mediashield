@@ -38,7 +38,7 @@ From 1.4.0 the featured image is also the video's poster: a self-hosted video sh
 
 **Does it work with caching plugins?**
 
-Yes, with one configuration step: exclude `/wp-json/mediashield/` from your cache. Most caching plugins handle REST API exclusion by default. Check your caching plugin's documentation. For Cloudflare, add a Page Rule to bypass cache for `*yoursite.com/wp-json/*`.
+Yes, with one configuration step: exclude `/wp-json/mediashield` (no trailing slash, so Pro's `/wp-json/mediashield-pro/` routes are covered too) from your cache. Most caching plugins handle REST API exclusion by default. Check your caching plugin's documentation. For Cloudflare, add a Page Rule to bypass cache for `*yoursite.com/wp-json/*`.
 
 **Does it work with Cloudflare or a CDN?**
 
@@ -119,7 +119,7 @@ Settings > Watermark > Show MediaShield Badge. Toggle it off. Works in both free
 
 **Does MediaShield encrypt my videos?**
 
-No. Encryption is done by the video host, for example Bunny Stream. MediaShield does not encrypt or package anything. MediaShield Pro can play a host-encrypted Bunny stream through its encrypted player, and that part is experimental. Do not build a launch around it. The Pro documentation explains the encrypted player in detail.
+No. MediaShield controls who can start playback. It does not encrypt or package anything. If you need encryption or DRM, use your video host's own, for example Bunny Stream's.
 
 **What is the refund policy?**
 

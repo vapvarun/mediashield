@@ -44,7 +44,7 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Watermark Color | #ffffff | Colour of the watermark text, as a hex code. |
 | Position Swap Interval | 30 | Seconds before the watermark moves. Minimum 1. |
 | Show MediaShield Badge | On | Small "Protected by MediaShield" label on the player. |
-| Allowed Domains | Empty | Sites allowed to embed your videos. Empty allows any. |
+| Allowed Domains | Empty | Sites allowed to embed your videos. Separate entries with commas, spaces or new lines, in any mix. A pasted web address is reduced to its domain. Empty allows any. See [Access Control](04-access-control.md). |
 | Max Concurrent Streams | 2 | Videos one account may watch at the same time. Minimum 1. |
 | Keep watch history for (months) | 0 | 0 keeps everything. 1 to 120 moves older sessions out of reports. See below. |
 | Login Overlay Text | Please log in to watch this video | Message on the video for visitors who are not logged in. |

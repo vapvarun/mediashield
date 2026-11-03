@@ -3,7 +3,7 @@
 MediaShield decides who can watch a video with a single check that runs when a watch session starts, and again on every request for a self-hosted file. The checks run in this order:
 
 1. **Administrators pass.** Anyone with `manage_options` is never blocked.
-2. **Login gate** - the Require Login setting.
+2. **Login gate** - the Require Login setting. An integration can let guests through for free-preview lessons with the `mediashield_guest_can_watch` filter.
 3. **Per-video role** - the video's Restrict to Role setting.
 4. **Domain whitelist** - the Allowed Domains setting.
 5. **Custom rules** - the `mediashield_can_watch` filter, where membership plugins, Pro's LMS adapters, and your own code plug in.
@@ -13,6 +13,12 @@ MediaShield decides who can watch a video with a single check that runs when a w
 **Require Login** (Settings > General) is on by default. While it is on, visitors who are not logged in see a login overlay instead of the player.
 
 Turn it off and guests can watch: the player asks the server, the server allows it, and the watch session is recorded like any other.
+
+### Free-preview lessons while Require Login is on
+
+*Since 1.4.1.* With Require Login on, a guest is stopped at the login check before any other rule runs, so a course's free-preview lesson would ask for a login even though the lesson page is public. An LMS can answer that check for MediaShield through the `mediashield_guest_can_watch` filter. It returns `true` only for videos that sit in a lesson the visitor may already open. Learnomy 2.2.0 does this for its free-preview lessons.
+
+You do not need to turn Require Login off for this. Every other video still asks guests to log in. The per-video role and Allowed Domains checks still apply to a guest the filter lets through. Developers: see [Hooks and Filters](../developer-guide/02-hooks-and-filters.md).
 
 Customise the overlay under Settings > Login & Access Messages:
 
@@ -31,7 +37,9 @@ Leave the setting on "Any logged-in user" to allow every signed-in viewer.
 
 ## Concurrent stream limits
 
-**Max Concurrent Streams** (Settings > Concurrent Streams) - how many devices one account can actively watch on at the same time. Default is 2.
+**Max Concurrent Streams** (Settings > Concurrent Streams) - how many devices one account can actively watch on at the same time. Default is 2, the lowest you can set is 1. It is stored as the `ms_max_concurrent_streams` option.
+
+To change it: open **MediaShield > Settings**, find Max Concurrent Streams, enter a whole number of 1 or more and save. The new limit applies to the next stream a viewer starts. Streams already playing are not cut off.
 
 The player sends a heartbeat every 30 seconds. A session that has not sent one for 5 minutes stops counting toward the limit, so a viewer who closes their laptop is not locked out for long. An hourly background job then marks sessions with no heartbeat for 10 minutes as finished, which is what clears them out of the Active Viewers count.
 
@@ -56,7 +64,9 @@ Anything that can make an authenticated WordPress REST request as an administrat
 
 ## Domain whitelist
 
-**Allowed Domains** - the domains that may embed your videos. Put one per line, or separate them with commas - both work. Pasting a full web address is fine too; only the domain part is used. Leave empty to allow embeds from any domain.
+**Allowed Domains** (Settings > Access, stored as `ms_allowed_domains`) - the domains that may embed your videos. Put one per line, or separate them with commas or spaces - any mix works. Pasting a full web address is fine too; only the domain part is used. Leave empty to allow embeds from any domain.
+
+To set it: open **MediaShield > Settings > Access**, type each domain (for example `partner.example`), and save. Then open a page on a listed site and on an unlisted site to check that only the listed one plays the video.
 
 When a list is set:
 - Requests from your own site's domain are always allowed

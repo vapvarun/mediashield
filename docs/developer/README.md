@@ -14,6 +14,6 @@ These docs are for developers extending or integrating MediaShield. If you're us
 | [post-meta-reference.md](post-meta-reference.md) | Every `_ms_*` post meta key for the `mediashield_video` and `mediashield_playlist` CPTs |
 | [extension-architecture.md](extension-architecture.md) | How to extend MediaShield: filter chains, admin SPA routes, SlotFill, LMS adapters, upload drivers, Pro/Free boot order |
 | [cron-and-background-jobs.md](cron-and-background-jobs.md) | Every cron hook and Action Scheduler job - name, interval, what it does, how to debug - plus the WP-CLI maintenance commands |
-| [drm-internals.md](drm-internals.md) | How DRM key generation, packaging and license serving work internally, and which parts are not yet wired up |
+| [drm-internals.md](drm-internals.md) | Notice that the DRM layer was removed in 1.4.1 |
 
 All of the above is written against **1.3.0**. Cited file paths, class names and line numbers are from that tag.

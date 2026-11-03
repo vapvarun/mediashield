@@ -564,8 +564,7 @@ Tighten budgets when refactoring a hot path. Loosen only with a written rational
 | Hooks & Filters | `docs/free/hooks-filters.md` | Redirect stub → `docs/developer/hooks-filters-free.md` |
 | Pro: Getting Started | `docs/pro/getting-started.md` | Pro activation, license, first steps |
 | Pro: Platform Connections | `docs/pro/platform-connections.md` | Connect Bunny, YouTube, Vimeo, Wistia (customer setup) |
-| Pro: DRM Setup | `docs/pro/drm-setup.md` | Three DRM methods, when to use each, glossary |
-| Pro: DRM Types Explained | `docs/pro/drm-types-explained.md` | ClearKey vs Widevine L1 vs FairPlay — buyer-facing tradeoffs |
+| Pro: Encryption and DRM | `docs/pro/drm-setup.md`, `docs/pro/drm-types-explained.md` | Statement pages: MediaShield controls who can start playback; use your host's DRM. The DRM level was removed in 1.4.1. |
 | Pro: Analytics | `docs/pro/analytics.md` | Heatmaps, realtime, alerts, export — what you see and how to read it |
 | Pro: License Management | `docs/pro/license-management.md` | License unlocks updates + support; never gates features |
 | Pro: Hooks & Filters | `docs/pro/hooks-filters-pro.md` | Redirect stub → `docs/developer/hooks-filters-pro.md` |
@@ -579,7 +578,7 @@ Tighten budgets when refactoring a hot path. Loosen only with a written rational
 | Hooks & Filters (Pro) | `docs/developer/hooks-filters-pro.md` | Pro hooks fired + free hooks Pro consumes; deprecation shims documented |
 | Settings Reference | `docs/developer/settings-reference.md` | Every `ms_*` option key — type, default, validator, sanitizer, where used |
 | REST API | `docs/developer/rest-api.md` | All `mediashield/v1` + `mediashield-pro/v1` endpoints — method, auth, request, response |
-| Database Tables | `docs/developer/database-tables.md` | Schema for all **13** tables (6 free + 7 pro) — columns, indexes, cleanup behaviour. Was 14 (6 + 8); Pro's `ms_email_captures` went with the email gate. |
+| Database Tables | `docs/developer/database-tables.md` | Schema for all **11** live tables (6 free + 5 pro) — columns, indexes, cleanup behaviour. Pro's `ms_email_captures`, `ms_drm_keys` and `ms_drm_licenses` are no longer used; upgrades leave them, uninstall removes them. |
 | Post Meta Reference | `docs/developer/post-meta-reference.md` | Every `_ms_*` post meta key on the `mediashield_video` + `mediashield_playlist` CPTs |
 | Extension Architecture | `docs/developer/extension-architecture.md` | Filter chain order, priorities, `mediashield_lms_adapters`, SlotFill, upload drivers, Free/Pro boot |
 | Cron & Background Jobs | `docs/developer/cron-and-background-jobs.md` | Every cron hook + Action Scheduler job — interval, purpose, debug |

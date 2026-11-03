@@ -80,7 +80,7 @@ If someone deletes or hides the watermark using browser developer tools, MediaSh
 |---------|---------|-------------|
 | Allowed Domains | Empty | List of domains that are allowed to embed your videos. Leave empty to allow embeds from any domain. |
 
-**Separate the domains with commas.** (The hint on screen currently says one per line; commas are what the check actually reads.) Your own site is always allowed without being listed, and subdomains of a listed domain are allowed too.
+**Separate the domains with commas, spaces or new lines.** Any mix works, and a pasted web address is reduced to its domain. Your own site is always allowed without being listed, and subdomains of a listed domain are allowed too.
 
 When the list is filled in, a request that arrives with no referring page at all is refused. That is deliberate - stripping the referrer is the usual way to get around a domain list - but it does mean some privacy-hardened browsers will be turned away.
 

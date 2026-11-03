@@ -32,7 +32,7 @@ Note Pro does **not** hook free's `mediashield_loaded`. Both plugins boot on `pl
 
 *Since 1.1.0*
 
-Fired before MediaShield Pro's GDPR eraser begins removing Pro-owned data (playback events, activity alerts, DRM licenses, etc.) for a given email. Listeners can mutate the `$counters` object by reference to roll their own removals into the GDPR receipt that WordPress hands back to the user.
+Fired before MediaShield Pro's GDPR eraser begins removing Pro-owned data (playback events, upload queue rows, etc.) for a given email. Listeners can mutate the `$counters` object by reference to roll their own removals into the GDPR receipt that WordPress hands back to the user.
 
 This is the Pro counterpart to free's `mediashield_privacy_before_erase`. The two erasers are registered independently on WordPress's own `wp_privacy_personal_data_erasers` filter - Pro does not subscribe to free's action, and neither one runs the other.
 
@@ -328,10 +328,8 @@ For free hook parameters / examples, see [hooks-filters-free.md](hooks-filters-f
 |-----------|---------------|----------|---------------|
 | `mediashield_can_watch` | `Access\RoleAccess::check_role` | 20 | Enforce per-video role restriction (`_ms_access_role` meta) |
 | `mediashield_can_watch` | LearnDash / LifterLMS / TutorLMS adapters | 25 | Enrolment + course-progress gates |
-| `mediashield_settings_response` | `Admin\ProSettings`, `Admin\DRMSettings`, `Watermark\AdvancedConfig` | 10 | Append Pro keys to the GET response |
-| `mediashield_settings_update` | same three classes | 10 | Save the same keys on PUT, `unset()` from `$data` so free's loop ignores them |
-| `mediashield_player_type` | `Core\Plugin::override_player_type` | 10 | Return `'drm'` when `_ms_protection_level === 'drm'` and `ms_drm_method !== 'none'` |
-| `mediashield_protection_levels` | `Core\Plugin::register_drm_level` | 10 | Add the `drm` level to the video edit screen, but only when `ms_drm_method !== 'none'` |
+| `mediashield_settings_response` | `Admin\ProSettings`, `Watermark\AdvancedConfig` | 10 | Append Pro keys to the GET response |
+| `mediashield_settings_update` | same two classes | 10 | Save the same keys on PUT, `unset()` from `$data` so free's loop ignores them |
 | `mediashield_upload_drivers` | `Core\Plugin::register_upload_drivers` | 10 | Register Bunny, YouTube, Vimeo, Wistia upload drivers |
 | `mediashield_watermark_config` | `Watermark\AdvancedConfig::enhance_config` | 10 | Extend the watermark `text` with any of 7 fields: `username`, `email`, `ip`, `user_id`, `timestamp`, `site_name`, `custom_text` |
 | `mediashield_video_stream_url` | `Platform\BunnyUrls::supply_stream_url` | 10 | Derive (and optionally token-sign) the Bunny playback URL |
@@ -372,8 +370,6 @@ Options Pro reads or writes. The `Exposed` column says whether the key appears i
 | `ms_pro_watermark_font_size` | `'medium'` | yes | Font size: small/medium/large |
 | `ms_show_badge` | `true` | yes | Show MediaShield badge. Shared with free - the key exists in `Settings::schema()` too. |
 | `ms_pro_milestone_config` | `[]` | no (own route) | Milestone action configurations. Read through `GET /milestones/config`. |
-| `ms_drm_method` | `'none'` | yes | `none` or `cloud_bunny`. Anything else submitted is coerced to `none` - including `local_shaka` and `cloud_aws`, which were removed in 1.3.0 with the packaging code. Read by `override_player_type()` and `register_drm_level()`, so it now means "use the encrypted player", not "how do we package". |
-| `ms_drm_license_duration_streaming` | `86400` | yes | Streaming license seconds. Anything under 300 is reset to 86400. |
 | `ms_suspicious_sensitivity` | `'medium'` | yes | `low`, `medium` or `high`; anything else is coerced to `medium`. |
 | `ms_safe_users` | `[]` | no (own route) | Whitelisted user IDs, written by `POST /analytics/suspicious/safe-user` |
 | `ms_weekly_digest_enabled` | `true` | yes | Enable weekly digest |
@@ -400,7 +396,7 @@ Derived, response-only keys (not options - do not try to `get_option()` them):
 | `ms_bunny_webhook_url` | `BunnyWebhookController::get_webhook_url()` - the REST URL with `ms_token` appended |
 | `ms_connected_platforms` | `SELECT id, platform FROM ms_platform_connections WHERE is_active = 1` |
 
-There is **no** `ms_drm_license_duration_persistent` option - offline licensing was removed in 1.2.0.
+The `ms_drm_*` options and `_ms_drm_*` post meta from older versions are unused since the DRM layer was removed in 1.4.1.
 
 ---
 
@@ -411,10 +407,6 @@ There is **no** `ms_drm_license_duration_persistent` option - offline licensing 
 | `_ms_library_id` | BunnyStream driver | Bunny library ID |
 | `_ms_wistia_numeric_id` | WistiaApi driver | Wistia numeric ID |
 | `_ms_bunny_encode_status` | BunnyWebhookController | Latest encode state from the Bunny webhook (`error` on failure) |
-| `_ms_drm_enabled` | _(writer removed in 1.3.0)_ | DRM packaging completed flag |
-| `_ms_drm_method` | _(writer removed in 1.3.0)_ | `cloud_bunny` or `local_shaka` |
-| `_ms_drm_output_dir` | _(writer removed in 1.3.0)_ | Shaka output directory (local method only) |
-| `_ms_drm_packaged_at` | _(writer removed in 1.3.0)_ | Packaging timestamp |
 | `_ms_linked_lesson` | LMS\LMSMetaBox | Lesson / topic post ID, validated against the owning adapter's `owns_post()` |
 | `_ms_lms_require_enrollment` | LMS\LMSMetaBox | Per-video override of `ms_lms_enrollment_check` |
 | `_ms_lms_complete_pct` | LMS\LMSMetaBox | Per-video override of `ms_lms_complete_pct` |

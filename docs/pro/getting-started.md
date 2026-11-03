@@ -29,7 +29,7 @@ For developers: if you need to bypass the license check in a local development e
 
 MediaShield Pro extends the free plugin through WordPress hooks -- it never replaces free behavior. Here's what activating Pro unlocks:
 
-### Admin pages (6 new sections)
+### Admin pages (5 new sections)
 
 | Page | Description |
 |------|-------------|
@@ -37,14 +37,12 @@ MediaShield Pro extends the free plugin through WordPress hooks -- it never repl
 | Alerts | View and manage suspicious activity alerts |
 | Heatmap | Per-video playback heatmap analytics |
 | Realtime | Live active viewer monitoring |
-| DRM | DRM configuration and license management |
 | Export | CSV and PDF data export |
 
 ### New features
 
 - **Advanced Watermark** -- 7 configurable text fields (username, email, IP, user ID, timestamp, site name, custom text)
 - **Platform Connections** -- Browse and import videos from Bunny, YouTube, Vimeo, Wistia
-- **DRM Encryption** -- ClearKey DRM via Bunny Stream or local packager
 - **Heatmap Analytics** -- Per-video playback heatmaps with position buckets
 - **Realtime Dashboard** -- Live viewer count with auto-refresh
 - **Suspicious Activity** -- Multi-device, developer-tools, rapid seek detection with alerts
@@ -56,7 +54,7 @@ MediaShield Pro extends the free plugin through WordPress hooks -- it never repl
 
 ## Database
 
-Pro stores its data in 8 additional tables (you don't need to manage these -- they're created automatically when Pro activates and cleaned up if you uninstall):
+Pro stores its data in 5 additional tables (you don't need to manage these -- they're created automatically when Pro activates and cleaned up if you uninstall):
 
 | Table | What it stores |
 |-------|---------------|
@@ -64,9 +62,7 @@ Pro stores its data in 8 additional tables (you don't need to manage these -- th
 | Platform connections | Your encrypted API credentials |
 | Upload queue | Upload job progress tracking |
 | Activity alerts | Suspicious viewing pattern flags |
-| DRM licenses | Issued content licenses |
 | Heatmap cache | Aggregated heatmap display data |
-| DRM keys | Encrypted content keys |
 
 ## Deactivation vs Deletion
 
@@ -76,5 +72,5 @@ Pro stores its data in 8 additional tables (you don't need to manage these -- th
 ## Next Steps
 
 - [Connect a video platform](platform-connections.md)
-- [Set up DRM](drm-setup.md)
+- [Encryption and DRM](drm-setup.md)
 - [Explore analytics](analytics.md)

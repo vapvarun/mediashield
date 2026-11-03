@@ -100,6 +100,10 @@
           "title": "Video Hosts"
         },
         {
+          "slug": "19-protect-videos-you-already-host",
+          "title": "Protect Videos You Already Host"
+        },
+        {
           "slug": "11-upload-a-video-file",
           "title": "Upload a Video File"
         },
@@ -126,6 +130,10 @@
         {
           "slug": "14-viewers-tags-and-my-videos",
           "title": "Viewers, Tags and My Videos"
+        },
+        {
+          "slug": "20-my-videos-block",
+          "title": "Show Members Their Progress with My Videos"
         },
         {
           "slug": "16-roles-and-permissions",

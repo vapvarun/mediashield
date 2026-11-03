@@ -181,20 +181,6 @@ Queued from `mediashield_session_started` (priority 20) when VPN detection is on
 
 ---
 
-### `mediashield_pro_drm_package` (async, one-off)
-
-| Property | Value |
-|----------|-------|
-| Hook name | `mediashield_pro_drm_package` |
-| Interval | One-time (`as_enqueue_async_action`) |
-| Group | `mediashield-pro` |
-| Args | `[ 'video_id' => int, 'file_path' => string ]` |
-| Source | **Removed in 1.3.0** - `Packager::schedule_packaging()` was deleted with the rest of the packaging code |
-
-No longer enqueued by anything. `Packager::schedule_packaging()` was the only producer and it had no callers, so this job never ran; both it and the `_ms_drm_packaging_status` / `_ms_drm_packaging_action_id` meta keys went with the deletion in 1.3.0.
-
----
-
 ### `mediashield_generate_pdf` (async, one-off)
 
 | Property | Value |

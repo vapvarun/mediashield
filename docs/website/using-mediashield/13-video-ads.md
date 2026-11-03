@@ -44,6 +44,16 @@ MediaShield plans one slot for the pre-roll and one for each mid-roll. If you ha
 
 "Advertisement", an "Ad - Ns" countdown and a Skip Ad button (or "Skip in Ns") on the player. Ads count through WB Ad Manager's own tracking.
 
+## Add an end screen after the video
+
+The end screen is separate from ads. It shows a message and a button when the video finishes, for example to point to the next lesson. It plays after the last ad break and the video, not instead of them.
+
+1. Go to **MediaShield > Settings > Player Controls** and turn on **End Screen**.
+2. Fill **End Screen Message** and **End Screen Button URL**. Leave the URL empty to hide the button.
+3. To use different wording on one video, open the video and fill **End Screen Text** and **End Screen URL** in its Player Options box. Blank fields use the site-wide ones.
+
+It works in the MediaShield player, so like ads it needs a self-hosted video or Bunny with Pro direct playback. More controls are in [Customise the Player](12-customise-the-player.md).
+
 ## Per-video overrides
 
 Pro adds a "Video Ads" box on the video edit screen, so one video can use its own ads, no ads, or its own break pattern. See [Video Ads (Pro)](https://wpmediashield.com/docs/pro/features/11-video-ads/).

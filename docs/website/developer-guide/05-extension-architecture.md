@@ -172,16 +172,14 @@ Override the player type for specific videos:
 
 ```php
 add_filter( 'mediashield_player_type', function( $type, $video_id ) {
-    if ( get_post_meta( $video_id, '_my_drm_enabled', true ) ) {
-        return 'drm';
+    if ( get_post_meta( $video_id, '_my_custom_player', true ) ) {
+        return 'custom';
     }
     return $type;
 }, 10, 2 );
 ```
 
-The value is emitted as `data-player-type` on the player container for client-side code to act on. Free itself renders `standard` for every video and does not ship a DRM player; what it does load, on self-hosted and Bunny sources, is the bundled HLS library, triggered by the `mediashield_needs_shaka` action. The name is historical - free does not use Shaka Player.
-
-**PRO** - Pro registers its own `drm-player.js` whenever its DRM method setting is anything other than `none`, and enqueues it alongside the free player assets. It is not keyed on the player type.
+The value is emitted as `data-player-type` on the player container for client-side code to act on. Free itself renders `standard` for every video; what it does load, on self-hosted and Bunny sources, is the bundled HLS library, triggered by the `mediashield_needs_shaka` action. The name is historical - free does not use Shaka Player.
 
 To make a new protection level selectable in the admin at all, pair this with the `mediashield_protection_levels` filter so the level appears in the level list on the video edit screen.
 

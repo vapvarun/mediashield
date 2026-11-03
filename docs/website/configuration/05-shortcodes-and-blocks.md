@@ -66,7 +66,7 @@ Embeds a playlist. The block opens a playlist picker. Playback options (autoplay
 
 ### MediaShield My Videos block
 
-Displays the current logged-in user's watched video history with completion progress. No configuration options. Use it anywhere you want to show a viewer their watch history.
+Displays the current logged-in user's watched video history with completion progress. No configuration options. Use it anywhere you want to show a viewer their watch history. Titles link to the page an integration supplies through the `mediashield_video_watch_url` filter, for example a Learnomy lesson, and are plain text otherwise. See [Show Members Their Progress with My Videos](../using-mediashield/20-my-videos-block.md).
 
 ## A retired Pro shortcode
 

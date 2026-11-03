@@ -25,6 +25,8 @@ Visitors who are not logged in see your message and a login button instead of th
 
 Turn **Require Login** off. Guests then get a real session, so their views and watch time are recorded. They are not counted against the stream limit, and milestones do not fire for guests.
 
+To let guests watch only some videos, such as free-preview lessons in a course, keep Require Login on. Your LMS can allow those videos through the `mediashield_guest_can_watch` filter (Learnomy 2.2.0 does). See [Access Control](../configuration/04-access-control.md).
+
 ## Restrict one video to one role
 
 1. Open the video.
@@ -36,7 +38,7 @@ The match is exact. A video for `subscriber` is not watchable by an editor. Logg
 ## Allow only your own websites to embed
 
 1. In **Settings > Access**, fill **Allowed Domains**.
-2. Enter one domain per line, or separate them with commas. A pasted web address works too, only the domain is used.
+2. Enter one domain per line, or separate them with commas or spaces. A pasted web address works too, only the domain is used.
 
 With a list set, your own domain always passes, listed domains and their subdomains pass, and everything else is refused. A request with no Referer header is refused by default.
 

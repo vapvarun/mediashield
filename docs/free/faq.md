@@ -45,7 +45,6 @@ No. MediaShield loads its CSS and JavaScript only on pages that contain video or
 Yes. The watermark overlay, player wrapping, session tracking, and playback all work on iOS Safari, Android Chrome, and every modern mobile browser. Notes:
 
 * **Developer-tools detection is intentionally disabled on touch or small-screen devices** (under 1024 px wide) to avoid false positives from on-screen keyboards and orientation changes.
-* **Safari (including iOS)** does not support the ClearKey encryption Pro uses elsewhere, so encrypted Pro content falls back to HLS with AES-128. Playback works.
 * **Mobile screen recording** (iOS and Android built-in) cannot be prevented by any web plugin. The watermark stays visible in any recording, which is the forensic deterrent.
 
 ### How do I set a video thumbnail (poster image)?
@@ -63,9 +62,9 @@ Yes, with one configuration step: **exclude REST API endpoints from cache**. Mos
 
 Quick checklist:
 
-* Don't cache `/wp-json/mediashield/v1/*` responses.
+* Don't cache `/wp-json/mediashield*` responses (this also covers the Pro namespace).
 * Don't cache pages with a session-started token for anonymous visitors if you require login.
-* **LiteSpeed:** add `/wp-json/mediashield/` to "Do Not Cache URIs".
+* **LiteSpeed:** add `/wp-json/mediashield` (no trailing slash) to "Do Not Cache URIs".
 * **WP Rocket:** covered by default. REST API is never cached.
 * **W3TC:** "Reject URIs" should already include `/wp-json/`.
 
@@ -86,11 +85,11 @@ For session heartbeats, if you use Cloudflare's Full Page Cache or APO, make sur
 
 No, in free or Pro. Videos can only be played online -- the player wrapper, watermark, and session tracking all need a live connection.
 
-Earlier documentation described a Pro "Save for Offline" feature using a long-lived DRM licence and cached encrypted segments. **That feature was removed in Pro 1.2.0 and is not coming back.** If you were relying on it, offline playback is no longer available.
+Earlier documentation described a Pro "Save for Offline" feature. **That feature was removed in Pro 1.2.0 and is not coming back.** If you were relying on it, offline playback is no longer available.
 
 ### What happens if my Pro license expires?
 
-**Your Pro features keep working.** License status in MediaShield Pro is **updates-only**. When your license lapses, you stop receiving plugin updates, but every Pro feature (watermark, DRM, heatmaps, realtime, etc.) keeps working exactly as before.
+**Your Pro features keep working.** License status in MediaShield Pro is **updates-only**. When your license lapses, you stop receiving plugin updates, but every Pro feature (watermark, heatmaps, realtime, etc.) keeps working exactly as before.
 
 Renewal restores update access. You never get locked out of your own content or settings. If you move Pro to a new site, deactivate on the old one first (MediaShield > License) to free the activation slot.
 
@@ -153,7 +152,7 @@ Pro extends the watermark to include email, user ID, timestamp, site name, and c
 
 ### Can users still screen-record my videos?
 
-MediaShield makes screen recording traceable, not impossible. The dynamic watermark with the viewer's identity (name, IP, email in Pro) means any leaked recording can be traced back to the source. Combined with DRM (Pro), content protection is significantly stronger.
+MediaShield makes screen recording traceable, not impossible. The dynamic watermark with the viewer's identity (name, IP, email in Pro) means any leaked recording can be traced back to the source. If you need encryption or DRM, use your video host's own, such as Bunny Stream's. MediaShield controls who can start playback.
 
 ### What does "developer-tools detection" do?
 

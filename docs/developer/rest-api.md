@@ -47,7 +47,7 @@ Read permission is `is_user_logged_in()`; every write is `current_user_can( 'edi
 
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
-| POST | `/session/start` | logged_in, or anonymous when `ms_require_login` is off or `_ms_access_type` is set - see `mediashield_session_allow_anonymous_start` | Start a watch session. Body: `{ video_id }` (required). Returns `{ session_token, resume_position, is_resumed, watermark_config, video: { id, title, platform, protection_level, duration, source_url } }`. `video.source_url` is populated only for DRM videos. 429 `concurrent_limit` when the stream limit is hit; 403 with the denial reason promoted to the error code otherwise. |
+| POST | `/session/start` | logged_in, or anonymous when `ms_require_login` is off or `_ms_access_type` is set - see `mediashield_session_allow_anonymous_start` | Start a watch session. Body: `{ video_id }` (required). Returns `{ session_token, resume_position, is_resumed, watermark_config, video: { id, title, platform, protection_level, duration, source_url } }`. 429 `concurrent_limit` when the stream limit is hit; 403 with the denial reason promoted to the error code otherwise. |
 | POST | `/session/heartbeat` | logged_in, or anonymous with a non-empty `token` | Update position + progress. Body: `{ token (required), position (required, number), duration (required, number), playing (bool, default true), focused (bool, default true) }`. |
 | POST | `/session/end` | logged_in, or anonymous with a non-empty `token` | End session, finalize stats. Body: `{ token }` (required). |
 | POST | `/session/revoke-user` | `manage_options` | Kill all active sessions for a user. Body: `{ user_id }`. |
@@ -139,7 +139,7 @@ The two custom post types are `show_in_rest` and therefore also reachable throug
 
 Base URL: `/wp-json/mediashield-pro/v1/`
 
-All Pro endpoints require `manage_options` unless noted. The exceptions are `/drm/license` (any logged-in user) and `/bunny/webhook` (public, authenticated on a URL token).
+All Pro endpoints require `manage_options` unless noted. The exception is `/bunny/webhook` (public, authenticated on a URL token).
 
 ---
 
@@ -153,16 +153,9 @@ All Pro endpoints require `manage_options` unless noted. The exceptions are `/dr
 
 ---
 
-### DRM
+### DRM (removed)
 
-| Method | Route | Permission | Description |
-|--------|-------|-----------|-------------|
-| POST | `/drm/license` | logged_in | Issue a streaming ClearKey license. Body: `{ video_id (required), device_id (default `''`) }`. Runs `AccessControl::can_watch()` and the revocation check before returning the key. Response is the raw ClearKey JWK set: `{ keys: [ { kty: 'oct', kid, k } ], type: 'temporary' }`. |
-| POST | `/drm/revoke` | `manage_options` | Revoke all licenses for a user+video. Body: `{ video_id (required), user_id (required) }`. Sets `revoked_at`; returns `{ video_id, user_id, licenses_revoked }`. |
-
-There is no `/drm/offline` route. Offline (persistent) licensing was removed in 1.2.0 - `ms_drm_licenses.license_type` still carries the `persistent` enum value for legacy rows, but nothing issues one, and `ms_drm_license_duration_persistent` is not a real option.
-
-Content keys are stored in `ms_drm_keys` (encrypted at rest). See [drm-internals.md](drm-internals.md) for key generation and packaging details.
+There are no `/drm/license` or `/drm/revoke` routes. The DRM layer was removed in 1.4.1. See [drm-internals.md](drm-internals.md).
 
 ---
 
