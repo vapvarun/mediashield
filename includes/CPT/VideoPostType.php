@@ -743,7 +743,7 @@ class VideoPostType {
 	public static function render_lms_teaser( \WP_Post $post ): void {
 		?>
 		<div class="ms-teaser-box">
-			<p><strong><?php esc_html_e( 'Link this video to a LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
+			<p><strong><?php esc_html_e( 'Link this video to a Learnomy, LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
 			<ul>
 				<li><?php esc_html_e( 'Auto-mark lesson complete on video finish', 'mediashield' ); ?></li>
 				<li><?php esc_html_e( 'Require course enrollment to watch', 'mediashield' ); ?></li>
@@ -764,7 +764,6 @@ class VideoPostType {
 		<div class="ms-teaser-box">
 			<ul>
 				<li><strong><?php esc_html_e( 'Advanced Watermark', 'mediashield' ); ?></strong> — <?php esc_html_e( '7 fields (email, IP, timestamp...)', 'mediashield' ); ?></li>
-				<li><strong><?php esc_html_e( 'DRM', 'mediashield' ); ?></strong> — <?php esc_html_e( 'Widevine encryption', 'mediashield' ); ?></li>
 				<li><strong><?php esc_html_e( 'Heatmaps', 'mediashield' ); ?></strong> — <?php esc_html_e( 'See where viewers watch', 'mediashield' ); ?></li>
 			</ul>
 			<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'Upgrade', 'mediashield' ); ?> &rarr;</a>

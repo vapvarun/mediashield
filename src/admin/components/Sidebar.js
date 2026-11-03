@@ -15,7 +15,6 @@ const config = window.mediashieldAdmin || {};
  */
 const LOCKED_PRO_ITEMS = [
 	{ label: __( 'Platforms', 'mediashield' ), icon: 'cloud' },
-	{ label: __( 'DRM', 'mediashield' ), icon: 'lock' },
 	{ label: __( 'Heatmaps', 'mediashield' ), icon: 'chart-area' },
 	{ label: __( 'Alerts', 'mediashield' ), icon: 'warning' },
 	{ label: __( 'Export', 'mediashield' ), icon: 'download' },

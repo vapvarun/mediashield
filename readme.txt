@@ -68,7 +68,6 @@ MediaShield protects your video content on WordPress with dynamic watermarking, 
 [MediaShield Pro](https://wbcomdesigns.com/downloads/mediashield-pro/) extends the free plugin with:
 
 * **Platform Connections.** Browse and bulk import videos from Bunny, YouTube, Vimeo, and Wistia.
-* **DRM Encryption (experimental).** ClearKey DRM, software-based AES-128 encryption via Shaka Player, with Bunny Stream cloud packaging or local Shaka Packager. Selectable only once a packaging method is configured. Widevine L1 hardware DRM is not included.
 * **Advanced Watermark.** 7 configurable fields: username, email, IP, user ID, timestamp, site name, custom text.
 * **Heatmap Analytics.** Per-video playback heatmaps with 10-second position buckets and retention curves.
 * **Realtime Dashboard.** Live active viewer count with 15-second auto-refresh.
