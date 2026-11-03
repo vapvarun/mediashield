@@ -13,7 +13,7 @@ export default function PlatformStep( { initialData } ) { // eslint-disable-line
 	const platforms = [
 		{ name: 'YouTube', icon: 'youtube', desc: __( 'Protect YouTube embeds', 'mediashield' ) },
 		{ name: 'Vimeo', icon: 'video-alt', desc: __( 'Protect Vimeo embeds', 'mediashield' ) },
-		{ name: 'Bunny Stream', icon: 'cloud', desc: __( 'Direct upload & DRM', 'mediashield' ) },
+		{ name: 'Bunny Stream', icon: 'cloud', desc: __( 'Direct upload and adaptive streaming', 'mediashield' ) },
 		{ name: 'Wistia', icon: 'format-video', desc: __( 'Wistia integration', 'mediashield' ) },
 	];
 
