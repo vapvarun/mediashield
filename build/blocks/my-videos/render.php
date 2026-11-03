@@ -66,8 +66,23 @@ if ( empty( $videos ) ) {
 			$completion  = round( (float) $video->completion_pct, 1 );
 			$is_complete = $completion >= 100;
 			$thumbnail   = get_the_post_thumbnail_url( $video_post->ID, 'medium' );
-			$permalink   = get_permalink( $video_post->ID );
-			$resume_url  = add_query_arg( 'resume', '1', $permalink );
+
+			/**
+			 * Filter the page where a member watches this video.
+			 *
+			 * The video post type is not public, so it has no page of its own:
+			 * its permalink lands on the home page. An integration that embeds
+			 * the video (an LMS lesson, a course page) returns that page's URL.
+			 * Left empty, the title shows as plain text and no Resume link is
+			 * printed. The player on that page offers to resume by itself.
+			 *
+			 * @since 1.4.1
+			 *
+			 * @param string $url      Watch page URL. Default ''.
+			 * @param int    $video_id Video CPT post ID.
+			 * @param int    $user_id  Member the list is for.
+			 */
+			$watch_url = (string) apply_filters( 'mediashield_video_watch_url', '', $video_post->ID, $current_user_id );
 			?>
 			<div class="ms-my-videos-item ms-my-videos__card" data-completion-pct="<?php echo esc_attr( $completion ); ?>">
 				<?php if ( $thumbnail ) : ?>
@@ -78,9 +93,13 @@ if ( empty( $videos ) ) {
 
 				<div class="ms-my-videos__info">
 					<h3 class="ms-my-videos__title">
-						<a href="<?php echo esc_url( $permalink ); ?>">
+						<?php if ( '' !== $watch_url ) : ?>
+							<a href="<?php echo esc_url( $watch_url ); ?>">
+								<?php echo esc_html( get_the_title( $video_post ) ); ?>
+							</a>
+						<?php else : ?>
 							<?php echo esc_html( get_the_title( $video_post ) ); ?>
-						</a>
+						<?php endif; ?>
 					</h3>
 
 					<div class="ms-my-videos__progress">
@@ -99,8 +118,8 @@ if ( empty( $videos ) ) {
 						<span class="ms-my-videos__badge ms-my-videos__badge--completed">
 							<?php echo esc_html__( 'Completed', 'mediashield' ); ?>
 						</span>
-					<?php else : ?>
-						<a href="<?php echo esc_url( $resume_url ); ?>" class="ms-my-videos__resume">
+					<?php elseif ( '' !== $watch_url ) : ?>
+						<a href="<?php echo esc_url( $watch_url ); ?>" class="ms-my-videos__resume">
 							<?php echo esc_html__( 'Resume', 'mediashield' ); ?>
 						</a>
 					<?php endif; ?>

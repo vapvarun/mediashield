@@ -46,20 +46,25 @@ class MyVideosBlock {
 	}
 
 	/**
-	 * Shortcode callback — renders the same output as the block.
+	 * Shortcode callback: what does [mediashield_my_videos] print?
+	 *
+	 * Exactly what the block prints. It renders the registered block, so the
+	 * shortcode shares the block's render.php from build/ (src/ is not in the
+	 * release zip, which is why reading the file directly printed nothing),
+	 * its wrapper class and its view script.
 	 *
 	 * @param array|string $atts Shortcode attributes (unused).
 	 * @return string Rendered HTML.
 	 */
 	public static function shortcode_render( $atts = array() ): string {
-		$render_file = MEDIASHIELD_PATH . 'src/blocks/my-videos/render.php';
-
-		if ( ! file_exists( $render_file ) ) {
-			return '';
-		}
-
-		ob_start();
-		include $render_file;
-		return ob_get_clean();
+		return render_block(
+			array(
+				'blockName'    => 'mediashield/my-videos',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
+			)
+		);
 	}
 }
