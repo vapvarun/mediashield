@@ -288,6 +288,7 @@ class Renderer {
 				?>
 				data-access-type="<?php echo esc_attr( $access_type ); ?>"<?php endif; ?>
 			<?php
+			echo self::guest_allowed_attr( $video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static attribute string.
 			if ( $wrapper_attrs ) {
 				echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
 			}
@@ -382,5 +383,26 @@ class Renderer {
 		do_action( 'mediashield_after_player', $video_id );
 
 		return $html;
+	}
+
+	/**
+	 * Does the player tell the script that this guest may skip the login overlay?
+	 *
+	 * Returns ` data-guest-allowed="1"` for a logged-out visitor the login gate
+	 * does not apply to (Require Login off, or mediashield_guest_can_watch said
+	 * yes for this video), so the script asks /session/start instead of
+	 * painting the overlay. Shared with PlayerWrapper so both render paths
+	 * agree with AccessControl::login_gate_applies().
+	 *
+	 * @since 1.4.1
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return string Attribute string with a leading space, or ''.
+	 */
+	public static function guest_allowed_attr( int $video_id ): string {
+		if ( get_current_user_id() || AccessControl::login_gate_applies( $video_id, 0 ) ) {
+			return '';
+		}
+		return ' data-guest-allowed="1"';
 	}
 }

@@ -19,7 +19,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
-use MediaShield\Core\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -199,7 +198,7 @@ class SessionController extends WP_REST_Controller {
 		// can_watch() still applies the per-video role gate, the allowed-domain
 		// whitelist and the mediashield_can_watch filter chain, and still
 		// returns a denial reason the client can render.
-		$login_gate_off = ! Settings::get( 'ms_require_login' );
+		$login_gate_off = ! AccessControl::login_gate_applies( $video_id, 0 );
 
 		/**
 		 * Filter whether to allow an anonymous /session/start for this video.
@@ -210,6 +209,7 @@ class SessionController extends WP_REST_Controller {
 		 *
 		 * @since 1.1.0
 		 * @since 1.3.0 Also defaults to allow when `ms_require_login` is off.
+		 * @since 1.4.1 Also when `mediashield_guest_can_watch` lets guests in.
 		 *
 		 * @param bool             $allow       Whether to allow anonymous start.
 		 * @param int              $video_id    Video CPT post ID.

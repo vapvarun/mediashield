@@ -352,6 +352,7 @@ class PlayerWrapper {
 				$access_type_attr = '' !== $access_type
 					? ' data-access-type="' . esc_attr( $access_type ) . '"'
 					: '';
+				$access_type_attr .= Renderer::guest_allowed_attr( $video_post_id );
 
 				// Per-video playback options, same tri-state contract Renderer
 				// uses ('1'/'0' explicit, '' = pristine -> adapter default). The

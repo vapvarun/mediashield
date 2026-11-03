@@ -898,8 +898,10 @@
 		// truthiness test, matching how `isLoggedIn` is read above, NOT a
 		// `!== false` identity test (which "" would silently fail).
 		// A missing key means an older cached config, so default to gating.
+		// `data-guest-allowed` is the server saying this video lets guests past
+		// the login gate (mediashield_guest_can_watch, e.g. a free preview).
 		var requiresLogin = ( 'requireLogin' in config ) ? !! config.requireLogin : true;
-		if ( requiresLogin && ! config.isLoggedIn && ! el.dataset.accessType ) {
+		if ( requiresLogin && ! config.isLoggedIn && ! el.dataset.accessType && ! el.dataset.guestAllowed ) {
 			showLoginOverlay( el );
 			return;
 		}
