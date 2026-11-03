@@ -75,6 +75,7 @@ class Plugin {
 
 		// REST API.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+		add_filter( 'rest_post_dispatch', array( $this, 'no_store_rest_response' ), 10, 3 );
 
 		// Gutenberg blocks + shortcode.
 		VideoBlock::register();
@@ -145,6 +146,30 @@ class Plugin {
 		( new ProtectionController() )->register_routes();
 	}
 
+	/**
+	 * Should a page cache keep this REST response? Not if it is ours.
+	 *
+	 * Every /mediashield and /mediashield-pro route answers for one viewer:
+	 * signed stream URLs that expire, per-viewer player markup, sessions,
+	 * admin data. A page cache that stores one (LiteSpeed, QUIC.cloud) serves
+	 * it to the next visitor after its token has died. Marks the response
+	 * no-store and tells LiteSpeed through its own public action.
+	 *
+	 * @param \WP_HTTP_Response $response Response about to be sent.
+	 * @param \WP_REST_Server   $server   REST server.
+	 * @param \WP_REST_Request  $request  Request being answered.
+	 * @return \WP_HTTP_Response The same response, with no-store on our routes.
+	 */
+	public function no_store_rest_response( $response, $server, $request ) {
+		if ( ! $response instanceof \WP_HTTP_Response || 0 !== strpos( (string) $request->get_route(), '/mediashield' ) ) {
+			return $response;
+		}
+
+		$response->header( 'Cache-Control', 'no-store, private' );
+		do_action( 'litespeed_control_set_nocache', 'mediashield rest' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache's public action.
+
+		return $response;
+	}
 
 	/** Prevent cloning. */
 	private function __clone() {}
