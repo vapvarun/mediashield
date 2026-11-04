@@ -1867,10 +1867,10 @@
 	}
 }
 
-/* Tablet and down: the sidebar shows icons only. Each label stays in the
+/* Up to 1280px (tablets and small laptops): the sidebar shows icons only. Each label stays in the
    accessibility tree (visually hidden) and as the link's title, so every
    link keeps its name. */
-@media ( max-width: 1024px ) {
+@media ( max-width: 1280px ) {
 	.mediashield-sidebar__item {
 		justify-content: center;
 	}
@@ -1888,11 +1888,12 @@
 	}
 }
 
-/* Tablet (783-1024px): with the WordPress menu open, a 260px sidebar left
-   ~540px for every list and the fixed column widths cut cells off. The
-   sidebar becomes a 72px icon rail, columns size to their content, and a
-   list wider than the screen scrolls inside its card instead of clipping. */
-@media ( min-width: 783px ) and ( max-width: 1024px ) {
+/* 783-1280px (tablets and small laptops): with the WordPress menu open, a
+   260px sidebar left ~540-790px for every list and the fixed column widths
+   cut cells off. The sidebar becomes a 72px icon rail, columns size to their
+   content, and a list wider than the space scrolls inside its card instead
+   of clipping. Above 1280px the full sidebar and fixed columns fit. */
+@media ( min-width: 783px ) and ( max-width: 1280px ) {
 	.mediashield-admin {
 		--ms-sidebar-width: 72px;
 	}

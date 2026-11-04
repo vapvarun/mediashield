@@ -188,7 +188,7 @@ const Tags = () => {
 											{ tag.video_count ?? 0 }
 										</span>
 									</td>
-									<td data-label={ __( 'Actions', 'mediashield' ) }>
+									<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
 										<button
 											className="mediashield-action-btn mediashield-action-btn--delete"
 											disabled={ deletingId === tag.id }
