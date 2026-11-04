@@ -15,7 +15,6 @@ const config = window.mediashieldAdmin || {};
  */
 const LOCKED_PRO_ITEMS = [
 	{ label: __( 'Platforms', 'mediashield' ), icon: 'cloud' },
-	{ label: __( 'DRM', 'mediashield' ), icon: 'lock' },
 	{ label: __( 'Heatmaps', 'mediashield' ), icon: 'chart-area' },
 	{ label: __( 'Alerts', 'mediashield' ), icon: 'warning' },
 	{ label: __( 'Export', 'mediashield' ), icon: 'download' },
@@ -54,6 +53,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 									( isActive ? ' is-active' : '' )
 								}
 								aria-current={ isActive ? 'page' : undefined }
+								title={ route.label }
 							>
 								<Icon name={ route.icon } />
 								<span className="mediashield-sidebar__label">
@@ -95,6 +95,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 								( currentHash === settingsRoute.hash ? ' is-active' : '' )
 							}
 							aria-current={ currentHash === settingsRoute.hash ? 'page' : undefined }
+							title={ settingsRoute.label }
 						>
 							<Icon name={ settingsRoute.icon } />
 							<span className="mediashield-sidebar__label">

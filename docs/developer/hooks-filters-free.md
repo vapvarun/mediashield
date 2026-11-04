@@ -342,6 +342,52 @@ add_filter( 'mediashield_can_watch', function( $result, $video_id, $user_id ) {
 
 **Priority chain:** free registers no callback of its own - its login gate, `_ms_access_role` check and allowed-domain check all run in `AccessControl::can_watch()` *before* `apply_filters()` and short-circuit on denial, so a denied request never reaches this filter. Pro stacks role access at 20 and the LMS adapters at 25. Priority 10 is unused and available.
 
+The "allow specific videos for everyone" example above does not help a guest while Require Login is on, because the login gate denies first. Use `mediashield_guest_can_watch` for that.
+
+---
+
+### mediashield_guest_can_watch
+
+*Since 1.4.1.*
+
+Lets an integration allow a logged-out visitor to watch a video while **Require Login** is on, for example a free-preview lesson in an LMS. Without it, the login gate denies every guest before `mediashield_can_watch` runs.
+
+```php
+add_filter( 'mediashield_guest_can_watch', function ( $allow, $video_id ) {
+    return $allow || my_lms_video_is_preview( $video_id );
+}, 10, 2 );
+```
+
+**Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `$allow` | bool | Default `false`. Return `true` to let this guest past the login check |
+| `$video_id` | int | Video CPT post ID |
+
+Runs for guests only, and only to answer the Require Login check. The per-video role and Allowed Domains checks still apply. Learnomy 2.2.0 uses it for free-preview lessons.
+
+---
+
+### mediashield_video_watch_url
+
+*Since 1.4.1.*
+
+The page where a member watches a video. The My Videos block and shortcode use it for the title link and the Resume link. Videos have no public page of their own, so the default is an empty string: titles show as plain text and the Resume link is not printed.
+
+```php
+add_filter( 'mediashield_video_watch_url', function ( $url, $video_id, $user_id ) {
+    $lesson_url = my_lms_lesson_url_for_video( $video_id );
+    return $lesson_url ? $lesson_url : $url;
+}, 10, 3 );
+```
+
+**Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `$url` | string | Watch page URL. Default `''` |
+| `$video_id` | int | Video CPT post ID |
+| `$user_id` | int | The member the list is for |
+
 ---
 
 ### mediashield_watermark_config
@@ -392,22 +438,18 @@ Each driver class must implement `MediaShield\Upload\Drivers\DriverInterface`.
 
 Add or relabel the Protection Level choices on the video edit screen.
 
-Until 1.3.0 this list was a closed array, which made DRM unreachable as a whole:
-Pro decides a video is DRM-protected by reading `_ms_protection_level === 'drm'`,
-but nothing could ever write that value because the only UI that saves the meta
-did not offer it and Pro had no way in.
-
 Adding a level here only makes it **selectable and storable**. Whatever the level
 is meant to *do* is still yours to implement, usually via `mediashield_player_type`.
+Pro does not add a level (its DRM level was removed in 1.4.1).
 
 ```php
 add_filter( 'mediashield_protection_levels', function ( $levels, $post, $selected ) {
     // Only offer it once the thing behind it is actually configured.
-    if ( 'none' === get_option( 'my_packaging_method', 'none' ) ) {
+    if ( ! get_option( 'my_custom_level_ready' ) ) {
         return $levels;
     }
 
-    $levels['drm'] = __( 'DRM - Encrypted playback', 'my-plugin' );
+    $levels['review'] = __( 'Review - Staff only', 'my-plugin' );
 
     return $levels;
 }, 10, 3 );
@@ -456,9 +498,9 @@ Override the player type for a video.
 
 ```php
 add_filter( 'mediashield_player_type', function( $type, $video_id ) {
-    // Force DRM player for specific videos
-    if ( get_post_meta( $video_id, '_ms_drm_enabled', true ) ) {
-        return 'drm';
+    // Use a custom player type for specific videos
+    if ( get_post_meta( $video_id, '_my_custom_player', true ) ) {
+        return 'custom';
     }
     return $type;
 }, 10, 2 );
@@ -467,10 +509,10 @@ add_filter( 'mediashield_player_type', function( $type, $video_id ) {
 **Parameters:**
 | Param | Type | Description |
 |-------|------|-------------|
-| `$type` | string | Incoming player type. **The default differs by call site**: `Player\Renderer`, `Player\PlayerWrapper` and `Player\PlaylistRenderer` pass the literal `'standard'`; `REST\SessionController` passes the raw `_ms_protection_level` meta (which may be `''`). Return `'drm'` to switch the client to the DRM player. |
+| `$type` | string | Incoming player type. **The default differs by call site**: `Player\Renderer`, `Player\PlayerWrapper` and `Player\PlaylistRenderer` pass the literal `'standard'`; `REST\SessionController` passes the raw `_ms_protection_level` meta (which may be `''`). |
 | `$video_id` | int | Video CPT post ID |
 
-Pro's own callback (`Core\Plugin::override_player_type`, priority 10) returns `'drm'` when `_ms_protection_level === 'drm'` **and** `ms_drm_method !== 'none'`. It does not read `_ms_drm_enabled` - the example above is illustrative user code, not what Pro does.
+Pro no longer attaches to this filter (its DRM player type was removed in 1.4.1). The example above is illustrative user code.
 
 ---
 
@@ -757,7 +799,7 @@ add_filter( 'mediashield_allow_empty_referer', '__return_true' );
 
 *Since 1.1.0*
 
-Filter the frontend localized config payload before it is emitted as `window.mediashieldConfig`. Pro hooks this to inject player config, DRM hints, etc.
+Filter the frontend localized config payload before it is emitted as `window.mediashieldConfig`. Pro hooks this to inject player config.
 
 Source: `includes/Core/Settings.php:440`
 

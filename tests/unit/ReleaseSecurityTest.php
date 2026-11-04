@@ -9,6 +9,9 @@ namespace MediaShield\Tests\Unit;
 
 use MediaShield\Cron\Cleanup;
 use MediaShield\Embed\EmbedLink;
+use MediaShield\Integrations\Learnomy;
+use MediaShield\Player\PlaylistRenderer;
+use MediaShield\Player\PlayerWrapper;
 use MediaShield\REST\StreamController;
 use MediaShield\Player\Renderer;
 use WP_REST_Request;
@@ -254,5 +257,132 @@ class ReleaseSecurityTest extends WP_UnitTestCase {
 		$this->assertTrue( $queued );
 
 		delete_option( 'ms_file_claims_pending' );
+	}
+	/**
+	 * Fails before the fix: any logged-in subscriber read a playlist's items, each
+	 * with the video's source address, even for a password-protected playlist.
+	 */
+	public function test_playlist_items_need_editing_rights(): void {
+		$video    = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		update_post_meta( $video, '_ms_platform', 'self' );
+		update_post_meta( $video, '_ms_source_url', 'https://example.test/wp-content/uploads/2026/11/lesson.mp4' );
+		$playlist = self::factory()->post->create(
+			array(
+				'post_type'     => 'mediashield_playlist',
+				'post_status'   => 'publish',
+				'post_password' => 'partners',
+			)
+		);
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$add = new WP_REST_Request( 'POST', "/mediashield/v1/playlists/{$playlist}/items" );
+		$add->set_param( 'video_id', $video );
+		$this->assertSame( 201, rest_do_request( $add )->get_status() );
+
+		$read = new WP_REST_Request( 'GET', "/mediashield/v1/playlists/{$playlist}/items" );
+		$this->assertSame( 200, rest_do_request( $read )->get_status(), 'Editors still manage items.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$response = rest_do_request( $read );
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertStringNotContainsString( 'lesson.mp4', wp_json_encode( $response->get_data() ) );
+	}
+	/**
+	 * Fails before the fix: a visitor under Require Login got the YouTube id and
+	 * source URL of a video they may not watch, from the player and the playlist route.
+	 */
+	public function test_player_prints_no_address_for_a_viewer_who_may_not_watch(): void {
+		update_option( 'ms_require_login', true );
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		update_post_meta( $video, '_ms_platform', 'youtube' );
+		update_post_meta( $video, '_ms_platform_video_id', 'aqz-KE-bpKQ' );
+		update_post_meta( $video, '_ms_source_url', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ' );
+
+		wp_set_current_user( 0 );
+		$html = Renderer::render( $video );
+		$this->assertStringNotContainsString( 'aqz-KE-bpKQ', $html );
+		$this->assertStringContainsString( 'data-access-denied="1"', $html );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$html = Renderer::render( $video );
+		$this->assertStringContainsString( 'aqz-KE-bpKQ', $html, 'A member who may watch still gets the player.' );
+		$this->assertStringNotContainsString( 'data-access-denied', $html );
+	}
+
+	/**
+	 * Fails before the fix: a drip-locked Learnomy lesson still carried a working embed link.
+	 */
+	public function test_locked_learnomy_lesson_gets_no_embed_link(): void {
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$lesson = (object) array( 'content_type' => 'mediashield', 'video_url' => (string) $video );
+
+		$open = Learnomy::add_embed_to_payload( array( 'locked' => false ), $lesson );
+		$this->assertArrayHasKey( 'mediashield', $open, 'An open lesson keeps its link.' );
+
+		$locked = Learnomy::add_embed_to_payload( array( 'locked' => true ), $lesson );
+		$this->assertArrayNotHasKey( 'mediashield', $locked );
+	}
+
+	/**
+	 * Fails before the fix: the playlist block or shortcode showed a protected playlist's videos.
+	 */
+	public function test_playlist_block_asks_for_the_password(): void {
+		$video    = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish', 'post_title' => 'Partner briefing one' ) );
+		$playlist = self::factory()->post->create(
+			array(
+				'post_type'     => 'mediashield_playlist',
+				'post_status'   => 'publish',
+				'post_password' => 'partners',
+			)
+		);
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$add = new WP_REST_Request( 'POST', "/mediashield/v1/playlists/{$playlist}/items" );
+		$add->set_param( 'video_id', $video );
+		rest_do_request( $add );
+
+		wp_set_current_user( 0 );
+		$html = PlaylistRenderer::render( $playlist );
+		$this->assertStringContainsString( 'post_password', $html );
+		$this->assertStringNotContainsString( 'Partner briefing one', $html );
+	}
+	/**
+	 * Fails before the fix: a logged-out request to wp/v2 returned every video's
+	 * source URL and provider id in its meta.
+	 */
+	public function test_core_rest_hides_video_meta_from_viewers(): void {
+		// The suite resets registered meta between tests; register it as init does.
+		\MediaShield\CPT\VideoPostType::register_meta();
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		update_post_meta( $video, '_ms_source_url', 'https://example.test/wp-content/uploads/2026/11/lesson.mp4' );
+		$read = new WP_REST_Request( 'GET', "/wp/v2/mediashield-videos/{$video}" );
+
+		wp_set_current_user( 0 );
+		$this->assertArrayNotHasKey( 'meta', rest_do_request( $read )->get_data() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertArrayNotHasKey( 'meta', rest_do_request( $read )->get_data() );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$data = rest_do_request( $read )->get_data();
+		$this->assertSame( 'https://example.test/wp-content/uploads/2026/11/lesson.mp4', $data['meta']['_ms_source_url'] ?? '', 'The Video block still reads it.' );
+	}
+
+	/**
+	 * Fails before the fix: an auto-wrapped core embed printed the provider id to a visitor.
+	 */
+	public function test_auto_wrapped_embed_prints_no_id_for_a_viewer_who_may_not_watch(): void {
+		update_option( 'ms_require_login', true );
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		update_post_meta( $video, '_ms_platform', 'youtube' );
+		update_post_meta( $video, '_ms_platform_video_id', 'aqz-KE-bpKQ' );
+		update_post_meta( $video, '_ms_source_url', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ' );
+		$embed = '<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube"><div class="wp-block-embed__wrapper"><iframe title="x" src="https://www.youtube.com/embed/aqz-KE-bpKQ?feature=oembed" allowfullscreen></iframe></div></figure>';
+
+		wp_set_current_user( 0 );
+		$html = PlayerWrapper::process_buffer( $embed );
+		$this->assertStringContainsString( 'ms-protected-player', $html );
+		$this->assertStringNotContainsString( 'data-platform-video-id="aqz-KE-bpKQ"', $html );
+		$this->assertStringContainsString( 'data-access-denied="1"', $html );
 	}
 }

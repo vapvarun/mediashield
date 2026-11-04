@@ -272,13 +272,7 @@ class Cleanup {
 			$wpdb->delete( "{$wpdb->prefix}ms_activity_alerts", array( 'video_id' => $post_id ), array( '%d' ) );
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Pro table delete.
-			$wpdb->delete( "{$wpdb->prefix}ms_drm_licenses", array( 'video_id' => $post_id ), array( '%d' ) );
-
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Pro table delete.
 			$wpdb->delete( "{$wpdb->prefix}ms_heatmap_cache", array( 'video_id' => $post_id ), array( '%d' ) );
-
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Pro table delete.
-			$wpdb->delete( "{$wpdb->prefix}ms_drm_keys", array( 'video_id' => $post_id ), array( '%d' ) );
 
 			// Delete playback events for those sessions (session-dependent).
 			if ( ! empty( $session_ids ) ) {

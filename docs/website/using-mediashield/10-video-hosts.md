@@ -43,7 +43,7 @@ You keep the host you already pay for and its delivery, and still get MediaShiel
 
 ## What the host controls
 
-- **Encryption.** Encryption is done by the video host or source, such as Bunny Stream. MediaShield does not encrypt your videos. With MediaShield Pro, a Bunny stream the host has encrypted can be played through the encrypted player. That feature is experimental.
+- **Encryption and DRM.** MediaShield controls who can start playback. It does not encrypt your videos. Use your video host's own DRM, such as Bunny Stream's.
 - **Quality and bitrate.** MediaShield does not convert video. If the host offers several qualities, viewers get what the host's player offers.
 - **Captions.** MediaShield cannot show captions from a file you supply. Use a host that provides captions in its own player.
 

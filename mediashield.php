@@ -3,7 +3,7 @@
  * Plugin Name: MediaShield
  * Plugin URI:  https://wbcomdesigns.com/mediashield
  * Description: Video protection for WordPress — dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
- * Version:     1.4.0
+ * Version:     1.4.1
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author:      Wbcom Designs
@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'MEDIASHIELD_VERSION', '1.4.0' );
-define( 'MEDIASHIELD_DB_VERSION', 6 );
+define( 'MEDIASHIELD_VERSION', '1.4.1' );
+define( 'MEDIASHIELD_DB_VERSION', 7 );
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );
@@ -119,19 +119,10 @@ if ( file_exists( MEDIASHIELD_PATH . 'libs/edd-sl-sdk/edd-sl-sdk.php' )
 	);
 }
 
-// WP-CLI commands.
+// WP-CLI commands (autoloaded from includes/CLI, so they ship in the release zip).
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	$ms_scale_command = MEDIASHIELD_PATH . 'src/CLI/ScaleCommand.php';
-	if ( file_exists( $ms_scale_command ) ) {
-		require_once $ms_scale_command;
-		\WP_CLI::add_command( 'mediashield scale', \MediaShield\CLI\ScaleCommand::class );
-	}
-
-	$ms_repair_command = MEDIASHIELD_PATH . 'src/CLI/RepairCommand.php';
-	if ( file_exists( $ms_repair_command ) ) {
-		require_once $ms_repair_command;
-		\WP_CLI::add_command( 'mediashield repair', \MediaShield\CLI\RepairCommand::class );
-	}
+	\WP_CLI::add_command( 'mediashield scale', \MediaShield\CLI\ScaleCommand::class );
+	\WP_CLI::add_command( 'mediashield repair', \MediaShield\CLI\RepairCommand::class );
 }
 
 /*

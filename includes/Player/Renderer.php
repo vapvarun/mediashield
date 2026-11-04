@@ -166,23 +166,12 @@ class Renderer {
 		 */
 		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
 
-		// Only our own /stream route is gated: it re-checks the viewer on every
-		// request. Any other stream URL (a CDN address, Bunny direct play, an
-		// operator's pasted playlist) plays without touching /session/start, so
-		// printing it hands the file to someone who may not watch, and this
-		// output is also served to anyone by the playlist player route.
-		if ( '' !== $stream_url
-			&& 0 !== strpos( $stream_url, rest_url( 'mediashield/v1/stream/' . $video_id ) )
-			&& ! AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
-			$stream_url = '';
-		}
-
 		// Per-video override, then the owner's global default, then 'standard'.
 		// Shared with PlayerWrapper so the auto-wrap path cannot resolve this
 		// differently from the shortcode path, which is exactly what it did.
 		$protection_level = Protection::resolve_level( $video_id );
-		$duration    = (int) get_post_meta( $video_id, '_ms_duration', true );
-		$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_id );
+		$duration         = (int) get_post_meta( $video_id, '_ms_duration', true );
+		$player_type      = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 
 		if ( empty( $source_url ) && empty( $stream_url ) && empty( $platform_video_id ) ) {
 			return self::notice(
@@ -213,6 +202,8 @@ class Renderer {
 		$safe_urls  = Protection::filter_player_urls( $video_id, (string) $platform, (string) $source_url, $stream_url );
 		$source_url = $safe_urls['source_url'];
 		$stream_url = $safe_urls['stream_url'];
+
+		$access_denied = self::withhold_addresses( $video_id, $platform_video_id, $source_url, $stream_url );
 
 		// Enqueue frontend assets (only loads when video content exists).
 		Assets::enqueue();
@@ -288,6 +279,10 @@ class Renderer {
 				?>
 				data-access-type="<?php echo esc_attr( $access_type ); ?>"<?php endif; ?>
 			<?php
+			echo self::guest_allowed_attr( $video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static attribute string.
+			if ( $access_denied ) {
+				echo ' data-access-denied="1"';
+			}
 			if ( $wrapper_attrs ) {
 				echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
 			}
@@ -382,5 +377,53 @@ class Renderer {
 		do_action( 'mediashield_after_player', $video_id );
 
 		return $html;
+	}
+
+	/**
+	 * Blank every address of a video the current viewer may not watch.
+	 *
+	 * Not the source URL, not the provider id (a Bunny embed or an unlisted Vimeo
+	 * id plays on its own), not even our signed /stream address. The player asks
+	 * /session/start for the reason and shows the login or access message from
+	 * there. Shared with PlayerWrapper, so the shortcode, block, playlist page,
+	 * playlist player route and auto-wrapped embeds expose the same thing.
+	 *
+	 * @since 1.4.1
+	 *
+	 * @param int    $video_id          Video CPT post ID.
+	 * @param string $platform_video_id Provider id, blanked in place when denied.
+	 * @param string $source_url        Source URL, blanked in place when denied.
+	 * @param string $stream_url        Stream URL, blanked in place when denied.
+	 * @return bool True when the viewer may not watch; print data-access-denied.
+	 */
+	public static function withhold_addresses( int $video_id, &$platform_video_id, &$source_url, &$stream_url ): bool {
+		if ( AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
+			return false;
+		}
+		$platform_video_id = '';
+		$source_url        = '';
+		$stream_url        = '';
+		return true;
+	}
+
+	/**
+	 * Does the player tell the script that this guest may skip the login overlay?
+	 *
+	 * Returns ` data-guest-allowed="1"` for a logged-out visitor the login gate
+	 * does not apply to (Require Login off, or mediashield_guest_can_watch said
+	 * yes for this video), so the script asks /session/start instead of
+	 * painting the overlay. Shared with PlayerWrapper so both render paths
+	 * agree with AccessControl::login_gate_applies().
+	 *
+	 * @since 1.4.1
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return string Attribute string with a leading space, or ''.
+	 */
+	public static function guest_allowed_attr( int $video_id ): string {
+		if ( get_current_user_id() || AccessControl::login_gate_applies( $video_id, 0 ) ) {
+			return '';
+		}
+		return ' data-guest-allowed="1"';
 	}
 }

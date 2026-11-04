@@ -870,6 +870,19 @@
 		//              hiding forced on regardless of the global toggles
 		//              (protection.js reads data-protection-level for this).
 
+		// The server withheld the video's address because this viewer may not
+		// watch it. A visitor is asked to log in; a member gets the reason from
+		// /session/start, whose denial path shows the access message and raises
+		// mediashield:access-denied for integrations without a player adapter.
+		if ( el.dataset.accessDenied ) {
+			if ( ! config.isLoggedIn ) {
+				showLoginOverlay( el );
+			} else {
+				startSession( el, videoId, null );
+			}
+			return;
+		}
+
 		// No protection — free preview.
 		if ( protectionLevel === 'none' ) {
 			var adapter = createAdapter( el );
@@ -898,8 +911,10 @@
 		// truthiness test, matching how `isLoggedIn` is read above, NOT a
 		// `!== false` identity test (which "" would silently fail).
 		// A missing key means an older cached config, so default to gating.
+		// `data-guest-allowed` is the server saying this video lets guests past
+		// the login gate (mediashield_guest_can_watch, e.g. a free preview).
 		var requiresLogin = ( 'requireLogin' in config ) ? !! config.requireLogin : true;
-		if ( requiresLogin && ! config.isLoggedIn && ! el.dataset.accessType ) {
+		if ( requiresLogin && ! config.isLoggedIn && ! el.dataset.accessType && ! el.dataset.guestAllowed ) {
 			showLoginOverlay( el );
 			return;
 		}
@@ -985,6 +1000,13 @@
 						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
 						showErrorOverlay( el, msg );
 					}
+					return;
+				}
+
+				// Rendered as denied but now allowed (the viewer logged in in
+				// another tab): the address is not on this page, so say so.
+				if ( ! adapter ) {
+					showErrorOverlay( el, t( 'loadFailed', 'This video could not be loaded.' ) );
 					return;
 				}
 

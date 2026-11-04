@@ -100,7 +100,7 @@ Legend: **C** = Create · **R** = Read · **U** = Update · **D** = Delete · **
 
 ## Custom capabilities
 
-MediaShield FREE does NOT define custom WP capabilities. All checks gate on `manage_options` (admin) or `is_user_logged_in`. The `mediashield_can_watch` filter chain is the extension point for finer-grained access control — Pro adds role-based, email-gate, and LMS-enrollment checks here.
+MediaShield FREE does NOT define custom WP capabilities. All checks gate on `manage_options` (admin) or `is_user_logged_in`. The `mediashield_can_watch` filter chain is the extension point for finer-grained access control — Pro adds role-based and LMS-enrollment checks here.
 
 ## How to extend permissions
 

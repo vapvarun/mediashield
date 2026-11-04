@@ -44,12 +44,11 @@ The free plugin ships a complete protection and analytics layer. MediaShield Pro
 | Analytics dashboard | Yes | Yes (plus heatmaps, realtime viewers, and suspicious activity flags) |
 | Right-click and devtools protection | Yes | Yes |
 | Platform API connections (Bunny, YouTube, Vimeo, Wistia) | No | Yes |
-| Playback of host-encrypted Bunny streams through the encrypted player (experimental) | No | Yes |
 | LMS integrations (LearnDash, LifterLMS, TutorLMS) | No | Yes |
 | Data export (CSV, PDF) | No | Yes |
 | Suspicious activity detection and weekly digest | No | Yes |
 
-MediaShield does not encrypt video. Encryption belongs to your video host (Bunny Stream, for example). Pro can play a host-encrypted Bunny stream through its encrypted player, and that is marked experimental because it has not been verified against a real encrypted asset end to end. Treat it as a preview.
+MediaShield controls who can start playback. It does not encrypt or package video. If you need encryption or DRM, use your video host's own (Bunny Stream, for example).
 
 Pro licences unlock updates and support. Every Pro feature works without an active key.
 

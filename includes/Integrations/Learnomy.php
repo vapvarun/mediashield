@@ -21,6 +21,7 @@
 
 namespace MediaShield\Integrations;
 
+use MediaShield\Access\AccessControl;
 use MediaShield\Embed\EmbedLink;
 
 defined( 'ABSPATH' ) || exit;
@@ -65,12 +66,20 @@ class Learnomy {
 			return $payload;
 		}
 
+		// A drip- or sequence-locked lesson is metadata only. Learnomy marks it
+		// before this filter runs and strips only its own fields afterwards, so
+		// a link added here would play a lesson the student cannot open yet.
+		if ( ! empty( $payload['locked'] ) ) {
+			return $payload;
+		}
+
 		// Minted for the CALLER, not for the lesson: the link carries who may
-		// watch, and the embed page re-checks that when it renders. An
-		// unauthenticated read gets no link rather than a guest one, because a
-		// guest link would only fail later, further from the cause.
+		// watch, and the embed page re-checks that when it renders. A guest
+		// gets a link only when they may watch now (a free preview under
+		// Require Login, for one); otherwise the link would only fail later,
+		// further from the cause.
 		$user_id = get_current_user_id();
-		if ( ! $user_id ) {
+		if ( ! $user_id && ! AccessControl::can_watch( $video_id, 0 )['allowed'] ) {
 			return $payload;
 		}
 

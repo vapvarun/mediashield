@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,7 +68,6 @@ MediaShield protects your video content on WordPress with dynamic watermarking, 
 [MediaShield Pro](https://wbcomdesigns.com/downloads/mediashield-pro/) extends the free plugin with:
 
 * **Platform Connections.** Browse and bulk import videos from Bunny, YouTube, Vimeo, and Wistia.
-* **DRM Encryption (experimental).** ClearKey DRM, software-based AES-128 encryption via Shaka Player, with Bunny Stream cloud packaging or local Shaka Packager. Selectable only once a packaging method is configured. Widevine L1 hardware DRM is not included.
 * **Advanced Watermark.** 7 configurable fields: username, email, IP, user ID, timestamp, site name, custom text.
 * **Heatmap Analytics.** Per-video playback heatmaps with 10-second position buckets and retention curves.
 * **Realtime Dashboard.** Live active viewer count with 15-second auto-refresh.
@@ -151,6 +150,37 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 6. Session tracking with concurrent stream management
 
 == Changelog ==
+
+= 1.4.1 - November 2026 =
+
+Playlist pages, My Videos and the admin lists work properly on every screen size, and guests can watch free-preview lessons.
+
+* New      - Guests can watch a video when an LMS integration opens it to them, such as a Learnomy free-preview lesson, even with Require Login on. Developers can use the mediashield_guest_can_watch filter.
+* New      - My Videos has All, In Progress and Completed filters and pages of 12 videos. Developers can change the page size with the mediashield_my_videos_per_page filter.
+* New      - Logged-out visitors on My Videos see a link to log in.
+* Improve  - A playlist's own page shows the player and its list of videos.
+* Improve  - A password-protected playlist shows only the password form until the password is entered.
+* Improve  - My Videos titles and Resume buttons open the page where the video is watched. Developers can change the address with the mediashield_video_watch_url filter.
+* Improve  - The Playlist block uses the standard editor sidebar and shows the playlist's playback settings.
+* Improve  - On tablets the admin sidebar becomes an icon rail and list columns fit their content. On phones every admin list stacks into labelled cards.
+* Improve  - Admin icons always render, and the mobile sidebar gives every link a readable name.
+* Improve  - The setup wizard and settings no longer mention DRM encryption or an email gate.
+* Fix      - Playlist pages no longer return "Page not found" right after the plugin is activated, or on sites that were activated on an earlier version and then updated.
+* Fix      - Updating by deactivating, replacing and reactivating the plugin runs the same upgrade steps as a normal update.
+* Fix      - Opening a viewer under Viewers shows their name, email and watch history instead of "Unknown User", and the name is easier to tap on phones.
+* Fix      - The My Videos shortcode no longer renders empty.
+* Fix      - The Actions buttons in the Videos and Playlists lists no longer get cut off.
+* Fix      - The watermark uses the Font Size setting.
+* Fix      - Deleting a video no longer queries the old DRM tables, which new installs do not have.
+* Fix      - The scale and repair WP-CLI commands are included in the plugin download.
+* Fix      - A password-protected playlist placed with the Playlist block or shortcode asks for its password before showing its videos.
+* Fix      - A Learnomy lesson that is still locked by its drip or sequence rules no longer includes a playable video link in its REST data.
+* Security - A visitor or member who may not watch a video no longer receives its YouTube, Vimeo or Bunny id, its source address or a stream address in the page, including embeds MediaShield wraps. The player shows the login or access message instead (1.4.0 and earlier).
+* Security - The WordPress REST API no longer returns a video's source address, provider id and access settings to visitors and members. People who can edit content still get them for the Video block (1.4.0 and earlier).
+* Security - Only people who can edit content can read a playlist's item list. Any logged-in subscriber could read it before, including each video's source address and the items of a password-protected playlist (1.4.0 and earlier).
+* Security - REST responses are marked no-store, so a page cache cannot keep one viewer's response and serve it to someone else.
+* Dev      - wp mediashield scale teardown removes only the rows it seeded and keeps those of real members with high user ids.
+* Compat   - Aligned with MediaShield Pro 1.4.1. Install both updates together.
 
 = 1.4.0 - October 2026 =
 

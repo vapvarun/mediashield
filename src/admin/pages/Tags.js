@@ -171,8 +171,8 @@ const Tags = () => {
 							) }
 							{ tags.map( ( tag ) => (
 								<tr key={ tag.id }>
-									<td><strong>{ tag.name }</strong></td>
-									<td>
+									<td data-label={ __( 'Name', 'mediashield' ) }><strong>{ tag.name }</strong></td>
+									<td data-label={ __( 'Slug', 'mediashield' ) }>
 										<code style={ {
 											fontSize: '11px',
 											background: 'var(--ms-color-bg)',
@@ -183,12 +183,12 @@ const Tags = () => {
 											{ tag.slug }
 										</code>
 									</td>
-									<td>
+									<td data-label={ __( 'Videos', 'mediashield' ) }>
 										<span className="mediashield-badge mediashield-badge--standard">
 											{ tag.video_count ?? 0 }
 										</span>
 									</td>
-									<td>
+									<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
 										<button
 											className="mediashield-action-btn mediashield-action-btn--delete"
 											disabled={ deletingId === tag.id }

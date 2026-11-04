@@ -26,6 +26,7 @@ class VideoPostType {
 	public static function register(): void {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
+		add_filter( 'rest_prepare_mediashield_video', array( __CLASS__, 'hide_meta_from_viewers' ) );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_boxes' ) );
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'save_meta_box' ), 10, 2 );
 		// After the meta box (10) on the edit screen, and after REST has written
@@ -432,12 +433,8 @@ class VideoPostType {
 		/**
 		 * Filter the protection levels offered on the video edit screen.
 		 *
-		 * This list was a closed array, which made it a dead end for the whole
-		 * DRM feature: Pro decides a video is DRM-protected by reading
-		 * `_ms_protection_level === 'drm'`, but nothing could ever set that
-		 * value because the only UI that writes the meta did not offer it and
-		 * Pro had no way in (BC#10143667645). Opening the seam is the half of
-		 * that card that belongs in Free.
+		 * Open so an add-on can offer its own level. Free ships none, basic,
+		 * standard and strict.
 		 *
 		 * Adding a level here only makes it selectable and storable. Whatever
 		 * the level is supposed to DO still has to be implemented by whoever
@@ -743,7 +740,7 @@ class VideoPostType {
 	public static function render_lms_teaser( \WP_Post $post ): void {
 		?>
 		<div class="ms-teaser-box">
-			<p><strong><?php esc_html_e( 'Link this video to a LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
+			<p><strong><?php esc_html_e( 'Link this video to a Learnomy, LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
 			<ul>
 				<li><?php esc_html_e( 'Auto-mark lesson complete on video finish', 'mediashield' ); ?></li>
 				<li><?php esc_html_e( 'Require course enrollment to watch', 'mediashield' ); ?></li>
@@ -764,7 +761,6 @@ class VideoPostType {
 		<div class="ms-teaser-box">
 			<ul>
 				<li><strong><?php esc_html_e( 'Advanced Watermark', 'mediashield' ); ?></strong> — <?php esc_html_e( '7 fields (email, IP, timestamp...)', 'mediashield' ); ?></li>
-				<li><strong><?php esc_html_e( 'DRM', 'mediashield' ); ?></strong> — <?php esc_html_e( 'Widevine encryption', 'mediashield' ); ?></li>
 				<li><strong><?php esc_html_e( 'Heatmaps', 'mediashield' ); ?></strong> — <?php esc_html_e( 'See where viewers watch', 'mediashield' ); ?></li>
 			</ul>
 			<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer" class="button"><?php esc_html_e( 'Upgrade', 'mediashield' ); ?> &rarr;</a>
@@ -919,6 +915,30 @@ class VideoPostType {
 			}
 			update_post_meta( $post_id, '_ms_milestone_tags', $milestones );
 		}
+	}
+
+	/**
+	 * Keep the video's meta out of wp/v2 responses for people who cannot edit content.
+	 *
+	 * The meta carries the source URL and provider id, the very addresses the
+	 * player withholds from a viewer who may not watch. Anyone could read them
+	 * from /wp/v2/mediashield-videos. The Video block reads them to preview a
+	 * video, so people who can write posts keep them, the same bar as the
+	 * playlist items route.
+	 *
+	 * @since 1.4.1
+	 *
+	 * @param \WP_REST_Response $response Prepared response.
+	 * @return \WP_REST_Response
+	 */
+	public static function hide_meta_from_viewers( \WP_REST_Response $response ): \WP_REST_Response {
+		if ( current_user_can( 'edit_posts' ) ) {
+			return $response;
+		}
+		$data = $response->get_data();
+		unset( $data['meta'] );
+		$response->set_data( $data );
+		return $response;
 	}
 
 	/**

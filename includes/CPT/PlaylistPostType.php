@@ -28,6 +28,8 @@ class PlaylistPostType {
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
 		add_action( 'add_meta_boxes_mediashield_playlist', array( __CLASS__, 'register_items_meta_box' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_items_assets' ) );
+		// Late, so wpautop, shortcodes and smilies never run over the player markup.
+		add_filter( 'the_content', array( __CLASS__, 'render_single' ), 99 );
 	}
 
 	/**
@@ -105,7 +107,7 @@ class PlaylistPostType {
 			'mediashield-playlist-items',
 			$build_url . 'index.css',
 			array( 'wp-components' ),
-			$asset['version']
+			(string) filemtime( $build_dir . 'index.css' )
 		);
 		wp_localize_script(
 			'mediashield-playlist-items',
@@ -164,6 +166,27 @@ class PlaylistPostType {
 				'map_meta_cap'    => true,
 			)
 		);
+	}
+
+	/**
+	 * What does a playlist's own page (/playlist/<slug>/) show below its text?
+	 *
+	 * The same player and video list as the [mediashield_playlist] shortcode
+	 * and block. The items live in the playlist table, not in post_content, so
+	 * without this the page printed only the title. Access is decided where it
+	 * always is: the player asks /session/start, which runs can_watch(). A
+	 * password-protected playlist shows only WordPress's password form until
+	 * the visitor enters it.
+	 *
+	 * @param string $content Post content.
+	 * @return string Content followed by the playlist, or unchanged elsewhere.
+	 */
+	public static function render_single( $content ) {
+		if ( ! is_singular( 'mediashield_playlist' ) || ! in_the_loop() || ! is_main_query() || post_password_required() ) {
+			return $content;
+		}
+
+		return $content . \MediaShield\Player\PlaylistRenderer::render( (int) get_the_ID() );
 	}
 
 	/**

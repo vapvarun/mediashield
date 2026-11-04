@@ -1,0 +1,151 @@
+{
+ "mode": "free",
+ "release_version": "1.4.1",
+ "pro_version": null,
+ "ran_at": "2026-11-04T08:34:33Z",
+ "sections": {
+  "A_fresh_install": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 3,
+   "note": "run by caller"
+  },
+  "B_upgrade": {
+   "pass": 3,
+   "fail": 0,
+   "skipped": 0,
+   "untested": 3
+  },
+  "C_core_flows": {
+   "pass": 13,
+   "fail": 2,
+   "skipped": 0
+  },
+  "D_regression_guards": {
+   "pass": 2,
+   "fail": 0,
+   "skipped": 0
+  },
+  "E_pro_smoke": {
+   "pass": 1,
+   "fail": 0,
+   "skipped": 0,
+   "note": "Pro route absent: /mediashield-pro/v1/platforms 404, Pro admin routes fall back to Dashboard"
+  },
+  "E2_environment": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 1
+  },
+  "F_cross_browser": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 1
+  }
+ },
+ "hard_fails": [
+  {
+   "id": "H1-a-embed",
+   "invariant": "A visitor who may not watch gets no source URL or provider id in the HTML",
+   "actual": "Logged-out /embed-block-test/ prints aqz-KE-bpKQ and the embed URL; /wp-json/wp/v2/mediashield-videos/8 returns it to anonymous callers. (Free site was not given the combo Renderer build.)",
+   "recheck_20261104": "resolved (R1/R2 pass)"
+  }
+ ],
+ "untested": [
+  {
+   "id": "C6",
+   "reason": "stale page token refresh not exercised (no way to age a token in this run)",
+   "needs": "page held open past token life, or shortened token TTL"
+  },
+  {
+   "id": "C2-playback",
+   "reason": "playback of video bytes/provider streams not observed; only player render, session start and watermark were",
+   "needs": "headed browser with media codecs and outbound access to YouTube/Vimeo"
+  },
+  {
+   "id": "C5-streamlimit",
+   "reason": "stream-limit counting across devices not exercised",
+   "needs": "two logged-in devices for one member"
+  },
+  {
+   "id": "C10-urlpaste",
+   "reason": "pasting another author's uploaded file URL into a new video not exercised; only REST/edit-screen refusals seen",
+   "needs": "author-created video naming another's file"
+  },
+  {
+   "id": "C11-cdn",
+   "reason": "no CDN-addressed self-hosted video and no Bunny",
+   "needs": "fixture with CDN address"
+  },
+  {
+   "id": "B3",
+   "reason": "no two-videos-one-file fixture",
+   "needs": "two videos naming one file"
+  },
+  {
+   "id": "B4-job",
+   "reason": "claim job run not observed; ms_file_claims_pending option is absent after the update (cleared)",
+   "needs": "pre-update snapshot with pending claims"
+  },
+  {
+   "id": "F",
+   "reason": "Chromium only",
+   "needs": "Safari/Firefox"
+  },
+  {
+   "id": "autoplay",
+   "reason": "autoplay countdown not observed (playlist autoplay=0, no real playback)",
+   "needs": "autoplay playlist with playing media"
+  },
+  {
+   "id": "MyVideos-links",
+   "reason": "no Learnomy course fixture; titles showed plain text with no Resume link",
+   "needs": "enrolled lesson"
+  }
+ ],
+ "coverage": {
+  "B6": "logged-out /playlist/getting-started-with-northwind/ returned 200 with player and 4 items, before any other free page load; also 200 in browser",
+  "db_version": "ms_db_version 7 on both sites",
+  "B5": "videos 6, playlists 3, playlist items 5 unchanged; all 37 ms_ options unchanged except ms_db_version 6->7",
+  "admin": "Free nav shows 5 Pro upsell links; Pro-only routes (platforms, alerts, heatmap, realtime, export, upload-queue, milestone-config, license) fall back to Dashboard; the 7 free routes render at 1280/390 with no overflow or console error; sidebar icons all present; Viewers shows 'No viewer activity recorded yet.'",
+  "front": "dashboard, embed, playlist, playlist block, password playlist (form only, then 1 player after partners2026), empty playlist, My Videos at 1280/390; watermark 16px with name+IP at 1280, 12px name only at 390",
+  "themes": "Astra and Kadence: single, playlist, My Videos, no overflow",
+  "access": "guest session/start 401; marco 403 on analytics/users/2; lena 403 on omar's video (REST and edit screen); fake heartbeats 401x4 then 429",
+  "reactivation": "deactivate/activate: site, playlist, dashboard-tour 200, admin lists 6 videos and 3 playlists, ms_db_version 7, 37 ms_ options as before. First admin load shows the one-time 'Welcome to MediaShield' screen, then normal."
+ },
+ "failures": [
+  {
+   "id": "H1-a",
+   "origin": "from",
+   "triage_note": "same embed path as combo",
+   "expected": "No provider id for a guest",
+   "actual": "id and embed URL in HTML",
+   "url": "http://localhost:8982/embed-block-test/",
+   "recheck_20261104": "resolved on re-check"
+  },
+  {
+   "id": "C11-rest",
+   "origin": "from",
+   "triage_note": "public REST meta",
+   "expected": "no provider id/source URL",
+   "actual": "exposed",
+   "url": "http://localhost:8982/wp-json/wp/v2/mediashield-videos/8",
+   "recheck_20261104": "resolved on re-check"
+  }
+ ],
+ "debug_log_issues": [],
+ "manual_required": [],
+ "top3": [
+  "Free passes the 1.4.1 upgrade checks: playlist page opens after a zip update with no re-activation, db version 7, nothing lost, reactivation clean.",
+  "Same guest id leak as combo on the embed-block page and the public REST video endpoint.",
+  "Free shows Pro-only menu links as upsells and falls back to the Dashboard for those routes, as intended."
+ ],
+ "recheck_20261104": {
+  "R1": "pass (logged out: empty data-platform-video-id/source-url/stream-url, login prompt + Log In link on all pages; unmatched embed left as YouTube iframe)",
+  "R2": "pass (anon + priya: no meta; lena: meta present)",
+  "R7": "pass (priya 403, lena 200)",
+  "R8": "pass (password form, no playlist video title; test page deleted)",
+  "R9": "pass (Dashboard/Videos/Playlists/Viewers 1280+390, 0 console errors, 0 overflow; playlist plays first item as admin)",
+  "R10": "pass (debug.log unchanged: combo 540 B, free 84 B)"
+ }
+}

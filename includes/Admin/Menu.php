@@ -103,7 +103,8 @@ class Menu {
 			'mediashield-admin',
 			$build_url . $css_file,
 			array( 'wp-components' ),
-			$ver
+			// Its own file time: a CSS-only change leaves the JS hash alone.
+			(string) filemtime( $build_dir . $css_file )
 		);
 
 		// Localize config.
@@ -162,7 +163,7 @@ class Menu {
 		<div class="notice notice-info is-dismissible ms-pro-notice" data-nonce="<?php echo esc_attr( $nonce ); ?>">
 			<p>
 				<strong><?php esc_html_e( 'Unlock the full power of MediaShield', 'mediashield' ); ?></strong> &mdash;
-				<?php esc_html_e( 'DRM encryption, heatmap analytics, LMS integration, and more.', 'mediashield' ); ?>
+				<?php esc_html_e( 'Heatmap analytics, LMS integration, platform imports, and more.', 'mediashield' ); ?>
 				<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Get MediaShield Pro', 'mediashield' ); ?> &rarr;</a>
 			</p>
 		</div>

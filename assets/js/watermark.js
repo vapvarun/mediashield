@@ -12,6 +12,13 @@
 
 	var config = window.mediashieldConfig || {};
 
+	// Watermark text size in px per font_size setting: [desktop, mobile].
+	var FONT_SIZES = {
+		small: [ 12, 10 ],
+		medium: [ 16, 12 ],
+		large: [ 22, 16 ],
+	};
+
 	window.addEventListener('mediashield:player-ready', function (e) {
 		var detail = e.detail;
 		if (!detail.el) return;
@@ -46,9 +53,11 @@
 
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-			// Mobile-responsive font size.
+			// Owner-chosen size (Pro sends font_size small/medium/large), one
+			// step smaller on narrow players. Medium is the historic 16/12.
 			var isMobile = rect.width < 640;
-			var fontSize = isMobile ? 12 : 16;
+			var sizes = FONT_SIZES[ wmConfig.font_size ] || FONT_SIZES.medium;
+			var fontSize = sizes[ isMobile ? 1 : 0 ];
 
 			ctx.font = fontSize + 'px sans-serif';
 			ctx.fillStyle = wmConfig.color || '#ffffff';

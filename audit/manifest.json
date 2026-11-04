@@ -1203,6 +1203,14 @@
       {
         "hook": "edd_sl_sdk_license_control_after_{$args[",
         "listeners": []
+      },
+      {
+        "hook": "mediashield_guest_can_watch",
+        "listeners": []
+      },
+      {
+        "hook": "mediashield_video_watch_url",
+        "listeners": []
       }
     ],
     "featureGroups": [],
@@ -1294,16 +1302,7 @@
         "line": 110
       }
     ],
-    "templates": [
-      {
-        "file": "templates/login-overlay.php",
-        "overridePath": "theme/mediashield/login-overlay.php",
-        "hooksInTemplate": [],
-        "varsUsed": [],
-        "loaderArgs": [],
-        "argsConfidence": "low"
-      }
-    ],
+    "templates": [],
     "hooks": {
       "provided": [
         {
@@ -1683,6 +1682,18 @@
           "hookName": "mediashield_claim_files_batch_size",
           "file": "includes/Cron/Cleanup.php",
           "line": 517
+        },
+        {
+          "type": "filter",
+          "hookName": "mediashield_guest_can_watch",
+          "file": "includes/Access/AccessControl.php",
+          "line": 112
+        },
+        {
+          "type": "filter",
+          "hookName": "mediashield_video_watch_url",
+          "file": "src/blocks/my-videos/render.php",
+          "line": 85
         }
       ],
       "consumed": [
@@ -2526,6 +2537,11 @@
       "file": "includes/Core/Settings.php:440"
     },
     {
+      "hook": "mediashield_guest_can_watch",
+      "type": "filter",
+      "file": "includes/Access/AccessControl.php:112"
+    },
+    {
       "hook": "mediashield_loaded",
       "type": "action",
       "file": "includes/Core/Plugin.php:131"
@@ -2544,6 +2560,11 @@
       "hook": "mediashield_milestone_{$pct}",
       "type": "action",
       "file": "includes/Milestones/MilestoneTracker.php:150"
+    },
+    {
+      "hook": "mediashield_my_videos_per_page",
+      "type": "filter",
+      "file": "src/blocks/my-videos/render.php"
     },
     {
       "hook": "mediashield_needs_shaka",
@@ -2734,6 +2755,11 @@
       "hook": "mediashield_video_stream_url",
       "type": "filter",
       "file": "includes/REST/SessionController.php:379"
+    },
+    {
+      "hook": "mediashield_video_watch_url",
+      "type": "filter",
+      "file": "src/blocks/my-videos/render.php:85"
     },
     {
       "hook": "mediashield_watermark_config",

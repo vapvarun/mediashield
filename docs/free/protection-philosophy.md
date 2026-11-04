@@ -35,8 +35,8 @@ Be honest with yourself and with your customers.
 | Attack | MediaShield's response |
 |---|---|
 | Screen recording (OBS, macOS screen capture, phone camera) | Cannot be blocked. The watermark makes the recording traceable. |
-| Saving the video URL from browser developer tools | For self-hosted video, free keeps the file address out of the page entirely and plays through a permission-checked address instead. Pro additionally encrypts the file with ClearKey. YouTube, Vimeo, Wistia and Bunny embeds keep their URLs, because a provider iframe cannot load without carrying the provider's video ID. |
-| Stream Recorder or Video DownloadHelper browser extensions | Effective against unencrypted streams. Pro's ClearKey blocks them for encrypted self-hosted video. |
+| Saving the video URL from browser developer tools | For self-hosted video, free keeps the file address out of the page entirely and plays through a permission-checked address instead. YouTube, Vimeo, Wistia and Bunny embeds keep their URLs, because a provider iframe cannot load without carrying the provider's video ID. |
+| Stream Recorder or Video DownloadHelper browser extensions | Effective against unencrypted streams. Encrypted streams from a host with its own DRM (Bunny Stream and similar) resist them. MediaShield does not encrypt. |
 | Professional piracy (yt-dlp -- a command-line tool for downloading videos from web platforms -- plus ffmpeg plus key extraction) | No software DRM stops a determined attacker. Only hardware Widevine L1 does that, and MediaShield does not ship it. |
 | Requesting a self-hosted video file directly by its web address | **Depends on your web server, and by default it is not blocked on nginx.** See below. |
 
@@ -128,8 +128,8 @@ Either lying or using a proprietary codec that locks you into their ecosystem. S
 **Can I use MediaShield plus a hardware DRM service together?**
 Yes. Bunny Stream MediaCage Enterprise gives you Widevine L1 plus FairPlay. MediaShield adds watermarks, access control, analytics, and audit trail on top. Use Bunny for hosting and DRM, MediaShield for the WordPress layer.
 
-**Is software DRM (ClearKey) worth paying for?**
-For the $99 per year Pro price, yes. It stops casual download tools. For high-value IP like films or live sports, no. Use Widevine L1.
+**Does MediaShield encrypt my video or offer DRM?**
+No. MediaShield controls who can start playback. If you need encryption or DRM, use your video host's own, such as Bunny Stream's. For high-value IP like films or live sports, use a host with Widevine L1.
 
 **What about the watermark. Can't someone just crop it out?**
 In theory, yes. In practice, the watermark moves position every 30 seconds by default (and you can set that lower), survives fullscreen, covers multiple areas over time, and anti-tamper pauses the video if someone removes the overlay. Cropping would also crop the video content. Most leakers don't bother. They just don't share rather than risk it.

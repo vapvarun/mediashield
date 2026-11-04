@@ -12,6 +12,7 @@
 
 namespace MediaShield\Tests\Unit;
 
+use MediaShield\Access\AccessControl;
 use MediaShield\Core\Settings;
 use MediaShield\Embed\EmbedLink;
 use MediaShield\Player\Protection;
@@ -213,5 +214,27 @@ class AccessGatesTest extends WP_UnitTestCase {
 		$html = ob_get_clean();
 
 		$this->assertStringContainsString( 'value="drm"', $html );
+	}
+
+	/**
+	 * BC#10439179985 — Require Login denied guests before any filter ran, so a
+	 * free-preview lesson could not let a guest watch.
+	 */
+	public function test_guest_can_watch_filter_opens_the_login_gate_for_one_video(): void {
+		update_option( 'ms_require_login', true );
+		$this->assertFalse( AccessControl::can_watch( $this->video_id, 0 )['allowed'] );
+
+		$allow = fn( $allowed, $video_id ) => $video_id === $this->video_id;
+		add_filter( 'mediashield_guest_can_watch', $allow, 10, 2 );
+
+		$this->assertTrue( AccessControl::can_watch( $this->video_id, 0 )['allowed'] );
+		$other = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$this->assertFalse( AccessControl::can_watch( $other, 0 )['allowed'] );
+
+		// The role gate still applies after the login gate is skipped.
+		update_post_meta( $this->video_id, '_ms_access_role', 'subscriber' );
+		$this->assertFalse( AccessControl::can_watch( $this->video_id, 0 )['allowed'] );
+
+		remove_filter( 'mediashield_guest_can_watch', $allow, 10 );
 	}
 }

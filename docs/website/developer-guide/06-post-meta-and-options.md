@@ -99,7 +99,7 @@ Options in the schema are deleted on uninstall automatically. Do not add your ow
 
 | Option | Written by | Purpose |
 |--------|-----------|---------|
-| `ms_db_version` | Activator, Migrator | Installed database version (6 at 1.4.0). |
+| `ms_db_version` | Activator, Migrator | Installed database version (7 at 1.4.1). |
 | `ms_wizard_completed` | `POST /wizard/complete` | Setup wizard finished. |
 | `ms_activated_at` | Activator, admin notice | Activation time (Unix), used to delay the Pro notice by 7 days. |
 | `ms_pro_notice_dismissed` | `ms_dismiss_pro_notice` AJAX | Pro upsell notice dismissed. |

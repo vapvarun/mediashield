@@ -1,6 +1,6 @@
 # MediaShield -- Video Protection for WordPress
 
-Protect your video content with dynamic watermarking, session tracking, DRM encryption, and multi-platform support. Host videos on Bunny Stream, YouTube, Vimeo, or Wistia -- MediaShield wraps the player with protection while videos stream from their CDN. No video files stored on your server.
+Protect your video content with dynamic watermarking, session tracking, and multi-platform support. Host videos on Bunny Stream, YouTube, Vimeo, or Wistia -- MediaShield wraps the player with protection while videos stream from their CDN. No video files stored on your server.
 
 ## Get it
 
@@ -76,9 +76,6 @@ MediaShield is free. MediaShield Pro adds advanced protection, analytics and pla
 | Suspicious activity detection (multi-IP, VPN) | -- | Yes |
 | Suspicious activity alerts + dashboard | -- | Yes |
 | User whitelisting (mark as safe) | -- | Yes |
-| ClearKey DRM encryption (software-based) | -- | Yes |
-| Bunny Stream DRM | -- | Yes |
-| Local Shaka Packager DRM | -- | Yes |
 | PWA offline playback (service worker) | -- | Yes |
 | Signed/token-authenticated CDN URLs | -- | Yes |
 | | | |
@@ -110,7 +107,7 @@ MediaShield is free. MediaShield Pro adds advanced protection, analytics and pla
 | **Compliance** | | |
 | GDPR privacy exporter | Yes | Yes |
 | GDPR privacy eraser | Yes | Yes |
-| Pro table export/erase (email captures, DRM) | -- | Yes |
+| Pro table export/erase | -- | Yes |
 | Clean uninstall (tables, options, caps) | Yes | Yes |
 | Frontend upload (`[mediashield_upload]`) | -- | Yes |
 

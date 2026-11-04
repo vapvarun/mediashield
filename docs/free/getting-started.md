@@ -166,7 +166,6 @@ Two pages you don't need on Day 1 but will return to:
 
 If you outgrow the free protection-and-tracking layer, MediaShield Pro adds the things that don't fit the "player" baseline:
 
-- **ClearKey DRM** via Bunny Stream or local packager
 - **Real-time dashboard** -- live viewer count with auto-refresh
 - **Per-video heatmaps** -- playback position buckets so you can see where viewers drop off
 - **Suspicious activity alerts** -- multi-device usage, developer-tools opens, rapid-seek detection

@@ -66,7 +66,7 @@ Videos play but the Dashboard shows zero sessions, and milestones never fire.
 1. **REST API is blocked.** Test by visiting `/wp-json/mediashield/v1/` in your browser. You should see a JSON route list. If you see a 404, a security plugin (iThemes Security, Wordfence) is blocking `/wp-json/`. Whitelist it.
 
 2. **Caching is caching nonces (the one-time security tokens in the page).** This is the number one cause. Full-page caching serves the same token to every visitor. Each new visitor can't start a session.
-   * **LiteSpeed Cache:** Settings, Cache, Do Not Cache URIs. Add `/wp-json/mediashield/`.
+   * **LiteSpeed Cache:** Settings, Cache, Do Not Cache URIs. Add `/wp-json/mediashield` (no trailing slash, so the Pro routes under `/wp-json/mediashield-pro/` are excluded too).
    * **WP Rocket:** already excludes REST API by default. Verify in Advanced Rules.
    * **W3 Total Cache:** Performance, Page Cache, Reject URIs. Add `/wp-json/`.
    * **WP Super Cache:** Advanced, Rejected URL Strings. Add `/wp-json/`.
@@ -167,7 +167,7 @@ Known clean-compatibility list:
 
 Known caveats:
 
-* Some "Disable REST API" security plugins block our endpoints. Whitelist `/wp-json/mediashield/` or switch plugins.
+* Some "Disable REST API" security plugins block our endpoints. Whitelist `/wp-json/mediashield` or switch plugins.
 * Full-page JS-caching plugins that freeze security tokens break session start. Use a less aggressive caching level.
 
 ## Still stuck?

@@ -32,6 +32,14 @@ import {
 	AlertTriangle,
 	MonitorPlay,
 	Clipboard,
+	Eye,
+	PieChart,
+	Globe,
+	History,
+	Upload,
+	GraduationCap,
+	KeyRound,
+	Zap,
 	CircleHelp,
 } from 'lucide-react';
 
@@ -63,10 +71,24 @@ const MAP = {
 	youtube: MonitorPlay,
 	clipboard: Clipboard,
 	'admin-page': Clipboard,
+	visibility: Eye,
+	'chart-pie': PieChart,
+	'admin-settings': Settings,
+	'admin-site-alt3': Globe,
+	'admin-users': Users,
+	backup: History,
+	upload: Upload,
+	'welcome-learn-more': GraduationCap,
+	'admin-network': KeyRound,
+	zap: Zap,
 };
 
 const Icon = ( { name, size = 20, className = '', ...rest } ) => {
 	const Cmp = MAP[ name ] || CircleHelp;
+	if ( ! MAP[ name ] && process.env.NODE_ENV !== 'production' ) {
+		// eslint-disable-next-line no-console
+		console.warn( `MediaShield Icon: no icon mapped for "${ name }".` );
+	}
 	return (
 		<Cmp
 			size={ size }

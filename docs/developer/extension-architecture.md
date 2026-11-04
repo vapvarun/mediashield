@@ -11,9 +11,9 @@ The free plugin is the base. Pro is a pure add-on: it never replaces free behavi
 Pro hooks in at the following boundaries:
 
 1. **Admin SPA routes** - the `mediashield_admin_routes` JS filter adds pages to the hash router.
-2. **Settings REST** - `mediashield_settings_response` (GET) and `mediashield_settings_update` (PUT) filters let Pro add and save settings. Pro callbacks `unset()` their own keys from `$data` so the free `SettingsController` loop ignores them. Three Pro classes subscribe: `Admin\ProSettings`, `Admin\DRMSettings`, `Watermark\AdvancedConfig`.
-3. **Player type** - `mediashield_player_type` lets Pro override to `drm`.
-4. **Protection levels** - `mediashield_protection_levels` (1.3.0) is how Pro adds the `drm` level to the video edit screen at all.
+2. **Settings REST** - `mediashield_settings_response` (GET) and `mediashield_settings_update` (PUT) filters let Pro add and save settings. Pro callbacks `unset()` their own keys from `$data` so the free `SettingsController` loop ignores them. Two Pro classes subscribe: `Admin\ProSettings`, `Watermark\AdvancedConfig`.
+3. **Player type and protection levels** - `mediashield_player_type` and `mediashield_protection_levels` are open to any add-on. Pro no longer uses them (the DRM level was removed in 1.4.1).
+4. **Guests and watch pages** - `mediashield_guest_can_watch` lets an LMS allow a guest past Require Login, and `mediashield_video_watch_url` supplies the page the My Videos block links to (both 1.4.1).
 5. **Access control** - `mediashield_can_watch` stacked at priorities 20 (role) and 25 (LMS adapters).
 6. **Upload drivers** - `mediashield_upload_drivers` registers Bunny, YouTube, Vimeo, Wistia driver classes.
 7. **Upload lifecycle** - `mediashield_upload_started` / `_complete` / `_failed` feed Pro's `ms_upload_queue` table.

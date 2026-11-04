@@ -37,7 +37,7 @@ class AccessControl {
 
 		// Login gate — denial message comes from the user-configured setting so
 		// site owners can customize copy without overriding translations.
-		if ( Settings::get( 'ms_require_login' ) && ! $user_id ) {
+		if ( self::login_gate_applies( $video_id, $user_id ) ) {
 			return self::deny( Settings::get( 'ms_login_overlay_text' ) );
 		}
 
@@ -64,7 +64,7 @@ class AccessControl {
 		/**
 		 * Filter whether a user can watch a video.
 		 *
-		 * Pro hooks into this for role-based access, email gating, etc.
+		 * Pro and LMS integrations hook in to add their own access rules.
 		 *
 		 * @since 1.0.0
 		 *
@@ -75,6 +75,41 @@ class AccessControl {
 		$result = apply_filters( 'mediashield_can_watch', $result, $video_id, $user_id );
 
 		return $result;
+	}
+
+	/**
+	 * Must this viewer log in before this video can play?
+	 *
+	 * True only for a guest while Require Login is on, unless an integration
+	 * lets guests watch this one video (a free-preview lesson, say). The one
+	 * answer the access check, /session/start and the player markup share, so
+	 * the login overlay and the stream URL can never disagree. Passing the
+	 * login gate is not permission to watch: can_watch() still runs the role,
+	 * domain and mediashield_can_watch checks.
+	 *
+	 * @since 1.4.1
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  User ID (0 for guests).
+	 * @return bool
+	 */
+	public static function login_gate_applies( int $video_id, int $user_id ): bool {
+		if ( $user_id || ! Settings::get( 'ms_require_login' ) ) {
+			return false;
+		}
+
+		/**
+		 * Filter whether a guest may watch this video while Require Login is on.
+		 *
+		 * Return true to skip the login gate for this video only. The role,
+		 * allowed-domain and mediashield_can_watch checks still apply.
+		 *
+		 * @since 1.4.1
+		 *
+		 * @param bool $allowed  Default false.
+		 * @param int  $video_id Video CPT post ID.
+		 */
+		return ! (bool) apply_filters( 'mediashield_guest_can_watch', false, $video_id );
 	}
 
 	/**

@@ -314,7 +314,6 @@ All prefixed `ms_`. Managed by `SettingsController`.
 | Template | File | Description |
 |----------|------|-------------|
 | Single Video | `templates/single-mediashield_video.php` | Custom single post template with Renderer output + JSON-LD VideoObject schema |
-| Login Overlay | `templates/login-overlay.php` | Server-side fallback login overlay (primary is JS-rendered) |
 
 Both templates support block themes (`wp_is_block_theme()` check, `block_template_part`).
 

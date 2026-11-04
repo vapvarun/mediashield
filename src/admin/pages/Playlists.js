@@ -110,18 +110,17 @@ const Playlists = () => {
 
 								return (
 									<tr key={ playlist.id }>
-										<td>
+										<td data-label={ __( 'Title', 'mediashield' ) }>
 											<strong>
 												{ decodeEntities( playlist.title?.rendered || '' ) }
 											</strong>
 										</td>
-										<td>
+										<td data-label={ __( 'Settings', 'mediashield' ) } className="mediashield-table__badges">
 											{ flags.length > 0 ? (
 												flags.map( ( f ) => (
 													<span
 														key={ f }
 														className="mediashield-badge mediashield-badge--standard"
-														style={ { marginRight: 4 } }
 													>
 														{ f }
 													</span>
@@ -132,7 +131,7 @@ const Playlists = () => {
 												</span>
 											) }
 										</td>
-										<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
+										<td data-label={ __( 'Date', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 											{ playlist.date
 												? new Date( playlist.date ).toLocaleDateString( undefined, {
 													year: 'numeric',
@@ -141,7 +140,7 @@ const Playlists = () => {
 												} )
 												: '\u2014' }
 										</td>
-										<td className="mediashield-table__actions">
+										<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
 											<Button
 												variant="secondary"
 												onClick={ () => setItemsModal( {

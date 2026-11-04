@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useCallback } from '@wordpress/element';
 import { Button, TextControl, Spinner } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import Icon from '../components/Icon';
 
@@ -101,7 +101,15 @@ const StudentDetail = ( { userId, onBack } ) => {
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
 			.then( ( res ) => {
-				if ( ! cancelled ) setDetail( { ...res, name: res.display_name || res.name || '' } );
+				if ( cancelled ) return;
+				// GET analytics/users/{id} answers { user: { display_name, email }, sessions: [...] }.
+				const sessions = res.sessions || [];
+				setDetail( {
+					name: res.user?.display_name || '',
+					email: res.user?.email || '',
+					sessions,
+					videoCount: new Set( sessions.map( ( s ) => s.video_id ) ).size,
+				} );
 			} )
 			.catch( ( err ) => {
 				if ( ! cancelled ) setError( err.message || __( 'Failed to load details.', 'mediashield' ) );
@@ -156,7 +164,11 @@ const StudentDetail = ( { userId, onBack } ) => {
 								{ __( 'Watch History', 'mediashield' ) }
 							</span>
 							<span className="mediashield-table-card__count">
-								{ ( detail.videos || [] ).length } { __( 'videos', 'mediashield' ) }
+								{ sprintf(
+									/* translators: %d: number of distinct videos watched. */
+									_n( '%d video', '%d videos', detail.videoCount, 'mediashield' ),
+									detail.videoCount
+								) }
 							</span>
 						</div>
 						<table className="mediashield-table">
@@ -168,7 +180,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 								</tr>
 							</thead>
 							<tbody>
-								{ ( detail.videos || [] ).length === 0 && (
+								{ detail.sessions.length === 0 && (
 									<tr>
 										<td colSpan="3" className="mediashield-table__empty">
 											<Icon name="video-alt3" className="mediashield-table__empty-icon" />
@@ -176,11 +188,11 @@ const StudentDetail = ( { userId, onBack } ) => {
 										</td>
 									</tr>
 								) }
-								{ ( detail.videos || [] ).map( ( v, idx ) => (
-									<tr key={ v.video_id ?? idx }>
-										<td><strong>{ v.video_title || `Video #${ v.video_id }` }</strong></td>
-										<td><ProgressBar value={ v.progress } /></td>
-										<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
+								{ detail.sessions.map( ( v, idx ) => (
+									<tr key={ `${ v.video_id }-${ v.started_at ?? idx }` }>
+										<td data-label={ __( 'Video', 'mediashield' ) }><strong>{ v.title || __( '(deleted video)', 'mediashield' ) }</strong></td>
+										<td data-label={ __( 'Progress', 'mediashield' ) }><ProgressBar value={ v.completion_pct } /></td>
+										<td data-label={ __( 'Last Watched', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 											{ v.last_watched
 												? parseServerDate( v.last_watched ).toLocaleString()
 												: '\u2014' }
@@ -290,7 +302,7 @@ const Students = () => {
 							) }
 							{ users.map( ( user ) => (
 								<tr key={ user.id }>
-									<td>
+									<td data-label={ __( 'Viewer', 'mediashield' ) }>
 										<div className="mediashield-user">
 											<div className="mediashield-user__avatar">
 												{ getInitials( user.name ) }
@@ -309,13 +321,13 @@ const Students = () => {
 											</div>
 										</div>
 									</td>
-									<td>
+									<td data-label={ __( 'Videos Watched', 'mediashield' ) }>
 										<strong>{ user.videos_watched ?? 0 }</strong>
 									</td>
-									<td>
+									<td data-label={ __( 'Avg Completion', 'mediashield' ) }>
 										<ProgressBar value={ user.avg_completion } />
 									</td>
-									<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
+									<td data-label={ __( 'Last Active', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 										{ timeAgo( user.last_active ) }
 									</td>
 								</tr>

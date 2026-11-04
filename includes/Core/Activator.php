@@ -11,7 +11,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use MediaShield\DB\Schema;
 
 /**
  * Class Activator
@@ -50,9 +49,11 @@ class Activator {
 			);
 		}
 
-		// Create / update tables.
-		Schema::create_tables();
-		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+		// Create / update tables and run any pending upgrade steps. The plugin is
+		// loaded after plugins_loaded on the activation request, so an update by
+		// deactivate, replace, activate never reaches the bootstrap's Migrator
+		// run; writing the version here instead skipped every step between.
+		Migrator::run();
 
 		// Seed defaults for every option declared in the Settings schema.
 		Settings::seed_defaults();
@@ -73,7 +74,11 @@ class Activator {
 			set_transient( 'ms_activation_redirect', true, 30 );
 		}
 
-		// Flush rewrite rules for new CPTs.
+		// Register the CPTs before flushing: `init` has already run on the
+		// activation request, so without this the saved rules have no
+		// /playlist/ and playlist pages 404 until permalinks are saved.
+		\MediaShield\CPT\VideoPostType::register_post_type();
+		\MediaShield\CPT\PlaylistPostType::register_post_type();
 		flush_rewrite_rules();
 	}
 }

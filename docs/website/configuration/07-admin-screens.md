@@ -30,7 +30,6 @@ Everything lives under one **MediaShield** menu in the WordPress sidebar. It ope
 | Alerts | `#/alerts` | Review suspicious viewing flagged by detection. |
 | Heatmap | `#/heatmap` | See where in a video viewers watch and drop off. |
 | Realtime | `#/realtime` | See who is watching now. |
-| DRM | `#/drm` | Encrypted player settings (experimental). |
 | Export | `#/export` | Download CSV or PDF reports. |
 | Upload Queue | `#/upload-queue` | Follow uploads to connected platforms. |
 | Milestone Actions | `#/milestone-config` | Run an action when a viewer reaches a milestone. |

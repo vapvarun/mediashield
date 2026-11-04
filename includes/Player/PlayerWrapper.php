@@ -352,6 +352,10 @@ class PlayerWrapper {
 				$access_type_attr = '' !== $access_type
 					? ' data-access-type="' . esc_attr( $access_type ) . '"'
 					: '';
+				$access_type_attr .= Renderer::guest_allowed_attr( $video_post_id );
+				if ( Renderer::withhold_addresses( $video_post_id, $platform_video_id, $src_url, $stream_url ) ) {
+					$access_type_attr .= ' data-access-denied="1"';
+				}
 
 				// Per-video playback options, same tri-state contract Renderer
 				// uses ('1'/'0' explicit, '' = pristine -> adapter default). The

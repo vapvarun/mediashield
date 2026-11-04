@@ -19,7 +19,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
-use MediaShield\Core\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -199,7 +198,7 @@ class SessionController extends WP_REST_Controller {
 		// can_watch() still applies the per-video role gate, the allowed-domain
 		// whitelist and the mediashield_can_watch filter chain, and still
 		// returns a denial reason the client can render.
-		$login_gate_off = ! Settings::get( 'ms_require_login' );
+		$login_gate_off = ! AccessControl::login_gate_applies( $video_id, 0 );
 
 		/**
 		 * Filter whether to allow an anonymous /session/start for this video.
@@ -210,6 +209,7 @@ class SessionController extends WP_REST_Controller {
 		 *
 		 * @since 1.1.0
 		 * @since 1.3.0 Also defaults to allow when `ms_require_login` is off.
+		 * @since 1.4.1 Also when `mediashield_guest_can_watch` lets guests in.
 		 *
 		 * @param bool             $allow       Whether to allow anonymous start.
 		 * @param int              $video_id    Video CPT post ID.
@@ -327,63 +327,9 @@ class SessionController extends WP_REST_Controller {
 					// video was unprotected when it was not.
 					'protection_level' => sanitize_text_field( \MediaShield\Player\Protection::resolve_level( (int) $video_id ) ),
 					'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
-					// The manifest the DRM player loads. Dropped from this payload
-					// on 2026-04-20 (a security fix that also stopped self-hosted
-					// file URLs bypassing the signed /stream/ handoff) and never
-					// re-added — which silently killed DRM playback: drm-player.js
-					// reads video.source_url, found nothing, never called
-					// player.load(), so Shaka never engaged and the "protected"
-					// video only ever played through the free wrapper's
-					// unencrypted data-source-url.
-					//
-					// Scoped to DRM videos only, so the self-hosted path the
-					// 2026-04-20 fix protects is untouched: a DRM video is a CDN
-					// manifest (Pro derives the Bunny HLS playlist), never a raw
-					// self-hosted file, and access was already granted by
-					// can_watch() above before this payload is built.
-					'source_url'       => self::resolve_drm_source_url( $video_id ),
 				),
 			)
 		);
-	}
-
-	/**
-	 * Resolve the DRM manifest URL for a video's watch session.
-	 *
-	 * Mirrors Renderer's resolution so the DRM player and the standard player
-	 * agree: the filtered stream URL first (Pro derives the Bunny HLS playlist
-	 * from the GUID via `mediashield_video_stream_url`), then the stored source
-	 * URL as a fallback.
-	 *
-	 * @since 1.2.0
-	 * @param int $video_id Video CPT post ID.
-	 * @return string
-	 */
-	private static function resolve_drm_source_url( int $video_id ): string {
-		// Only DRM-protected videos get a manifest here. A standard/self-hosted
-		// video keeps going through the signed /stream/ handoff, never a raw URL
-		// in this response.
-		// Seeded with 'standard' to match Renderer. The seed is only a fallback:
-		// Pro's override_player_type() reads the video's protection level itself
-		// to decide about DRM, so seeding it differently here changed nothing
-		// except which of the two paths a reader had to trust.
-		$player_type = (string) apply_filters( 'mediashield_player_type', 'standard', $video_id );
-		if ( 'drm' !== $player_type ) {
-			return '';
-		}
-
-		$platform          = (string) get_post_meta( $video_id, '_ms_platform', true );
-		$platform_video_id = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
-		$stream_url        = (string) get_post_meta( $video_id, '_ms_stream_url', true );
-
-		/** This filter is documented in includes/Player/Renderer.php */
-		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', $stream_url, $video_id, $platform ?: 'self', $platform_video_id );
-
-		if ( '' !== $stream_url ) {
-			return esc_url_raw( $stream_url );
-		}
-
-		return esc_url_raw( (string) get_post_meta( $video_id, '_ms_source_url', true ) );
 	}
 
 	/**

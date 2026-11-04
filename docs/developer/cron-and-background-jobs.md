@@ -181,20 +181,6 @@ Queued from `mediashield_session_started` (priority 20) when VPN detection is on
 
 ---
 
-### `mediashield_pro_drm_package` (async, one-off)
-
-| Property | Value |
-|----------|-------|
-| Hook name | `mediashield_pro_drm_package` |
-| Interval | One-time (`as_enqueue_async_action`) |
-| Group | `mediashield-pro` |
-| Args | `[ 'video_id' => int, 'file_path' => string ]` |
-| Source | **Removed in 1.3.0** - `Packager::schedule_packaging()` was deleted with the rest of the packaging code |
-
-No longer enqueued by anything. `Packager::schedule_packaging()` was the only producer and it had no callers, so this job never ran; both it and the `_ms_drm_packaging_status` / `_ms_drm_packaging_action_id` meta keys went with the deletion in 1.3.0.
-
----
-
 ### `mediashield_generate_pdf` (async, one-off)
 
 | Property | Value |
@@ -260,4 +246,4 @@ Not cron, but the other place maintenance work runs.
 
 | Command | What it does |
 |---------|--------------|
-| `wp mediashield repair bunny-urls` | Finds videos saved as self-hosted from a Bunny **dashboard** URL, extracts the video GUID and rewrites `_ms_platform` / `_ms_platform_video_id`. Dry run by default; pass `--execute` to write. Collection URLs are reported but never rewritten, because a collection GUID is not a video GUID. Source: `src/CLI/RepairCommand.php` (since 1.3.0). |
+| `wp mediashield repair bunny-urls` | Finds videos saved as self-hosted from a Bunny **dashboard** URL, extracts the video GUID and rewrites `_ms_platform` / `_ms_platform_video_id`. Dry run by default; pass `--execute` to write. Collection URLs are reported but never rewritten, because a collection GUID is not a video GUID. Source: `includes/CLI/RepairCommand.php` (since 1.3.0). |

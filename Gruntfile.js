@@ -26,6 +26,7 @@ module.exports = function(grunt) {
                         '!vendor/bin/**',
                         '!src/**',
                         '!plan/**',
+                        '!audit/**',
                         '!dist/**',
                         '!.git/**',
                         '!.github/**',
@@ -134,7 +135,7 @@ module.exports = function(grunt) {
                 command: 'wp i18n make-json languages/ --no-purge'
             },
             composer_no_dev: {
-                command: 'composer install --no-dev --optimize-autoloader 2>/dev/null; true'
+                command: 'composer install --no-dev --optimize-autoloader --ignore-platform-req=php'
             }
         }
     });

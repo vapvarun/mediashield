@@ -2,7 +2,7 @@
 
 **Free + Pro** - These hooks fire from the free plugin. Pro attaches to several of them and adds its own, which are listed in the Pro developer guide.
 
-This page documents the 15 actions and 35 filters the free plugin fires in version 1.4.0, verified against the source. Browser events are on [JavaScript Events and Player Config](08-javascript-events-and-config.md).
+This page documents the 15 actions and 37 filters the free plugin fires in version 1.4.1, verified against the source. Browser events are on [JavaScript Events and Player Config](08-javascript-events-and-config.md).
 
 ## Actions
 
@@ -158,7 +158,7 @@ Fires before MediaShield's GDPR eraser deletes or anonymizes rows for a given em
 
 The primary access control gate. Return the `$result` array unchanged to allow access. Return an array with `allowed => false` and a `reason` string to deny.
 
-Note that free core's own checks - the login gate, the per-video role, and the domain whitelist - run *before* this filter, not through it. A denial from any of them short-circuits and the filter never runs.
+Note that free core's own checks - the login gate, the per-video role, and the domain whitelist - run *before* this filter, not through it. A denial from any of them short-circuits and the filter never runs. To let a guest past the login gate, use `mediashield_guest_can_watch` below.
 
 **Parameters:** `$result` (array `{allowed: bool, reason: string}`), `$video_id` (int), `$user_id` (int)
 
@@ -181,6 +181,53 @@ The filter does not run for administrators: `manage_options` users are allowed b
 
 ---
 
+### mediashield_guest_can_watch
+
+*Since 1.4.1.* Lets an integration allow a logged-out visitor to watch a video while **Require Login** is on. An LMS uses it for free-preview lessons. Return `true` to let the guest past the login check. The default is `false`, so guests stay blocked unless something opts in.
+
+**Parameters:** `$allow` (bool, default `false`), `$video_id` (int)
+
+```php
+// Allow guests on videos that belong to a free-preview lesson.
+add_filter( 'mediashield_guest_can_watch', function( $allow, $video_id ) {
+    return $allow || my_lms_video_is_preview( $video_id );
+}, 10, 2 );
+```
+
+It runs only for guests, and only to answer the Require Login check. It does not turn Require Login off, and it is not a way to skip other rules: the per-video role and Allowed Domains checks still apply. Learnomy 2.2.0 uses this filter for its free-preview lessons. See [Courses with Learnomy](../using-mediashield/15-courses-with-learnomy.md).
+
+---
+
+### mediashield_video_watch_url
+
+*Since 1.4.1.* Supplies the page where a member can watch a video. The My Videos block and shortcode use it to link each title and to show the **Resume** link. The default is an empty string. With no URL the title shows as plain text and there is no Resume link. Videos have no public page of their own (their permalink lands on the home page), so MediaShield cannot guess one.
+
+**Parameters:** `$url` (string, default empty), `$video_id` (int), `$user_id` (int, the member the list is for)
+
+```php
+// Send members to the lesson that embeds this video.
+add_filter( 'mediashield_video_watch_url', function( $url, $video_id, $user_id ) {
+    $lesson_url = my_lms_lesson_url_for_video( $video_id );
+    return $lesson_url ? $lesson_url : $url;
+}, 10, 3 );
+```
+
+Return a full URL on your own site. The player on that page offers to resume by itself. Learnomy returns the lesson page, and Pro returns the lesson chosen in the video's LMS box. See [Viewers, Tags and My Videos](../using-mediashield/14-viewers-tags-and-my-videos.md).
+
+---
+
+### mediashield_my_videos_per_page
+
+*Since 1.4.1.* How many videos the My Videos block and shortcode show per page. Default 12; values are kept between 1 and 100.
+
+**Parameters:** `$per_page` (int)
+
+```php
+add_filter( 'mediashield_my_videos_per_page', fn() => 24 );
+```
+
+---
+
 ### mediashield_watermark_config
 
 Customize the watermark configuration handed to the browser in the `POST /session/start` response.
@@ -197,7 +244,7 @@ Customize the watermark configuration handed to the browser in the `POST /sessio
 
 **Parameters:** `$levels` (array, slug => label), `$post` (WP_Post), `$selected` (string)
 
-Adding a level only makes it selectable and storable. Whatever it is meant to *do* still has to be implemented, typically through `mediashield_player_type`. Pro uses this to add `drm`.
+Adding a level only makes it selectable and storable. Whatever it is meant to *do* still has to be implemented, typically through `mediashield_player_type`.
 
 ---
 
@@ -226,8 +273,7 @@ add_filter( 'mediashield_upload_drivers', function( $drivers ) {
 
 ### mediashield_player_type
 
-Override the player type for a video. Free renders `standard` for every video; the value is emitted as `data-player-type` on the player container. Pro returns `drm` for videos set to its experimental DRM level.
-
+Override the player type for a video. Free renders `standard` for every video; the value is emitted as `data-player-type` on the player container.
 **Parameters:** `$type` (string), `$video_id` (int)
 
 ---

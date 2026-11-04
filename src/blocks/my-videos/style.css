@@ -1,0 +1,203 @@
+/**
+ * MediaShield My Videos — front-end styles.
+ *
+ * Imported by index.js, so the build emits style-index.css (block.json
+ * "style"); WordPress loads it wherever the block or the
+ * [mediashield_my_videos] shortcode renders. Colours and type come from the
+ * theme's presets so the list matches any theme; the hex values are only
+ * fallbacks for themes without presets.
+ */
+
+.ms-my-videos {
+	--ms-mv-accent: var( --wp--preset--color--primary, #2271b1 );
+	--ms-mv-text: var( --wp--preset--color--contrast, currentColor );
+	--ms-mv-muted: #646970;
+	--ms-mv-muted: color-mix( in srgb, currentColor 60%, transparent );
+	--ms-mv-border: #dcdcde;
+	--ms-mv-border: color-mix( in srgb, currentColor 15%, transparent );
+	--ms-mv-track: #f0f0f1;
+	--ms-mv-track: color-mix( in srgb, currentColor 8%, transparent );
+	--ms-mv-success: #00a32a;
+	--ms-mv-radius: 8px;
+	--ms-mv-gap: 20px;
+}
+
+/* Filters: All / In Progress / Completed, as links. */
+.ms-my-videos-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-block-end: var( --ms-mv-gap );
+}
+
+.ms-my-videos .ms-my-videos-filter-btn {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0 16px;
+	border: 1px solid var( --ms-mv-border );
+	border-radius: 999px;
+	color: inherit;
+	font-size: 0.875rem;
+	text-decoration: none;
+}
+
+.ms-my-videos .ms-my-videos-filter-btn.is-active {
+	border-color: var( --ms-mv-accent );
+	background: var( --ms-mv-accent );
+	color: #fff;
+}
+
+.ms-my-videos .ms-my-videos-filter-btn:focus-visible,
+.ms-my-videos .ms-my-videos__page-link:focus-visible,
+.ms-my-videos .ms-my-videos__resume:focus-visible,
+.ms-my-videos .ms-my-videos__title a:focus-visible {
+	outline: 2px solid var( --ms-mv-accent );
+	outline-offset: 2px;
+}
+
+/* Cards. */
+.ms-my-videos__grid {
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax( 240px, 1fr ) );
+	gap: var( --ms-mv-gap );
+}
+
+.ms-my-videos__card {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid var( --ms-mv-border );
+	border-radius: var( --ms-mv-radius );
+}
+
+.ms-my-videos__thumbnail img {
+	display: block;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+}
+
+.ms-my-videos__info {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px;
+}
+
+.ms-my-videos .ms-my-videos__title {
+	margin: 0;
+	font-size: 1rem;
+	line-height: 1.4;
+}
+
+.ms-my-videos__title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.ms-my-videos__progress {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-block-start: auto;
+}
+
+.ms-my-videos__progress-bar {
+	height: 6px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: var( --ms-mv-track );
+}
+
+.ms-my-videos__progress-fill {
+	height: 100%;
+	border-radius: inherit;
+	background: var( --ms-mv-accent );
+}
+
+.ms-my-videos__progress-text {
+	color: var( --ms-mv-muted );
+	font-size: 0.8125rem;
+}
+
+.ms-my-videos .ms-my-videos__resume {
+	align-self: flex-start;
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0 16px;
+	border-radius: 6px;
+	background: var( --ms-mv-accent );
+	color: #fff;
+	font-size: 0.875rem;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.ms-my-videos__badge {
+	align-self: flex-start;
+	padding: 4px 10px;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.ms-my-videos__badge--completed {
+	background: #edfaef;
+	background: color-mix( in srgb, var( --ms-mv-success ) 12%, transparent );
+	color: var( --ms-mv-success );
+}
+
+.ms-my-videos__empty {
+	color: var( --ms-mv-muted );
+}
+
+/* Pagination. */
+.ms-my-videos__pagination {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin-block-start: var( --ms-mv-gap );
+}
+
+.ms-my-videos .ms-my-videos__page-link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0 16px;
+	border: 1px solid var( --ms-mv-border );
+	border-radius: 6px;
+	color: inherit;
+	font-size: 0.875rem;
+	text-decoration: none;
+}
+
+.ms-my-videos__page-info {
+	color: var( --ms-mv-muted );
+	font-size: 0.875rem;
+}
+
+@media ( hover: hover ) {
+	.ms-my-videos .ms-my-videos-filter-btn:hover,
+	.ms-my-videos .ms-my-videos__page-link:hover {
+		border-color: var( --ms-mv-accent );
+	}
+
+	.ms-my-videos__title a:hover {
+		color: var( --ms-mv-accent );
+	}
+}
+
+@media ( max-width: 640px ) {
+	.ms-my-videos {
+		--ms-mv-gap: 16px;
+	}
+
+	.ms-my-videos__grid {
+		grid-template-columns: 1fr;
+	}
+}
