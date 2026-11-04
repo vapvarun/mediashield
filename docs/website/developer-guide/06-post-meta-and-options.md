@@ -110,6 +110,18 @@ Options in the schema are deleted on uninstall automatically. Do not add your ow
 
 `ms_rate_<hash>` (heartbeat rate limit, 60 seconds), `ms_devtools_rl_<hash>` (devtools beacon limit, 1 hour) and `ms_activation_redirect` (setup wizard redirect, 30 seconds). Uninstall deletes every transient whose name starts with `ms_`.
 
+## Licence and updates
+
+Update checks and licence calls for MediaShield and MediaShield Pro go to `updates.wbcomdesigns.com` (constant `MEDIASHIELD_LICENCE_HOST`) and fall back to `wbcomdesigns.com` when it cannot be reached; a host that fails is skipped for an hour. Every licence request goes through `mediashield_licence_request( array $params )`, which returns the decoded reply or `false` when no host answered.
+
+| Name | Type | Purpose |
+|------|------|---------|
+| `mediashield_license_key` | option | The free licence key the plugin activates on first admin load. |
+| `mediashield_preset_activated` | option | Set once the store gave a verdict on that key. |
+| `mediashield_preset_activate_lock` | site transient | 12-hour lock between activation attempts. |
+| `package_signatures_log` | option | The last 20 update-signature checks for MediaShield and Pro (warn mode: logged, the update installs either way). |
+| `MEDIASHIELD_NO_LICENSE_PHONE_HOME` | `wp-config.php` constant | Set to `true` to skip the free licence activation call (air-gapped or privacy-strict sites). Updates then need a manual upload. |
+
 ## Capability
 
 `upload_mediashield` lets a user upload video files from the admin and through `POST /upload/init`. Activation grants it to Administrator only; grant it to other roles with `$role->add_cap( 'upload_mediashield' )`. Everything else in the admin needs `manage_options`.

@@ -165,6 +165,7 @@ Playlist pages, My Videos and the admin lists work properly on every screen size
 * Improve  - On tablets the admin sidebar becomes an icon rail and list columns fit their content. On phones every admin list stacks into labelled cards.
 * Improve  - Admin icons always render, and the mobile sidebar gives every link a readable name.
 * Improve  - The setup wizard and settings no longer mention DRM encryption or an email gate.
+* Improve  - Updates and licence checks use updates.wbcomdesigns.com and fall back to wbcomdesigns.com when it cannot be reached.
 * Fix      - Playlist pages no longer return "Page not found" right after the plugin is activated, or on sites that were activated on an earlier version and then updated.
 * Fix      - Updating by deactivating, replacing and reactivating the plugin runs the same upgrade steps as a normal update.
 * Fix      - Opening a viewer under Viewers shows their name, email and watch history instead of "Unknown User", and the name is easier to tap on phones.
@@ -178,7 +179,9 @@ Playlist pages, My Videos and the admin lists work properly on every screen size
 * Security - A visitor or member who may not watch a video no longer receives its YouTube, Vimeo or Bunny id, its source address or a stream address in the page, including embeds MediaShield wraps. The player shows the login or access message instead (1.4.0 and earlier).
 * Security - The WordPress REST API no longer returns a video's source address, provider id and access settings to visitors and members. People who can edit content still get them for the Video block (1.4.0 and earlier).
 * Security - Only people who can edit content can read a playlist's item list. Any logged-in subscriber could read it before, including each video's source address and the items of a password-protected playlist (1.4.0 and earlier).
+* Security - Every MediaShield and MediaShield Pro update package is checked against its release signature before it installs. For now a failed check is logged and the update still installs.
 * Security - REST responses are marked no-store, so a page cache cannot keep one viewer's response and serve it to someone else.
+* Dev      - The bundled licensing SDK is updated to 1.0.4-wbcom.3. Define MEDIASHIELD_NO_LICENSE_PHONE_HOME to skip the free licence activation call.
 * Dev      - wp mediashield scale teardown removes only the rows it seeded and keeps those of real members with high user ids.
 * Compat   - Aligned with MediaShield Pro 1.4.1. Install both updates together.
 
