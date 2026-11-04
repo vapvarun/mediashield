@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-04T07:54:49+00:00\n"
+"POT-Creation-Date: 2026-11-04T08:25:12+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -302,442 +302,442 @@ msgstr ""
 msgid "Playlists list"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:62
+#: includes/CPT/VideoPostType.php:63
 msgctxt "Post type general name"
 msgid "Videos"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:63
+#: includes/CPT/VideoPostType.php:64
 msgctxt "Post type singular name"
 msgid "Video"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:64
+#: includes/CPT/VideoPostType.php:65
 msgctxt "Admin Menu text"
 msgid "Videos"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:65
 #: includes/CPT/VideoPostType.php:66
+#: includes/CPT/VideoPostType.php:67
 #: src/admin/pages/Videos.js:255
 msgid "Add New Video"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:67
+#: includes/CPT/VideoPostType.php:68
 msgid "Edit Video"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:68
+#: includes/CPT/VideoPostType.php:69
 msgid "New Video"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:69
+#: includes/CPT/VideoPostType.php:70
 msgid "View Video"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:70
+#: includes/CPT/VideoPostType.php:71
 msgid "Search Videos"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:71
+#: includes/CPT/VideoPostType.php:72
 #: src/admin/components/VideoPickerModal.js:67
 msgid "No videos found."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:72
+#: includes/CPT/VideoPostType.php:73
 msgid "No videos found in Trash."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:73
+#: includes/CPT/VideoPostType.php:74
 msgid "All Videos"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:74
+#: includes/CPT/VideoPostType.php:75
 msgid "Video Archives"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:75
+#: includes/CPT/VideoPostType.php:76
 msgid "Filter videos list"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:76
+#: includes/CPT/VideoPostType.php:77
 msgid "Videos list navigation"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:77
+#: includes/CPT/VideoPostType.php:78
 msgid "Videos list"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:107
+#: includes/CPT/VideoPostType.php:108
 #: src/blocks/video/edit.js:166
 msgid "Video Settings"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:116
+#: includes/CPT/VideoPostType.php:117
 msgid "Video Source"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:125
+#: includes/CPT/VideoPostType.php:126
 msgid "Embed This Video"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:134
+#: includes/CPT/VideoPostType.php:135
 msgid "Milestone Tags"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:143
+#: includes/CPT/VideoPostType.php:144
 msgid "Player Options"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:154
+#: includes/CPT/VideoPostType.php:155
 #: src/admin/pages/Settings.js:677
 #: src/admin/pages/Settings.js:723
 msgid "LMS Integration"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:162
+#: includes/CPT/VideoPostType.php:163
 #: src/admin/pages/Settings.js:714
 msgid "Pro Features"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:193
-#: includes/CPT/VideoPostType.php:396
-msgid "YouTube"
-msgstr ""
-
 #: includes/CPT/VideoPostType.php:194
 #: includes/CPT/VideoPostType.php:397
-msgid "Vimeo"
+msgid "YouTube"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:195
 #: includes/CPT/VideoPostType.php:398
-msgid "Wistia"
+msgid "Vimeo"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:196
 #: includes/CPT/VideoPostType.php:399
-msgid "Bunny Stream"
+msgid "Wistia"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:197
-msgid "Self-hosted / Direct URL"
+#: includes/CPT/VideoPostType.php:400
+msgid "Bunny Stream"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:198
-msgid "That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL."
+msgid "Self-hosted / Direct URL"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:199
-msgid "That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL."
+msgid "That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL."
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:200
-msgid "This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. It will be saved as self-hosted, which only works if the URL serves the video file itself."
+msgid "That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL."
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:201
-msgid "This is a Bunny stream file from a library this site is not connected to, so it will be saved as a direct stream. That only plays if token authentication is off for the library. To use Bunny's player instead, paste the video's embed URL."
+msgid "This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. It will be saved as self-hosted, which only works if the URL serves the video file itself."
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:202
-msgid "Uploading…"
+msgid "This is a Bunny stream file from a library this site is not connected to, so it will be saved as a direct stream. That only plays if token authentication is off for the library. To use Bunny's player instead, paste the video's embed URL."
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:203
-msgid "Uploaded. Save the video to keep this file."
+msgid "Uploading…"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:204
-msgid "Upload failed:"
+msgid "Uploaded. Save the video to keep this file."
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:205
+msgid "Upload failed:"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:206
 msgid "Upload failed: the connection dropped or the file is larger than this server accepts."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:253
+#: includes/CPT/VideoPostType.php:254
 msgid "Paste a video URL from YouTube, Vimeo, Wistia, or Bunny Stream. The platform and video ID will be detected automatically."
 msgstr ""
 
 #. translators: %s: comma-separated platform names
-#: includes/CPT/VideoPostType.php:271
+#: includes/CPT/VideoPostType.php:272
 #, php-format
 msgid "Connected platforms: %s. Use Browse & Import for bulk actions."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:275
+#: includes/CPT/VideoPostType.php:276
 msgid "Manage Platforms →"
 msgstr ""
 
 #. translators: %s: link to Platforms page
-#: includes/CPT/VideoPostType.php:293
+#: includes/CPT/VideoPostType.php:294
 #, php-format
 msgid "No cloud platforms connected. %s to enable browsing, bulk import, and protected streaming from Bunny, YouTube, Vimeo, or Wistia."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:294
+#: includes/CPT/VideoPostType.php:295
 msgid "Connect a platform"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:311
+#: includes/CPT/VideoPostType.php:312
 msgid "Upgrade to MediaShield Pro to connect cloud platforms (Bunny, YouTube, Vimeo, Wistia) for protected streaming, bulk import, and advanced analytics."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:318
+#: includes/CPT/VideoPostType.php:319
 #: src/admin/wizard/steps/FirstVideoStep.js:66
 msgid "Video URL"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:324
+#: includes/CPT/VideoPostType.php:325
 msgid "https://www.youtube.com/watch?v=... or https://vimeo.com/..."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:325
+#: includes/CPT/VideoPostType.php:326
 msgid "Paste the video URL. Supported: YouTube, Vimeo, Wistia, Bunny Stream embed URLs, or a direct video file URL."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:339
+#: includes/CPT/VideoPostType.php:340
 msgid "Or upload a file"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:343
+#: includes/CPT/VideoPostType.php:344
 msgid "Upload"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:348
+#: includes/CPT/VideoPostType.php:349
 msgid "The file is stored on this site and played through a permission-checked URL, so the file path is never exposed. Large files are limited by your server’s upload size."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:354
+#: includes/CPT/VideoPostType.php:355
 msgid "Detected Platform"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:372
+#: includes/CPT/VideoPostType.php:373
 msgid "Duration"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:377
+#: includes/CPT/VideoPostType.php:378
 msgid "Length in seconds. Used to validate watch progress; leave 0 if unknown."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:400
+#: includes/CPT/VideoPostType.php:401
 msgid "Self-hosted"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:426
+#: includes/CPT/VideoPostType.php:427
 #: src/admin/pages/Settings.js:40
 #: src/admin/pages/Videos.js:120
 msgid "None"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:427
+#: includes/CPT/VideoPostType.php:428
 msgid "Basic — Login required, right-click disabled"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:428
+#: includes/CPT/VideoPostType.php:429
 msgid "Standard — Watermark + session tracking"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:429
+#: includes/CPT/VideoPostType.php:430
 #: src/blocks/video/edit.js:183
 msgid "Strict — Devtools detection + source hiding"
 msgstr ""
 
 #. translators: %s: the site-wide default protection level.
-#: includes/CPT/VideoPostType.php:457
+#: includes/CPT/VideoPostType.php:458
 #, php-format
 msgid "Default (%s)"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:466
+#: includes/CPT/VideoPostType.php:467
 #: src/blocks/video/edit.js:177
 msgid "Protection Level"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:478
+#: includes/CPT/VideoPostType.php:479
 msgid "Restrict to Role"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:481
+#: includes/CPT/VideoPostType.php:482
 msgid "— Any logged-in user —"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:488
+#: includes/CPT/VideoPostType.php:489
 msgid "Only users with this role can watch. Leave empty for all logged-in users."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:510
+#: includes/CPT/VideoPostType.php:511
 msgid "Save the video first to get the embed codes."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:513
+#: includes/CPT/VideoPostType.php:514
 msgid "Shortcode"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:516
-#: includes/CPT/VideoPostType.php:546
+#: includes/CPT/VideoPostType.php:517
+#: includes/CPT/VideoPostType.php:547
 msgid "Copy"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:536
+#: includes/CPT/VideoPostType.php:537
 msgid "Paste in any page, post, or lesson using the Classic Editor."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:538
+#: includes/CPT/VideoPostType.php:539
 msgid "Gutenberg Block"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:540
+#: includes/CPT/VideoPostType.php:541
 msgid "In the Block Editor, search for \"MediaShield\" to find the Video block. Select this video from the block settings."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:543
+#: includes/CPT/VideoPostType.php:544
 msgid "PHP Template"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:591
+#: includes/CPT/VideoPostType.php:592
 msgid "Assign tags to users when they reach specific watch milestones on this video. Tags are stored as user meta and can be used for automation, reporting, or LMS integration."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:596
+#: includes/CPT/VideoPostType.php:597
 #: includes/Privacy/PrivacyExporter.php:271
 #: src/admin/pages/Milestones.js:149
 #: src/admin/pages/Milestones.js:177
 msgid "Milestone"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:597
+#: includes/CPT/VideoPostType.php:598
 msgid "Tag (assigned to user)"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:598
+#: includes/CPT/VideoPostType.php:599
 msgid "Active"
 msgstr ""
 
 #. translators: %d: milestone percentage
-#: includes/CPT/VideoPostType.php:614
+#: includes/CPT/VideoPostType.php:615
 #, php-format
 msgid "Tag for %d%% milestone"
 msgstr ""
 
 #. translators: %d: milestone percentage
-#: includes/CPT/VideoPostType.php:618
+#: includes/CPT/VideoPostType.php:619
 #, php-format
 msgid "e.g. watched-%d-pct"
 msgstr ""
 
 #. translators: %d: milestone percentage
-#: includes/CPT/VideoPostType.php:625
+#: includes/CPT/VideoPostType.php:626
 #, php-format
 msgid "Enable %d%% milestone"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:633
+#: includes/CPT/VideoPostType.php:634
 msgid "When a user reaches a milestone, the tag is saved to their profile as: ms_tag_{video_id}_{percentage} → tag_value. Leave blank to use global milestone settings."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:654
+#: includes/CPT/VideoPostType.php:655
 msgid "These options apply to self-hosted and Bunny videos. YouTube, Vimeo, and Wistia use their own player controls."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:659
+#: includes/CPT/VideoPostType.php:660
 #: src/admin/pages/Playlists.js:107
 msgid "Autoplay"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:661
+#: includes/CPT/VideoPostType.php:662
 msgid "Start playing automatically (muted in most browsers)."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:666
+#: includes/CPT/VideoPostType.php:667
 #: src/admin/pages/Playlists.js:108
 #: src/blocks/playlist/edit.js:121
 msgid "Loop"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:672
+#: includes/CPT/VideoPostType.php:673
 msgid "Start muted"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:678
+#: includes/CPT/VideoPostType.php:679
 msgid "Show player controls"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:683
+#: includes/CPT/VideoPostType.php:684
 msgid "Feature Overrides"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:685
+#: includes/CPT/VideoPostType.php:686
 msgid "Override global settings for this video. \"Default\" uses the value from Settings → Player Controls."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:702
-msgid "Default (global)"
-msgstr ""
-
 #: includes/CPT/VideoPostType.php:703
-#: src/blocks/playlist/edit.js:86
-msgid "On"
+msgid "Default (global)"
 msgstr ""
 
 #: includes/CPT/VideoPostType.php:704
 #: src/blocks/playlist/edit.js:86
+msgid "On"
+msgstr ""
+
+#: includes/CPT/VideoPostType.php:705
+#: src/blocks/playlist/edit.js:86
 msgid "Off"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:716
+#: includes/CPT/VideoPostType.php:717
 msgid "End Screen Text:"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:717
-#: includes/CPT/VideoPostType.php:722
+#: includes/CPT/VideoPostType.php:718
+#: includes/CPT/VideoPostType.php:723
 msgid "Leave blank to use global default"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:721
+#: includes/CPT/VideoPostType.php:722
 msgid "End Screen URL:"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:742
+#: includes/CPT/VideoPostType.php:743
 msgid "Link this video to a Learnomy, LearnDash, Tutor LMS, or LifterLMS lesson."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:744
+#: includes/CPT/VideoPostType.php:745
 msgid "Auto-mark lesson complete on video finish"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:745
+#: includes/CPT/VideoPostType.php:746
 msgid "Require course enrollment to watch"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:746
+#: includes/CPT/VideoPostType.php:747
 msgid "Configurable completion threshold"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:748
+#: includes/CPT/VideoPostType.php:749
 msgid "Get Pro"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:762
+#: includes/CPT/VideoPostType.php:763
 #: src/admin/pages/Settings.js:720
 msgid "Advanced Watermark"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:762
+#: includes/CPT/VideoPostType.php:763
 msgid "7 fields (email, IP, timestamp...)"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:763
+#: includes/CPT/VideoPostType.php:764
 #: src/admin/components/Sidebar.js:18
 msgid "Heatmaps"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:763
+#: includes/CPT/VideoPostType.php:764
 msgid "See where viewers watch"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:765
+#: includes/CPT/VideoPostType.php:766
 msgid "Upgrade"
 msgstr ""
 
@@ -796,7 +796,7 @@ msgid "Prevent Skipping Ahead"
 msgstr ""
 
 #: includes/Player/PlayerWrapper.php:318
-#: includes/Player/Renderer.php:349
+#: includes/Player/Renderer.php:343
 msgid "Fullscreen"
 msgstr ""
 
@@ -808,11 +808,11 @@ msgstr ""
 msgid "Playlist not found or not published."
 msgstr ""
 
-#: includes/Player/PlaylistRenderer.php:45
+#: includes/Player/PlaylistRenderer.php:52
 msgid "This playlist has no videos yet."
 msgstr ""
 
-#: includes/Player/PlaylistRenderer.php:98
+#: includes/Player/PlaylistRenderer.php:105
 msgid "Next video in"
 msgstr ""
 
@@ -839,7 +839,7 @@ msgid "MediaShield: the video \"%s\" is not published yet, so it is only visible
 msgstr ""
 
 #. translators: %s: video title.
-#: includes/Player/Renderer.php:191
+#: includes/Player/Renderer.php:180
 #, php-format
 msgid "MediaShield: the video \"%s\" has no source file or URL yet. Edit it and add one."
 msgstr ""
@@ -912,15 +912,15 @@ msgstr ""
 msgid "Guest"
 msgstr ""
 
-#: includes/REST/PlaylistController.php:154
+#: includes/REST/PlaylistController.php:158
 msgid "Video not found in this playlist."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:206
+#: includes/REST/PlaylistController.php:200
 msgid "Playlist not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:285
+#: includes/REST/PlaylistController.php:279
 #: includes/REST/SessionController.php:255
 #: includes/REST/StreamController.php:207
 #: includes/REST/TagController.php:320
@@ -928,15 +928,15 @@ msgstr ""
 msgid "Video not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:315
+#: includes/REST/PlaylistController.php:309
 msgid "Could not add video to playlist."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:355
+#: includes/REST/PlaylistController.php:349
 msgid "Playlist item not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:377
+#: includes/REST/PlaylistController.php:371
 msgid "Order must be an array."
 msgstr ""
 
