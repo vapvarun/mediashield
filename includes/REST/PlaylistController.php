@@ -62,7 +62,11 @@ class PlaylistController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_items' ),
-					'permission_callback' => array( $this, 'read_permissions_check' ),
+					// Editors only: the rows carry each video's source address, and the
+					// only readers are the block editor and the admin playlist screens.
+					// Viewers get items through the playlist player route, which checks
+					// the playlist password and each video's access.
+					'permission_callback' => array( $this, 'edit_permissions_check' ),
 				),
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
@@ -172,16 +176,6 @@ class PlaylistController extends WP_REST_Controller {
 				'html' => \MediaShield\Player\Renderer::render( (int) $request['video_id'] ),
 			)
 		);
-	}
-
-	/**
-	 * Read permissions: any logged-in user.
-	 *
-	 * @param WP_REST_Request $request Request object.
-	 * @return bool
-	 */
-	public function read_permissions_check( WP_REST_Request $request ): bool {
-		return is_user_logged_in();
 	}
 
 	/**

@@ -255,4 +255,33 @@ class ReleaseSecurityTest extends WP_UnitTestCase {
 
 		delete_option( 'ms_file_claims_pending' );
 	}
+	/**
+	 * Fails before the fix: any logged-in subscriber read a playlist's items, each
+	 * with the video's source address, even for a password-protected playlist.
+	 */
+	public function test_playlist_items_need_editing_rights(): void {
+		$video    = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		update_post_meta( $video, '_ms_platform', 'self' );
+		update_post_meta( $video, '_ms_source_url', 'https://example.test/wp-content/uploads/2026/11/lesson.mp4' );
+		$playlist = self::factory()->post->create(
+			array(
+				'post_type'     => 'mediashield_playlist',
+				'post_status'   => 'publish',
+				'post_password' => 'partners',
+			)
+		);
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$add = new WP_REST_Request( 'POST', "/mediashield/v1/playlists/{$playlist}/items" );
+		$add->set_param( 'video_id', $video );
+		$this->assertSame( 201, rest_do_request( $add )->get_status() );
+
+		$read = new WP_REST_Request( 'GET', "/mediashield/v1/playlists/{$playlist}/items" );
+		$this->assertSame( 200, rest_do_request( $read )->get_status(), 'Editors still manage items.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$response = rest_do_request( $read );
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertStringNotContainsString( 'lesson.mp4', wp_json_encode( $response->get_data() ) );
+	}
 }

@@ -173,6 +173,7 @@ Playlist pages, My Videos and the admin lists work properly on every screen size
 * Fix      - The watermark uses the Font Size setting.
 * Fix      - Deactivating MediaShield's cleanup no longer touches database tables that belong to MediaShield Pro.
 * Fix      - The scale and repair WP-CLI commands are included in the plugin download.
+* Security - Only people who can edit content can read a playlist's item list. Any logged-in subscriber could read it before, including each video's source address and the items of a password-protected playlist (1.4.0 and earlier).
 * Security - REST responses are marked no-store, so a page cache cannot keep one viewer's response and serve it to someone else.
 * Compat   - Aligned with MediaShield Pro 1.4.1. Install both updates together.
 
