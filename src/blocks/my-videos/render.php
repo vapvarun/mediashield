@@ -16,9 +16,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 $current_user_id = get_current_user_id();
 
 if ( ! $current_user_id ) {
-	echo '<p class="ms-my-videos__login-required">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
-	echo esc_html__( 'Please log in to see your video history.', 'mediashield' );
-	echo '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
+	printf(
+		'<p class="ms-my-videos__login-required">%s <a href="%s">%s</a></p>',
+		esc_html__( 'Please log in to see your video history.', 'mediashield' ),
+		esc_url( wp_login_url( get_permalink() ?: home_url( '/' ) ) ),
+		esc_html__( 'Log in', 'mediashield' )
+	);
 	return;
 }
 

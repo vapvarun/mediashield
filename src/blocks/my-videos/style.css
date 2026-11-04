@@ -172,6 +172,7 @@
 	border: 1px solid var( --ms-mv-border );
 	border-radius: 6px;
 	color: inherit;
+	font-size: 0.875rem;
 	text-decoration: none;
 }
 
