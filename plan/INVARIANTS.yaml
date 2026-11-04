@@ -157,3 +157,10 @@ baseline:
     eta: v1.2
     added: 2026-05-11
     surfaced_by: "wp-plugin-onboard refresh 2026-05-11 (Phase 4.7.2.5 first-run gate)"
+
+  - gate: U1
+    path: "includes/CLI/ScaleCommand.php"
+    reason: "wp mediashield scale is a developer seeder: it bulk-inserts and deletes thousands of synthetic sessions and milestones for big-site testing, which no model method is built for. It lived in src/CLI (outside the gate's scope) until 1.4.1 moved it to includes/CLI so it ships in the zip."
+    eta: v1.5
+    added: 2026-11-04
+    surfaced_by: "1.4.1 release local-CI after the CLI move"

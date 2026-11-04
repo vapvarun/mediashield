@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -150,6 +150,29 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 6. Session tracking with concurrent stream management
 
 == Changelog ==
+
+= 1.4.1 - November 2026 =
+
+Playlist pages, My Videos and the admin lists work properly on every screen size, and guests can watch free-preview lessons.
+
+* New      - Guests can watch a video when an LMS integration opens it to them, such as a Learnomy free-preview lesson, even with Require Login on. Developers can use the mediashield_guest_can_watch filter.
+* New      - My Videos has All, In Progress and Completed filters and pages of 12 videos. Developers can change the page size with the mediashield_my_videos_per_page filter.
+* New      - Logged-out visitors on My Videos see a link to log in.
+* Improve  - A playlist's own page shows the player and its list of videos.
+* Improve  - A password-protected playlist shows only the password form until the password is entered.
+* Improve  - My Videos titles and Resume buttons open the page where the video is watched. Developers can change the address with the mediashield_video_watch_url filter.
+* Improve  - The Playlist block uses the standard editor sidebar and shows the playlist's playback settings.
+* Improve  - On tablets the admin sidebar becomes an icon rail and list columns fit their content. On phones every admin list stacks into labelled cards.
+* Improve  - Admin icons always render, and the mobile sidebar gives every link a readable name.
+* Improve  - The setup wizard and settings no longer mention DRM encryption or an email gate.
+* Fix      - Playlist pages no longer return "Page not found" right after the plugin is activated.
+* Fix      - The My Videos shortcode no longer renders empty.
+* Fix      - The Actions buttons in the Videos and Playlists lists no longer get cut off.
+* Fix      - The watermark uses the Font Size setting.
+* Fix      - Deactivating MediaShield's cleanup no longer touches database tables that belong to MediaShield Pro.
+* Fix      - The scale and repair WP-CLI commands are included in the plugin download.
+* Security - REST responses are marked no-store, so a page cache cannot keep one viewer's response and serve it to someone else.
+* Compat   - Aligned with MediaShield Pro 1.4.1. Install both updates together.
 
 = 1.4.0 - October 2026 =
 
