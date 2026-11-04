@@ -1,74 +1,199 @@
 {
-  "mode": "combo",
-  "release_version": "1.4.0",
-  "pro_version": "1.4.0",
-  "ran_at": "2026-10-21T12:02:49+05:30",
-  "site": "http://lms.local",
-  "sections": {
-    "A_fresh_install": {
-      "pass": 6,
-      "fail": 0,
-      "skipped": 0,
-      "note": "Docker pristine install of the built zips: Free alone and Free + Pro, SDK classes and assets, degrade check"
-    },
-    "B_upgrade": {
-      "pass": 0,
-      "fail": 0,
-      "skipped": 1,
-      "note": "upgrade from the 1.3.0 zip not run"
-    },
-    "C_core_flows": {
-      "pass": 8,
-      "fail": 0,
-      "skipped": 1,
-      "note": "C1 17 routes at 1280 and 390, C2 to C8 on lms.local; C9 import and playlist funnel by unit test and UI; Bunny live upload skipped by the owner"
-    },
-    "D_regression_guards": {
-      "pass": 80,
-      "fail": 0,
-      "skipped": 0,
-      "note": "Free PHPUnit 71 tests, Pro PHPUnit 9 tests"
-    },
-    "F_release_gates": {
-      "pass": 7,
-      "fail": 0,
-      "skipped": 0,
-      "note": "PHPStan, WPCS, contract audit, functional cert 16/16 and 25/25, security sweep, Plugin Check, docs lint"
-    }
+ "mode": "combo",
+ "release_version": "1.4.1",
+ "pro_version": "1.4.1",
+ "ran_at": "2026-11-04T08:34:33Z",
+ "sections": {
+  "A_fresh_install": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 3,
+   "note": "run by caller"
   },
-  "hard_fails": [],
-  "untested": [
-    {
-      "id": "C.bunny.live-upload",
-      "reason": "owner decision: skipped for 1.4.0",
-      "needs": "an approved upload to the live Bunny library"
-    },
-    {
-      "id": "B.upgrade-from-1.3.0",
-      "reason": "not run",
-      "needs": "the 1.3.0 zip on a clean site"
-    },
-    {
-      "id": "E.nginx-direct-download",
-      "reason": "lms.local is Apache",
-      "needs": "an nginx host"
-    },
-    {
-      "id": "F.large-site",
-      "reason": "no 1000+ video seed run",
-      "needs": "wp-cli seed of 1000+ videos"
-    }
-  ],
-  "coverage": {
-    "multisite": "not run",
-    "rtl": "not run",
-    "concurrency": "not run",
-    "uninstall": "not run"
+  "B_upgrade": {
+   "pass": 3,
+   "fail": 0,
+   "skipped": 0,
+   "untested": 3
   },
-  "verdict": "WARN",
-  "top3": [
-    "QA pass on the 3 Ready for Testing cards is still open",
-    "Upgrade from 1.3.0 and the large-site seed have not been run",
-    "Walked by the developer, not by an independent QA walk"
-  ]
+  "C_core_flows": {
+   "pass": 15,
+   "fail": 3,
+   "skipped": 0
+  },
+  "D_regression_guards": {
+   "pass": 3,
+   "fail": 0,
+   "skipped": 0
+  },
+  "E_pro_smoke": {
+   "pass": 8,
+   "fail": 1,
+   "skipped": 0
+  },
+  "E2_environment": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 1
+  },
+  "F_cross_browser": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 1
+  }
+ },
+ "hard_fails": [
+  {
+   "id": "H1-a-embed",
+   "invariant": "A visitor who may not watch gets no source URL or provider id in the HTML",
+   "actual": "Logged out, Require Login on: /embed-block-test/ wraps the core YouTube embed for V5 (id 10) and prints data-platform-video-id=aqz-KE-bpKQ and data-source-url=https://www.youtube.com/embed/aqz-KE-bpKQ in the HTML; no data-access-denied marker. Same on the free site.",
+   "recheck_20261104": "resolved (R1/R2 pass)"
+  },
+  {
+   "id": "C11-rest-meta",
+   "invariant": "No provider id or source URL to a visitor who may not watch",
+   "actual": "Logged out GET /wp-json/wp/v2/mediashield-videos/9 returns meta _ms_platform_video_id=76979871, _ms_source_url=https://vimeo.com/76979871, _ms_stream_url, _ms_access_role=editor for the editor-only V4; id 8 returns its YouTube id the same way. Same on free.",
+   "recheck_20261104": "resolved (R1/R2 pass)"
+  }
+ ],
+ "untested": [
+  {
+   "id": "E2-bunny",
+   "reason": "env: no Bunny account",
+   "needs": "Bunny Stream library (playback, webhook signature, Read-Only key card, direct-play stream address)"
+  },
+  {
+   "id": "C6",
+   "reason": "stale page token refresh not exercised (no way to age a token in this run)",
+   "needs": "page held open past token life, or shortened token TTL"
+  },
+  {
+   "id": "C2-playback",
+   "reason": "playback of video bytes/provider streams not observed; only player render, session start and watermark were",
+   "needs": "headed browser with media codecs and outbound access to YouTube/Vimeo"
+  },
+  {
+   "id": "C5-streamlimit",
+   "reason": "stream-limit counting across devices not exercised",
+   "needs": "two logged-in devices for one member"
+  },
+  {
+   "id": "C10-urlpaste",
+   "reason": "pasting another author's uploaded file URL into a new video not exercised; only REST/edit-screen refusals seen",
+   "needs": "author-created video naming another's file"
+  },
+  {
+   "id": "C11-cdn",
+   "reason": "no CDN-addressed self-hosted video and no Bunny",
+   "needs": "fixture with CDN address"
+  },
+  {
+   "id": "MyVideos-links",
+   "reason": "no Learnomy course/lesson exists on the site, so title/Resume link targets could not be observed (plain text with no Resume seen, which matches the not-enrolled negative case)",
+   "needs": "enrolled Learnomy lesson using a MediaShield video"
+  },
+  {
+   "id": "B3",
+   "reason": "no two-videos-one-file fixture",
+   "needs": "two videos naming one file"
+  },
+  {
+   "id": "B4-job",
+   "reason": "claim job run not observed; ms_file_claims_pending option is absent after the update (cleared)",
+   "needs": "pre-update snapshot with pending claims"
+  },
+  {
+   "id": "F",
+   "reason": "Chromium only",
+   "needs": "Safari/Firefox"
+  },
+  {
+   "id": "autoplay",
+   "reason": "autoplay countdown not observed (playlist autoplay=0, no real playback)",
+   "needs": "autoplay playlist with playing media"
+  }
+ ],
+ "coverage": {
+  "admin_routes_1280_390": "15/15 render content, 0 overflow, 0 console errors, no ? glyph, icons all present",
+  "viewers_priya": "name, email, '2 videos', 4 history rows (3 seeded sessions + 1 active session at 07:54 created before the walk); name button 40px at 390, no horizontal scroll",
+  "watermark_font": "small 12/10, medium 16/12, large 22/16 (desktop/mobile) observed from canvas fillText; IP kept at 390; Medium restored",
+  "themes": "Reign, Astra, Kadence: single, playlist, My Videos at 1280/390, no overflow, player in view",
+  "large_library": "2006 videos, 101 pages, search 'Archive' = 2000, exact title = 1, empty search shows empty state, paging works, ~1.8s per search",
+  "access": "guest session/start 401; marco GET analytics/users/2 403; lena cannot read/edit/delete omar's video (REST 403, edit screen 403); priya own videos 200",
+  "heartbeat": "fake tokens 401x4 then 429, one extra rate row; two real tokens each 4 then 429",
+  "cache": "REST viewer routes Cache-Control no-store, private; wp/v2/posts without it",
+  "weekly_digest": "one pending ms_weekly_digest on Mon 2026-11-09 08:00",
+  "drm": "POST drm/license 404 rest_no_route",
+  "pro_db": "ms_db_version 7, ms_pro_db_version 6",
+  "h1": "a FAIL (embed path), b FAIL (editor-only video shows generic 'could not be loaded' to a guest instead of the login prompt), c PASS ('You do not have access to this video'), d PASS (sofia plays V4 iframe, priya V3 iframe, session/start 200)"
+ },
+ "failures": [
+  {
+   "id": "H1-a",
+   "origin": "from",
+   "triage_note": "Renderer change covers shortcode/playlist but not the core-embed wrapper path",
+   "expected": "No youtube/vimeo id or source URL in HTML for a guest",
+   "actual": "embed-block-test prints video id and embed URL to a guest",
+   "url": "http://localhost:8981/embed-block-test/",
+   "recheck_20261104": "resolved on re-check"
+  },
+  {
+   "id": "H1-b",
+   "origin": "from",
+   "triage_note": "guest session/start answers 401 for a role-restricted video; wrapper shows the generic load error",
+   "expected": "Guest sees the login prompt on /editors-briefing/",
+   "actual": "Text 'This video could not be loaded. If you are the site owner, check the vide...' with data-access-denied=1 (the login prompt does appear on the shortcode page and on embed-block-test)",
+   "url": "http://localhost:8981/editors-briefing/",
+   "recheck_20261104": "resolved on re-check"
+  },
+  {
+   "id": "C11-rest",
+   "origin": "from",
+   "triage_note": "mediashield_video post type is public in REST with its meta registered",
+   "expected": "No provider id/source URL via REST for videos the visitor may not watch",
+   "actual": "meta exposed to anonymous GET",
+   "url": "http://localhost:8981/wp-json/wp/v2/mediashield-videos/9",
+   "recheck_20261104": "resolved on re-check"
+  },
+  {
+   "id": "C11-stream-token",
+   "origin": "from",
+   "triage_note": "soft: guest page for a self-hosted video still prints a signed /stream/6?ms_token= address although data-access-denied=1; fetching it returns 403",
+   "expected": "Empty data-stream-url for a visitor who may not watch",
+   "actual": "URL present, refused with 403",
+   "url": "http://localhost:8981/dashboard-tour/"
+  },
+  {
+   "id": "E-font-label",
+   "origin": "from",
+   "triage_note": "soft wording",
+   "expected": "Settings label matches drawn size",
+   "actual": "Option reads 'Large (24px)' but the canvas draws 22px desktop / 16px mobile (handoff says 22)",
+   "url": "http://localhost:8981/wp-admin/admin.php?page=mediashield#/settings"
+  }
+ ],
+ "debug_log_issues": [],
+ "manual_required": [
+  "Viewers list: seed shows 4 rows for Priya (task expected 3); one active session row (203.0.113.9, 07:54) predates the walk, confirm it is expected fixture noise",
+  "Videos list has search only; no platform/protection filter or sort (large-site checklist item 5)",
+  "Combo My Videos titles are plain text, Learnomy has no course fixture"
+ ],
+ "top3": [
+  "Guests can still read a restricted video's provider id and source URL from the core-embed block page and from the public REST video endpoint.",
+  "An editor-only video shows a guest 'could not be loaded' instead of a login prompt on /editors-briefing/.",
+  "Everything else walked clean on Reign, Astra and Kadence at 1280 and 390: admin routes, Viewers history, watermark sizes, 2006-video library, refusals, heartbeat limits."
+ ],
+ "recheck_20261104": {
+  "R1": "pass (logged out: empty data-platform-video-id/source-url/stream-url, login prompt + Log In link on all pages; unmatched embed left as YouTube iframe)",
+  "R2": "pass (anon + priya: no meta; lena: meta present)",
+  "R7": "pass (priya 403, lena 200)",
+  "R8": "pass (password form, no playlist video title; test page deleted)",
+  "R9": "pass (Dashboard/Videos/Playlists/Viewers 1280+390, 0 console errors, 0 overflow; playlist plays first item as admin)",
+  "R10": "pass (debug.log unchanged: combo 540 B, free 84 B)",
+  "R3": "pass (priya: \"You do not have access to this video\"; embed-block-test YouTube aqz-KE-bpKQ iframe, session/start 200; no token attribute visible in DOM)",
+  "R4": "pass (sofia: player.vimeo.com/video/76979871 iframe)",
+  "R5": "pass with note (block preview shows youtube badge + thumbnail; title only as img alt, not visible text; no error; draft trashed)",
+  "R6": "pass (Small 12px, Medium 16px, Large 22px)",
+  "my_videos": "pass (priya, All/In Progress/Completed, no overflow at 390)"
+ }
 }
