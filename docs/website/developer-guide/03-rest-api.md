@@ -45,7 +45,7 @@ PUT behavior: known keys are type-cast to their schema type, then run through th
 | POST | `/session/end` | logged in, or a valid session token | End session and finalize stats. Body: `{ token }`. |
 | POST | `/session/revoke-user` | manage_options | End all active sessions for a user. Body: `{ user_id }`. |
 
-Anonymous access to `/session/start` is allowed when the `ms_require_login` setting is off, or when the video carries an `_ms_access_type` meta value, and can be adjusted with the `mediashield_session_allow_anonymous_start` filter. Reaching the handler is not permission to watch: `AccessControl::can_watch()` still runs and can refuse with a reason.
+Anonymous access to `/session/start` is allowed when the `ms_require_login` setting is off, when the video carries an `_ms_access_type` meta value, or when an integration admits guests to that video through the `mediashield_guest_can_watch` filter (Learnomy does this for free-preview lessons), and can be adjusted with the `mediashield_session_allow_anonymous_start` filter. Reaching the handler is not permission to watch: `AccessControl::can_watch()` still runs and can refuse with a reason.
 
 Heartbeat and end accept a signed token instead of a login, because a guest who was allowed to start a session must be able to finish it. The token is HMAC-signed and validated without a database lookup; anything unsigned or tampered with is rejected.
 

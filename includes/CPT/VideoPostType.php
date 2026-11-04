@@ -432,12 +432,8 @@ class VideoPostType {
 		/**
 		 * Filter the protection levels offered on the video edit screen.
 		 *
-		 * This list was a closed array, which made it a dead end for the whole
-		 * DRM feature: Pro decides a video is DRM-protected by reading
-		 * `_ms_protection_level === 'drm'`, but nothing could ever set that
-		 * value because the only UI that writes the meta did not offer it and
-		 * Pro had no way in (BC#10143667645). Opening the seam is the half of
-		 * that card that belongs in Free.
+		 * Open so an add-on can offer its own level. Free ships none, basic,
+		 * standard and strict.
 		 *
 		 * Adding a level here only makes it selectable and storable. Whatever
 		 * the level is supposed to DO still has to be implemented by whoever

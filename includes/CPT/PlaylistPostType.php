@@ -28,7 +28,8 @@ class PlaylistPostType {
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
 		add_action( 'add_meta_boxes_mediashield_playlist', array( __CLASS__, 'register_items_meta_box' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_items_assets' ) );
-		add_filter( 'the_content', array( __CLASS__, 'render_single' ) );
+		// Late, so wpautop, shortcodes and smilies never run over the player markup.
+		add_filter( 'the_content', array( __CLASS__, 'render_single' ), 99 );
 	}
 
 	/**

@@ -47,7 +47,7 @@ Read permission is `is_user_logged_in()`; every write is `current_user_can( 'edi
 
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
-| POST | `/session/start` | logged_in, or anonymous when `ms_require_login` is off or `_ms_access_type` is set - see `mediashield_session_allow_anonymous_start` | Start a watch session. Body: `{ video_id }` (required). Returns `{ session_token, resume_position, is_resumed, watermark_config, video: { id, title, platform, protection_level, duration, source_url } }`. 429 `concurrent_limit` when the stream limit is hit; 403 with the denial reason promoted to the error code otherwise. |
+| POST | `/session/start` | logged_in, or anonymous when `ms_require_login` is off, `_ms_access_type` is set, or `mediashield_guest_can_watch` admits the video - see `mediashield_session_allow_anonymous_start` | Start a watch session. Body: `{ video_id }` (required). Returns `{ session_token, resume_position, is_resumed, watermark_config, video: { id, title, platform, protection_level, duration } }`. 429 `concurrent_limit` when the stream limit is hit; 403 with the denial reason promoted to the error code otherwise. |
 | POST | `/session/heartbeat` | logged_in, or anonymous with a non-empty `token` | Update position + progress. Body: `{ token (required), position (required, number), duration (required, number), playing (bool, default true), focused (bool, default true) }`. |
 | POST | `/session/end` | logged_in, or anonymous with a non-empty `token` | End session, finalize stats. Body: `{ token }` (required). |
 | POST | `/session/revoke-user` | `manage_options` | Kill all active sessions for a user. Body: `{ user_id }`. |
