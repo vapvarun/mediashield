@@ -178,9 +178,9 @@ const StudentDetail = ( { userId, onBack } ) => {
 								) }
 								{ ( detail.videos || [] ).map( ( v, idx ) => (
 									<tr key={ v.video_id ?? idx }>
-										<td><strong>{ v.video_title || `Video #${ v.video_id }` }</strong></td>
-										<td><ProgressBar value={ v.progress } /></td>
-										<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
+										<td data-label={ __( 'Video', 'mediashield' ) }><strong>{ v.video_title || `Video #${ v.video_id }` }</strong></td>
+										<td data-label={ __( 'Progress', 'mediashield' ) }><ProgressBar value={ v.progress } /></td>
+										<td data-label={ __( 'Last Watched', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 											{ v.last_watched
 												? parseServerDate( v.last_watched ).toLocaleString()
 												: '\u2014' }
@@ -290,7 +290,7 @@ const Students = () => {
 							) }
 							{ users.map( ( user ) => (
 								<tr key={ user.id }>
-									<td>
+									<td data-label={ __( 'Viewer', 'mediashield' ) }>
 										<div className="mediashield-user">
 											<div className="mediashield-user__avatar">
 												{ getInitials( user.name ) }
@@ -309,13 +309,13 @@ const Students = () => {
 											</div>
 										</div>
 									</td>
-									<td>
+									<td data-label={ __( 'Videos Watched', 'mediashield' ) }>
 										<strong>{ user.videos_watched ?? 0 }</strong>
 									</td>
-									<td>
+									<td data-label={ __( 'Avg Completion', 'mediashield' ) }>
 										<ProgressBar value={ user.avg_completion } />
 									</td>
-									<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
+									<td data-label={ __( 'Last Active', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 										{ timeAgo( user.last_active ) }
 									</td>
 								</tr>

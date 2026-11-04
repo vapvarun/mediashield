@@ -161,7 +161,7 @@ const Milestones = () => {
 							) }
 							{ milestones.map( ( m, idx ) => (
 								<tr key={ m.id ?? idx }>
-									<td>
+									<td data-label={ __( 'Student', 'mediashield' ) }>
 										<div className="mediashield-user">
 											<div className="mediashield-user__avatar">
 												{ getInitials( m.user_name ) }
@@ -173,11 +173,11 @@ const Milestones = () => {
 											</div>
 										</div>
 									</td>
-									<td><strong>{ m.video_title || `Video #${ m.video_id }` }</strong></td>
-									<td>
+									<td data-label={ __( 'Video', 'mediashield' ) }><strong>{ m.video_title || `Video #${ m.video_id }` }</strong></td>
+									<td data-label={ __( 'Milestone', 'mediashield' ) }>
 										<MilestoneBadge pct={ m.milestone_pct } />
 									</td>
-									<td style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
+									<td data-label={ __( 'Reached', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 										{ timeAgo( m.reached_at ) }
 									</td>
 								</tr>
