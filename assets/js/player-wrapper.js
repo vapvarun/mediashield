@@ -871,11 +871,15 @@
 		//              (protection.js reads data-protection-level for this).
 
 		// The server withheld the video's address because this viewer may not
-		// watch it. /session/start answers with the reason, and its denial path
-		// shows the login or access message and raises mediashield:access-denied
-		// for integrations; it never needs a player adapter.
+		// watch it. A visitor is asked to log in; a member gets the reason from
+		// /session/start, whose denial path shows the access message and raises
+		// mediashield:access-denied for integrations without a player adapter.
 		if ( el.dataset.accessDenied ) {
-			startSession( el, videoId, null );
+			if ( ! config.isLoggedIn ) {
+				showLoginOverlay( el );
+			} else {
+				startSession( el, videoId, null );
+			}
 			return;
 		}
 

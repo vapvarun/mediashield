@@ -175,7 +175,8 @@ Playlist pages, My Videos and the admin lists work properly on every screen size
 * Fix      - The scale and repair WP-CLI commands are included in the plugin download.
 * Fix      - A password-protected playlist placed with the Playlist block or shortcode asks for its password before showing its videos.
 * Fix      - A Learnomy lesson that is still locked by its drip or sequence rules no longer includes a playable video link in its REST data.
-* Security - A visitor or member who may not watch a video no longer receives its YouTube, Vimeo or Bunny id or its source address in the page. The player shows the login or access message instead (1.4.0 and earlier).
+* Security - A visitor or member who may not watch a video no longer receives its YouTube, Vimeo or Bunny id, its source address or a stream address in the page, including embeds MediaShield wraps. The player shows the login or access message instead (1.4.0 and earlier).
+* Security - The WordPress REST API no longer returns a video's source address, provider id and access settings to visitors and members. People who can edit content still get them for the Video block (1.4.0 and earlier).
 * Security - Only people who can edit content can read a playlist's item list. Any logged-in subscriber could read it before, including each video's source address and the items of a password-protected playlist (1.4.0 and earlier).
 * Security - REST responses are marked no-store, so a page cache cannot keep one viewer's response and serve it to someone else.
 * Dev      - wp mediashield scale teardown removes only the rows it seeded and keeps those of real members with high user ids.

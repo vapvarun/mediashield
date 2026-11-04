@@ -26,6 +26,7 @@ class VideoPostType {
 	public static function register(): void {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
+		add_filter( 'rest_prepare_mediashield_video', array( __CLASS__, 'hide_meta_from_viewers' ) );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_boxes' ) );
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'save_meta_box' ), 10, 2 );
 		// After the meta box (10) on the edit screen, and after REST has written
@@ -914,6 +915,30 @@ class VideoPostType {
 			}
 			update_post_meta( $post_id, '_ms_milestone_tags', $milestones );
 		}
+	}
+
+	/**
+	 * Keep the video's meta out of wp/v2 responses for people who cannot edit content.
+	 *
+	 * The meta carries the source URL and provider id, the very addresses the
+	 * player withholds from a viewer who may not watch. Anyone could read them
+	 * from /wp/v2/mediashield-videos. The Video block reads them to preview a
+	 * video, so people who can write posts keep them, the same bar as the
+	 * playlist items route.
+	 *
+	 * @since 1.4.1
+	 *
+	 * @param \WP_REST_Response $response Prepared response.
+	 * @return \WP_REST_Response
+	 */
+	public static function hide_meta_from_viewers( \WP_REST_Response $response ): \WP_REST_Response {
+		if ( current_user_can( 'edit_posts' ) ) {
+			return $response;
+		}
+		$data = $response->get_data();
+		unset( $data['meta'] );
+		$response->set_data( $data );
+		return $response;
 	}
 
 	/**

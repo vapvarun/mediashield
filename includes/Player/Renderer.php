@@ -203,20 +203,7 @@ class Renderer {
 		$source_url = $safe_urls['source_url'];
 		$stream_url = $safe_urls['stream_url'];
 
-		// A viewer who may not watch gets no address at all: not the source URL,
-		// not the provider id (a Bunny embed or an unlisted Vimeo id plays on its
-		// own), only our own /stream route, which refuses them on every request.
-		// The player asks /session/start for the reason and shows the login or
-		// access message from there. This output also reaches anyone through the
-		// playlist page and the playlist player route.
-		$access_denied = ! AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'];
-		if ( $access_denied ) {
-			$source_url        = '';
-			$platform_video_id = '';
-			if ( 0 !== strpos( (string) $stream_url, rest_url( 'mediashield/v1/stream/' . $video_id ) ) ) {
-				$stream_url = '';
-			}
-		}
+		$access_denied = self::withhold_addresses( $video_id, $platform_video_id, $source_url, $stream_url );
 
 		// Enqueue frontend assets (only loads when video content exists).
 		Assets::enqueue();
@@ -390,6 +377,33 @@ class Renderer {
 		do_action( 'mediashield_after_player', $video_id );
 
 		return $html;
+	}
+
+	/**
+	 * Blank every address of a video the current viewer may not watch.
+	 *
+	 * Not the source URL, not the provider id (a Bunny embed or an unlisted Vimeo
+	 * id plays on its own), not even our signed /stream address. The player asks
+	 * /session/start for the reason and shows the login or access message from
+	 * there. Shared with PlayerWrapper, so the shortcode, block, playlist page,
+	 * playlist player route and auto-wrapped embeds expose the same thing.
+	 *
+	 * @since 1.4.1
+	 *
+	 * @param int    $video_id          Video CPT post ID.
+	 * @param string $platform_video_id Provider id, blanked in place when denied.
+	 * @param string $source_url        Source URL, blanked in place when denied.
+	 * @param string $stream_url        Stream URL, blanked in place when denied.
+	 * @return bool True when the viewer may not watch; print data-access-denied.
+	 */
+	public static function withhold_addresses( int $video_id, &$platform_video_id, &$source_url, &$stream_url ): bool {
+		if ( AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
+			return false;
+		}
+		$platform_video_id = '';
+		$source_url        = '';
+		$stream_url        = '';
+		return true;
 	}
 
 	/**
