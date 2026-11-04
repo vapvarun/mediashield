@@ -1,98 +1,143 @@
 /**
  * MediaShield Playlist Block — Editor Styles
+ *
+ * Editor-only summary card. Imported by index.js, so the build emits it as
+ * index.css (block.json editorStyle). Scoped under .ms-playlist-preview so it
+ * never meets the front-end playlist markup, which shares some class names.
+ * Colours follow the editor's own theme variables.
  */
 
 .ms-playlist-preview {
-	border: 1px solid #ddd;
+	--ms-pl-border: var( --wp-components-color-gray-300, #ddd );
+	--ms-pl-muted: var( --wp-components-color-gray-700, #757575 );
+	--ms-pl-surface: var( --wp-components-color-background, #fff );
+	--ms-pl-head-bg: var( --wp-components-color-foreground, #1e1e1e );
+	--ms-pl-head-fg: var( --wp-components-color-foreground-inverted, #fff );
+
+	border: 1px solid var( --ms-pl-border );
 	border-radius: 4px;
 	overflow: hidden;
-	background: #f9f9f9;
+	background: var( --ms-pl-surface );
 }
 
-.ms-playlist-header {
+.ms-playlist-preview--loading {
+	display: flex;
+	justify-content: center;
+	padding: 40px;
+}
+
+.ms-playlist-preview .ms-playlist-header {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	padding: 12px 16px;
-	background: #1e1e1e;
-	color: #fff;
+	background: var( --ms-pl-head-bg );
+	color: var( --ms-pl-head-fg );
 	font-size: 14px;
 }
 
-.ms-playlist-header .ms-icon {
-	font-size: 20px;
-	width: 20px;
-	height: 20px;
-}
-
-.ms-playlist-count {
-	margin-inline-start: auto;
-	color: #aaa;
-	font-size: 12px;
-}
-
-.ms-playlist-items-preview {
-	padding: 8px;
-}
-
-.ms-playlist-item-preview {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 8px;
-	border-bottom: 1px solid #eee;
-	font-size: 13px;
-}
-
-.ms-playlist-item-preview:last-child {
-	border-bottom: none;
-}
-
-.ms-playlist-item-num {
-	color: #999;
-	width: 20px;
-	text-align: center;
-	flex-shrink: 0;
-}
-
-.ms-playlist-item-thumb {
-	width: 48px;
-	height: 27px;
-	object-fit: cover;
-	border-radius: 2px;
-	flex-shrink: 0;
-}
-
-.ms-playlist-item-thumb-placeholder {
-	width: 48px;
-	height: 27px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: #eee;
-	border-radius: 2px;
-	color: #999;
-	font-size: 16px;
-	flex-shrink: 0;
-}
-
-.ms-playlist-item-title {
-	flex: 1;
+.ms-playlist-preview .ms-playlist-title {
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
-.ms-playlist-item-platform {
-	color: #999;
+.ms-playlist-preview .ms-playlist-count {
+	margin-inline-start: auto;
+	flex-shrink: 0;
+	opacity: 0.75;
+	font-size: 12px;
+}
+
+.ms-playlist-preview .ms-playlist-items-preview {
+	list-style: none;
+	margin: 0;
+	padding: 8px;
+}
+
+.ms-playlist-preview .ms-playlist-item-preview {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+	padding: 8px;
+	border-bottom: 1px solid var( --ms-pl-border );
+	font-size: 13px;
+}
+
+.ms-playlist-preview .ms-playlist-item-preview:last-child {
+	border-bottom: none;
+}
+
+.ms-playlist-preview .ms-playlist-item-num {
+	width: 20px;
+	flex-shrink: 0;
+	color: var( --ms-pl-muted );
+	text-align: center;
+}
+
+.ms-playlist-preview .ms-playlist-item-thumb,
+.ms-playlist-preview .ms-playlist-item-thumb-placeholder {
+	width: 48px;
+	height: 27px;
+	flex-shrink: 0;
+	border-radius: 2px;
+	object-fit: cover;
+}
+
+.ms-playlist-preview .ms-playlist-item-thumb-placeholder {
+	padding: 2px 12px;
+	box-sizing: border-box;
+	background: var( --ms-pl-border );
+	color: var( --ms-pl-muted );
+}
+
+.ms-playlist-preview .ms-playlist-item-title {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ms-playlist-preview .ms-playlist-item-platform {
+	flex-shrink: 0;
+	padding: 2px 6px;
+	border: 1px solid var( --ms-pl-border );
+	border-radius: 2px;
+	color: var( --ms-pl-muted );
 	font-size: 11px;
 	text-transform: uppercase;
 }
 
-.ms-playlist-more {
-	text-align: center;
-	color: #999;
-	font-size: 12px;
-	padding: 8px;
+.ms-playlist-preview .ms-playlist-more {
 	margin: 0;
+	padding: 8px;
+	color: var( --ms-pl-muted );
+	font-size: 12px;
+	text-align: center;
+}
+
+/* Sidebar: the playlist's own playback settings, read-only. */
+.ms-playlist-settings {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 8px 12px;
+	margin: 0 0 12px;
+}
+
+.ms-playlist-settings dt,
+.ms-playlist-settings dd {
+	margin: 0;
+}
+
+.ms-playlist-settings dd {
+	font-weight: 600;
+}
+
+@media ( max-width: 640px ) {
+	.ms-playlist-preview .ms-playlist-item-platform {
+		display: none;
+	}
 }

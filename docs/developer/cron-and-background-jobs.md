@@ -246,4 +246,4 @@ Not cron, but the other place maintenance work runs.
 
 | Command | What it does |
 |---------|--------------|
-| `wp mediashield repair bunny-urls` | Finds videos saved as self-hosted from a Bunny **dashboard** URL, extracts the video GUID and rewrites `_ms_platform` / `_ms_platform_video_id`. Dry run by default; pass `--execute` to write. Collection URLs are reported but never rewritten, because a collection GUID is not a video GUID. Source: `src/CLI/RepairCommand.php` (since 1.3.0). |
+| `wp mediashield repair bunny-urls` | Finds videos saved as self-hosted from a Bunny **dashboard** URL, extracts the video GUID and rewrites `_ms_platform` / `_ms_platform_video_id`. Dry run by default; pass `--execute` to write. Collection URLs are reported but never rewritten, because a collection GUID is not a video GUID. Source: `includes/CLI/RepairCommand.php` (since 1.3.0). |

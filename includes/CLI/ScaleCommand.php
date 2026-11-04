@@ -64,11 +64,6 @@ final class ScaleCommand {
 	private const BASE_UID = 1000000;
 
 	/**
-	 * Synthetic video IDs start here so we don't collide with real CPT posts.
-	 */
-	private const BASE_VID = 9000000;
-
-	/**
 	 * Seed a real-shape dataset.
 	 *
 	 * Default profile: 10000 users × 10 watch_sessions × 4 milestones each
@@ -126,14 +121,15 @@ final class ScaleCommand {
 		}
 
 		// Pick a video CPT to point at; create a synthetic one if none exists.
-		$video_id = (int) get_posts(
+		$video_ids = get_posts(
 			array(
 				'post_type'   => 'mediashield_video',
 				'numberposts' => 1,
 				'fields'      => 'ids',
 				'post_status' => 'any',
 			)
-		)[0] ?? 0;
+		);
+		$video_id  = (int) ( $video_ids[0] ?? 0 );
 
 		if ( $video_id <= 0 ) {
 			$video_id = wp_insert_post(
@@ -359,7 +355,7 @@ final class ScaleCommand {
 
 		// can_watch — concurrent-stream count.
 		$results['access_can_watch'] = self::time_op(
-			function () use ( $wpdb, $sessions_table, $uid, $video_id ) {
+			function () use ( $wpdb, $sessions_table, $uid ) {
 				wp_cache_flush();
 				// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
 				$wpdb->get_var(
@@ -424,7 +420,7 @@ final class ScaleCommand {
 		\WP_CLI::line( str_pad( 'Query', 28 ) . str_pad( 'Time', 12 ) . str_pad( 'Budget', 12 ) . 'Status' );
 		\WP_CLI::line( str_repeat( '─', 70 ) );
 		foreach ( $results as $key => $ms ) {
-			$budget = self::BUDGETS_MS[ $key ] ?? 100.0;
+			$budget = self::BUDGETS_MS[ $key ];
 			$pass   = $ms <= $budget;
 			if ( ! $pass ) {
 				++$failures;

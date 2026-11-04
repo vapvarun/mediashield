@@ -212,7 +212,19 @@ add_filter( 'mediashield_video_watch_url', function( $url, $video_id, $user_id )
 }, 10, 3 );
 ```
 
-Return a full URL on your own site. The player on that page offers to resume by itself. Learnomy returns the lesson page. See [Viewers, Tags and My Videos](../using-mediashield/14-viewers-tags-and-my-videos.md).
+Return a full URL on your own site. The player on that page offers to resume by itself. Learnomy returns the lesson page, and Pro returns the lesson chosen in the video's LMS box. See [Viewers, Tags and My Videos](../using-mediashield/14-viewers-tags-and-my-videos.md).
+
+---
+
+### mediashield_my_videos_per_page
+
+*Since 1.4.1.* How many videos the My Videos block and shortcode show per page. Default 12; values are kept between 1 and 100.
+
+**Parameters:** `$per_page` (int)
+
+```php
+add_filter( 'mediashield_my_videos_per_page', fn() => 24 );
+```
 
 ---
 

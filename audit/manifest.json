@@ -1302,16 +1302,7 @@
         "line": 110
       }
     ],
-    "templates": [
-      {
-        "file": "templates/login-overlay.php",
-        "overridePath": "theme/mediashield/login-overlay.php",
-        "hooksInTemplate": [],
-        "varsUsed": [],
-        "loaderArgs": [],
-        "argsConfidence": "low"
-      }
-    ],
+    "templates": [],
     "hooks": {
       "provided": [
         {
@@ -2569,6 +2560,11 @@
       "hook": "mediashield_milestone_{$pct}",
       "type": "action",
       "file": "includes/Milestones/MilestoneTracker.php:150"
+    },
+    {
+      "hook": "mediashield_my_videos_per_page",
+      "type": "filter",
+      "file": "src/blocks/my-videos/render.php"
     },
     {
       "hook": "mediashield_needs_shaka",

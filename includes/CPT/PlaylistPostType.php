@@ -107,7 +107,7 @@ class PlaylistPostType {
 			'mediashield-playlist-items',
 			$build_url . 'index.css',
 			array( 'wp-components' ),
-			$asset['version']
+			(string) filemtime( $build_dir . 'index.css' )
 		);
 		wp_localize_script(
 			'mediashield-playlist-items',

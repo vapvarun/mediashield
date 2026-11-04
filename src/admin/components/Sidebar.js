@@ -53,6 +53,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 									( isActive ? ' is-active' : '' )
 								}
 								aria-current={ isActive ? 'page' : undefined }
+								title={ route.label }
 							>
 								<Icon name={ route.icon } />
 								<span className="mediashield-sidebar__label">
@@ -94,6 +95,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 								( currentHash === settingsRoute.hash ? ' is-active' : '' )
 							}
 							aria-current={ currentHash === settingsRoute.hash ? 'page' : undefined }
+							title={ settingsRoute.label }
 						>
 							<Icon name={ settingsRoute.icon } />
 							<span className="mediashield-sidebar__label">

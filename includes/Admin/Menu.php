@@ -103,7 +103,8 @@ class Menu {
 			'mediashield-admin',
 			$build_url . $css_file,
 			array( 'wp-components' ),
-			$ver
+			// Its own file time: a CSS-only change leaves the JS hash alone.
+			(string) filemtime( $build_dir . $css_file )
 		);
 
 		// Localize config.

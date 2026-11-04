@@ -20,7 +20,7 @@ Version 1.4.0. Requires PHP 8.1 and WordPress 6.5.
 
 MediaShield uses a singleton bootstrap pattern. The entry point is `mediashield.php`, which loads the Composer autoloader and, on `plugins_loaded`, runs `Migrator::run()` and then `Plugin::instance()`. The plugin fires `mediashield_loaded` when all internal hooks are registered. Free boots on `plugins_loaded` at the default priority 10, so an add-on should boot on `plugins_loaded` at priority 20 or later (Pro does exactly this) or check `did_action( 'mediashield_loaded' )`; hooking `mediashield_loaded` itself only works if your code is registered before Free boots.
 
-The PHP namespace is `MediaShield\`, PSR-4 autoloaded from `includes/`. WP-CLI commands live in `src/CLI/` and are required directly by the bootstrap.
+The PHP namespace is `MediaShield\`, PSR-4 autoloaded from `includes/`. WP-CLI commands live in `includes/CLI/` and are autoloaded like every other class.
 
 Key classes:
 

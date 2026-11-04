@@ -134,7 +134,7 @@ src/                         JS source (compiled to build/)
     video/                   Video block (edit.js, index.js, view.js)
     playlist/                Playlist block (edit.js, index.js, view.js)
 
-src/CLI/
+includes/CLI/                (autoloaded; ships in the release zip)
   ScaleCommand.php           wp mediashield scale {seed,benchmark,teardown}
   RepairCommand.php          wp mediashield repair bunny-urls (1.3.0) — dry-run by default
 
@@ -521,7 +521,7 @@ When a new customer-facing feature lands, add one journey per feature. When a bu
 
 ## Scale benchmark
 
-`src/CLI/ScaleCommand.php` ships three WP-CLI commands that gate hot-path query budgets against a production-shape dataset.
+`includes/CLI/ScaleCommand.php` ships three WP-CLI commands that gate hot-path query budgets against a production-shape dataset.
 
 ```bash
 composer scale:seed       # 10000 users × 10 sessions × 4 milestones (~400k rows)

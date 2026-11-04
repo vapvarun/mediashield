@@ -163,7 +163,7 @@ class SetupWizard {
 			'mediashield-wizard',
 			$build_url . $css_file,
 			array( 'wp-components' ),
-			$ver
+			(string) filemtime( $build_dir . $css_file )
 		);
 
 		wp_localize_script(

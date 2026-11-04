@@ -483,16 +483,16 @@
 }
 
 /* Column widths per page for uniform feel */
-.mediashield-videos .mediashield-table th:nth-child(1) { width: 35%; }
-.mediashield-videos .mediashield-table th:nth-child(2) { width: 15%; }
-.mediashield-videos .mediashield-table th:nth-child(3) { width: 15%; }
-.mediashield-videos .mediashield-table th:nth-child(4) { width: 15%; }
-.mediashield-videos .mediashield-table th:nth-child(5) { width: 20%; }
+.mediashield-videos .mediashield-table th:nth-child(1) { width: 25%; }
+.mediashield-videos .mediashield-table th:nth-child(2) { width: 14%; }
+.mediashield-videos .mediashield-table th:nth-child(3) { width: 13%; }
+.mediashield-videos .mediashield-table th:nth-child(4) { width: 13%; }
+.mediashield-videos .mediashield-table th:nth-child(5) { width: 35%; }
 
-.mediashield-playlists .mediashield-table th:nth-child(1) { width: 40%; }
-.mediashield-playlists .mediashield-table th:nth-child(2) { width: 25%; }
+.mediashield-playlists .mediashield-table th:nth-child(1) { width: 30%; }
+.mediashield-playlists .mediashield-table th:nth-child(2) { width: 20%; }
 .mediashield-playlists .mediashield-table th:nth-child(3) { width: 15%; }
-.mediashield-playlists .mediashield-table th:nth-child(4) { width: 20%; }
+.mediashield-playlists .mediashield-table th:nth-child(4) { width: 35%; }
 
 .mediashield-students .mediashield-table th:nth-child(1) { width: 35%; }
 .mediashield-students .mediashield-table th:nth-child(2) { width: 15%; }
@@ -540,10 +540,25 @@
 	background: #f8f9fa;
 }
 
+/* Action buttons wrap instead of being clipped by the fixed-layout table:
+   each button stays on one line, and a column too narrow for all of them
+   (a long translation, a narrow screen) moves the last one down a row. */
 .mediashield-table__actions {
 	display: flex;
+	flex-wrap: wrap;
 	gap: var( --ms-space-1 );
 	white-space: nowrap;
+	overflow: visible;
+}
+
+/* A cell holding several badges wraps them instead of clipping the last. */
+.mediashield-table__badges > * {
+	margin-block: 2px;
+	margin-inline-end: var( --ms-space-1 );
+}
+
+.mediashield-table td.mediashield-table__actions {
+	padding-inline: var( --ms-space-4 );
 }
 
 .mediashield-table__empty {
@@ -1872,10 +1887,23 @@
 	.mediashield-sidebar__item {
 		padding: var( --ms-space-2 ) var( --ms-space-3 );
 		font-size: 12px;
+		min-width: 40px;
+		min-height: 40px;
+		justify-content: center;
 	}
 
+	/* Icon-only nav on small screens: the label stays in the accessibility
+	   tree (visually hidden), so every link keeps its name. */
 	.mediashield-sidebar__label {
-		display: none;
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect( 0, 0, 0, 0 );
+		white-space: nowrap;
+		border: 0;
 	}
 
 	.mediashield-sidebar__pro-badge {

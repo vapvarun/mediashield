@@ -36,7 +36,9 @@ The shortcode prints exactly what the block prints. Before 1.4.1 the shortcode c
 - **Completed** once the member reaches 100 percent.
 - **Resume**, for videos not yet finished, when a watch page is known.
 
-Filter buttons above the grid switch between All, In Progress and Completed. Newest watched comes first.
+Filter links above the grid switch between All, In Progress and Completed. Newest watched comes first. The list shows 12 videos at a time, with **Previous** and **Next** links below it when there are more. The filter and page are part of the address (for example `?ms_videos=completed&ms_videos_page=2`), so they work without JavaScript and can be bookmarked.
+
+A developer can change how many videos show per page with the `mediashield_my_videos_per_page` filter (up to 100). See [Hooks and Filters](../developer-guide/02-hooks-and-filters.md).
 
 ## Where titles and Resume go
 
@@ -44,14 +46,14 @@ Videos have no public page of their own, so MediaShield cannot link to one. In 1
 
 | Your setup | What members get |
 |------------|------------------|
-| An integration supplies the page, such as the Learnomy lesson that holds the video | The title and Resume link to that page. The player there offers to resume by itself |
+| An integration supplies the page, such as the Learnomy lesson that holds the video, or (with Pro) the LearnDash, Tutor LMS or LifterLMS lesson picked in the video's LMS box | The title and Resume link to that page. The player there offers to resume by itself |
 | Nothing supplies a page | The title is plain text and there is no Resume link. Progress still shows |
 
 To link to your own pages, a developer adds the filter. See [Hooks and Filters](../developer-guide/02-hooks-and-filters.md).
 
 ## What viewers see
 
-A logged-out visitor sees "Please log in to see your video history." A member with no history sees "You have not watched any videos yet." A member never sees anyone else's list.
+A logged-out visitor sees "Please log in to see your video history." A member with no history sees "You have not watched any videos yet." A filter with nothing in it says so, for example "No completed videos yet." A member never sees anyone else's list.
 
 ## Check it worked
 

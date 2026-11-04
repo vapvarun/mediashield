@@ -9,6 +9,8 @@ parameters:
     excludePaths:
         analyseAndScan:
             - vendor/ (?)
+    scanFiles:
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
     bootstrapFiles:
         - phpstan-bootstrap.php
         - vendor/autoload.php

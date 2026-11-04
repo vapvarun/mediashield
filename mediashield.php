@@ -119,19 +119,10 @@ if ( file_exists( MEDIASHIELD_PATH . 'libs/edd-sl-sdk/edd-sl-sdk.php' )
 	);
 }
 
-// WP-CLI commands.
+// WP-CLI commands (autoloaded from includes/CLI, so they ship in the release zip).
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	$ms_scale_command = MEDIASHIELD_PATH . 'src/CLI/ScaleCommand.php';
-	if ( file_exists( $ms_scale_command ) ) {
-		require_once $ms_scale_command;
-		\WP_CLI::add_command( 'mediashield scale', \MediaShield\CLI\ScaleCommand::class );
-	}
-
-	$ms_repair_command = MEDIASHIELD_PATH . 'src/CLI/RepairCommand.php';
-	if ( file_exists( $ms_repair_command ) ) {
-		require_once $ms_repair_command;
-		\WP_CLI::add_command( 'mediashield repair', \MediaShield\CLI\RepairCommand::class );
-	}
+	\WP_CLI::add_command( 'mediashield scale', \MediaShield\CLI\ScaleCommand::class );
+	\WP_CLI::add_command( 'mediashield repair', \MediaShield\CLI\RepairCommand::class );
 }
 
 /*

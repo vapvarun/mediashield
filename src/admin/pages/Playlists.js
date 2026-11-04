@@ -115,13 +115,12 @@ const Playlists = () => {
 												{ decodeEntities( playlist.title?.rendered || '' ) }
 											</strong>
 										</td>
-										<td>
+										<td className="mediashield-table__badges">
 											{ flags.length > 0 ? (
 												flags.map( ( f ) => (
 													<span
 														key={ f }
 														className="mediashield-badge mediashield-badge--standard"
-														style={ { marginRight: 4 } }
 													>
 														{ f }
 													</span>
