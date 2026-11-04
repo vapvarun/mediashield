@@ -26,6 +26,8 @@ define( 'MEDIASHIELD_DB_VERSION', 7 );
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );
+// Licence and update host for MediaShield and MediaShield Pro; the SDK falls back to https://wbcomdesigns.com.
+define( 'MEDIASHIELD_LICENCE_HOST', 'https://updates.wbcomdesigns.com' );
 
 // Composer autoloader. Without it, none of the MediaShield\ classes can load —
 // including the Activator referenced by the activation hook below. Bail early
@@ -78,18 +80,38 @@ add_action(
 	}
 );
 
+/**
+ * One licence-server request (activate, deactivate or check) for MediaShield and MediaShield Pro. Goes through
+ * the bundled SDK, so it uses the same host as update checks and falls back to the old host when the new one
+ * cannot be reached. Returns the decoded reply, or false when no host answered.
+ *
+ * @param array $params EDD Software Licensing parameters (edd_action, license, item_id).
+ * @return object|false
+ */
+function mediashield_licence_request( array $params ) {
+	if ( ! class_exists( '\\EasyDigitalDownloads\\Updater\\Requests\\API' ) ) {
+		return false;
+	}
+	// Name the fallback here as well: on an early request (plugin activation) the SDK registry has not run yet.
+	if ( method_exists( '\EasyDigitalDownloads\Updater\Requests\API', 'set_fallback' ) ) {
+		\EasyDigitalDownloads\Updater\Requests\API::set_fallback( MEDIASHIELD_LICENCE_HOST, 'https://wbcomdesigns.com' );
+	}
+	return ( new \EasyDigitalDownloads\Updater\Requests\API( MEDIASHIELD_LICENCE_HOST ) )->make_request( $params );
+}
+
 // EDD Software Licensing SDK — free plugin auto-updates with preset key.
 add_action(
 	'edd_sl_sdk_registry',
 	function ( $registry ) {
 		$registry->register(
 			array(
-				'id'      => 'mediashield',
-				'url'     => 'https://wbcomdesigns.com',
-				'item_id' => 1661218,
-				'version' => MEDIASHIELD_VERSION,
-				'file'    => MEDIASHIELD_FILE,
-				'license' => 'mediasheild7c2a9e5d1f8b4c6a3e0d9b2f7c1a8e12',
+				'id'           => 'mediashield',
+				'url'          => MEDIASHIELD_LICENCE_HOST,
+				'fallback_url' => 'https://wbcomdesigns.com',
+				'item_id'      => 1661218,
+				'version'      => MEDIASHIELD_VERSION,
+				'file'         => MEDIASHIELD_FILE,
+				'license'      => 'mediasheild7c2a9e5d1f8b4c6a3e0d9b2f7c1a8e12',
 			)
 		);
 	}
@@ -119,6 +141,31 @@ if ( file_exists( MEDIASHIELD_PATH . 'libs/edd-sl-sdk/edd-sl-sdk.php' )
 	);
 }
 
+// Package Signatures (libs/package-signatures, vapvarun/package-signatures): checks that each MediaShield and
+// MediaShield Pro update package carries the release signature before WordPress installs it. Warn mode: the
+// result is logged (option package_signatures_log) and the update installs either way. Free registers Pro as
+// well, because WordPress loads mediashield-pro/ before mediashield/ and Pro could not call this itself.
+if ( file_exists( MEDIASHIELD_PATH . 'libs/package-signatures/package-signatures.php' ) ) {
+	require_once MEDIASHIELD_PATH . 'libs/package-signatures/package-signatures.php';
+	$mediashield_signed_products = array(
+		'mediashield'     => plugin_basename( MEDIASHIELD_FILE ),
+		'mediashield-pro' => 'mediashield-pro/mediashield-pro.php',
+	);
+	foreach ( $mediashield_signed_products as $mediashield_signed_product => $mediashield_signed_plugin ) {
+		package_signatures_register(
+			array(
+				'product'  => $mediashield_signed_product,
+				'plugin'   => $mediashield_signed_plugin,
+				'hosts'    => array( 'wbcomdesigns.com', 'updates.wbcomdesigns.com' ),
+				'keys'     => array( 'wbcom-2026-1' => 'kr+2P1WqRbENpZw0BXZmwFnA2tMLi6MlHbBa6jB13U4=' ),
+				'mode'     => 'warn',
+				'fallback' => 'https://wbcomdesigns.com/package-signatures/{product}/{version}/',
+			)
+		);
+	}
+	unset( $mediashield_signed_products, $mediashield_signed_product, $mediashield_signed_plugin );
+}
+
 // WP-CLI commands (autoloaded from includes/CLI, so they ship in the release zip).
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	\WP_CLI::add_command( 'mediashield scale', \MediaShield\CLI\ScaleCommand::class );
@@ -132,8 +179,8 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
  * admin request (one install sent 933 activations in 23 hours):
  *   1. The activated flag is final. A `valid` reply, or any definitive refusal
  *      (invalid, disabled, expired, no activations left), ends the attempts.
- *   2. A one-day lock is set on every attempt, so a timeout or an unreadable
- *      reply is retried once a day, not once a request.
+ *   2. A 12-hour lock is set on every attempt, so a timeout or an unreadable
+ *      reply is retried twice a day at most, not once a request.
  *   3. admin_init also fires for admin-ajax (Heartbeat), cron and REST, where
  *      no one benefits from activating, so those requests skip it.
  */
@@ -141,6 +188,12 @@ add_action(
 	'admin_init',
 	function () {
 		if ( wp_doing_ajax() || wp_doing_cron() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+			return;
+		}
+
+		// Owner opt-out: define MEDIASHIELD_NO_LICENSE_PHONE_HOME to disable the
+		// store call entirely (air-gapped or privacy-strict installs, and tests).
+		if ( defined( 'MEDIASHIELD_NO_LICENSE_PHONE_HOME' ) && MEDIASHIELD_NO_LICENSE_PHONE_HOME ) {
 			return;
 		}
 
@@ -154,34 +207,28 @@ add_action(
 			return;
 		}
 
-		set_site_transient( $lock, 1, DAY_IN_SECONDS );
+		set_site_transient( $lock, 1, 12 * HOUR_IN_SECONDS );
 
 		update_option( $option, $preset_key, false );
 
-		$response = wp_remote_post(
-			'https://wbcomdesigns.com',
+		// Through the shared helper: the new host first, the old one if it cannot be
+		// reached. False means no host answered (or the SDK is not loaded yet): the
+		// lock above retries it later.
+		$body = mediashield_licence_request(
 			array(
-				'timeout' => 15,
-				'body'    => array(
-					'edd_action' => 'activate_license',
-					'license'    => $preset_key,
-					'item_id'    => 1661218,
-					'url'        => home_url(),
-				),
+				'edd_action' => 'activate_license',
+				'license'    => $preset_key,
+				'item_id'    => 1661218,
 			)
 		);
-
-		if ( is_wp_error( $response ) ) {
+		if ( ! is_object( $body ) ) {
 			return;
 		}
 
-		$raw = wp_remote_retrieve_body( $response );
-		$body = json_decode( $raw, true );
-
-		$license = $body['license'] ?? '';
+		$license = $body->license ?? '';
 
 		// No verdict in the reply (an error page, a 403 from a firewall): try
-		// again tomorrow.
+		// again after the lock.
 		if ( ! is_string( $license ) || '' === $license ) {
 			return;
 		}
@@ -195,8 +242,8 @@ add_action(
 		// Sync the SDK's expected status-object option so the "Manage License"
 		// modal shows the valid customer + expiry immediately, instead of
 		// waiting for the SDK's daily get_version cron to re-check. Stored as
-		// an object (stdClass) to match what the SDK writes when the user
+		// the reply object, which is what the SDK writes when the user
 		// activates manually through its own overlay.
-		update_option( $status_option, json_decode( $raw ), false );
+		update_option( $status_option, $body, false );
 	}
 );

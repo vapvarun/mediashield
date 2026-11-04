@@ -26,6 +26,23 @@ if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
 // Give access to tests_add_filter() function.
 require_once $_tests_dir . '/includes/functions.php';
 
+// Tests never call the live store: the preset licence activation is off, and both store hosts are refused
+// before a request leaves the machine. Without this every CI run would activate the free key as
+// http://example.org on the live store (the Jetonomy CI did, 2026-10-26).
+define( 'MEDIASHIELD_NO_LICENSE_PHONE_HOME', true );
+tests_add_filter(
+	'pre_http_request',
+	static function ( $pre, $args, $url ) {
+		$host = (string) wp_parse_url( $url, PHP_URL_HOST );
+		return in_array( $host, array( 'wbcomdesigns.com', 'updates.wbcomdesigns.com' ), true )
+			? new WP_Error( 'mediashield_tests_no_store', 'Tests do not call the live store.' )
+			: $pre;
+	},
+	1,
+	3
+);
+
+
 /**
  * Manually load the plugin being tested.
  */
