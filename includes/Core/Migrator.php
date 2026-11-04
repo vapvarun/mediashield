@@ -58,7 +58,28 @@ class Migrator {
 		// videos to claim; a fresh install writes the claim at upload.
 		self::claim_uploaded_files( $installed );
 
+		// v7 - rebuild the rewrite rules once. Before 1.4.1 the activation
+		// flush ran before the post types were registered, so sites activated
+		// on 1.4.0 or earlier saved rules without /playlist/ and an update by
+		// zip never re-activates.
+		self::rebuild_rewrite_rules();
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+	}
+
+	/**
+	 * Make WordPress rebuild its rewrite rules on the next request.
+	 *
+	 * Deleting the option is core's lazy flush: WP_Rewrite regenerates the
+	 * rules when it finds none, on a request where `init` has registered the
+	 * video and playlist post types. Flushing here would be wrong, because this
+	 * runs on plugins_loaded, before the post types exist.
+	 */
+	private static function rebuild_rewrite_rules(): void {
+		if ( (int) get_option( 'ms_db_version', 0 ) >= 7 ) {
+			return;
+		}
+		delete_option( 'rewrite_rules' );
 	}
 
 	/**

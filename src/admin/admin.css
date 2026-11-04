@@ -1933,6 +1933,13 @@
 		flex-direction: column;
 	}
 
+	/* The viewer's name is the only way into their detail: a full tap target. */
+	button.mediashield-user__name {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+	}
+
 	.mediashield-sidebar {
 		width: 100%;
 		border-right: none;

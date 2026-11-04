@@ -15,11 +15,12 @@ Install each built zip on a clean site, activate.
 ## B. Upgrade
 Install the previous release, then the new zip over it. Settings keep their values and existing videos still play.
 Journey: `audit/journeys/system/upgrade-keeps-lessons-playing.md`. The owner's bar is that nothing needs their attention and no lesson stops.
-- `B1 @admin +upgrade: update 1.3.0 to this build -> db version 6, every self-hosted video plays at once, no notice or action asked of the owner`
+- `B1 @admin +upgrade: update the previous release to this build -> db version 7, every self-hosted video plays at once, no notice or action asked of the owner`
 - `B2 @admin +upgrade: wait for the claim job -> ms_file_claims_pending cleared, each self-hosted video owns its file, others hold an empty claim`
 - `B3 @admin +upgrade !refuse: two videos named one file -> the older keeps it, the other is refused`
 - `B4 @admin +many: 2000 self-hosted videos -> job runs in batches, no timeout, resumes if interrupted`
 - `B5 @admin +upgrade: settings, playlists, tags and watch history unchanged after the update`
+- `B6 @visitor +upgrade: a site first activated on 1.4.0, updated by zip with no re-activation -> its playlist page opens instead of 404` (1.4.1 release smoke: the activation fix alone left these sites broken)
 
 ## C. Core flows (combo and free)
 - C1 Admin: open every MediaShield route at 1280 and 390. Each renders content, no horizontal overflow, no console error. In free mode the Pro-only routes fall back to the dashboard.

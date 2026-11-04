@@ -165,7 +165,9 @@ Playlist pages, My Videos and the admin lists work properly on every screen size
 * Improve  - On tablets the admin sidebar becomes an icon rail and list columns fit their content. On phones every admin list stacks into labelled cards.
 * Improve  - Admin icons always render, and the mobile sidebar gives every link a readable name.
 * Improve  - The setup wizard and settings no longer mention DRM encryption or an email gate.
-* Fix      - Playlist pages no longer return "Page not found" right after the plugin is activated.
+* Fix      - Playlist pages no longer return "Page not found" right after the plugin is activated, or on sites that were activated on an earlier version and then updated.
+* Fix      - Updating by deactivating, replacing and reactivating the plugin runs the same upgrade steps as a normal update.
+* Fix      - Opening a viewer under Viewers shows their name, email and watch history instead of "Unknown User", and the name is easier to tap on phones.
 * Fix      - The My Videos shortcode no longer renders empty.
 * Fix      - The Actions buttons in the Videos and Playlists lists no longer get cut off.
 * Fix      - The watermark uses the Font Size setting.
