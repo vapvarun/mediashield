@@ -259,7 +259,9 @@ final class ScaleCommand {
 			if ( ! $wpdb->get_var( "SHOW TABLES LIKE '{$full}'" ) ) {
 				continue;
 			}
-			$deleted += (int) $wpdb->query( "DELETE FROM {$full} WHERE user_id >= {$base}" );
+			// Seeded rows use ids from BASE_UID up without creating WordPress users,
+			// so a row whose user exists belongs to a real member on a large site.
+			$deleted += (int) $wpdb->query( "DELETE t FROM {$full} t WHERE t.user_id >= {$base} AND NOT EXISTS ( SELECT 1 FROM {$wpdb->users} u WHERE u.ID = t.user_id )" );
 		}
 
 		// Drop the synthetic CPT used as the FK target if it has the canonical title.

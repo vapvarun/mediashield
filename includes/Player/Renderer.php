@@ -166,23 +166,12 @@ class Renderer {
 		 */
 		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
 
-		// Only our own /stream route is gated: it re-checks the viewer on every
-		// request. Any other stream URL (a CDN address, Bunny direct play, an
-		// operator's pasted playlist) plays without touching /session/start, so
-		// printing it hands the file to someone who may not watch, and this
-		// output is also served to anyone by the playlist player route.
-		if ( '' !== $stream_url
-			&& 0 !== strpos( $stream_url, rest_url( 'mediashield/v1/stream/' . $video_id ) )
-			&& ! AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
-			$stream_url = '';
-		}
-
 		// Per-video override, then the owner's global default, then 'standard'.
 		// Shared with PlayerWrapper so the auto-wrap path cannot resolve this
 		// differently from the shortcode path, which is exactly what it did.
 		$protection_level = Protection::resolve_level( $video_id );
-		$duration    = (int) get_post_meta( $video_id, '_ms_duration', true );
-		$player_type = apply_filters( 'mediashield_player_type', 'standard', $video_id );
+		$duration         = (int) get_post_meta( $video_id, '_ms_duration', true );
+		$player_type      = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 
 		if ( empty( $source_url ) && empty( $stream_url ) && empty( $platform_video_id ) ) {
 			return self::notice(
@@ -213,6 +202,21 @@ class Renderer {
 		$safe_urls  = Protection::filter_player_urls( $video_id, (string) $platform, (string) $source_url, $stream_url );
 		$source_url = $safe_urls['source_url'];
 		$stream_url = $safe_urls['stream_url'];
+
+		// A viewer who may not watch gets no address at all: not the source URL,
+		// not the provider id (a Bunny embed or an unlisted Vimeo id plays on its
+		// own), only our own /stream route, which refuses them on every request.
+		// The player asks /session/start for the reason and shows the login or
+		// access message from there. This output also reaches anyone through the
+		// playlist page and the playlist player route.
+		$access_denied = ! AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'];
+		if ( $access_denied ) {
+			$source_url        = '';
+			$platform_video_id = '';
+			if ( 0 !== strpos( (string) $stream_url, rest_url( 'mediashield/v1/stream/' . $video_id ) ) ) {
+				$stream_url = '';
+			}
+		}
 
 		// Enqueue frontend assets (only loads when video content exists).
 		Assets::enqueue();
@@ -289,6 +293,9 @@ class Renderer {
 				data-access-type="<?php echo esc_attr( $access_type ); ?>"<?php endif; ?>
 			<?php
 			echo self::guest_allowed_attr( $video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static attribute string.
+			if ( $access_denied ) {
+				echo ' data-access-denied="1"';
+			}
 			if ( $wrapper_attrs ) {
 				echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
 			}

@@ -171,10 +171,14 @@ Playlist pages, My Videos and the admin lists work properly on every screen size
 * Fix      - The My Videos shortcode no longer renders empty.
 * Fix      - The Actions buttons in the Videos and Playlists lists no longer get cut off.
 * Fix      - The watermark uses the Font Size setting.
-* Fix      - Deactivating MediaShield's cleanup no longer touches database tables that belong to MediaShield Pro.
+* Fix      - Deleting a video no longer queries the old DRM tables, which new installs do not have.
 * Fix      - The scale and repair WP-CLI commands are included in the plugin download.
+* Fix      - A password-protected playlist placed with the Playlist block or shortcode asks for its password before showing its videos.
+* Fix      - A Learnomy lesson that is still locked by its drip or sequence rules no longer includes a playable video link in its REST data.
+* Security - A visitor or member who may not watch a video no longer receives its YouTube, Vimeo or Bunny id or its source address in the page. The player shows the login or access message instead (1.4.0 and earlier).
 * Security - Only people who can edit content can read a playlist's item list. Any logged-in subscriber could read it before, including each video's source address and the items of a password-protected playlist (1.4.0 and earlier).
 * Security - REST responses are marked no-store, so a page cache cannot keep one viewer's response and serve it to someone else.
+* Dev      - wp mediashield scale teardown removes only the rows it seeded and keeps those of real members with high user ids.
 * Compat   - Aligned with MediaShield Pro 1.4.1. Install both updates together.
 
 = 1.4.0 - October 2026 =

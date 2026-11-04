@@ -40,6 +40,13 @@ class PlaylistRenderer {
 			return self::notice( __( 'Playlist not found or not published.', 'mediashield' ) );
 		}
 
+		// Placed by block or shortcode on another page, a password-protected
+		// playlist still asks for its password, like its own page and the
+		// player route do.
+		if ( post_password_required( $playlist ) ) {
+			return get_the_password_form( $playlist );
+		}
+
 		$items = self::fetch_items( $playlist_id );
 		if ( empty( $items ) ) {
 			return self::notice( __( 'This playlist has no videos yet.', 'mediashield' ) );

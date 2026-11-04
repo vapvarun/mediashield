@@ -870,6 +870,15 @@
 		//              hiding forced on regardless of the global toggles
 		//              (protection.js reads data-protection-level for this).
 
+		// The server withheld the video's address because this viewer may not
+		// watch it. /session/start answers with the reason, and its denial path
+		// shows the login or access message and raises mediashield:access-denied
+		// for integrations; it never needs a player adapter.
+		if ( el.dataset.accessDenied ) {
+			startSession( el, videoId, null );
+			return;
+		}
+
 		// No protection — free preview.
 		if ( protectionLevel === 'none' ) {
 			var adapter = createAdapter( el );
@@ -987,6 +996,13 @@
 						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
 						showErrorOverlay( el, msg );
 					}
+					return;
+				}
+
+				// Rendered as denied but now allowed (the viewer logged in in
+				// another tab): the address is not on this page, so say so.
+				if ( ! adapter ) {
+					showErrorOverlay( el, t( 'loadFailed', 'This video could not be loaded.' ) );
 					return;
 				}
 
