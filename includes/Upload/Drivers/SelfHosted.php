@@ -155,6 +155,11 @@ class SelfHosted implements DriverInterface {
 		if ( $attach_to > 0 ) {
 			$post_id = $attach_to;
 
+			// A Media Library file this video was playing goes back to the
+			// Media Library first, so the new upload never takes its place on
+			// a later restore and the old file is not stranded in our folder.
+			\MediaShield\Upload\LibraryFiles::restore( $post_id );
+
 			update_post_meta( $post_id, '_ms_platform', 'self' );
 			update_post_meta( $post_id, '_ms_platform_video_id', $filename );
 			update_post_meta( $post_id, '_ms_owned_file', $filename );

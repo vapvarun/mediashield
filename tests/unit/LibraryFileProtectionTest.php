@@ -12,6 +12,8 @@
 
 namespace MediaShield\Tests\Unit;
 
+use MediaShield\Player\PlayerWrapper;
+use MediaShield\Player\Renderer;
 use MediaShield\REST\StreamController;
 use MediaShield\Upload\LibraryFiles;
 use WP_REST_Request;
@@ -179,5 +181,72 @@ class LibraryFileProtectionTest extends WP_UnitTestCase {
 		$this->assertFileExists( $back );
 		$this->assertSame( wp_get_attachment_url( $this->attachment ), get_post_meta( $video, '_ms_source_url', true ) );
 		wp_delete_file( $back );
+	}
+
+	/**
+	 * A viewer who may watch never receives the stored file name, on either render path.
+	 *
+	 * Fails on 1.4.2 before the QA fix: data-platform-video-id carried the
+	 * obscured name, a permanent download link on nginx.
+	 */
+	public function test_stored_file_name_never_reaches_the_page(): void {
+		update_option( 'ms_require_login', false );
+		$video = $this->video();
+		$name  = (string) get_post_meta( $video, '_ms_platform_video_id', true );
+		$this->assertNotSame( '', $name );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$html = Renderer::render( $video );
+		$this->assertMatchesRegularExpression( '#data-stream-url="[^"]*stream(/|%2F)' . $video . '[^"]*ms_token=#', $html, 'Still plays through the signed stream route.' );
+		$this->assertStringNotContainsString( $name, $html );
+		$this->assertStringNotContainsString( '/uploads/mediashield/', $html );
+
+		// Another video naming that file by its protected-folder URL cannot
+		// stream it (no claim), and must not print the URL either, on the
+		// auto-wrap path that finds a pasted <video> by its source.
+		$raw   = trailingslashit( wp_upload_dir()['baseurl'] ) . 'mediashield/' . $name;
+		$other = self::factory()->post->create(
+			array(
+				'post_type'   => 'mediashield_video',
+				'post_status' => 'publish',
+				'meta_input'  => array(
+					'_ms_platform'   => 'self',
+					'_ms_source_url' => $raw,
+				),
+			)
+		);
+		$this->assertStringNotContainsString( $name, Renderer::render( $other ) );
+		$wrapped = PlayerWrapper::process_buffer( '<p>x</p><video src="' . esc_url( $raw ) . '" controls></video>' );
+		$this->assertStringContainsString( 'data-video-id="' . $other . '"', $wrapped );
+		$this->assertStringNotContainsString( 'data-source-url="' . esc_url( $raw ), $wrapped );
+	}
+
+	/**
+	 * YouTube keeps its id: the player needs it.
+	 */
+	public function test_youtube_id_is_still_printed_for_an_allowed_viewer(): void {
+		update_option( 'ms_require_login', false );
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		update_post_meta( $video, '_ms_platform', 'youtube' );
+		update_post_meta( $video, '_ms_platform_video_id', 'aqz-KE-bpKQ' );
+		update_post_meta( $video, '_ms_source_url', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertStringContainsString( 'data-platform-video-id="aqz-KE-bpKQ"', Renderer::render( $video ) );
+	}
+
+	/**
+	 * Saving an already moved video keeps it in the owner notice's moved list.
+	 */
+	public function test_resaving_a_moved_video_keeps_it_in_the_notice(): void {
+		$video = $this->video();
+		wp_update_post(
+			array(
+				'ID'         => $video,
+				'post_title' => 'Edited',
+			)
+		);
+		$this->assertSame( 'moved', get_post_meta( $video, '_ms_library_file', true ) );
+		$this->assertContains( $video, get_option( 'ms_library_files_report' )['moved'] );
 	}
 }

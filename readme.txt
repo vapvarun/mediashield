@@ -159,6 +159,7 @@ Self-hosted videos picked from the Media Library are protected like uploaded one
 * Improve  - Deleting a video, or uninstalling MediaShield, puts a moved file back in its old Media Library place instead of deleting it.
 * Security - A visitor who had not bought a course could download its self-hosted video when the video came from the Media Library: the file was listed in the WordPress media API and served directly. MediaShield now moves that file into its protected folder, keeps its Media Library entry visible to editors only, and plays it only through the protected player (1.4.1 and earlier).
 * Security - Contributors, authors and instructors could read the file and stream address of every video through the WordPress REST API. Only people who can edit a video now receive its addresses, including on the playlist items list (1.4.1 and earlier).
+* Security - The player page no longer contains a self-hosted video's stored file name or a direct address into MediaShield's protected folder, which on servers without the folder's deny rule could be shared as a download link. Videos still play through the protected stream (1.4.1 and earlier).
 * Dev      - wp mediashield repair restore-library-files moves protected Media Library files back. Developers can report other uses of a file with the mediashield_library_file_in_use filter.
 * Compat   - Aligned with MediaShield Pro 1.4.2. Install both updates together.
 

@@ -203,7 +203,7 @@ class Renderer {
 		$source_url = $safe_urls['source_url'];
 		$stream_url = $safe_urls['stream_url'];
 
-		$access_denied = self::withhold_addresses( $video_id, $platform_video_id, $source_url, $stream_url );
+		$access_denied = self::withhold_addresses( $video_id, $platform_video_id, $source_url, $stream_url, (string) $platform );
 
 		// Enqueue frontend assets (only loads when video content exists).
 		Assets::enqueue();
@@ -380,23 +380,51 @@ class Renderer {
 	}
 
 	/**
-	 * Blank every address of a video the current viewer may not watch.
+	 * Decide which of a video's addresses the page may carry for the current viewer.
 	 *
-	 * Not the source URL, not the provider id (a Bunny embed or an unlisted Vimeo
-	 * id plays on its own), not even our signed /stream address. The player asks
-	 * /session/start for the reason and shows the login or access message from
-	 * there. Shared with PlayerWrapper, so the shortcode, block, playlist page,
-	 * playlist player route and auto-wrapped embeds expose the same thing.
+	 * The one place both renderers (Renderer and PlayerWrapper: shortcode,
+	 * block, playlist page, playlist player route, embed page, auto-wrapped
+	 * embeds) ask before printing an address.
+	 *
+	 * Always, for every viewer: a self-hosted video's provider id is blanked.
+	 * For `self` it is the obscured file name in uploads/mediashield/, and on a
+	 * host that does not honour the folder's deny rule (nginx) that name is a
+	 * permanent download link, the very thing the random name exists to keep
+	 * private (Basecamp 10482094152). The player never needs it: it streams
+	 * self-hosted video from the signed /stream URL and reads the id only for
+	 * YouTube, Vimeo and Wistia. A raw URL into that folder is blanked for the
+	 * same reason; playback goes through /stream.
+	 *
+	 * For a viewer who may not watch: every address is blanked, not the source
+	 * URL, not the provider id (a Bunny embed or an unlisted Vimeo id plays on
+	 * its own), not even our signed /stream address. The player asks
+	 * /session/start for the reason and shows the login or access message.
 	 *
 	 * @since 1.4.1
+	 * @since 1.4.2 Blanks the self-hosted file name and protected-folder URLs for everyone.
 	 *
 	 * @param int    $video_id          Video CPT post ID.
-	 * @param string $platform_video_id Provider id, blanked in place when denied.
-	 * @param string $source_url        Source URL, blanked in place when denied.
+	 * @param string $platform_video_id Provider id, blanked in place when it may not be shown.
+	 * @param string $source_url        Source URL, blanked in place when it may not be shown.
 	 * @param string $stream_url        Stream URL, blanked in place when denied.
+	 * @param string $platform          Platform slug; read from the video when ''.
 	 * @return bool True when the viewer may not watch; print data-access-denied.
 	 */
-	public static function withhold_addresses( int $video_id, &$platform_video_id, &$source_url, &$stream_url ): bool {
+	public static function withhold_addresses( int $video_id, &$platform_video_id, &$source_url, &$stream_url, string $platform = '' ): bool {
+		if ( '' === $platform ) {
+			$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
+		}
+		if ( '' === $platform || 'self' === $platform ) {
+			$platform_video_id = '';
+		}
+		$protected_folder = trailingslashit( wp_upload_dir()['baseurl'] ) . 'mediashield/';
+		foreach ( array( &$source_url, &$stream_url ) as &$url ) {
+			if ( '' !== (string) $url && false !== stripos( preg_replace( '#^https?:#i', '', (string) $url ), preg_replace( '#^https?:#i', '', $protected_folder ) ) ) {
+				$url = '';
+			}
+		}
+		unset( $url );
+
 		if ( AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
 			return false;
 		}

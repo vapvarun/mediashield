@@ -28,6 +28,7 @@ did not buy it must not find or fetch the file; buyers keep watching.
 5. As an administrator: Media Library shows ATT; Dashboard shows "MediaShield now keeps self-hosted video files in its protected folder" listing VIDEO as moved and SHARED as left with "also used in the content of ...". "Got it" clears it.
 6. Learnomy: an enrolled student opens the paid lesson playing VIDEO. **Expect** it plays (stream returns 206). A logged-in non-buyer sees "Enrollment required" and the stream returns 403.
 7. Learnomy: a guest opens a free-preview lesson whose video was moved. **Expect** it plays.
+7b. View source of steps 6 and 7 (student and guest) and grep for the stored file name (`wp post meta get VIDEO _ms_platform_video_id`) and `/uploads/mediashield/`. **Expect** no hit, `data-platform-video-id=""` on self-hosted players, and a YouTube lesson still carrying its id.
 8. `wp mediashield repair restore-library-files --video=VIDEO`. **Expect** FILE_URL serves again, ATT is back to its old status, VIDEO plays from it.
 9. Delete a video whose file was moved. **Expect** the file is back at its Media Library path, not deleted.
 
@@ -39,5 +40,6 @@ did not buy it must not find or fetch the file; buyers keep watching.
 |---|---|---|
 | Contributor reads `_ms_source_url` | meta bar back to `edit_posts` | `includes/CPT/VideoPostType.php::hide_meta_from_viewers` |
 | File still public, state `in_use` | a reference was found; read the notice | `includes/Upload/LibraryFiles.php::used_elsewhere` |
+| Stored file name in page HTML | a renderer printed the id without asking | `includes/Player/Renderer.php::withhold_addresses` |
 | Buyer gets 404 after the move | claim not written | `includes/Upload/LibraryFiles.php::protect` |
 | File gone after deleting a video | restore not run before the driver delete | `includes/Cron/Cleanup.php::handle_video_delete` |

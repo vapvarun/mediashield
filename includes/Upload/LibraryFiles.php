@@ -103,11 +103,13 @@ class LibraryFiles {
 	 *
 	 * A video whose file the owner moved back with restore() stays where it is:
 	 * that was their choice. Uploading a file on the edit screen protects it again.
+	 * A video already moved keeps its state and its line in the owner notice;
+	 * re-checking it would find a file it owns and record "nothing to do".
 	 *
 	 * @param int $video_id Video post ID.
 	 */
 	public static function on_save( int $video_id ): void {
-		if ( wp_is_post_revision( $video_id ) || wp_is_post_autosave( $video_id ) || 'restored' === get_post_meta( $video_id, self::STATE, true ) ) {
+		if ( wp_is_post_revision( $video_id ) || wp_is_post_autosave( $video_id ) || in_array( get_post_meta( $video_id, self::STATE, true ), array( 'moved', 'restored' ), true ) ) {
 			return;
 		}
 		delete_post_meta( $video_id, self::STATE );
