@@ -153,14 +153,15 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 = 1.4.2 - November 2026 =
 
-Self-hosted videos picked from the Media Library are protected like uploaded ones.
+Security release: self-hosted videos picked from the Media Library are now protected like uploaded ones.
 
-* Improve  - Existing videos are moved in the background after the update, and playback keeps working throughout. A file that is also used elsewhere on your site, such as embedded in a post or a Learnomy lesson, stays where it is, and a notice lists those videos and how to protect them.
-* Improve  - Deleting a video, or uninstalling MediaShield, puts a moved file back in its old Media Library place instead of deleting it.
-* Security - A visitor who had not bought a course could download its self-hosted video when the video came from the Media Library: the file was listed in the WordPress media API and served directly. MediaShield now moves that file into its protected folder, keeps its Media Library entry visible to editors only, and plays it only through the protected player (1.4.1 and earlier).
-* Security - Contributors, authors and instructors could read the file and stream address of every video through the WordPress REST API. Only people who can edit a video now receive its addresses, including on the playlist items list (1.4.1 and earlier).
-* Security - The player page no longer contains a self-hosted video's stored file name or a direct address into MediaShield's protected folder, which on servers without the folder's deny rule could be shared as a download link. Videos still play through the protected stream (1.4.1 and earlier).
-* Dev      - wp mediashield repair restore-library-files moves protected Media Library files back. Developers can report other uses of a file with the mediashield_library_file_in_use filter.
+* Improve  - Existing Media Library videos move to the protected folder in the background after the update, and playback keeps working throughout.
+* Improve  - A file also used elsewhere, such as embedded in a post or a Learnomy lesson, stays where it is, and a notice lists those videos with how to protect them.
+* Improve  - Deleting a video or uninstalling MediaShield puts a moved file back in its Media Library place instead of deleting it.
+* Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
+* Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
+* Security - The player page no longer prints a self-hosted video's stored file name or a direct address into the protected folder.
+* Dev      - New command wp mediashield repair restore-library-files and new filter mediashield_library_file_in_use.
 * Compat   - Aligned with MediaShield Pro 1.4.2. Install both updates together.
 
 = 1.4.1 - November 2026 =
