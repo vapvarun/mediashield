@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -150,6 +150,17 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 6. Session tracking with concurrent stream management
 
 == Changelog ==
+
+= 1.4.2 - November 2026 =
+
+Self-hosted videos picked from the Media Library are protected like uploaded ones.
+
+* Improve  - Existing videos are moved in the background after the update, and playback keeps working throughout. A file that is also used elsewhere on your site, such as embedded in a post or a Learnomy lesson, stays where it is, and a notice lists those videos and how to protect them.
+* Improve  - Deleting a video, or uninstalling MediaShield, puts a moved file back in its old Media Library place instead of deleting it.
+* Security - A visitor who had not bought a course could download its self-hosted video when the video came from the Media Library: the file was listed in the WordPress media API and served directly. MediaShield now moves that file into its protected folder, keeps its Media Library entry visible to editors only, and plays it only through the protected player (1.4.1 and earlier).
+* Security - Contributors, authors and instructors could read the file and stream address of every video through the WordPress REST API. Only people who can edit a video now receive its addresses, including on the playlist items list (1.4.1 and earlier).
+* Dev      - wp mediashield repair restore-library-files moves protected Media Library files back. Developers can report other uses of a file with the mediashield_library_file_in_use filter.
+* Compat   - Aligned with MediaShield Pro 1.4.2. Install both updates together.
 
 = 1.4.1 - November 2026 =
 
@@ -351,6 +362,9 @@ Bug fixes, accessibility and UX polish, a complete documentation set, and new de
 * 8 actions and 8 filters for developer integrations.
 
 == Upgrade Notice ==
+
+= 1.4.2 =
+Security release: self-hosted videos picked from the Media Library move into the protected folder so non-buyers cannot download them. A notice lists what moved. Update Pro to 1.4.2 at the same time.
 
 = 1.4.0 =
 Protected video no longer returns access denied after a cached page goes stale, embed-block videos are protected, and playlists play through the protected player. Update Pro to 1.4.0 at the same time.
