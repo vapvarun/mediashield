@@ -41,6 +41,61 @@ class Learnomy {
 	 */
 	public static function register(): void {
 		add_filter( 'learnomy_rest_lesson_payload', array( __CLASS__, 'add_embed_to_payload' ), 10, 3 );
+		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 3 );
+	}
+
+	/**
+	 * Is this Media Library file played or embedded by a Learnomy lesson or course?
+	 *
+	 * A plain "Video" lesson, a course intro video or lesson text can name the
+	 * file by URL in Learnomy's own tables, where MediaShield's post scan
+	 * cannot see it. Moving the file would break that lesson, so it is
+	 * reported as used and left in place (Upload\LibraryFiles). A query error
+	 * also counts as used: when in doubt the file stays where it is.
+	 *
+	 * @since 1.4.2
+	 *
+	 * @param string $where      Where it is used so far, '' when nowhere.
+	 * @param string $relative   File path relative to the uploads folder.
+	 * @param int    $attachment Media Library item, or 0.
+	 * @return string
+	 */
+	public static function library_file_in_use( $where, $relative, $attachment ): string {
+		if ( '' !== (string) $where || ! function_exists( '\\Learnomy\\table' ) ) {
+			return (string) $where;
+		}
+		global $wpdb;
+		$like = '%' . $wpdb->esc_like( (string) $relative ) . '%';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reference scan; results must be live.
+		$lesson = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT id FROM %i WHERE video_url LIKE %s OR content LIKE %s LIMIT 1',
+				\Learnomy\table( 'lessons' ),
+				$like,
+				$like
+			)
+		);
+		$failed = '' !== $wpdb->last_error;
+		if ( ! $lesson && ! $failed && (int) $attachment > 0 ) {
+			// Older Learnomy schemas have no media_id; that error is ignored, the URL check above stands.
+			$lesson = $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM %i WHERE media_id = %d LIMIT 1', \Learnomy\table( 'lessons' ), (int) $attachment ) );
+		}
+		if ( $lesson || $failed ) {
+			return __( 'a Learnomy lesson', 'mediashield' );
+		}
+
+		$course = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT id FROM %i WHERE video_url LIKE %s OR content LIKE %s OR description LIKE %s LIMIT 1',
+				\Learnomy\table( 'courses' ),
+				$like,
+				$like,
+				$like
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return $course || '' !== $wpdb->last_error ? __( 'a Learnomy course', 'mediashield' ) : '';
 	}
 
 	/**

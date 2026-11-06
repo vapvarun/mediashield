@@ -162,6 +162,11 @@ class Cleanup {
 		// gone. Deleting it is delegated to the driver that owns it rather
 		// than rebuilt inline, so there is one implementation of where that
 		// file lives.
+		// A file MediaShield moved in from the Media Library goes back there
+		// rather than being deleted: it was the owner's file before it was the
+		// video's. restore() also drops the claim, so the delete below skips it.
+		\MediaShield\Upload\LibraryFiles::restore( $post_id );
+
 		$platform          = get_post_meta( $post_id, '_ms_platform', true );
 		$platform_video_id = get_post_meta( $post_id, '_ms_platform_video_id', true );
 

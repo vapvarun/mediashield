@@ -271,6 +271,28 @@ add_filter( 'mediashield_upload_drivers', function( $drivers ) {
 
 ---
 
+### mediashield_library_file_in_use
+
+*Since 1.4.2.* Report a use of a Media Library file that MediaShield cannot see, so the file is left in place instead of being moved into the protected folder. Return where it is used, in a few words the owner will read in the notice (for example `a Learnomy lesson`). MediaShield's Learnomy integration uses it for lesson and course URLs.
+
+**Parameters:** `$where` (string, '' when unused so far), `$relative` (string, path below the uploads folder), `$attachment_id` (int, 0 when none), `$video_id` (int)
+
+```php
+add_filter( 'mediashield_library_file_in_use', function( $where, $relative ) {
+    return '' === $where && my_plugin_uses_file( $relative ) ? 'a My Plugin page' : $where;
+}, 10, 2 );
+```
+
+---
+
+### mediashield_library_files_batch_size
+
+*Since 1.4.2.* Videos checked per pass of the one-off `ms_protect_library_files` job. Default 50, clamped to 10-200.
+
+**Parameters:** `$batch` (int)
+
+---
+
 ### mediashield_player_type
 
 Override the player type for a video. Free renders `standard` for every video; the value is emitted as `data-player-type` on the player container.

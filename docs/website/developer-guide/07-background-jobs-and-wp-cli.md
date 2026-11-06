@@ -11,6 +11,7 @@ Jobs are registered on `init`. If Action Scheduler is loaded (it is bundled in `
 | `ms_cleanup_inactive_sessions` | Hourly, recurring | Sets `is_active = 0` on sessions with no heartbeat for 10 minutes. | Only flips the flag. Reads that count active sessions use a 5 minute window themselves. |
 | `ms_archive_old_sessions` | Monthly, recurring | Moves sessions older than `ms_session_retention_months` to `ms_watch_sessions_archive`. | Does nothing while the option is 0 (the default). |
 | `ms_restore_archived_sessions` | One-off, re-queues itself every minute | Moves archived rows back to the live table, 2000 per pass. | Queued by the 1.3.0 upgrade. Batch filter: `mediashield_restore_archive_batch_size` (100-20000). |
+| `ms_protect_library_files` | One-off, re-queues itself every minute | Moves the Media Library file of each self-hosted video into `uploads/mediashield/`, makes its Media Library item private, and points the video at its stream URL. A file also used elsewhere (post content, other meta, a widget, a Learnomy lesson or course, or anything an extension reports through `mediashield_library_file_in_use`) is left in place. | Queued by the 1.4.2 upgrade while `ms_library_files_pending` is set. Resumable: every checked video gets `_ms_library_file`. Batch filter: `mediashield_library_files_batch_size` (10-200, default 50). New and edited videos are checked when saved. When it finishes, administrators see a notice listing what moved and what was left. |
 | `ms_claim_uploaded_files` | One-off, re-queues itself every minute | Writes `_ms_owned_file` for each video that has none, oldest video first. | Queued by the 1.4.0 upgrade while `ms_file_claims_pending` is set. Batch filter: `mediashield_claim_files_batch_size` (50-1000, default 200). |
 
 The bundled EDD licensing SDK also schedules its own weekly licence check, which is not part of MediaShield's jobs.
@@ -44,6 +45,19 @@ Bunny collection URLs are reported for manual fixing and never rewritten.
 ```
 wp mediashield repair bunny-urls
 wp mediashield repair bunny-urls --execute
+```
+
+### wp mediashield repair restore-library-files
+
+*Since 1.4.2.* Moves Media Library files that MediaShield protected back to their old path, restores each Media Library item's old status, and points the video at the public file again. If the old name has been taken since, the file gets the next free name in the same folder and the video and Media Library item follow it; nothing is overwritten. A restored video is not moved again when saved; upload the file on the video to protect it again. Deleting a video also puts its moved file back, and so does uninstalling MediaShield.
+
+| Flag | Meaning |
+|------|---------|
+| `--video=<id>` | Restore one video only. |
+
+```
+wp mediashield repair restore-library-files
+wp mediashield repair restore-library-files --video=42
 ```
 
 ### wp mediashield scale

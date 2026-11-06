@@ -142,3 +142,7 @@ Videos and playlists are custom post types with `show_in_rest` enabled, so the s
 - `/wp/v2/mediashield-playlists` and `/wp/v2/mediashield-playlists/{id}`
 
 Video and playlist meta (`_ms_platform`, `_ms_source_url`, `_ms_protection_level`, `_ms_duration`, the player overrides, the playlist playback options) is registered with `show_in_rest`, so it round-trips through the `meta` object on those routes. This is how the block editor creates a video from a pasted URL.
+
+Who sees the video meta (since 1.4.2): the addresses that lead to the media (`_ms_source_url`, `_ms_platform_video_id`, `_ms_stream_url`) are returned only to people who can edit that video (`edit_post`). People who can write posts but not edit this video get the other meta, which the Video block picker shows. Visitors and members get no `meta` at all. This holds for every response shape, including `_fields`, `context=edit`, `_embed` and list requests. Writing any video meta needs `edit_post` on that video. The playlist items route (`GET /playlists/{id}/items`) applies the same rule to each item's `source_url`.
+
+A Media Library file that a self-hosted video plays from is moved into `uploads/mediashield/` and its Media Library item becomes private (see [Background Jobs and WP-CLI](07-background-jobs-and-wp-cli.md)), so `/wp/v2/media` no longer lists it for anyone who cannot read private media.

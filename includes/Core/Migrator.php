@@ -64,7 +64,27 @@ class Migrator {
 		// zip never re-activates.
 		self::rebuild_rewrite_rules();
 
+		// v8 - move Media Library files that protected videos play from into
+		// the protected folder. Background job, queued by LibraryFiles::ensure_job().
+		self::protect_library_files( $installed );
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+	}
+
+	/**
+	 * Queue the one-off check of every self-hosted video for a public Media Library file.
+	 *
+	 * Only the flag is set here, for the same reason as the claim backfill:
+	 * this runs on plugins_loaded, before Action Scheduler is ready. A fresh
+	 * install has no videos; new ones are checked when saved.
+	 *
+	 * @param int $installed DB version before this run.
+	 */
+	private static function protect_library_files( int $installed ): void {
+		if ( $installed < 1 || $installed >= 8 ) {
+			return;
+		}
+		update_option( \MediaShield\Upload\LibraryFiles::PENDING, 1, false );
 	}
 
 	/**

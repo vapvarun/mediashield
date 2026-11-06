@@ -58,6 +58,8 @@ MediaShield makes screen recording traceable, not impossible. No web software ca
 
 On Apache, yes: MediaShield writes an `.htaccess` deny rule into `wp-content/uploads/mediashield/`, so the files can only be watched through the permission-checked player.
 
+A video whose source is a file from your Media Library gets the same protection since 1.4.2: MediaShield moves that file into its protected folder and keeps its Media Library entry, visible to editors only. If the same file is also used elsewhere on your site, for example embedded in a post or a lesson, it is left where it is so that page keeps working, and a notice lists those videos. Upload the file on the video's edit screen to give it a private copy.
+
 On nginx, `.htaccess` is ignored and those files are directly downloadable until you add a rule to your server config. MediaShield does not assume - it asks your own server for one of your video files and reports the result under **Tools > Site Health**, with the exact nginx rule to add if the answer is bad. Adding it does not affect playback, because the player streams through MediaShield rather than requesting that path.
 
 **What does developer-tools detection do?**
@@ -74,7 +76,7 @@ No. Deleting a video in MediaShield removes this site's record of it and nothing
 
 That is deliberate. Those services have no trash and no undo, so a mistake would be permanent, and the master is usually something you pay to store and may be using elsewhere. If you genuinely want a video gone from the platform, delete it in that platform's own dashboard, where you can see what else uses it.
 
-The one exception is a **self-hosted** video: that file lives in this site's own uploads folder, was put there by MediaShield, and is deleted along with the video.
+The one exception is a **self-hosted** video uploaded through MediaShield: that file lives in this site's own uploads folder, was put there by MediaShield, and is deleted along with the video. A file that came from your Media Library is never deleted: it goes back to its old place in the Media Library.
 
 ## Sessions and Access
 

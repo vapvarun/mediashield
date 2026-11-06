@@ -65,6 +65,8 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			'ms_db_version',
 			'ms_wizard_completed',
 			'ms_activated_at',
+			'ms_library_files_pending',
+			'ms_library_files_report',
 			'ms_custom_url_patterns', // Removed in 1.3.0.
 			'ms_max_upload_size',     // Removed in 1.3.0.
 		)
@@ -107,6 +109,12 @@ if ( isset( $wp_roles ) ) {
 // the uninstall request into a timeout, which would leave the removal half
 // finished with no indication of where it stopped.
 if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+	// Media Library files MediaShield moved into its folder go back first, so
+	// emptying the folder below never deletes an owner's own upload.
+	if ( class_exists( '\\MediaShield\\Upload\\LibraryFiles' ) ) {
+		\MediaShield\Upload\LibraryFiles::restore_all();
+	}
+
 	$ms_post_types = array( 'mediashield_video', 'mediashield_playlist' );
 
 	foreach ( $ms_post_types as $ms_cpt ) {
@@ -138,8 +146,12 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 	if ( is_dir( $ms_dir ) ) {
 		$ms_files = glob( trailingslashit( $ms_dir ) . '*' );
 
+		// A Media Library item still pointing in here (a moved file that could
+		// not be put back) keeps its file: it is the owner's, not ours.
+		$ms_attached = $wpdb->get_col( "SELECT meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_wp_attached_file' AND meta_value LIKE 'mediashield/%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall.
+
 		foreach ( (array) $ms_files as $ms_file ) {
-			if ( is_file( $ms_file ) ) {
+			if ( is_file( $ms_file ) && ! in_array( 'mediashield/' . basename( $ms_file ), $ms_attached, true ) ) {
 				wp_delete_file( $ms_file );
 			}
 		}

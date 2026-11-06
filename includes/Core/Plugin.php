@@ -107,6 +107,10 @@ class Plugin {
 		// Cron cleanup + video/playlist deletion cascade (Task 22).
 		Cleanup::register();
 
+		// Media Library files that protected videos play from move into the
+		// protected folder (upgrade job, on save, owner notice, undo).
+		\MediaShield\Upload\LibraryFiles::register();
+
 		// GDPR privacy exporters/erasers (Task 23).
 		PrivacyExporter::register();
 		PrivacyEraser::register();

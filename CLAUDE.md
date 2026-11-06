@@ -14,7 +14,7 @@
 
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
-- **Version:** 1.4.0
+- **Version:** 1.4.2
 - **Requires:** PHP 8.1, WordPress 6.5
 - **Text Domain:** mediashield
 - **Namespace:** `MediaShield\`
@@ -84,6 +84,7 @@ includes/
     MilestoneTracker.php     25/50/75/100% completion tracking. When a milestone with a configured tag fires, the tag is promoted into the unified `ms_tags` dictionary (via `TagManager::ensure()`) and the video↔tag link recorded in `ms_video_tags`. The per-user earn record stays in `_ms_video_tags` user meta but now carries `tag_id` alongside the display string for cross-reference.
   Upload/
     UploadManager.php        Driver registry (mediashield_upload_drivers filter)
+    LibraryFiles.php         (1.4.2) Moves a self-hosted video's Media Library file into uploads/mediashield/ (attachment kept, made private, so /wp/v2/media hides it). Skips files used elsewhere (posts, meta, options, Learnomy via `mediashield_library_file_in_use`). Upgrade job `ms_protect_library_files`, on-save check, owner notice, restore() on video delete / uninstall / `wp mediashield repair restore-library-files`. Never deletes a file.
     Drivers/
       DriverInterface.php    Upload driver contract
       SelfHosted.php         Local wp-content upload driver
@@ -165,6 +166,7 @@ assets/
   - `_ms_platform` (string, default `self`) -- hosting platform
   - `_ms_platform_video_id` (string) -- external platform video ID
   - `_ms_source_url` (string) -- direct video URL
+  - REST: `_ms_source_url`, `_ms_platform_video_id`, `_ms_stream_url` are returned only to users with `edit_post` on that video (1.4.2, `VideoPostType::hide_meta_from_viewers`); no meta at all for users without `edit_posts`. Writes need `edit_post`.
   - `_ms_protection_level` (string, default `standard`) -- standard/drm
   - `_ms_access_role` (string) -- required role slug
   - `_ms_duration` (integer) -- video duration in seconds
@@ -291,7 +293,7 @@ A 4th shortcode, `[mediashield_upload]`, is registered by **Pro** — but only a
 
 ## WordPress Hooks
 
-Verified against 1.3.0 source (`do_action` / `apply_filters` in `includes/` and `src/`, docblock and line-comment mentions excluded): **14 actions + 33 filters = 47 hooks fired by Free.** (1.4.1 added `mediashield_guest_can_watch` and `mediashield_video_watch_url`.)
+Verified against 1.3.0 source (`do_action` / `apply_filters` in `includes/` and `src/`, docblock and line-comment mentions excluded): **14 actions + 33 filters = 47 hooks fired by Free.** (1.4.1 added `mediashield_guest_can_watch` and `mediashield_video_watch_url`; 1.4.2 added `mediashield_library_file_in_use` and `mediashield_library_files_batch_size`.)
 
 Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `mediashield_default_upload_driver` added; `mediashield_delete_remote_media` added and then removed again - remote deletion is not an opt-in any more, it does not exist. The previous figure here read 15 actions + 29 filters; the total was right but the split was not. Pro fires 20 more of its own and re-applies `mediashield_enqueue_frontend`. Two further hooks are Action Scheduler *job* hooks fired by Pro (`mediashield_generate_pdf`, `mediashield_fire_webhook`), and `mediashield_admin_routes` is a JS-side `wp.hooks` filter, not a PHP one.
 
@@ -341,6 +343,8 @@ Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `media
 | `mediashield_session_allow_anonymous_start` | $allow, $video_id, $access_type, $request | Whether an anonymous `POST /session/start` may reach the handler. Defaults true when `ms_require_login` is off or `_ms_access_type` is set. (`SessionController.php:220`) |
 | `mediashield_guest_can_watch` | $allowed, $video_id | Return true to let a guest past Require Login for one video (LMS free previews). Role, domain and `mediashield_can_watch` still apply. One answer for can_watch, `/session/start` and the player's `data-guest-allowed` via `AccessControl::login_gate_applies()`. |
 | `mediashield_video_watch_url` | $url, $video_id, $user_id | Page where a member watches a video, used by My Videos. The video CPT is not public; '' renders the title as plain text with no Resume link. |
+| `mediashield_library_file_in_use` | $where, $relative, $attachment_id, $video_id | Report a use of a Media Library file MediaShield cannot see; non-empty leaves the file public and lists it in the owner notice. Learnomy integration answers for lesson/course URLs. |
+| `mediashield_library_files_batch_size` | $batch | Videos per pass of `ms_protect_library_files` (10-200, default 50). |
 | `mediashield_shortcode_source_url` | $url, $video_id, $atts | Override the source URL a `[mediashield]` shortcode resolves to (`Shortcode.php:61`) |
 | `mediashield_stored_filename` | $obscured, $original_name | The randomised on-disk filename for a self-hosted upload (`SelfHosted.php:144`) |
 | `mediashield_video_ad_breaks` | $breaks, $video_id, $duration | In-video ad breaks. Populated by the WB Ad Manager bridge; empty when no ad source is active. (`Renderer.php:263`) |

@@ -123,27 +123,7 @@ class SelfHosted implements DriverInterface {
 		//
 		// The readable stem is kept so an operator can still recognise files on
 		// disk.
-		$stem      = pathinfo( sanitize_file_name( $original_name ), PATHINFO_FILENAME );
-		$extension = pathinfo( sanitize_file_name( $original_name ), PATHINFO_EXTENSION );
-		$token     = wp_generate_password( 20, false, false );
-
-		$obscured = $stem . '-' . $token . ( '' !== $extension ? '.' . $extension : '' );
-
-		/**
-		 * Filter the stored filename for a self-hosted upload.
-		 *
-		 * Return the plain sanitised name to opt out of the random token - for
-		 * instance on an Apache host where the directory deny rule does apply
-		 * and predictable names are wanted for operational reasons.
-		 *
-		 * @since 1.3.0
-		 *
-		 * @param string $obscured      Filename with the random token.
-		 * @param string $original_name Name as supplied by the client.
-		 */
-		$obscured = (string) apply_filters( 'mediashield_stored_filename', $obscured, $original_name );
-
-		$filename = wp_unique_filename( $this->upload_dir, $obscured );
+		$filename = $this->stored_name( $original_name );
 		$dest     = $this->upload_dir . $filename;
 
 		// Move file.
@@ -224,6 +204,63 @@ class SelfHosted implements DriverInterface {
 			'embed_url'         => $stream_url,
 			'error'             => '',
 		);
+	}
+
+	/**
+	 * The unique, obscured name a file is stored under in the protected folder.
+	 *
+	 * Shared by uploads and by Media Library files the plugin takes into its
+	 * care, so both get the same random token and the same filter.
+	 *
+	 * @since 1.4.2
+	 *
+	 * @param string $original_name Name the file arrived with.
+	 * @return string Filename, unique within the folder.
+	 */
+	private function stored_name( string $original_name ): string {
+		$stem      = pathinfo( sanitize_file_name( $original_name ), PATHINFO_FILENAME );
+		$extension = pathinfo( sanitize_file_name( $original_name ), PATHINFO_EXTENSION );
+		$token     = wp_generate_password( 20, false, false );
+
+		$obscured = $stem . '-' . $token . ( '' !== $extension ? '.' . $extension : '' );
+
+		/**
+		 * Filter the stored filename for a self-hosted upload.
+		 *
+		 * Return the plain sanitised name to opt out of the random token - for
+		 * instance on an Apache host where the directory deny rule does apply
+		 * and predictable names are wanted for operational reasons.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param string $obscured      Filename with the random token.
+		 * @param string $original_name Name as supplied by the client.
+		 */
+		$obscured = (string) apply_filters( 'mediashield_stored_filename', $obscured, $original_name );
+
+		return wp_unique_filename( $this->upload_dir, $obscured );
+	}
+
+	/**
+	 * Move a file that already sits in uploads into the protected folder.
+	 *
+	 * Used for a video whose source is a Media Library file: the bytes move,
+	 * nothing is copied or deleted, so the file can be moved back
+	 * (Upload\LibraryFiles::restore()). rename() falls back to copy-and-unlink
+	 * across filesystems, and the original is only gone once the copy landed.
+	 *
+	 * @since 1.4.2
+	 *
+	 * @param string $path Absolute path of the file to move.
+	 * @return string Stored filename, or '' when it could not be moved.
+	 */
+	public function adopt( string $path ): string {
+		if ( ! is_file( $path ) || ! is_dir( $this->upload_dir ) ) {
+			return '';
+		}
+		$filename = $this->stored_name( wp_basename( $path ) );
+		// Moving a file inside uploads; WP_Filesystem::move() needs credentials on some hosts. Failure is reported by the empty return.
+		return @rename( $path, $this->upload_dir . $filename ) ? $filename : ''; // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
 	/**

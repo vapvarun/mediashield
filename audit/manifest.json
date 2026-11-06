@@ -2765,9 +2765,20 @@
       "hook": "mediashield_watermark_config",
       "type": "filter",
       "file": "includes/REST/SessionController.php:311"
+    },
+    {
+      "hook": "mediashield_library_files_batch_size",
+      "type": "filter",
+      "file": "includes/Upload/LibraryFiles.php:129"
+    },
+    {
+      "hook": "mediashield_library_file_in_use",
+      "type": "filter",
+      "file": "includes/Upload/LibraryFiles.php:311"
     }
   ],
   "cron": [
+    "ms_protect_library_files",
     "ms_claim_uploaded_files",
     "ms_restore_archived_sessions",
     "ms_cleanup_inactive_sessions",
@@ -2980,6 +2991,7 @@
       "tables: ms_watch_sessions_archive is created by str_replace() on the sessions schema (DB/Schema.php:84-88), not a literal CREATE TABLE, so write-manifest.mjs cannot see it. Patched in from ground truth; re-patch after every regeneration until the generator learns this pattern.",
       "admin_pages: SetupWizard's add_submenu_page (includes/Admin/SetupWizard.php) was missed; only Menu.php's add_menu_page was found. Patched in from ground truth.",
       "hooks_fired: multi-line apply_filters( \\n 'hook', ... ) calls are missed by write-manifest.mjs — mediashield_adaptive_platforms (Support/Platforms.php) and mediashield_player_overrides (Player/FeatureOverrides.php) were patched in from ground truth for 1.3.0. Re-check multi-line firings after every regeneration."
-    ]
+    ],
+    "delta_1_4_2": "Hand delta (Basecamp 10482094152): Upload\\LibraryFiles adds the one-off job ms_protect_library_files (option ms_library_files_pending, Migrator v8), filters mediashield_library_files_batch_size and mediashield_library_file_in_use, video meta _ms_library_file and _ms_library_restore (also on attachments), WP-CLI subcommand 'mediashield repair restore-library-files', and an admin notice (option ms_library_files_report, dismissed by ?ms_library_notice=dismiss with nonce). wp/v2 video meta addresses (_ms_source_url, _ms_platform_video_id, _ms_stream_url) now need edit_post on the video; playlist items source_url likewise. MEDIASHIELD_DB_VERSION 8."
   }
 }

@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: MediaShield 1.4.1\n"
+"Project-Id-Version: MediaShield 1.4.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/mediashield\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-04T08:54:25+00:00\n"
+"POT-Creation-Date: 2026-11-06T05:43:47+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -765,6 +765,14 @@ msgstr ""
 msgid "It may have been removed since the lesson was published."
 msgstr ""
 
+#: includes/Integrations/Learnomy.php:85
+msgid "a Learnomy lesson"
+msgstr ""
+
+#: includes/Integrations/Learnomy.php:98
+msgid "a Learnomy course"
+msgstr ""
+
 #: includes/Player/FeatureOverrides.php:69
 #: src/admin/pages/Settings.js:483
 msgid "Speed Control"
@@ -920,7 +928,7 @@ msgstr ""
 msgid "Playlist not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:279
+#: includes/REST/PlaylistController.php:282
 #: includes/REST/SessionController.php:255
 #: includes/REST/StreamController.php:207
 #: includes/REST/TagController.php:320
@@ -928,15 +936,15 @@ msgstr ""
 msgid "Video not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:309
+#: includes/REST/PlaylistController.php:312
 msgid "Could not add video to playlist."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:349
+#: includes/REST/PlaylistController.php:352
 msgid "Playlist item not found."
 msgstr ""
 
-#: includes/REST/PlaylistController.php:371
+#: includes/REST/PlaylistController.php:374
 msgid "Order must be an array."
 msgstr ""
 
@@ -1040,18 +1048,86 @@ msgid "Unknown upload error."
 msgstr ""
 
 #: includes/Upload/Drivers/SelfHosted.php:74
-#: includes/Upload/Drivers/SelfHosted.php:250
+#: includes/Upload/Drivers/SelfHosted.php:287
 msgid "File not found."
 msgstr ""
 
-#: includes/Upload/Drivers/SelfHosted.php:151
+#: includes/Upload/Drivers/SelfHosted.php:131
 msgid "Failed to move uploaded file."
 msgstr ""
 
 #. translators: %s: allowed formats
-#: includes/Upload/Drivers/SelfHosted.php:326
+#: includes/Upload/Drivers/SelfHosted.php:363
 #, php-format
 msgid "Invalid file type. Allowed formats: %s."
+msgstr ""
+
+#. translators: %s: post title
+#: includes/Upload/LibraryFiles.php:277
+#, php-format
+msgid "the content of \"%s\""
+msgstr ""
+
+#. translators: %s: video title
+#: includes/Upload/LibraryFiles.php:293
+#, php-format
+msgid "the video \"%s\""
+msgstr ""
+
+#. translators: %s: post title
+#: includes/Upload/LibraryFiles.php:295
+#, php-format
+msgid "the settings of \"%s\""
+msgstr ""
+
+#: includes/Upload/LibraryFiles.php:299
+msgid "a widget or site setting"
+msgstr ""
+
+#: includes/Upload/LibraryFiles.php:423
+msgid "(the file could not be moved; check that wp-content/uploads is writable, then save the video again)"
+msgstr ""
+
+#. translators: %s: where else the file is used, for example: the content of "Welcome"
+#: includes/Upload/LibraryFiles.php:426
+#, php-format
+msgid "(also used in %s)"
+msgstr ""
+
+#. translators: %d: number of further videos not listed
+#: includes/Upload/LibraryFiles.php:433
+#, php-format
+msgid "And %d more."
+msgstr ""
+
+#: includes/Upload/LibraryFiles.php:438
+msgid "MediaShield now keeps self-hosted video files in its protected folder."
+msgstr ""
+
+#. translators: %d: number of videos
+#: includes/Upload/LibraryFiles.php:445
+#, php-format
+msgid "%d video played from a public Media Library file. The file now sits in MediaShield's protected folder and plays only through the protected player. Its Media Library entry is kept and is visible to editors only."
+msgid_plural "%d videos played from public Media Library files. The files now sit in MediaShield's protected folder and play only through the protected player. Their Media Library entries are kept and are visible to editors only."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of videos
+#: includes/Upload/LibraryFiles.php:464
+#, php-format
+msgid "%d video still plays from a public Media Library file, because the same file is used elsewhere on your site. It was left where it is so that page keeps working. To protect the video, open it and upload the file under \"Or upload a file\"; MediaShield then plays a private copy."
+msgid_plural "%d videos still play from public Media Library files, because the same files are used elsewhere on your site. They were left where they are so those pages keep working. To protect a video, open it and upload the file under \"Or upload a file\"; MediaShield then plays a private copy."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: WP-CLI command
+#: includes/Upload/LibraryFiles.php:482
+#, php-format
+msgid "To put moved files back where they were, run %s."
+msgstr ""
+
+#: includes/Upload/LibraryFiles.php:488
+msgid "Got it"
 msgstr ""
 
 #. translators: %s: driver name
