@@ -249,4 +249,105 @@ class LibraryFileProtectionTest extends WP_UnitTestCase {
 		$this->assertSame( 'moved', get_post_meta( $video, '_ms_library_file', true ) );
 		$this->assertContains( $video, get_option( 'ms_library_files_report' )['moved'] );
 	}
+
+	/**
+	 * A moved video pointed at a different Media Library file protects the new file.
+	 *
+	 * Fails on ba1029c: a moved video was skipped on every later save, so the
+	 * new file stayed public (fail-open).
+	 *
+	 * @dataProvider repoint_shapes
+	 *
+	 * @param bool $field_cleared Whether the edit screen cleared the hidden file field (it does when a URL is pasted).
+	 */
+	public function test_moved_video_repointed_protects_the_new_file( bool $field_cleared ): void {
+		$video    = $this->video();
+		$old_name = (string) get_post_meta( $video, '_ms_platform_video_id', true );
+
+		$second = trailingslashit( wp_upload_dir()['path'] ) . 'second-' . wp_generate_password( 6, false ) . '.mp4';
+		file_put_contents( $second, str_repeat( 'y', 64 ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		$att2 = self::factory()->attachment->create_object(
+			$second,
+			0,
+			array(
+				'post_mime_type' => 'video/mp4',
+				'post_status'    => 'inherit',
+			)
+		);
+
+		// What the edit screen saves: the new address, and the hidden file
+		// field either cleared by its script or left as it was.
+		update_post_meta( $video, '_ms_source_url', wp_get_attachment_url( $att2 ) );
+		if ( $field_cleared ) {
+			update_post_meta( $video, '_ms_platform_video_id', '' );
+		}
+		wp_update_post(
+			array(
+				'ID'         => $video,
+				'post_title' => 'Re-pointed',
+			)
+		);
+
+		$this->assertFileDoesNotExist( $second, 'The new file is moved into the protected folder.' );
+		$this->assertSame( 'private', get_post_field( 'post_status', $att2 ) );
+		$this->assertNotSame( $old_name, get_post_meta( $video, '_ms_platform_video_id', true ) );
+		$this->assertSame( get_attached_file( $att2 ), StreamController::resolve_file( $video ) );
+
+		// The old file is no longer played by the video, so it is back in the Media Library.
+		$this->assertFileExists( $this->path );
+		$this->assertSame( 'inherit', get_post_field( 'post_status', $this->attachment ) );
+		wp_delete_file( (string) get_attached_file( $att2 ) );
+	}
+
+	/**
+	 * Both shapes the edit screen can save.
+	 *
+	 * @return array<string, array{bool}>
+	 */
+	public static function repoint_shapes(): array {
+		return array(
+			'file field cleared' => array( true ),
+			'file field kept'    => array( false ),
+		);
+	}
+
+	/**
+	 * A restored video saved again unchanged stays public: the owner chose that.
+	 */
+	public function test_restored_video_resaved_unchanged_stays_restored(): void {
+		$video = $this->video();
+		LibraryFiles::restore( $video );
+		wp_update_post(
+			array(
+				'ID'         => $video,
+				'post_title' => 'Still restored',
+			)
+		);
+
+		$this->assertSame( 'restored', get_post_meta( $video, '_ms_library_file', true ) );
+		$this->assertFileExists( $this->path );
+		$this->assertSame( 'inherit', get_post_field( 'post_status', $this->attachment ) );
+		// A different file than the one restored is protected.
+		$other = trailingslashit( wp_upload_dir()['path'] ) . 'other-' . wp_generate_password( 6, false ) . '.mp4';
+		file_put_contents( $other, str_repeat( 'z', 64 ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		$att3 = self::factory()->attachment->create_object(
+			$other,
+			0,
+			array(
+				'post_mime_type' => 'video/mp4',
+				'post_status'    => 'inherit',
+			)
+		);
+		update_post_meta( $video, '_ms_source_url', wp_get_attachment_url( $att3 ) );
+		wp_update_post(
+			array(
+				'ID'         => $video,
+				'post_title' => 'Other file',
+			)
+		);
+		$this->assertSame( 'moved', get_post_meta( $video, '_ms_library_file', true ) );
+		$this->assertFileDoesNotExist( $other );
+		$this->assertFileExists( $this->path, 'The restored file stays public.' );
+		wp_delete_file( (string) get_attached_file( $att3 ) );
+	}
 }

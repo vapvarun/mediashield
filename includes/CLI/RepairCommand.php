@@ -204,8 +204,8 @@ final class RepairCommand {
 	 * that: the file returns to its old path, the entry to its old status, and
 	 * the video plays the public file again. If the old name has been taken
 	 * since, the file gets the next free name beside it; nothing is
-	 * overwritten. Restored videos are not moved again when saved; upload the
-	 * file on the video to protect it again.
+	 * overwritten. A restored video is not moved again when saved while it
+	 * still plays that file; a different file, or an upload, is protected.
 	 *
 	 * ## OPTIONS
 	 *

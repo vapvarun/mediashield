@@ -70,6 +70,11 @@ class LibraryFiles {
 	private const RESTORE = '_ms_library_restore';
 
 	/**
+	 * Video meta: the source URL the owner chose to keep public by restoring it.
+	 */
+	private const KEPT = '_ms_library_kept';
+
+	/**
 	 * Report reason for a file that is unused but could not be moved.
 	 */
 	private const MOVE_FAILED = '#move_failed';
@@ -101,20 +106,72 @@ class LibraryFiles {
 	/**
 	 * Re-check a video whenever it is saved, so a newly picked file is protected at once.
 	 *
-	 * A video whose file the owner moved back with restore() stays where it is:
-	 * that was their choice. Uploading a file on the edit screen protects it again.
-	 * A video already moved keeps its state and its line in the owner notice;
-	 * re-checking it would find a file it owns and record "nothing to do".
+	 * Two states are left alone only while nothing has changed:
+	 * - moved: while the video still plays the file it moved (its file name is
+	 *   the one it owns and its source is its /stream URL). Re-checking would
+	 *   find a file it owns and drop it from the owner notice.
+	 * - restored: while the source is still the file the owner moved back on
+	 *   purpose. That choice is theirs for that file.
+	 * Point either at a different file and the new one is protected like any
+	 * other; a moved file the video no longer plays goes back to the Media
+	 * Library first, so nothing is stranded in the protected folder.
 	 *
 	 * @param int $video_id Video post ID.
 	 */
 	public static function on_save( int $video_id ): void {
-		if ( wp_is_post_revision( $video_id ) || wp_is_post_autosave( $video_id ) || in_array( get_post_meta( $video_id, self::STATE, true ), array( 'moved', 'restored' ), true ) ) {
+		if ( wp_is_post_revision( $video_id ) || wp_is_post_autosave( $video_id ) ) {
 			return;
 		}
+
+		$state  = (string) get_post_meta( $video_id, self::STATE, true );
+		$source = (string) get_post_meta( $video_id, '_ms_source_url', true );
+		$file   = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+
+		if ( 'restored' === $state && $source === (string) get_post_meta( $video_id, self::KEPT, true ) ) {
+			return;
+		}
+
+		if ( 'moved' === $state ) {
+			$owned  = (string) get_post_meta( $video_id, '_ms_owned_file', true );
+			$stream = rest_url( 'mediashield/v1/stream/' . $video_id );
+			if ( '' !== $owned && $file === $owned && $source === $stream ) {
+				return;
+			}
+			self::release( $video_id, $owned, $stream, $source, $file );
+		}
+
+		delete_post_meta( $video_id, self::KEPT );
 		delete_post_meta( $video_id, self::STATE );
 		self::report( $video_id, null );
 		self::protect( $video_id );
+	}
+
+	/**
+	 * A moved video was pointed somewhere else: give its old file back and keep what the owner set.
+	 *
+	 * The moved file goes back to the Media Library (restore(), which resets the
+	 * video to it), then the owner's new source and platform id are written
+	 * again over that. If the old file cannot be moved back (missing), the
+	 * video still stops naming it, so protect() sees the new source.
+	 *
+	 * @param int    $video_id Video post ID.
+	 * @param string $owned    File the video moved in and owns.
+	 * @param string $stream   The video's /stream URL.
+	 * @param string $source   Source URL the owner just saved.
+	 * @param string $file     Platform id the owner just saved.
+	 */
+	private static function release( int $video_id, string $owned, string $stream, string $source, string $file ): void {
+		if ( ! self::restore( $video_id ) ) {
+			delete_post_meta( $video_id, '_ms_platform_video_id' );
+			update_post_meta( $video_id, '_ms_owned_file', '' );
+			delete_post_meta( $video_id, self::RESTORE );
+		}
+		if ( $source !== $stream ) {
+			update_post_meta( $video_id, '_ms_source_url', $source );
+		}
+		if ( '' !== $file && $file !== $owned ) {
+			update_post_meta( $video_id, '_ms_platform_video_id', $file );
+		}
 	}
 
 	/**
@@ -232,6 +289,7 @@ class LibraryFiles {
 				'url'        => (string) get_post_meta( $video_id, '_ms_source_url', true ),
 				'file'       => $relative,
 				'attachment' => $attachment,
+				'name'       => $name,
 			)
 		);
 		// File name before the claim: while the 1.4.0 claim backfill runs, a
@@ -334,8 +392,12 @@ class LibraryFiles {
 
 		$uploads = wp_upload_dir();
 		$base    = trailingslashit( $uploads['basedir'] );
-		$from    = $base . 'mediashield/' . sanitize_file_name( (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) );
-		$to      = $base . ltrim( (string) $from_meta['file'], '/' );
+		// The stored name is kept with the restore record, because the edit
+		// screen may already have cleared the video's file field when the
+		// owner pointed it elsewhere.
+		$name = (string) ( $from_meta['name'] ?? get_post_meta( $video_id, '_ms_owned_file', true ) );
+		$from = $base . 'mediashield/' . sanitize_file_name( $name );
+		$to   = $base . ltrim( (string) $from_meta['file'], '/' );
 		if ( ! is_file( $from ) || ! wp_mkdir_p( dirname( $to ) ) ) {
 			return false;
 		}
@@ -367,6 +429,7 @@ class LibraryFiles {
 		delete_post_meta( $video_id, '_ms_platform_video_id' );
 		update_post_meta( $video_id, '_ms_owned_file', '' );
 		delete_post_meta( $video_id, self::RESTORE );
+		update_post_meta( $video_id, self::KEPT, (string) get_post_meta( $video_id, '_ms_source_url', true ) );
 		self::mark( $video_id, 'restored' );
 		self::report( $video_id, null );
 		return true;
