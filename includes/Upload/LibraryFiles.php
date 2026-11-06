@@ -377,6 +377,53 @@ class LibraryFiles {
 	}
 
 	/**
+	 * Does a row in another plugin's table name this file?
+	 *
+	 * For integrations answering mediashield_library_file_in_use from their own
+	 * tables. Use table_has_value() to match a Media Library id instead.
+	 *
+	 * @since 1.4.2
+	 *
+	 * @param string   $table    Full table name.
+	 * @param string[] $columns  Columns that may hold the file URL.
+	 * @param string   $relative File path relative to the uploads folder.
+	 * @return bool True when a row names the file, or the query failed: when in doubt the file stays.
+	 */
+	public static function table_mentions_file( string $table, array $columns, string $relative ): bool {
+		global $wpdb;
+		$like = '%' . $wpdb->esc_like( $relative ) . '%';
+		$args = array( $table );
+		foreach ( $columns as $column ) {
+			array_push( $args, $column, $like );
+		}
+		$where = implode( ' OR ', array_fill( 0, count( $columns ), '%i LIKE %s' ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Reference scan, results must be live; $where is only %i/%s placeholders.
+		$found = $wpdb->get_var( $wpdb->prepare( "SELECT 1 FROM %i WHERE {$where} LIMIT 1", ...$args ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (bool) $found || '' !== $wpdb->last_error;
+	}
+
+	/**
+	 * Does a row in another plugin's table hold this id in a column?
+	 *
+	 * The id counterpart of table_mentions_file(). A query error counts as no
+	 * match, so a column missing on an older schema is simply not a use.
+	 *
+	 * @since 1.4.2
+	 *
+	 * @param string $table  Full table name.
+	 * @param string $column Column holding the id.
+	 * @param int    $id     Id to look for, such as a Media Library item.
+	 * @return bool
+	 */
+	public static function table_has_value( string $table, string $column, int $id ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reference scan; results must be live.
+		return (bool) $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM %i WHERE %i = %d LIMIT 1', $table, $column, $id ) );
+	}
+
+	/**
 	 * Move a moved file back to where it was. Never overwrites anything: if
 	 * the old name has been taken since, the file gets the next free name in
 	 * the same folder and the video and Media Library item follow it.

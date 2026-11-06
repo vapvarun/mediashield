@@ -23,6 +23,7 @@ namespace MediaShield\Integrations;
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Embed\EmbedLink;
+use MediaShield\Upload\LibraryFiles;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -64,38 +65,16 @@ class Learnomy {
 		if ( '' !== (string) $where || ! function_exists( '\\Learnomy\\table' ) ) {
 			return (string) $where;
 		}
-		global $wpdb;
-		$like = '%' . $wpdb->esc_like( (string) $relative ) . '%';
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reference scan; results must be live.
-		$lesson = $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT id FROM %i WHERE video_url LIKE %s OR content LIKE %s LIMIT 1',
-				\Learnomy\table( 'lessons' ),
-				$like,
-				$like
-			)
-		);
-		$failed = '' !== $wpdb->last_error;
-		if ( ! $lesson && ! $failed && (int) $attachment > 0 ) {
-			// Older Learnomy schemas have no media_id; that error is ignored, the URL check above stands.
-			$lesson = $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM %i WHERE media_id = %d LIMIT 1', \Learnomy\table( 'lessons' ), (int) $attachment ) );
-		}
-		if ( $lesson || $failed ) {
+		$relative = (string) $relative;
+		$lessons  = \Learnomy\table( 'lessons' );
+		// Older Learnomy schemas have no media_id; that query's error is ignored, the URL check stands.
+		if ( LibraryFiles::table_mentions_file( $lessons, array( 'video_url', 'content' ), $relative )
+			|| ( (int) $attachment > 0 && LibraryFiles::table_has_value( $lessons, 'media_id', (int) $attachment ) ) ) {
 			return __( 'a Learnomy lesson', 'mediashield' );
 		}
-
-		$course = $wpdb->get_var(
-			$wpdb->prepare(
-				'SELECT id FROM %i WHERE video_url LIKE %s OR content LIKE %s OR description LIKE %s LIMIT 1',
-				\Learnomy\table( 'courses' ),
-				$like,
-				$like,
-				$like
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return $course || '' !== $wpdb->last_error ? __( 'a Learnomy course', 'mediashield' ) : '';
+		return LibraryFiles::table_mentions_file( \Learnomy\table( 'courses' ), array( 'video_url', 'content', 'description' ), $relative )
+			? __( 'a Learnomy course', 'mediashield' )
+			: '';
 	}
 
 	/**
