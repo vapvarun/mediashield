@@ -84,7 +84,7 @@ includes/
     MilestoneTracker.php     25/50/75/100% completion tracking. When a milestone with a configured tag fires, the tag is promoted into the unified `ms_tags` dictionary (via `TagManager::ensure()`) and the video↔tag link recorded in `ms_video_tags`. The per-user earn record stays in `_ms_video_tags` user meta but now carries `tag_id` alongside the display string for cross-reference.
   Upload/
     UploadManager.php        Driver registry (mediashield_upload_drivers filter)
-    LibraryFiles.php         (1.4.2) Moves a self-hosted video's Media Library file into uploads/mediashield/ (attachment kept, made private, so /wp/v2/media hides it). Skips files used elsewhere (posts, meta, options, Learnomy via `mediashield_library_file_in_use`). Upgrade job `ms_protect_library_files`, on-save check, owner notice, restore() on video delete / uninstall / `wp mediashield repair restore-library-files`. Never deletes a file.
+    LibraryFiles.php         (1.4.2) Moves a self-hosted video's Media Library file into uploads/mediashield/ (attachment kept, made private, so /wp/v2/media hides it). Skips files used elsewhere (path plain or JSON-escaped in posts, meta, options; Media Library id in blocks, `_thumbnail_id`, `_elementor_data`, ACF fields, the Video widget; Learnomy via `mediashield_library_file_in_use`; a failed scan counts as a use). On save, moves only a file the saver may `edit_post` (no Media Library item: `edit_others_posts`). Upgrade job `ms_protect_library_files`, on-save check, owner notice, restore() on video delete / uninstall / `wp mediashield repair restore-library-files`. Never deletes a file.
     Drivers/
       DriverInterface.php    Upload driver contract
       SelfHosted.php         Local wp-content upload driver

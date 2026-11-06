@@ -80,6 +80,11 @@ class LibraryFiles {
 	private const MOVE_FAILED = '#move_failed';
 
 	/**
+	 * Report reason for a file the person saving the video may not edit.
+	 */
+	private const NOT_EDITABLE = '#not_editable';
+
+	/**
 	 * Background job hook.
 	 */
 	private const JOB = 'ms_protect_library_files';
@@ -143,7 +148,7 @@ class LibraryFiles {
 		delete_post_meta( $video_id, self::KEPT );
 		delete_post_meta( $video_id, self::STATE );
 		self::report( $video_id, null );
-		self::protect( $video_id );
+		self::protect( $video_id, true );
 	}
 
 	/**
@@ -229,10 +234,18 @@ class LibraryFiles {
 	/**
 	 * Move this video's Media Library file into the protected folder, when it has one.
 	 *
-	 * @param int $video_id Video post ID.
+	 * From a save, the file moves only when the person saving may edit its
+	 * Media Library item (a file with no item: may edit others' posts). Anyone
+	 * who may edit a video can type any upload's address into it, and must
+	 * not take someone else's file that way. The
+	 * background job runs as nobody and checks the videos that were already
+	 * there.
+	 *
+	 * @param int  $video_id Video post ID.
+	 * @param bool $on_save  Whether the current user's save asked for it.
 	 * @return string moved | in_use | none
 	 */
-	public static function protect( int $video_id ): string {
+	public static function protect( int $video_id, bool $on_save = false ): string {
 		// Only a self-hosted video playing a file it does not already own. An
 		// upload names its file in `_ms_platform_video_id` and is protected already.
 		if ( 'self' !== get_post_meta( $video_id, '_ms_platform', true ) || '' !== (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) ) {
@@ -250,6 +263,14 @@ class LibraryFiles {
 
 		$relative   = substr( $path, strlen( $root ) );
 		$attachment = attachment_url_to_postid( trailingslashit( $uploads['baseurl'] ) . $relative );
+
+		// A file with no Media Library item belongs to nobody in particular:
+		// only someone who manages other people's content may take it.
+		$may_take = $attachment ? current_user_can( 'edit_post', $attachment ) : current_user_can( 'edit_others_posts' );
+		if ( $on_save && ! $may_take ) {
+			self::report( $video_id, self::NOT_EDITABLE );
+			return self::mark( $video_id, 'in_use' );
+		}
 
 		$used = self::used_elsewhere( $video_id, $relative, $attachment );
 		if ( '' !== $used ) {
@@ -305,8 +326,14 @@ class LibraryFiles {
 	/**
 	 * Where else does the site use this file? '' means nowhere, and only then may it move.
 	 *
-	 * Substring matches on the path below uploads, so a false match only ever
-	 * leaves a file in place, never moves one that is used.
+	 * A use is the path below uploads, written plainly or as JSON with escaped
+	 * slashes (Elementor's `_elementor_data`, `2026\/07\/x.mp4`), or the
+	 * Media Library item's id: a block's `"id"` / `"mediaId"`, a featured
+	 * image, an Elementor media control, an ACF field (a meta row whose `_`
+	 * twin names an ACF field key, on a post or an options page) and the core
+	 * Video widget. Matches are deliberately loose and a query that fails, or
+	 * more candidate posts than are checked, counts as a use: a false match
+	 * only leaves a file in place, never moves one a page needs.
 	 * ponytail: LIKE scans of posts, postmeta and options per checked video; the
 	 * job is background and batched. Index-backed reference tracking if a site
 	 * with tens of thousands of self-hosted videos finds it slow.
@@ -318,35 +345,72 @@ class LibraryFiles {
 	 */
 	private static function used_elsewhere( int $video_id, string $relative, int $attachment ): string {
 		global $wpdb;
-		$like = '%' . $wpdb->esc_like( $relative ) . '%';
+		$paths    = array( $relative, str_replace( '/', '\\/', $relative ) );
+		$like     = '%' . $wpdb->esc_like( $paths[0] ) . '%';
+		$like_esc = '%' . $wpdb->esc_like( $paths[1] ) . '%';
+		$id       = (string) $attachment;
+		$unsure   = __( 'a part of your site MediaShield could not check', 'mediashield' );
+		$acf      = $wpdb->esc_like( 'field_' ) . '%'; // An ACF field key, in a value's "_" twin row.
+		$limit    = 50;
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reference scan; results must be live.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Reference scan; results must be live. Interpolated parts are fixed SQL fragments; arguments are spread.
+		$by_id = $attachment ? ' OR post_content LIKE %s OR post_content LIKE %s' : '';
+		$args  = array( $like, $like_esc );
+		if ( $attachment ) {
+			array_push( $args, '%' . $wpdb->esc_like( '"id":' . $id ) . '%', '%' . $wpdb->esc_like( '"mediaId":' . $id ) . '%' );
+		}
 		$posts = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT ID, post_title, post_content FROM {$wpdb->posts} WHERE post_content LIKE %s AND post_type <> 'revision' AND post_status NOT IN ('trash', 'auto-draft') LIMIT 20",
-				$like
+				"SELECT ID, post_content FROM {$wpdb->posts} WHERE ( post_content LIKE %s OR post_content LIKE %s{$by_id} ) AND post_type <> 'revision' AND post_status NOT IN ('trash', 'auto-draft') AND ID NOT IN (%d, %d) LIMIT {$limit}",
+				...array_merge( $args, array( $video_id, $attachment ) )
 			)
 		);
+		if ( self::query_failed() ) {
+			return $unsure;
+		}
 		foreach ( (array) $posts as $post ) {
 			// The Video block keeps a copy of the source URL in its attributes
 			// that its renderer never reads (it plays by video id), so that
 			// copy is not a use of the file.
 			$content = (string) preg_replace( '#<!--\s+wp:mediashield/video\s.*?-->#s', '', (string) $post->post_content );
-			if ( false !== strpos( $content, $relative ) ) {
+			$names   = false !== strpos( $content, $paths[0] ) || false !== strpos( $content, $paths[1] );
+			// A block naming the item by id: core Video/File {"id":N}, Media & Text {"mediaId":N}.
+			if ( $names || ( $attachment && preg_match( '#<!--\s+wp:\S+\s+\{[^>]*?"(?:id|mediaId)":' . $attachment . '(?![0-9])#', $content ) ) ) {
 				/* translators: %s: post title */
 				return sprintf( __( 'the content of "%s"', 'mediashield' ), get_the_title( (int) $post->ID ) );
 			}
 		}
+		if ( count( (array) $posts ) >= $limit ) {
+			return $unsure;
+		}
 
+		// The path in any meta value, plain or JSON-escaped; and the id where
+		// a meta row is known to hold one.
+		$id_meta = $attachment
+			? " OR ( meta_key = '_thumbnail_id' AND meta_value = %s )
+				OR ( meta_key = '_elementor_data' AND ( meta_value LIKE %s OR meta_value LIKE %s ) )
+				OR ( ( meta_value = %s OR meta_value LIKE %s ) AND EXISTS ( SELECT 1 FROM {$wpdb->postmeta} f WHERE f.post_id = m.post_id AND f.meta_key = CONCAT( '_', m.meta_key ) AND f.meta_value LIKE %s ) )"
+			: '';
+		$args    = array( $like, $like_esc );
+		if ( $attachment ) {
+			array_push( $args, $id, '%' . $wpdb->esc_like( '"id":' . $id . ',' ) . '%', '%' . $wpdb->esc_like( '"id":' . $id . '}' ) . '%', $id, '%' . $wpdb->esc_like( '"' . $id . '"' ) . '%', $acf );
+		}
 		$meta_owner = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_value LIKE %s AND meta_key <> %s AND post_id NOT IN (%d, %d) LIMIT 1",
-				$like,
-				self::RESTORE, // Our own record of where an earlier file came from is not a use.
-				$video_id,
-				$attachment
+				"SELECT m.post_id FROM {$wpdb->postmeta} m WHERE ( meta_value LIKE %s OR meta_value LIKE %s{$id_meta} ) AND meta_key <> %s AND post_id NOT IN (%d, %d) LIMIT 1",
+				...array_merge(
+					$args,
+					array(
+						self::RESTORE, // Our own record of where an earlier file came from is not a use.
+						$video_id,
+						$attachment,
+					)
+				)
 			)
 		);
+		if ( self::query_failed() ) {
+			return $unsure;
+		}
 		if ( $meta_owner ) {
 			return 'mediashield_video' === get_post_type( $meta_owner )
 				/* translators: %s: video title */
@@ -355,10 +419,24 @@ class LibraryFiles {
 				: sprintf( __( 'the settings of "%s"', 'mediashield' ), get_the_title( $meta_owner ) );
 		}
 
-		if ( $wpdb->get_var( $wpdb->prepare( "SELECT option_id FROM {$wpdb->options} WHERE option_value LIKE %s LIMIT 1", $like ) ) ) {
+		// Widgets and settings: the path, the core Video widget's
+		// attachment_id, or an ACF options-page field holding the id.
+		$id_option = $attachment
+			? " OR option_value LIKE %s
+				OR ( ( option_value = %s OR option_value LIKE %s ) AND EXISTS ( SELECT 1 FROM {$wpdb->options} f WHERE f.option_name = CONCAT( '_', o.option_name ) AND f.option_value LIKE %s ) )"
+			: '';
+		$args      = array( $like, $like_esc );
+		if ( $attachment ) {
+			array_push( $args, '%' . $wpdb->esc_like( '"attachment_id";i:' . $id . ';' ) . '%', $id, '%' . $wpdb->esc_like( '"' . $id . '"' ) . '%', $acf );
+		}
+		$option = $wpdb->get_var( $wpdb->prepare( "SELECT o.option_id FROM {$wpdb->options} o WHERE option_value LIKE %s OR option_value LIKE %s{$id_option} LIMIT 1", ...$args ) );
+		if ( self::query_failed() ) {
+			return $unsure;
+		}
+		if ( $option ) {
 			return __( 'a widget or site setting', 'mediashield' );
 		}
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
 		/**
 		 * Report a use of a Media Library file that MediaShield cannot see.
@@ -374,6 +452,16 @@ class LibraryFiles {
 		 * @param int    $video_id   Video being protected.
 		 */
 		return (string) apply_filters( 'mediashield_library_file_in_use', '', $relative, $attachment, $video_id );
+	}
+
+	/**
+	 * Did the last database query fail? A failed reference scan is never "unused".
+	 *
+	 * @phpstan-impure It reads the state the last query left.
+	 */
+	private static function query_failed(): bool {
+		global $wpdb;
+		return '' !== $wpdb->last_error;
 	}
 
 	/**
@@ -542,6 +630,8 @@ class LibraryFiles {
 				echo '<li>' . ( $link ? '<a href="' . esc_url( $link ) . '">' . esc_html( get_the_title( (int) $id ) ) . '</a>' : esc_html( get_the_title( (int) $id ) ) );
 				if ( self::MOVE_FAILED === $where ) {
 					echo ' ' . esc_html__( '(the file could not be moved; check that wp-content/uploads is writable, then save the video again)', 'mediashield' );
+				} elseif ( self::NOT_EDITABLE === $where ) {
+					echo ' ' . esc_html__( '(it was saved by someone who cannot edit its Media Library file; save the video yourself to protect it)', 'mediashield' );
 				} elseif ( is_string( $where ) && '' !== $where ) {
 					/* translators: %s: where else the file is used, for example: the content of "Welcome" */
 					echo ' ' . esc_html( sprintf( __( '(also used in %s)', 'mediashield' ), $where ) );

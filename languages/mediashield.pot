@@ -3,13 +3,13 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: MediaShield 1.4.2\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/mediashield\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/mediashield-142\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-06T05:43:47+00:00\n"
+"POT-Creation-Date: 2026-11-06T11:50:40+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -765,11 +765,11 @@ msgstr ""
 msgid "It may have been removed since the lesson was published."
 msgstr ""
 
-#: includes/Integrations/Learnomy.php:85
+#: includes/Integrations/Learnomy.php:73
 msgid "a Learnomy lesson"
 msgstr ""
 
-#: includes/Integrations/Learnomy.php:98
+#: includes/Integrations/Learnomy.php:76
 msgid "a Learnomy course"
 msgstr ""
 
@@ -1048,7 +1048,7 @@ msgid "Unknown upload error."
 msgstr ""
 
 #: includes/Upload/Drivers/SelfHosted.php:74
-#: includes/Upload/Drivers/SelfHosted.php:287
+#: includes/Upload/Drivers/SelfHosted.php:292
 msgid "File not found."
 msgstr ""
 
@@ -1057,55 +1057,63 @@ msgid "Failed to move uploaded file."
 msgstr ""
 
 #. translators: %s: allowed formats
-#: includes/Upload/Drivers/SelfHosted.php:363
+#: includes/Upload/Drivers/SelfHosted.php:368
 #, php-format
 msgid "Invalid file type. Allowed formats: %s."
 msgstr ""
 
+#: includes/Upload/LibraryFiles.php:352
+msgid "a part of your site MediaShield could not check"
+msgstr ""
+
 #. translators: %s: post title
-#: includes/Upload/LibraryFiles.php:277
+#: includes/Upload/LibraryFiles.php:380
 #, php-format
 msgid "the content of \"%s\""
 msgstr ""
 
 #. translators: %s: video title
-#: includes/Upload/LibraryFiles.php:293
+#: includes/Upload/LibraryFiles.php:417
 #, php-format
 msgid "the video \"%s\""
 msgstr ""
 
 #. translators: %s: post title
-#: includes/Upload/LibraryFiles.php:295
+#: includes/Upload/LibraryFiles.php:419
 #, php-format
 msgid "the settings of \"%s\""
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:299
+#: includes/Upload/LibraryFiles.php:437
 msgid "a widget or site setting"
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:423
+#: includes/Upload/LibraryFiles.php:632
 msgid "(the file could not be moved; check that wp-content/uploads is writable, then save the video again)"
 msgstr ""
 
+#: includes/Upload/LibraryFiles.php:634
+msgid "(it was saved by someone who cannot edit its Media Library file; save the video yourself to protect it)"
+msgstr ""
+
 #. translators: %s: where else the file is used, for example: the content of "Welcome"
-#: includes/Upload/LibraryFiles.php:426
+#: includes/Upload/LibraryFiles.php:637
 #, php-format
 msgid "(also used in %s)"
 msgstr ""
 
 #. translators: %d: number of further videos not listed
-#: includes/Upload/LibraryFiles.php:433
+#: includes/Upload/LibraryFiles.php:644
 #, php-format
 msgid "And %d more."
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:438
+#: includes/Upload/LibraryFiles.php:649
 msgid "MediaShield now keeps self-hosted video files in its protected folder."
 msgstr ""
 
 #. translators: %d: number of videos
-#: includes/Upload/LibraryFiles.php:445
+#: includes/Upload/LibraryFiles.php:656
 #, php-format
 msgid "%d video played from a public Media Library file. The file now sits in MediaShield's protected folder and plays only through the protected player. Its Media Library entry is kept and is visible to editors only."
 msgid_plural "%d videos played from public Media Library files. The files now sit in MediaShield's protected folder and play only through the protected player. Their Media Library entries are kept and are visible to editors only."
@@ -1113,7 +1121,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of videos
-#: includes/Upload/LibraryFiles.php:464
+#: includes/Upload/LibraryFiles.php:675
 #, php-format
 msgid "%d video still plays from a public Media Library file, because the same file is used elsewhere on your site. It was left where it is so that page keeps working. To protect the video, open it and upload the file under \"Or upload a file\"; MediaShield then plays a private copy."
 msgid_plural "%d videos still play from public Media Library files, because the same files are used elsewhere on your site. They were left where they are so those pages keep working. To protect a video, open it and upload the file under \"Or upload a file\"; MediaShield then plays a private copy."
@@ -1121,12 +1129,12 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: WP-CLI command
-#: includes/Upload/LibraryFiles.php:482
+#: includes/Upload/LibraryFiles.php:693
 #, php-format
 msgid "To put moved files back where they were, run %s."
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:488
+#: includes/Upload/LibraryFiles.php:699
 msgid "Got it"
 msgstr ""
 
