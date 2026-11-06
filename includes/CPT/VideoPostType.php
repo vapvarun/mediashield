@@ -26,7 +26,7 @@ class VideoPostType {
 	public static function register(): void {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
-		add_filter( 'rest_prepare_mediashield_video', array( __CLASS__, 'hide_meta_from_viewers' ) );
+		add_filter( 'rest_prepare_mediashield_video', array( __CLASS__, 'hide_meta_from_viewers' ), 10, 2 );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_boxes' ) );
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'save_meta_box' ), 10, 2 );
 		// After the meta box (10) on the edit screen, and after REST has written
@@ -918,25 +918,44 @@ class VideoPostType {
 	}
 
 	/**
-	 * Keep the video's meta out of wp/v2 responses for people who cannot edit content.
+	 * Meta that leads to the media itself: the file or stream address and the provider id.
+	 *
+	 * @since 1.4.2
+	 */
+	public const PROTECTED_META = array( '_ms_source_url', '_ms_platform_video_id', '_ms_stream_url' );
+
+	/**
+	 * Keep the video's addresses out of wp/v2 responses for anyone who cannot edit that video.
 	 *
 	 * The meta carries the source URL and provider id, the very addresses the
 	 * player withholds from a viewer who may not watch. Anyone could read them
-	 * from /wp/v2/mediashield-videos. The Video block reads them to preview a
-	 * video, so people who can write posts keep them, the same bar as the
-	 * playlist items route.
+	 * from /wp/v2/mediashield-videos (1.4.0), and in 1.4.1 anyone who could
+	 * write posts still could, for every video: a contributor or a course
+	 * instructor read the file address of a paid lesson video
+	 * (Basecamp 10482094152). The bar is now the video itself, the same
+	 * `edit_post` check WordPress applies to `context=edit`.
+	 *
+	 * The filter runs for every response shape (`_fields`, `context=edit`,
+	 * `_embed`, lists), because WordPress applies `_fields` after it. People
+	 * who can write posts keep the rest of the meta (platform, duration), which
+	 * the Video block's picker shows; visitors and members get none.
 	 *
 	 * @since 1.4.1
 	 *
 	 * @param \WP_REST_Response $response Prepared response.
+	 * @param \WP_Post          $post     The video.
 	 * @return \WP_REST_Response
 	 */
-	public static function hide_meta_from_viewers( \WP_REST_Response $response ): \WP_REST_Response {
-		if ( current_user_can( 'edit_posts' ) ) {
+	public static function hide_meta_from_viewers( \WP_REST_Response $response, \WP_Post $post ): \WP_REST_Response {
+		if ( current_user_can( 'edit_post', $post->ID ) ) {
 			return $response;
 		}
 		$data = $response->get_data();
-		unset( $data['meta'] );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			unset( $data['meta'] );
+		} elseif ( isset( $data['meta'] ) && is_array( $data['meta'] ) ) {
+			$data['meta'] = array_diff_key( $data['meta'], array_flip( self::PROTECTED_META ) );
+		}
 		$response->set_data( $data );
 		return $response;
 	}
@@ -1007,8 +1026,8 @@ class VideoPostType {
 					'type'              => $args['type'],
 					'default'           => $args['default'],
 					'sanitize_callback' => $args['sanitize'] ?? ( 'string' === $args['type'] ? 'sanitize_text_field' : 'absint' ),
-					'auth_callback'     => function () {
-						return current_user_can( 'edit_posts' );
+					'auth_callback'     => static function ( $allowed, $meta_key, $object_id ) {
+						return current_user_can( 'edit_post', (int) $object_id );
 					},
 				)
 			);
@@ -1038,8 +1057,8 @@ class VideoPostType {
 				'type'              => 'object',
 				'default'           => array(),
 				'sanitize_callback' => array( __CLASS__, 'sanitize_milestone_tags' ),
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
+				'auth_callback'     => static function ( $allowed, $meta_key, $object_id ) {
+					return current_user_can( 'edit_post', (int) $object_id );
 				},
 			)
 		);
