@@ -35,6 +35,46 @@ class Thumbnail {
 		// rest_after_insert_{$post_type}, at which point we can safely re-run the
 		// thumbnail logic (idempotent — guarded by has_post_thumbnail).
 		add_action( 'rest_after_insert_mediashield_video', array( __CLASS__, 'maybe_fetch_thumbnail_rest' ), 10, 1 );
+		// Runs first, so the thumbnail's attachment gets the real title too.
+		add_action( 'rest_after_insert_mediashield_video', array( __CLASS__, 'maybe_use_platform_title' ), 5, 1 );
+	}
+
+	/**
+	 * Replace the placeholder title the setup wizard and the Video block give
+	 * a pasted URL ("youtube - VIDEO_ID") with the platform's own title.
+	 *
+	 * Only touches a title that is still exactly that placeholder, so a title
+	 * the owner typed is never overwritten. Platforms with no oEmbed (Bunny)
+	 * keep the placeholder.
+	 *
+	 * @param \WP_Post $post Post inserted or updated through REST.
+	 */
+	public static function maybe_use_platform_title( \WP_Post $post ): void {
+		$platform = (string) get_post_meta( $post->ID, '_ms_platform', true );
+		$video_id = (string) get_post_meta( $post->ID, '_ms_platform_video_id', true );
+		$source   = (string) get_post_meta( $post->ID, '_ms_source_url', true );
+
+		if ( '' === $video_id || '' === $source || 'self' === $platform ) {
+			return;
+		}
+		if ( $post->post_title !== $platform . ' - ' . $video_id ) {
+			return;
+		}
+
+		$data  = _wp_oembed_get_object()->get_data( $source );
+		$title = ( $data && ! empty( $data->title ) ) ? sanitize_text_field( (string) $data->title ) : '';
+		if ( '' === $title ) {
+			return;
+		}
+
+		wp_update_post(
+			array(
+				'ID'         => $post->ID,
+				'post_title' => $title,
+			)
+		);
+		// The thumbnail handler (priority 10) reads the same object.
+		$post->post_title = $title;
 	}
 
 	/**
