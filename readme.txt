@@ -158,6 +158,16 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Improve  - Existing Media Library videos move to the protected folder in the background after the update, and playback keeps working throughout.
 * Improve  - A file also used elsewhere, such as in a post, an Elementor page, an ACF field, a widget or a Learnomy lesson, stays where it is, and a notice lists those videos with how to protect them.
 * Improve  - Deleting a video or uninstalling MediaShield puts a moved file back in its Media Library place instead of deleting it.
+* Fix      - Videos added from the setup wizard or the Video block follow Settings > Default Protection Level instead of always being saved as Standard, so on a site whose default is not Standard they now play at that default.
+* Fix      - The Videos list shows "Default" with the site's level, such as "Default (Standard)", for a video that follows the site default, instead of "None".
+* Fix      - The Video block's Protection Level list has a Site default choice, and the block preview in the editor shows the video's featured image.
+* Fix      - A YouTube or Vimeo video pasted in the setup wizard or the Video block takes its real title instead of "youtube - VIDEO_ID".
+* Fix      - The watermark shows the member's name as written, so an ampersand in a name no longer shows as an HTML entity.
+* Fix      - On a site that never saved the watermark settings, the player uses the opacity and swap interval the Settings screen shows.
+* Fix      - YouTube and Vimeo videos fill the screen in fullscreen, also inside a YouTube or Vimeo embed block.
+* Fix      - Pressing Publish or Update with a video file chosen but not yet uploaded uploads it first, instead of saving a video with no file.
+* Fix      - Self-hosted videos answer byte-range requests for the end of the file correctly, so players that ask for the last part of a video can play it.
+* Fix      - Erasing a member's personal data also unlinks their watch sessions from their account, so the sessions kept for your totals are anonymous.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.
