@@ -51,9 +51,12 @@ class Assets {
 			function () {
 				self::$needs_shaka = true;
 
-				if ( wp_script_is( 'mediashield-hls', 'registered' ) ) {
-					wp_enqueue_script( 'mediashield-hls' );
-				}
+				// No "is it registered yet" check: a block theme renders the
+				// content before wp_enqueue_scripts, so the handle is not
+				// registered yet and hls.js never loaded (Chrome then failed
+				// every HLS video). WordPress keeps an enqueued handle and
+				// prints it once register_frontend() registers it.
+				wp_enqueue_script( 'mediashield-hls' );
 			}
 		);
 	}
