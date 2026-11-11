@@ -69,8 +69,12 @@ class Activator {
 			add_option( 'ms_activated_at', time() );
 		}
 
-		// Flag for setup wizard redirect.
-		if ( ! get_option( 'ms_wizard_completed' ) ) {
+		// Flag for setup wizard redirect, only for a single activation from the
+		// Plugins screen. Set on a WP-CLI or bulk activation it fired on the next
+		// admin page opened within 30 seconds, which was never the activation.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput -- Compared to a literal only; core verified the bulk action's nonce.
+		$bulk = in_array( 'activate-selected', array( $_REQUEST['action'] ?? '', $_REQUEST['action2'] ?? '' ), true );
+		if ( ! $bulk && ! ( defined( 'WP_CLI' ) && WP_CLI ) && ! get_option( 'ms_wizard_completed' ) ) {
 			set_transient( 'ms_activation_redirect', true, 30 );
 		}
 

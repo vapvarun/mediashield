@@ -259,7 +259,7 @@ class AnalyticsController extends WP_REST_Controller {
 					function ( $row ) {
 						return array(
 							'video_id'       => (int) $row->video_id,
-							'title'          => sanitize_text_field( $row->post_title ),
+							'title'          => sanitize_text_field( wp_specialchars_decode( (string) $row->post_title, ENT_QUOTES ) ),
 							'session_count'  => (int) $row->session_count,
 							'avg_completion' => round( (float) $row->avg_completion, 1 ),
 						);
@@ -366,9 +366,9 @@ class AnalyticsController extends WP_REST_Controller {
 				return array(
 					'id'            => (int) $row->id,
 					'video_id'      => (int) $row->video_id,
-					'video_title'   => sanitize_text_field( ! empty( $row->video_title ) ? $row->video_title : '' ),
+					'video_title'   => sanitize_text_field( wp_specialchars_decode( (string) $row->video_title, ENT_QUOTES ) ),
 					'user_id'       => (int) $row->user_id,
-					'user_name'     => sanitize_text_field( ! empty( $row->user_name ) ? $row->user_name : '' ),
+					'user_name'     => sanitize_text_field( wp_specialchars_decode( (string) $row->user_name, ENT_QUOTES ) ),
 					'milestone_pct' => (int) $row->milestone_pct,
 					'reached_at'    => self::utc_marked( $row->reached_at ),
 				);
@@ -433,7 +433,7 @@ class AnalyticsController extends WP_REST_Controller {
 			function ( $row ) {
 				return array(
 					'user_id'        => (int) $row->user_id,
-					'display_name'   => sanitize_text_field( $row->display_name ),
+					'display_name'   => sanitize_text_field( wp_specialchars_decode( (string) $row->display_name, ENT_QUOTES ) ),
 					'email'          => sanitize_email( $row->user_email ),
 					'videos_watched' => (int) $row->videos_watched,
 					'avg_completion' => round( (float) $row->avg_completion, 1 ),
@@ -500,14 +500,14 @@ class AnalyticsController extends WP_REST_Controller {
 				'videos_watched' => $counts ? (int) $counts->videos : 0,
 				'user'     => array(
 					'id'           => $user_id,
-					'display_name' => $user ? sanitize_text_field( $user->display_name ) : '',
+					'display_name' => $user ? sanitize_text_field( wp_specialchars_decode( $user->display_name, ENT_QUOTES ) ) : '',
 					'email'        => $user ? sanitize_email( $user->user_email ) : '',
 				),
 				'sessions' => array_map(
 					function ( $row ) {
 						return array(
 							'video_id'       => (int) $row->video_id,
-							'title'          => sanitize_text_field( ! empty( $row->post_title ) ? $row->post_title : '' ),
+							'title'          => sanitize_text_field( wp_specialchars_decode( (string) $row->post_title, ENT_QUOTES ) ),
 							'completion_pct' => round( (float) $row->completion_pct, 1 ),
 							'total_seconds'  => (int) $row->total_seconds,
 							'max_position'   => (float) $row->max_position,
@@ -571,7 +571,7 @@ class AnalyticsController extends WP_REST_Controller {
 
 				return array(
 					'video_id'       => (int) $row->video_id,
-					'title'          => sanitize_text_field( ! empty( $row->post_title ) ? $row->post_title : '' ),
+					'title'          => sanitize_text_field( wp_specialchars_decode( (string) $row->post_title, ENT_QUOTES ) ),
 					'thumbnail_url'  => $thumbnail_url ? esc_url( $thumbnail_url ) : '',
 					'completion_pct' => round( (float) $row->completion_pct, 1 ),
 					'max_position'   => (float) $row->max_position,
@@ -697,9 +697,9 @@ class AnalyticsController extends WP_REST_Controller {
 				return array(
 					'id'             => (int) $row->id,
 					'video_id'       => (int) $row->video_id,
-					'video_title'    => sanitize_text_field( (string) $row->video_title ),
+					'video_title'    => sanitize_text_field( wp_specialchars_decode( (string) $row->video_title, ENT_QUOTES ) ),
 					'user_id'        => (int) $row->user_id,
-					'user_name'      => sanitize_text_field( (string) ( $row->user_name ?? __( 'Guest', 'mediashield' ) ) ),
+					'user_name'      => sanitize_text_field( wp_specialchars_decode( (string) ( $row->user_name ?? __( 'Guest', 'mediashield' ) ), ENT_QUOTES ) ),
 					'milestone_pct'  => (int) $row->milestone_pct,
 					'reached_at'     => (string) $row->reached_at, // raw UTC for clients that prefer ISO
 					'reached_at_fmt' => self::local_datetime( (string) $row->reached_at ),

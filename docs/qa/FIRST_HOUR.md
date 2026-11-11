@@ -45,7 +45,7 @@ Last confirmed: 2026-11-11, drafted by QA and reviewed by the developer against 
 | M2 | Logs in and plays | lesson page | Session starts. The watermark shows their name (entities drawn exactly, card:10497708826). Right-click and download are blocked | none |
 | M3 | Leaves mid-way, comes back | lesson page | Resume from the last position | none |
 | M4 | Watches to 100% | lesson page | Milestones record. LearnDash auto-complete (Pro, if linked) marks the lesson | milestone emails if configured |
-| M5 | My Videos block or shortcode | account page | Titles link to the right page, Resume works, paging works, 40 px tap targets at 390 | none |
+| M5 | My Videos block or shortcode | account page | With an LMS or integration that supplies the watch page (Learnomy, or Pro's LearnDash, Tutor LMS or LifterLMS lesson link), titles link to that page and Resume works; without one, titles are plain text with no Resume. Paging works, 40 px tap targets at 390 | none |
 | M6 | Cannot see another member's data | REST replay | /analytics/*, viewers and other members' sessions return 401 or 403 | none |
 
 ## Break it (every step above that sends a request)

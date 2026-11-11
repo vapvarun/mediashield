@@ -156,10 +156,12 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 Security release: self-hosted videos picked from the Media Library are now protected like uploaded ones.
 
 * New      - Watermark setting Keep the watermark at the edges keeps the watermark in the corners, off the centre of the video. Off by default.
+* New      - A Revoke session button on each Viewers row ends that member's active watch sessions after you confirm on the screen.
 * Improve  - Existing Media Library videos move to the protected folder in the background after the update, and playback keeps working throughout.
 * Improve  - A file also used elsewhere, such as in a post, an Elementor page, an ACF field, a widget or a Learnomy lesson, stays where it is, and a notice lists those videos with how to protect them.
 * Improve  - Deleting a video or uninstalling MediaShield puts a moved file back in its Media Library place instead of deleting it.
 * Improve  - A viewer's watch history on the Viewers screen is paged, 20 sessions at a time with Previous and Next, instead of stopping at the 100 most recent.
+* Improve  - The Viewers list is paged, 20 viewers at a time with Previous and Next, so a site with thousands of viewers can reach every one instead of the 20 most recent.
 * Fix      - Allowed Domains no longer blocks your own students who open a lesson from a bookmark, an email link or after logging in; embeds on other sites are still checked.
 * Fix      - A role given the upload permission gets a Videos menu with Add New, and sees only its own videos unless it can edit others' posts.
 * Security - Poster images no longer reveal a video's YouTube, Vimeo, Wistia or Bunny ID to visitors; new posters carry no ID, and the update renames existing posters and their sizes, titles and addresses in the background.
@@ -193,6 +195,8 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - An upload that gets an error page back, such as a 502, says the server could not be reached instead of Upload failed: 502.
 * Fix      - Signed HLS streams, such as Bunny with CDN token authentication, renew their address before it expires and after a long pause, so playback keeps its place instead of resetting to a blank player; if the renewal fails, the player says so and offers Try again.
 * Fix      - Uploads from Videos, Add New go to the Default Upload Target, such as Bunny Stream; they always went to this site.
+* Fix      - Names and video titles with an ampersand or apostrophe show as written on the Viewers, Milestones and Dashboard screens instead of as HTML entities such as &amp;amp;.
+* Fix      - Activating MediaShield with WP-CLI or the Plugins screen's bulk Activate no longer jumps to the setup wizard on the next admin page you open.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.

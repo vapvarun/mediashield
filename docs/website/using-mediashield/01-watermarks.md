@@ -68,11 +68,11 @@ For the wider picture of what protection can and cannot do, see "What MediaShiel
 
 ## Revoking access when you catch a leak
 
-If you identify a leak from watermark forensics, MediaShield can terminate every active stream for that account. There is no button for it in the admin in this release; it is an administrator REST call:
+If you identify a leak from watermark forensics, go to **MediaShield > Viewers**, click **Revoke session** on that member's row and confirm. It is also an administrator REST call:
 
 ```
 POST /wp-json/mediashield/v1/session/revoke-user
 { "user_id": 42 }
 ```
 
-Their current streams stop, and the `mediashield_user_access_revoked` action fires so you can log the event. To stop them starting new ones, change what they are allowed to watch - remove the role the video requires, or deactivate the account - then take any further action outside MediaShield.
+It ends every active watch session for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. Use the action to log the event. To stop them watching, change what they are allowed to watch - remove the role the video requires, or deactivate the account - then take any further action outside MediaShield.

@@ -86,14 +86,14 @@ Each account can watch on a set number of devices at once. Default is 2. The pla
 
 **Can I revoke a user's access?**
 
-Yes, though not from a button in this release. MediaShield exposes an administrator REST endpoint that ends every active session for one account:
+You can end their sessions. Go to **MediaShield > Viewers**, click **Revoke session** on their row and confirm. Developers can use the administrator REST endpoint:
 
 ```
 POST /wp-json/mediashield/v1/session/revoke-user
 { "user_id": 42 }
 ```
 
-Their streams stop immediately. To stop them starting new ones, change what they are entitled to watch or deactivate the account.
+It ends every active watch session for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop them watching, change what they are entitled to watch or deactivate the account.
 
 ## GDPR and Privacy
 

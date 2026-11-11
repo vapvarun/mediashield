@@ -29,14 +29,14 @@ A viewer who starts one more stream than allowed sees "Too many active streams. 
 
 ## Cut off one account
 
-There is no button for this yet. Send an authenticated request as an administrator:
+Go to **MediaShield > Viewers**, click **Revoke session** on the member's row, then **Revoke**. Or send an authenticated request as an administrator:
 
 ```
 POST /wp-json/mediashield/v1/session/revoke-user
 { "user_id": 42 }
 ```
 
-This ends every active session for that user and fires `mediashield_user_access_revoked`. It stops current streams. To stop future viewing, also remove their role or access in your membership plugin.
+It ends every active watch session for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop future viewing, also remove their role or access in your membership plugin.
 
 ## Find the sharing
 

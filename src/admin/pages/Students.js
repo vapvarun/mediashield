@@ -7,9 +7,11 @@
  * @package MediaShield
  */
 
-import { useState, useEffect, useCallback } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { Button, TextControl, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
+import { useDispatch } from '@wordpress/data';
+import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
 import Icon from '../components/Icon';
 import { restUrl } from '../utils/rest';
@@ -239,32 +241,136 @@ const StudentDetail = ( { userId, onBack } ) => {
 	);
 };
 
+const LIST_PER_PAGE = 20;
+
+/**
+ * Revoke one viewer's active watch sessions through the existing
+ * POST /session/revoke-user, after an in-page confirm. It frees the slots the
+ * concurrent-stream limit counts; the viewer can start watching again.
+ */
+const RevokeSessions = ( { user } ) => {
+	const [ state, setState ] = useState( 'idle' ); // idle | confirm | busy
+	const { createSuccessNotice, createErrorNotice } = useDispatch( noticesStore );
+	const name = user.name || __( 'this viewer', 'mediashield' );
+
+	const revoke = () => {
+		setState( 'busy' );
+		apiFetch( {
+			url: restUrl( 'session/revoke-user' ),
+			method: 'POST',
+			headers: { 'X-WP-Nonce': config.nonce },
+			data: { user_id: user.id },
+		} )
+			.then( ( res ) => {
+				const count = res?.revoked || 0;
+				createSuccessNotice(
+					count
+						? sprintf(
+							/* translators: 1: number of sessions, 2: viewer name. */
+							_n( 'Ended %1$d active session for %2$s.', 'Ended %1$d active sessions for %2$s.', count, 'mediashield' ),
+							count,
+							name
+						)
+						/* translators: %s: viewer name. */
+						: sprintf( __( '%s had no active session to end.', 'mediashield' ), name ),
+					{ type: 'snackbar' }
+				);
+			} )
+			.catch( ( err ) =>
+				createErrorNotice(
+					window.mediashieldRequest.message( err, __( 'The session could not be revoked.', 'mediashield' ) ),
+					{ type: 'snackbar' }
+				)
+			)
+			.finally( () => setState( 'idle' ) );
+	};
+
+	if ( 'idle' === state ) {
+		return (
+			<button
+				type="button"
+				className="mediashield-action-btn mediashield-action-btn--delete"
+				onClick={ () => setState( 'confirm' ) }
+			>
+				{ __( 'Revoke session', 'mediashield' ) }
+			</button>
+		);
+	}
+
+	return (
+		<div className="mediashield-revoke-confirm" role="group" aria-label={ __( 'Confirm revoke', 'mediashield' ) }>
+			<span>
+				{ /* translators: %s: viewer name. */ }
+				{ sprintf( __( 'End every active session for %s?', 'mediashield' ), name ) }
+			</span>
+			<button
+				type="button"
+				className="mediashield-action-btn mediashield-action-btn--delete"
+				disabled={ 'busy' === state }
+				onClick={ revoke }
+			>
+				{ 'busy' === state ? __( 'Revoking...', 'mediashield' ) : __( 'Revoke', 'mediashield' ) }
+			</button>
+			<button
+				type="button"
+				className="mediashield-action-btn"
+				disabled={ 'busy' === state }
+				onClick={ () => setState( 'idle' ) }
+			>
+				{ __( 'Cancel', 'mediashield' ) }
+			</button>
+		</div>
+	);
+};
+
 const Students = () => {
 	const [ users, setUsers ] = useState( [] );
 	const [ search, setSearch ] = useState( '' );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const [ selectedUser, setSelectedUser ] = useState( null );
+	// Paged: a big site has thousands of viewers.
+	const [ page, setPage ] = useState( 1 );
+	const [ totalPages, setTotalPages ] = useState( 1 );
+	const [ attempt, setAttempt ] = useState( 0 );
+	// The search box is debounced; paging and Try again load at once.
+	const [ query, setQuery ] = useState( '' );
 
-	const fetchUsers = useCallback( () => {
+	useEffect( () => {
+		const timer = setTimeout( () => {
+			setQuery( search );
+			setPage( 1 );
+		}, 400 );
+		return () => clearTimeout( timer );
+	}, [ search ] );
+
+	useEffect( () => {
+		let cancelled = false;
 		setLoading( true );
 		setError( '' );
 
 		apiFetch( {
-			url: restUrl( 'analytics/users', { search } ),
+			url: restUrl( 'analytics/users', { search: query, page, per_page: LIST_PER_PAGE } ),
 			headers: { 'X-WP-Nonce': config.nonce },
+			parse: false,
 		} )
-			.then( ( res ) => setUsers( res.map( ( u ) => ( { ...u, name: u.display_name || u.name || '', id: u.user_id || u.id } ) ) ) )
-			.catch( ( err ) =>
-				setError( window.mediashieldRequest.message( err, __( 'Failed to load viewers.', 'mediashield' ) ) )
-			)
-			.finally( () => setLoading( false ) );
-	}, [ search ] );
+			.then( async ( res ) => {
+				const json = await window.mediashieldRequest.readJSON( res );
+				if ( cancelled ) return;
+				setUsers( json.map( ( u ) => ( { ...u, name: u.display_name || u.name || '', id: u.user_id || u.id } ) ) );
+				setTotalPages( parseInt( res.headers.get( 'X-WP-TotalPages' ), 10 ) || 1 );
+			} )
+			.catch( ( err ) => {
+				if ( ! cancelled ) setError( window.mediashieldRequest.message( err, __( 'Failed to load viewers.', 'mediashield' ) ) );
+			} )
+			.finally( () => {
+				if ( ! cancelled ) setLoading( false );
+			} );
 
-	useEffect( () => {
-		const timer = setTimeout( fetchUsers, 400 );
-		return () => clearTimeout( timer );
-	}, [ fetchUsers ] );
+		return () => {
+			cancelled = true;
+		};
+	}, [ query, page, attempt ] );
 
 	if ( selectedUser ) {
 		return (
@@ -302,8 +408,11 @@ const Students = () => {
 			) }
 
 			{ error && (
-				<div className="mediashield-notice mediashield-notice--error">
-					{ error }
+				<div className="mediashield-notice mediashield-notice--error" role="alert">
+					{ error }{ ' ' }
+					<Button variant="secondary" onClick={ () => setAttempt( ( n ) => n + 1 ) }>
+						{ __( 'Try again', 'mediashield' ) }
+					</Button>
 				</div>
 			) }
 
@@ -316,12 +425,13 @@ const Students = () => {
 								<th>{ __( 'Videos Watched', 'mediashield' ) }</th>
 								<th>{ __( 'Avg Completion', 'mediashield' ) }</th>
 								<th>{ __( 'Last Active', 'mediashield' ) }</th>
+								<th>{ __( 'Actions', 'mediashield' ) }</th>
 							</tr>
 						</thead>
 						<tbody>
 							{ users.length === 0 && (
 								<tr>
-									<td colSpan="4" className="mediashield-table__empty">
+									<td colSpan="5" className="mediashield-table__empty">
 										<Icon name="groups" className="mediashield-table__empty-icon" />
 										{ search
 											? __( 'No viewers match your search.', 'mediashield' )
@@ -359,10 +469,34 @@ const Students = () => {
 									<td data-label={ __( 'Last Active', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
 										{ timeAgo( user.last_active ) }
 									</td>
+									<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
+										<RevokeSessions user={ user } />
+									</td>
 								</tr>
 							) ) }
 						</tbody>
 					</table>
+
+					{ totalPages > 1 && (
+						<nav className="mediashield-pagination" aria-label={ __( 'Viewer pages', 'mediashield' ) }>
+							<span className="mediashield-pagination__info">
+								{ sprintf(
+									/* translators: 1: current page, 2: number of pages. */
+									__( 'Page %1$d of %2$d', 'mediashield' ),
+									page,
+									totalPages
+								) }
+							</span>
+							<div className="mediashield-pagination__buttons">
+								<Button variant="secondary" size="small" disabled={ page <= 1 } onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }>
+									{ __( 'Previous', 'mediashield' ) }
+								</Button>
+								<Button variant="secondary" size="small" disabled={ page >= totalPages } onClick={ () => setPage( ( p ) => p + 1 ) }>
+									{ __( 'Next', 'mediashield' ) }
+								</Button>
+							</div>
+						</nav>
+					) }
 				</div>
 			) }
 		</div>
