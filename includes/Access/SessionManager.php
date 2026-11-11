@@ -398,7 +398,7 @@ class SessionManager {
 	/**
 	 * SQL condition for a session that actually played.
 	 *
-	 * session/start is also the access gate, so every page view opens a
+	 * The session/start route is also the access gate, so every page view opens a
 	 * session; one that never played (no position, no seconds) is a load,
 	 * not a view, and is left out of the analytics totals and averages
 	 * (Basecamp 10499286227).
