@@ -145,6 +145,52 @@ class Renderer {
 	}
 
 	/**
+	 * A video's player addresses as stored, with the stream URL resolved.
+	 *
+	 * Step one of the page render; /stream/{id}/url runs the same two steps
+	 * (this, then protect_addresses()), so a refreshed address is never one
+	 * the page itself would not print.
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return array{platform: string, platform_video_id: string, source_url: string, stream_url: string}
+	 */
+	public static function addresses( int $video_id ): array {
+		$platform_raw      = (string) get_post_meta( $video_id, '_ms_platform', true );
+		$platform          = '' !== $platform_raw ? $platform_raw : 'self';
+		$platform_video_id = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+
+		return array(
+			'platform'          => $platform,
+			'platform_video_id' => $platform_video_id,
+			'source_url'        => (string) get_post_meta( $video_id, '_ms_source_url', true ),
+			'stream_url'        => self::stream_url( $video_id, $platform, $platform_video_id, (string) get_post_meta( $video_id, '_ms_stream_url', true ) ),
+		);
+	}
+
+	/**
+	 * Apply the render's protection to addresses() for the current viewer.
+	 *
+	 * Hide Video Source routing (Protection::filter_player_urls) and the
+	 * access decision (withhold_addresses, which asks AccessControl::can_watch:
+	 * Require Login, guest rules, roles, domains, LMS enrollment through
+	 * mediashield_can_watch). A viewer who may not watch gets every address
+	 * blanked and access_denied true.
+	 *
+	 * @param int   $video_id  Video CPT post ID.
+	 * @param array $addresses From addresses().
+	 * @return array addresses() plus access_denied.
+	 */
+	public static function protect_addresses( int $video_id, array $addresses ): array {
+		$safe                    = Protection::filter_player_urls( $video_id, $addresses['platform'], $addresses['source_url'], $addresses['stream_url'] );
+		$addresses['source_url'] = (string) $safe['source_url'];
+		$addresses['stream_url'] = (string) $safe['stream_url'];
+
+		$addresses['access_denied'] = self::withhold_addresses( $video_id, $addresses['platform_video_id'], $addresses['source_url'], $addresses['stream_url'], $addresses['platform'] );
+
+		return $addresses;
+	}
+
+	/**
 	 * Render the protected player container for a video CPT.
 	 *
 	 * @param int    $video_id        Video CPT post ID.
@@ -174,13 +220,11 @@ class Renderer {
 			);
 		}
 
-		$platform_raw      = get_post_meta( $video_id, '_ms_platform', true );
-		$platform          = ! empty( $platform_raw ) ? $platform_raw : 'self';
-		$platform_video_id = get_post_meta( $video_id, '_ms_platform_video_id', true );
-		$source_url        = get_post_meta( $video_id, '_ms_source_url', true );
-		$stream_url        = get_post_meta( $video_id, '_ms_stream_url', true );
-
-		$stream_url = self::stream_url( $video_id, (string) $platform, (string) $platform_video_id, (string) $stream_url );
+		$addresses         = self::addresses( $video_id );
+		$platform          = $addresses['platform'];
+		$platform_video_id = $addresses['platform_video_id'];
+		$source_url        = $addresses['source_url'];
+		$stream_url        = $addresses['stream_url'];
 
 		// Per-video override, then the owner's global default, then 'standard'.
 		// Shared with PlayerWrapper so the auto-wrap path cannot resolve this
@@ -215,11 +259,11 @@ class Renderer {
 		// deliberately hands the viewer the plain URL so the video still plays
 		// with protection off, and routing it through the gated /stream/
 		// endpoint instead would re-impose a check the operator just disabled.
-		$safe_urls  = Protection::filter_player_urls( $video_id, (string) $platform, (string) $source_url, $stream_url );
-		$source_url = $safe_urls['source_url'];
-		$stream_url = $safe_urls['stream_url'];
-
-		$access_denied = self::withhold_addresses( $video_id, $platform_video_id, $source_url, $stream_url, (string) $platform );
+		$addresses         = self::protect_addresses( $video_id, $addresses );
+		$platform_video_id = $addresses['platform_video_id'];
+		$source_url        = $addresses['source_url'];
+		$stream_url        = $addresses['stream_url'];
+		$access_denied     = $addresses['access_denied'];
 
 		// Enqueue frontend assets (only loads when video content exists).
 		Assets::enqueue();

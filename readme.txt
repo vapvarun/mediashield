@@ -190,6 +190,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.
 * Security - The player page no longer prints a self-hosted video's stored file name or a direct address into the protected folder.
+* Security - The stream address refresh only answers for a published MediaShield video, and gives exactly the address the page itself would show the viewer; it used to sign an address for any id the viewer could name.
 * Dev      - New command wp mediashield repair restore-library-files and new filter mediashield_library_file_in_use.
 * Dev      - New shared reader window.mediashieldRequest (message and readJSON) for request failures, and the bin/request-error-check.php guard in local CI.
 * Compat   - Aligned with MediaShield Pro 1.4.2. Install both updates together.

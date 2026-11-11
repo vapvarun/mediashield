@@ -130,7 +130,17 @@ class StreamController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function stream_url_permissions_check( WP_REST_Request $request ): bool|WP_Error {
-		$access = AccessControl::can_watch( (int) $request->get_param( 'video_id' ), get_current_user_id() );
+		// The same gates as the page render, in the same order: a real,
+		// published video first, then the viewer's access.
+		$video = get_post( (int) $request->get_param( 'video_id' ) );
+		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
+			return new WP_Error( 'mediashield_not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
+		}
+		if ( 'publish' !== $video->post_status ) {
+			return new WP_Error( 'mediashield_access_denied', __( 'This video is not published.', 'mediashield' ), array( 'status' => 403 ) );
+		}
+
+		$access = AccessControl::can_watch( (int) $video->ID, get_current_user_id() );
 		if ( ! $access['allowed'] ) {
 			return new WP_Error( 'mediashield_access_denied', $access['reason'], array( 'status' => 403 ) );
 		}
@@ -143,25 +153,28 @@ class StreamController extends WP_REST_Controller {
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response
 	 */
-	public function stream_url( WP_REST_Request $request ): WP_REST_Response {
+	public function stream_url( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$video_id = (int) $request->get_param( 'video_id' );
-		$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
-		$stored   = (string) get_post_meta( $video_id, '_ms_stream_url', true );
 
-		// A self-hosted file plays through our own signed /stream URL.
-		if ( ( '' === $platform || \MediaShield\Support\Platforms::SELF_HOSTED === $platform ) && '' === $stored ) {
-			return rest_ensure_response( array( 'url' => self::signed_url( $video_id, get_current_user_id() ) ) );
+		// Exactly the page render's two steps (Renderer::addresses() then
+		// protect_addresses()), so a refresh can never hand out an address
+		// the page would withhold: our signed /stream URL for a self-hosted
+		// file, a freshly signed provider URL (Pro's Bunny HLS) otherwise.
+		$addresses = \MediaShield\Player\Renderer::addresses( $video_id );
+		if ( get_option( 'ms_enabled', true ) ) {
+			$addresses = \MediaShield\Player\Renderer::protect_addresses( $video_id, $addresses );
+			if ( $addresses['access_denied'] ) {
+				return new WP_Error( 'mediashield_access_denied', __( 'You do not have access to this video.', 'mediashield' ), array( 'status' => 403 ) );
+			}
 		}
 
-		// Anything else (Pro's signed Bunny HLS) is minted fresh through the
-		// same filter the page render uses, so an expired address can be
-		// replaced mid-playback.
-		return rest_ensure_response(
-			array(
-				'url' => \MediaShield\Player\Renderer::stream_url( $video_id, $platform, (string) get_post_meta( $video_id, '_ms_platform_video_id', true ), $stored ),
-			)
-		);
+		if ( '' === $addresses['stream_url'] ) {
+			return new WP_Error( 'mediashield_no_stream', __( 'This video has no stream address to refresh.', 'mediashield' ), array( 'status' => 404 ) );
+		}
+
+		return rest_ensure_response( array( 'url' => $addresses['stream_url'] ) );
 	}
+
 
 	/**
 	 * Permission check — uses the same mediashield_can_watch filter as SessionController.
