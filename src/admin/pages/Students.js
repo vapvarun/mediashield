@@ -12,6 +12,7 @@ import { Button, TextControl, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import Icon from '../components/Icon';
+import { restUrl } from '../utils/rest';
 
 const config = window.mediashieldAdmin || {};
 
@@ -102,7 +103,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 		setError( '' );
 
 		apiFetch( {
-			url: `${ config.restUrl }analytics/users/${ userId }?page=${ page }&per_page=${ DETAIL_PER_PAGE }`,
+			url: restUrl( `analytics/users/${ userId }`, { page, per_page: DETAIL_PER_PAGE } ),
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
 			.then( ( res ) => {
@@ -249,10 +250,8 @@ const Students = () => {
 		setLoading( true );
 		setError( '' );
 
-		const qs = search ? `?search=${ encodeURIComponent( search ) }` : '';
-
 		apiFetch( {
-			url: `${ config.restUrl }analytics/users${ qs }`,
+			url: restUrl( 'analytics/users', { search } ),
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
 			.then( ( res ) => setUsers( res.map( ( u ) => ( { ...u, name: u.display_name || u.name || '', id: u.user_id || u.id } ) ) ) )
