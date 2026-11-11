@@ -335,6 +335,22 @@ class SessionController extends WP_REST_Controller {
 	}
 
 	/**
+	 * The heartbeat rate-limit key for a caller in the current clock minute.
+	 *
+	 * Counting per clock minute, not "60 seconds since the last beat": setting
+	 * the expiry on every beat meant a session beating every 30 seconds never
+	 * left its window, so beat 5 was refused and progress stopped about two
+	 * minutes into every video (Basecamp 10499263338).
+	 *
+	 * @param string $bucket The caller's bucket (session token or caller id).
+	 * @param int    $now    Unix time.
+	 * @return string Transient key.
+	 */
+	private static function rate_key( string $bucket, int $now ): string {
+		return 'ms_rate_' . hash( 'sha256', $bucket . '|' . intdiv( $now, MINUTE_IN_SECONDS ) );
+	}
+
+	/**
 	 * POST /session/heartbeat — track playback progress.
 	 *
 	 * @param WP_REST_Request $request Request object.
@@ -354,10 +370,10 @@ class SessionController extends WP_REST_Controller {
 		// one transient, not one per request.
 		$token    = (string) $request->get_param( 'token' );
 		$bucket   = SessionManager::validate_token( $token ) ? $token : 'invalid|' . ( get_current_user_id() ? get_current_user_id() : self::get_client_ip() );
-		$rate_key = 'ms_rate_' . hash( 'sha256', $bucket );
+		$rate_key = self::rate_key( $bucket, time() );
 		$count    = (int) get_transient( $rate_key );
 		++$count;
-		set_transient( $rate_key, $count, 60 );
+		set_transient( $rate_key, $count, 2 * MINUTE_IN_SECONDS );
 
 		if ( $count > 4 ) {
 			return new WP_Error(

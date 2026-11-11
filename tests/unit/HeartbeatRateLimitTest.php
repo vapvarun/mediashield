@@ -92,6 +92,35 @@ class HeartbeatRateLimitTest extends WP_UnitTestCase {
 	 * Made-up tokens share one bucket per caller: limited, and one transient.
 	 * Keyed on the token text they each got a fresh bucket and an options row.
 	 */
+	/**
+	 * A session beating every 30 seconds keeps recording progress (Basecamp
+	 * 10499263338). The window is a clock minute; the old code reset a
+	 * 60-second expiry on every beat, so the window never closed and beat 5
+	 * was refused about two minutes into every video. Each beat here starts a
+	 * fresh window, as it does once a minute has passed.
+	 */
+	public function test_beats_across_minutes_are_never_refused(): void {
+		$user = self::factory()->user->create();
+		wp_set_current_user( $user );
+		$video   = self::factory()->post->create(
+			array(
+				'post_type'   => 'mediashield_video',
+				'post_status' => 'publish',
+			)
+		);
+		$session = SessionManager::start( $video, $user, '203.0.113.6', 'UA' );
+		$key     = new \ReflectionMethod( \MediaShield\REST\SessionController::class, 'rate_key' );
+
+		for ( $i = 0; $i < 10; $i++ ) {
+			delete_transient( $key->invoke( null, $session['session_token'], time() ) );
+			$this->assertNotSame( 429, $this->beat( $session['session_token'] ), "Beat {$i} in a new minute." );
+		}
+
+		$now = 1700000000 - ( 1700000000 % 60 );
+		$this->assertSame( $key->invoke( null, 'b', $now ), $key->invoke( null, 'b', $now + 30 ), 'Beats within one minute share a window.' );
+		$this->assertNotSame( $key->invoke( null, 'b', $now ), $key->invoke( null, 'b', $now + 60 ), 'The next minute is a new window.' );
+	}
+
 	public function test_a_flood_of_invalid_tokens_is_limited(): void {
 		global $wpdb;
 
