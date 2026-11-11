@@ -170,6 +170,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - Erasing a member's personal data also unlinks their watch sessions from their account, so the sessions kept for your totals are anonymous.
 * Fix      - Double-clicking a protected video, or using the browser's own fullscreen, no longer shows the video without its watermark; fullscreen always keeps the watermark, and on iPhone the player fills the screen instead.
 * Fix      - HLS videos, such as Bunny Stream in the full player, play in Chrome, Firefox and Edge on block themes; the streaming library was never loaded there.
+* Fix      - A video that is not 16:9, such as 4:3 or portrait, is letterboxed in the player instead of being stretched, cropped or overflowing when a theme or LMS styles videos.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.

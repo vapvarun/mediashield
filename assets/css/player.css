@@ -80,6 +80,15 @@
 	border: none;
 }
 
+/* A video that is not 16:9 (4:3, portrait) is letterboxed inside the 16:9
+   player, never stretched or cropped. Browsers default a <video> to contain,
+   but a theme or LMS rule on `video` (object-fit, height: auto) used to win
+   over the one-class selector above; two classes outrank `.entry-content video`. */
+.ms-protected-player .ms-player-target video {
+	height: 100%;
+	object-fit: contain;
+}
+
 /* The YouTube API turns the target itself into the iframe and stamps
    height="360" on it. That attribute beat aspect-ratio, so every YouTube video
    was 360px tall at any width: letterboxed on desktop, near-square on a phone. */
