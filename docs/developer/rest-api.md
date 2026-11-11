@@ -101,7 +101,7 @@ Status values depend on the driver. `self_hosted` uploads are synchronous, so it
 | GET | `/videos/{id}/stats` | `manage_options` | Per-video statistics. |
 | GET | `/analytics/milestones` | `manage_options` | Milestone completion data across all videos. Params: `per_page` (default 20), `page` (default 1), `video_id` (default 0 = all). |
 | GET | `/analytics/users` | `manage_options` | User engagement list. Params: `per_page` (default 20), `page` (default 1), `search` (default `''`). |
-| GET | `/analytics/users/{user_id}` | `manage_options` | Single user detail: every video watched, max position, completion %, milestone history. |
+| GET | `/analytics/users/{user_id}` | `manage_options` | Single user detail, paged (`page`, `per_page` up to 100): sessions newest first with video, max position and completion %, plus `total`, `total_pages` and `videos_watched`. |
 | GET | `/analytics/my-videos` | logged_in | Current user's watched videos. No admin cap required. |
 
 ---

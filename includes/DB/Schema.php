@@ -76,6 +76,7 @@ class Schema {
 			KEY idx_video_user (video_id, user_id),
 			KEY idx_active (user_id, is_active, last_heartbeat),
 			KEY idx_user (user_id),
+			KEY idx_user_heartbeat (user_id, last_heartbeat),
 			KEY idx_started (started_at)
 		) {$charset_collate};";
 

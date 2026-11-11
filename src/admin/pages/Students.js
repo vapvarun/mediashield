@@ -86,10 +86,15 @@ function timeAgo( dateStr ) {
 /**
  * Single-student drill-down view.
  */
+const DETAIL_PER_PAGE = 20;
+
 const StudentDetail = ( { userId, onBack } ) => {
 	const [ detail, setDetail ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
+	// Watch history is paged: a member can have thousands of sessions.
+	const [ page, setPage ] = useState( 1 );
+	const [ attempt, setAttempt ] = useState( 0 );
 
 	useEffect( () => {
 		let cancelled = false;
@@ -97,7 +102,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 		setError( '' );
 
 		apiFetch( {
-			url: `${ config.restUrl }analytics/users/${ userId }`,
+			url: `${ config.restUrl }analytics/users/${ userId }?page=${ page }&per_page=${ DETAIL_PER_PAGE }`,
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
 			.then( ( res ) => {
@@ -122,7 +127,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 		return () => {
 			cancelled = true;
 		};
-	}, [ userId ] );
+	}, [ userId, page, attempt ] );
 
 	return (
 		<div className="mediashield-student-detail">
@@ -142,8 +147,11 @@ const StudentDetail = ( { userId, onBack } ) => {
 			) }
 
 			{ error && (
-				<div className="mediashield-notice mediashield-notice--error">
-					{ error }
+				<div className="mediashield-notice mediashield-notice--error" role="alert">
+					{ error }{ ' ' }
+					<Button variant="secondary" onClick={ () => setAttempt( ( n ) => n + 1 ) }>
+						{ __( 'Try again', 'mediashield' ) }
+					</Button>
 				</div>
 			) }
 
@@ -202,6 +210,27 @@ const StudentDetail = ( { userId, onBack } ) => {
 								) ) }
 							</tbody>
 						</table>
+
+						{ detail.totalPages > 1 && (
+							<nav className="mediashield-pagination" aria-label={ __( 'Watch history pages', 'mediashield' ) }>
+								<span className="mediashield-pagination__info">
+									{ sprintf(
+										/* translators: 1: current page, 2: number of pages. */
+										__( 'Page %1$d of %2$d', 'mediashield' ),
+										page,
+										detail.totalPages
+									) }
+								</span>
+								<div className="mediashield-pagination__buttons">
+									<Button variant="secondary" size="small" disabled={ page <= 1 } onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }>
+										{ __( 'Previous', 'mediashield' ) }
+									</Button>
+									<Button variant="secondary" size="small" disabled={ page >= detail.totalPages } onClick={ () => setPage( ( p ) => p + 1 ) }>
+										{ __( 'Next', 'mediashield' ) }
+									</Button>
+								</div>
+							</nav>
+						) }
 					</div>
 				</>
 			) }

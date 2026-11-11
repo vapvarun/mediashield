@@ -109,7 +109,7 @@ The `upload_mediashield` capability is separate from `manage_options` so instruc
 | GET | `/videos/{id}/stats` | manage_options | Per-video statistics. |
 | GET | `/analytics/milestones` | manage_options | Milestone log. Args: `page`, `per_page` (default 20), `video_id`. Total counts come back in the `X-WP-Total` and `X-WP-TotalPages` headers. |
 | GET | `/analytics/users` | manage_options | Viewer list. Args: `page`, `per_page` (default 20), `search`. |
-| GET | `/analytics/users/{user_id}` | manage_options | One viewer: their 100 most recent sessions with video title, completion, watch time, furthest position, and timestamps. Milestone history, IP, and device type are not included in this payload. |
+| GET | `/analytics/users/{user_id}` | manage_options | One viewer's sessions, newest first, paged (`page`, `per_page` up to 100, default 20; `total`, `total_pages` and `videos_watched` in the body, `X-WP-Total` / `X-WP-TotalPages` headers), with video title, completion, watch time, furthest position, and timestamps. Milestone history, IP, and device type are not included in this payload. |
 | GET | `/analytics/my-videos` | logged in | Current user's watched videos. No admin capability required. |
 
 `period` values other than the four listed fall back to 7 days. "Today" means the last 24 hours, not the calendar day.

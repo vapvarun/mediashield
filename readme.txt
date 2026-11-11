@@ -159,6 +159,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Improve  - Existing Media Library videos move to the protected folder in the background after the update, and playback keeps working throughout.
 * Improve  - A file also used elsewhere, such as in a post, an Elementor page, an ACF field, a widget or a Learnomy lesson, stays where it is, and a notice lists those videos with how to protect them.
 * Improve  - Deleting a video or uninstalling MediaShield puts a moved file back in its Media Library place instead of deleting it.
+* Improve  - A viewer's watch history on the Viewers screen is paged, 20 sessions at a time with Previous and Next, instead of stopping at the 100 most recent.
 * Fix      - Videos added from the setup wizard or the Video block follow Settings > Default Protection Level instead of always being saved as Standard, so on a site whose default is not Standard they now play at that default.
 * Fix      - The Videos list shows "Default" with the site's level, such as "Default (Standard)", for a video that follows the site default, instead of "None".
 * Fix      - The Video block's Protection Level list has a Site default choice, and the block preview in the editor shows the video's featured image.

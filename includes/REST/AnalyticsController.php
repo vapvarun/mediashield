@@ -132,6 +132,18 @@ class AnalyticsController extends WP_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_user_detail' ),
 				'permission_callback' => array( $this, 'admin_check' ),
+				'args'                => array(
+					'per_page' => array(
+						'type'              => 'integer',
+						'default'           => 20,
+						'sanitize_callback' => 'absint',
+					),
+					'page'     => array(
+						'type'              => 'integer',
+						'default'           => 1,
+						'sanitize_callback' => 'absint',
+					),
+				),
 			)
 		);
 
@@ -447,26 +459,45 @@ class AnalyticsController extends WP_REST_Controller {
 	public function get_user_detail( WP_REST_Request $request ): WP_REST_Response {
 		global $wpdb;
 
-		$user_id = (int) $request['user_id'];
+		$user_id  = (int) $request['user_id'];
+		$per_page = min( 100, max( 1, (int) $request['per_page'] ) );
+		$page     = max( 1, (int) $request['page'] );
+		$table    = "{$wpdb->prefix}ms_watch_sessions";
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		// Paged: a long-time member can have thousands of sessions, and the
+		// old fixed LIMIT 100 hid everything older. Served by
+		// idx_user_heartbeat (user_id, last_heartbeat).
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
+		$counts = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT COUNT(*) AS sessions, COUNT( DISTINCT video_id ) AS videos FROM {$table} WHERE user_id = %d",
+				$user_id
+			)
+		);
 		$sessions = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT s.video_id, p.post_title, s.completion_pct, s.total_seconds,
 					s.max_position, s.last_heartbeat, s.started_at
-			 FROM {$wpdb->prefix}ms_watch_sessions s
+			 FROM {$table} s
 			 LEFT JOIN {$wpdb->posts} p ON s.video_id = p.ID
 			 WHERE s.user_id = %d
-			 ORDER BY s.last_heartbeat DESC
-			 LIMIT 100",
-				$user_id
+			 ORDER BY s.last_heartbeat DESC, s.id DESC
+			 LIMIT %d OFFSET %d",
+				$user_id,
+				$per_page,
+				( $page - 1 ) * $per_page
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		$user = get_userdata( $user_id );
+		$total = $counts ? (int) $counts->sessions : 0;
+		$user  = get_userdata( $user_id );
 
-		return rest_ensure_response(
+		$response = rest_ensure_response(
 			array(
+				'total'          => $total,
+				'total_pages'    => (int) max( 1, ceil( $total / $per_page ) ),
+				'videos_watched' => $counts ? (int) $counts->videos : 0,
 				'user'     => array(
 					'id'           => $user_id,
 					'display_name' => $user ? sanitize_text_field( $user->display_name ) : '',
@@ -488,6 +519,10 @@ class AnalyticsController extends WP_REST_Controller {
 				),
 			)
 		);
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) max( 1, (int) ceil( $total / $per_page ) ) );
+
+		return $response;
 	}
 
 	/**
