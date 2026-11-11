@@ -296,7 +296,9 @@ class SessionController extends WP_REST_Controller {
 			// blank on mobile. Pro's AdvancedConfig filter overwrites `text` when
 			// active. This response is the only place a viewer's name and IP are
 			// sent: the page config must stay cacheable.
-			'text'          => wp_get_current_user()->display_name,
+			// WordPress stores the display name HTML-escaped ("Tom &amp; Jerry"),
+			// and the canvas paints text as is, so decode it (card 10497708826).
+			'text'          => wp_specialchars_decode( wp_get_current_user()->display_name, ENT_QUOTES ),
 			'ip'            => $ip,
 		);
 

@@ -33,4 +33,19 @@ class WatermarkDefaultsTest extends WP_UnitTestCase {
 		$this->assertSame( (int) Settings::get( 'ms_watermark_swap_interval' ), $config['swap_interval'] ?? null );
 		$this->assertSame( array( 0.5, 30 ), array( $config['opacity'], $config['swap_interval'] ), 'Defaults the Settings screen shows.' );
 	}
+
+	/**
+	 * Card 10497708826: the name is painted as written, not as HTML entities.
+	 */
+	public function test_watermark_text_is_the_name_as_written(): void {
+		$user = self::factory()->user->create( array( 'display_name' => "Tom & Jerry's" ) );
+		wp_set_current_user( $user );
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+
+		$request = new WP_REST_Request( 'POST', '/mediashield/v1/session/start' );
+		$request->set_body_params( array( 'video_id' => $video ) );
+		$config = rest_do_request( $request )->get_data()['watermark_config'] ?? array();
+
+		$this->assertSame( "Tom & Jerry's", $config['text'] ?? null );
+	}
 }
