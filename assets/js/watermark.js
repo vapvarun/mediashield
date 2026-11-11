@@ -60,8 +60,11 @@
 			var fontSize = sizes[ isMobile ? 1 : 0 ];
 
 			ctx.font = fontSize + 'px sans-serif';
+			// 0 is a valid opacity (the owner chose it); only a missing value
+			// falls back, to the Settings default.
+			var opacity = parseFloat(wmConfig.opacity);
 			ctx.fillStyle = wmConfig.color || '#ffffff';
-			ctx.globalAlpha = wmConfig.opacity || 0.3;
+			ctx.globalAlpha = isNaN(opacity) ? 0.5 : opacity;
 
 			// Build watermark text. Mobile: username only. Desktop: username + IP.
 			var text = wmConfig.text || '';
@@ -110,7 +113,7 @@
 		render();
 
 		// Position swap interval.
-		var swapMs = (wmConfig.swap_interval || 20) * 1000;
+		var swapMs = (parseInt(wmConfig.swap_interval, 10) || 30) * 1000;
 		var swapTimer = setInterval(function () {
 			currentPos++;
 			render();
