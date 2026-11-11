@@ -292,6 +292,38 @@ class StreamController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Which bytes does a "Range: bytes=..." header ask for?
+	 *
+	 * RFC 9110 14.1.1: "bytes=-N" is the last N bytes, and an end past the
+	 * file means "to the end". Unsatisfiable only when the start is past the
+	 * file (the caller answers 416).
+	 *
+	 * @param string $header    Range header value.
+	 * @param int    $file_size File size in bytes.
+	 * @return array{0:int,1:int}|null First and last byte, or null when unsatisfiable.
+	 */
+	public static function byte_range( string $header, int $file_size ): ?array {
+		$start = 0;
+		$end   = $file_size - 1;
+		if ( ! preg_match( '/bytes=(\d*)-(\d*)/', $header, $matches ) ) {
+			return array( $start, $end );
+		}
+
+		if ( '' === $matches[1] && '' !== $matches[2] ) {
+			$start = max( 0, $file_size - (int) $matches[2] );
+		} else {
+			if ( '' !== $matches[1] ) {
+				$start = (int) $matches[1];
+			}
+			if ( '' !== $matches[2] ) {
+				$end = min( (int) $matches[2], $file_size - 1 );
+			}
+		}
+
+		return ( $start > $end || $start >= $file_size ) ? null : array( $start, $end );
+	}
+
+	/**
 	 * Serve a video file with HTTP range support for seeking.
 	 *
 	 * @param string $file_path Absolute path to the video file.
@@ -310,29 +342,14 @@ class StreamController extends WP_REST_Controller {
 
 		if ( ! empty( $range_header ) ) {
 			// Parse Range: bytes=start-end.
-			if ( preg_match( '/bytes=(\d*)-(\d*)/', $range_header, $matches ) ) {
-				$range_start = $matches[1];
-				$range_end   = $matches[2];
-
-				if ( '' === $range_start && '' !== $range_end ) {
-					// Suffix range "bytes=-N": the last N bytes (RFC 9110 14.1.1).
-					$start = max( 0, $file_size - (int) $range_end );
-				} else {
-					if ( '' !== $range_start ) {
-						$start = (int) $range_start;
-					}
-					if ( '' !== $range_end ) {
-						// An end past the file is allowed; it means "to the end".
-						$end = min( (int) $range_end, $file_size - 1 );
-					}
-				}
-
-				// Unsatisfiable only when the start is past the file.
-				if ( $start > $end || $start >= $file_size ) {
+			if ( preg_match( '/bytes=(\d*)-(\d*)/', $range_header ) ) {
+				$range = self::byte_range( $range_header, (int) $file_size );
+				if ( null === $range ) {
 					status_header( 416 );
 					header( "Content-Range: bytes */{$file_size}" );
 					exit;
 				}
+				list( $start, $end ) = $range;
 
 				status_header( 206 );
 				header( "Content-Range: bytes {$start}-{$end}/{$file_size}" );
