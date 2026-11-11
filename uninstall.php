@@ -67,6 +67,7 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			'ms_activated_at',
 			'ms_library_files_pending',
 			'ms_library_files_report',
+			'ms_poster_names_pending',
 			'ms_custom_url_patterns', // Removed in 1.3.0.
 			'ms_max_upload_size',     // Removed in 1.3.0.
 		)

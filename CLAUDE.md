@@ -54,7 +54,7 @@ includes/
   CPT/
     VideoPostType.php        mediashield_video CPT + meta
     PlaylistPostType.php     mediashield_playlist CPT + meta
-    Thumbnail.php            Video thumbnail handling
+    Thumbnail.php            Video posters: the one platform-poster sideload (`sideload_poster()`, also used by Pro), `poster_filename()` (keyed hash, never the platform ID), `poster_url()` (read every rendered poster through it), and the 1.4.2 upgrade job `ms_rename_id_posters` that renames posters saved under the platform ID (file, sizes, title, slug, GUID, caption, alt)
   DB/
     Schema.php               dbDelta for all 6 free tables
   REST/
@@ -293,7 +293,7 @@ A 4th shortcode, `[mediashield_upload]`, is registered by **Pro** — but only a
 
 ## WordPress Hooks
 
-Verified against 1.3.0 source (`do_action` / `apply_filters` in `includes/` and `src/`, docblock and line-comment mentions excluded): **14 actions + 33 filters = 47 hooks fired by Free.** (1.4.1 added `mediashield_guest_can_watch` and `mediashield_video_watch_url`; 1.4.2 added `mediashield_library_file_in_use` and `mediashield_library_files_batch_size`.)
+Verified against 1.3.0 source (`do_action` / `apply_filters` in `includes/` and `src/`, docblock and line-comment mentions excluded): **14 actions + 33 filters = 47 hooks fired by Free.** (1.4.1 added `mediashield_guest_can_watch` and `mediashield_video_watch_url`; 1.4.2 added `mediashield_library_file_in_use`, `mediashield_library_files_batch_size` and `mediashield_poster_rename_batch_size`.)
 
 Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `mediashield_default_upload_driver` added; `mediashield_delete_remote_media` added and then removed again - remote deletion is not an opt-in any more, it does not exist. The previous figure here read 15 actions + 29 filters; the total was right but the split was not. Pro fires 20 more of its own and re-applies `mediashield_enqueue_frontend`. Two further hooks are Action Scheduler *job* hooks fired by Pro (`mediashield_generate_pdf`, `mediashield_fire_webhook`), and `mediashield_admin_routes` is a JS-side `wp.hooks` filter, not a PHP one.
 
@@ -345,6 +345,7 @@ Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `media
 | `mediashield_video_watch_url` | $url, $video_id, $user_id | Page where a member watches a video, used by My Videos. The video CPT is not public; '' renders the title as plain text with no Resume link. |
 | `mediashield_library_file_in_use` | $where, $relative, $attachment_id, $video_id | Report a use of a Media Library file MediaShield cannot see; non-empty leaves the file public and lists it in the owner notice. Learnomy integration answers for lesson/course URLs. |
 | `mediashield_library_files_batch_size` | $batch | Videos per pass of `ms_protect_library_files` (10-200, default 50). |
+| `mediashield_poster_rename_batch_size` | $batch | Videos per pass of `ms_rename_id_posters` (10-200, default 50). |
 | `mediashield_shortcode_source_url` | $url, $video_id, $atts | Override the source URL a `[mediashield]` shortcode resolves to (`Shortcode.php:61`) |
 | `mediashield_stored_filename` | $obscured, $original_name | The randomised on-disk filename for a self-hosted upload (`SelfHosted.php:144`) |
 | `mediashield_video_ad_breaks` | $breaks, $video_id, $duration | In-video ad breaks. Populated by the WB Ad Manager bridge; empty when no ad source is active. (`Renderer.php:263`) |

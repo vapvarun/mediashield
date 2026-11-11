@@ -337,7 +337,7 @@ class PlayerWrapper {
 					}
 
 					// Same poster attribute Renderer::render() prints.
-					$poster = get_the_post_thumbnail_url( $video_post_id, 'large' );
+					$poster = \MediaShield\CPT\Thumbnail::poster_url( (int) $video_post_id, 'large' );
 					if ( $poster ) {
 						$overrides_attr .= ' data-poster="' . esc_url( $poster ) . '"';
 					}

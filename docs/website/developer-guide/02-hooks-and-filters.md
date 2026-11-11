@@ -293,6 +293,14 @@ add_filter( 'mediashield_library_file_in_use', function( $where, $relative ) {
 
 ---
 
+### mediashield_poster_rename_batch_size
+
+*Since 1.4.2.* Videos checked per pass of the one-off `ms_rename_id_posters` job, which renames posters saved under the platform video ID. Default 50, clamped to 10-200.
+
+**Parameters:** `$batch` (int)
+
+---
+
 ### mediashield_player_type
 
 Override the player type for a video. Free renders `standard` for every video; the value is emitted as `data-player-type` on the player container.

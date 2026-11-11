@@ -68,7 +68,27 @@ class Migrator {
 		// the protected folder. Background job, queued by LibraryFiles::ensure_job().
 		self::protect_library_files( $installed );
 
+		// v10 - rename posters saved before 1.4.2 under the platform video ID.
+		// Background job, queued by Thumbnail::ensure_rename_job().
+		self::rename_id_posters( $installed );
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+	}
+
+	/**
+	 * Queue the one-off rename of posters named after the platform video ID.
+	 *
+	 * Only the cursor is set here, for the same reason as the library-file
+	 * job: this runs on plugins_loaded, before Action Scheduler is ready. A
+	 * fresh install has no such posters; new ones never carry the ID.
+	 *
+	 * @param int $installed DB version before this run.
+	 */
+	private static function rename_id_posters( int $installed ): void {
+		if ( $installed < 1 || $installed >= 10 ) {
+			return;
+		}
+		update_option( \MediaShield\CPT\Thumbnail::RENAME_PENDING, 0, false );
 	}
 
 	/**

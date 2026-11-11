@@ -162,7 +162,8 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Improve  - A viewer's watch history on the Viewers screen is paged, 20 sessions at a time with Previous and Next, instead of stopping at the 100 most recent.
 * Fix      - Allowed Domains no longer blocks your own students who open a lesson from a bookmark, an email link or after logging in; embeds on other sites are still checked.
 * Fix      - A role given the upload permission gets a Videos menu with Add New, and sees only its own videos unless it can edit others' posts.
-* Security - A visitor who may not watch a video no longer sees its platform video ID in the poster image's file name; new posters carry no ID.
+* Security - Poster images no longer reveal a video's YouTube, Vimeo, Wistia or Bunny ID to visitors; new posters carry no ID, and the update renames existing posters and their sizes, titles and addresses in the background.
+* Security - A playlist's video list no longer shows a visitor who may not watch a poster that is still named after the video ID.
 * Fix      - A video whose watch session cannot start stays stopped with a message and a retry, instead of playing without its watermark.
 * Fix      - Watch progress, completion, resume, milestones and lesson auto-complete keep recording past the first two minutes of a video.
 * Fix      - Videos added from the setup wizard or the Video block follow Settings > Default Protection Level instead of always being saved as Standard, so on a site whose default is not Standard they now play at that default.

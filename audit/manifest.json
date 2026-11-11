@@ -2775,9 +2775,15 @@
       "hook": "mediashield_library_file_in_use",
       "type": "filter",
       "file": "includes/Upload/LibraryFiles.php:311"
+    },
+    {
+      "hook": "mediashield_poster_rename_batch_size",
+      "type": "filter",
+      "file": "includes/CPT/Thumbnail.php:360"
     }
   ],
   "cron": [
+    "ms_rename_id_posters",
     "ms_protect_library_files",
     "ms_claim_uploaded_files",
     "ms_restore_archived_sessions",
@@ -2992,6 +2998,7 @@
       "admin_pages: SetupWizard's add_submenu_page (includes/Admin/SetupWizard.php) was missed; only Menu.php's add_menu_page was found. Patched in from ground truth.",
       "hooks_fired: multi-line apply_filters( \\n 'hook', ... ) calls are missed by write-manifest.mjs — mediashield_adaptive_platforms (Support/Platforms.php) and mediashield_player_overrides (Player/FeatureOverrides.php) were patched in from ground truth for 1.3.0. Re-check multi-line firings after every regeneration."
     ],
-    "delta_1_4_2": "Hand delta (Basecamp 10482094152): Upload\\LibraryFiles adds the one-off job ms_protect_library_files (option ms_library_files_pending, Migrator v8), filters mediashield_library_files_batch_size and mediashield_library_file_in_use, video meta _ms_library_file and _ms_library_restore (also on attachments), WP-CLI subcommand 'mediashield repair restore-library-files', and an admin notice (option ms_library_files_report, dismissed by ?ms_library_notice=dismiss with nonce). wp/v2 video meta addresses (_ms_source_url, _ms_platform_video_id, _ms_stream_url) now need edit_post on the video; playlist items source_url likewise. MEDIASHIELD_DB_VERSION 8."
+    "delta_1_4_2": "Hand delta (Basecamp 10482094152): Upload\\LibraryFiles adds the one-off job ms_protect_library_files (option ms_library_files_pending, Migrator v8), filters mediashield_library_files_batch_size and mediashield_library_file_in_use, video meta _ms_library_file and _ms_library_restore (also on attachments), WP-CLI subcommand 'mediashield repair restore-library-files', and an admin notice (option ms_library_files_report, dismissed by ?ms_library_notice=dismiss with nonce). wp/v2 video meta addresses (_ms_source_url, _ms_platform_video_id, _ms_stream_url) now need edit_post on the video; playlist items source_url likewise. MEDIASHIELD_DB_VERSION 8.",
+    "delta_1_4_2_posters": "Hand delta (Basecamp 10499285942): CPT\\Thumbnail adds the one-off job ms_rename_id_posters (option ms_poster_names_pending holds the last video ID checked, Migrator v10) and filter mediashield_poster_rename_batch_size; public helpers poster_filename(), sideload_poster() (the one platform-poster sideload, also called by Pro's YouTube/Vimeo/Wistia/Bunny imports), poster_url() (read path for every rendered poster) and carries_id(). MEDIASHIELD_DB_VERSION 10."
   }
 }

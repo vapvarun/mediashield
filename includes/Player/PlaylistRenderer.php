@@ -112,7 +112,7 @@ class PlaylistRenderer {
 		<div class="ms-playlist-items">
 			<?php
 			foreach ( $items as $idx => $item ) :
-				$thumb = get_the_post_thumbnail_url( (int) $item->video_id, 'medium' );
+				$thumb = \MediaShield\CPT\Thumbnail::poster_url( (int) $item->video_id, 'medium' );
 
 				?>
 				<div class="ms-playlist-item <?php echo esc_attr( 0 === $idx ? 'is-active' : '' ); ?>"
