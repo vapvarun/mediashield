@@ -76,8 +76,11 @@
 		}
 
 		// Split the text into lines no wider than maxW, breaking between the
-		// fields Pro joins with SEP; a part still too wide shrinks the font.
-		function layout(text, maxW, fontSize) {
+		// fields Pro joins with SEP. The font steps down until every line fits
+		// the width AND the block fits maxH, the room between the top chrome
+		// and the bottom chrome; otherwise a tall block on a short player was
+		// pushed up under the badge and speed button.
+		function layout(text, maxW, maxH, fontSize) {
 			var parts = text.split(SEP);
 			for (var size = fontSize; size >= 8; size--) {
 				ctx.font = size + 'px sans-serif';
@@ -94,10 +97,11 @@
 					if (ctx.measureText(line).width > maxW) fits = false;
 				}
 				lines.push(line);
-				if (fits || size === 8) {
+				var lineH = Math.round(size * 1.25);
+				if ((fits && lines.length * lineH <= maxH) || size === 8) {
 					var w = 0;
 					lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
-					return { lines: lines, size: size, width: Math.min(w, maxW) };
+					return { lines: lines, size: size, lineH: lineH, width: Math.min(w, maxW) };
 				}
 			}
 		}
@@ -130,12 +134,12 @@
 			if (!text) return;
 
 			var padding = isMobile ? 12 : 20;
-			var block = layout(text, canvas.width - 2 * padding, fontSize);
-			var lineH = Math.round(block.size * 1.25);
-			var blockH = lineH * block.lines.length;
 			var edge = insets(rect);
 			var top = Math.max(padding, edge.top);
 			var bottom = canvas.height - Math.max(padding, edge.bottom);
+			var block = layout(text, canvas.width - 2 * padding, bottom - top, fontSize);
+			var lineH = block.lineH;
+			var blockH = lineH * block.lines.length;
 
 			var pos = positions[currentPos % positions.length];
 			var x, y;
@@ -164,7 +168,9 @@
 					break;
 			}
 
-			// A player too short for the chrome insets keeps the text on canvas.
+			// A player too short for the block even at 8px (a ~270px player with
+			// every Pro field and a long email) keeps the text on canvas; it can
+			// then touch the chrome. ponytail: drop to fewer fields if that matters.
 			y = Math.max(0, Math.min(y, canvas.height - blockH));
 			ctx.textBaseline = 'top';
 			block.lines.forEach(function (l, i) {
