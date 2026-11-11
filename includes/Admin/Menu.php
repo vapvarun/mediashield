@@ -121,7 +121,7 @@ class Menu {
 				'siteUrl'           => home_url(),
 				'isProActive'       => defined( 'MEDIASHIELD_PRO_VERSION' ),
 				// The Videos list labels a video with no level of its own.
-				'defaultProtection' => \MediaShield\Core\Settings::get( 'ms_default_protection' ),
+				'defaultProtection' => \MediaShield\Player\Protection::default_level(),
 			)
 		);
 
