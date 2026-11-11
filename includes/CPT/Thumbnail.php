@@ -36,7 +36,7 @@ class Thumbnail {
 		// thumbnail logic (idempotent — guarded by has_post_thumbnail).
 		add_action( 'rest_after_insert_mediashield_video', array( __CLASS__, 'maybe_fetch_thumbnail_rest' ), 10, 1 );
 		// Runs first, so the thumbnail's attachment gets the real title too.
-		add_action( 'rest_after_insert_mediashield_video', array( __CLASS__, 'maybe_use_platform_title' ), 5, 1 );
+		add_action( 'rest_after_insert_mediashield_video', array( __CLASS__, 'maybe_use_platform_title' ), 5, 3 );
 	}
 
 	/**
@@ -47,9 +47,20 @@ class Thumbnail {
 	 * the owner typed is never overwritten. Platforms with no oEmbed (Bunny)
 	 * keep the placeholder.
 	 *
-	 * @param \WP_Post $post Post inserted or updated through REST.
+	 * At most one oEmbed request, on REST create only (bulk and import paths
+	 * use wp_insert_post and never get here). Discovery is off, so a URL with
+	 * no known provider sends nothing; the request uses the WordPress HTTP
+	 * timeout. A failed fetch keeps the placeholder.
+	 *
+	 * @param \WP_Post         $post     Post inserted or updated through REST.
+	 * @param \WP_REST_Request $request  Request (unused).
+	 * @param bool             $creating True on create, false on update.
 	 */
-	public static function maybe_use_platform_title( \WP_Post $post ): void {
+	public static function maybe_use_platform_title( \WP_Post $post, $request = null, $creating = true ): void {
+		if ( ! $creating ) {
+			return;
+		}
+
 		$platform = (string) get_post_meta( $post->ID, '_ms_platform', true );
 		$video_id = (string) get_post_meta( $post->ID, '_ms_platform_video_id', true );
 		$source   = (string) get_post_meta( $post->ID, '_ms_source_url', true );
@@ -61,7 +72,7 @@ class Thumbnail {
 			return;
 		}
 
-		$data  = _wp_oembed_get_object()->get_data( $source );
+		$data  = _wp_oembed_get_object()->get_data( $source, array( 'discover' => false ) );
 		$title = ( $data && ! empty( $data->title ) ) ? sanitize_text_field( (string) $data->title ) : '';
 		if ( '' === $title ) {
 			return;
