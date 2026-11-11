@@ -175,7 +175,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - A watermark opacity of 0 is drawn at 0 instead of 30%, so students see what the settings preview shows.
 * Fix      - The watermark is no longer hidden under the MediaShield badge, the speed button, the fullscreen button or the video's control bar.
 * Fix      - A long watermark wraps onto more lines, or gets smaller, to fit the player, so every field the owner chose is visible on phones.
-* Fix      - A guest's watermark shows their IP without a stray separator in front of it.
+* Fix      - A guest's watermark reads Guest and their IP, as documented, without a stray separator in front.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.

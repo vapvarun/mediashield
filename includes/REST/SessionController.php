@@ -294,7 +294,8 @@ class SessionController extends WP_REST_Controller {
 			array(
 				// WordPress stores the display name HTML-escaped ("Tom &amp; Jerry"),
 				// and the canvas paints text as is, so decode it (card 10497708826).
-				'text' => wp_specialchars_decode( wp_get_current_user()->display_name, ENT_QUOTES ),
+				// A guest has no name; the docs promise "Guest" plus the IP.
+				'text' => is_user_logged_in() ? wp_specialchars_decode( wp_get_current_user()->display_name, ENT_QUOTES ) : __( 'Guest', 'mediashield' ),
 				'ip'   => $ip,
 			)
 		);
