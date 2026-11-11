@@ -41,6 +41,7 @@ class Watermark {
 			'opacity'       => Settings::get( 'ms_watermark_opacity' ),
 			'color'         => Settings::get( 'ms_watermark_color' ),
 			'swap_interval' => Settings::get( 'ms_watermark_swap_interval' ),
+			'edges_only'    => Settings::get( 'ms_watermark_edges_only' ),
 			'show_badge'    => Settings::get( 'ms_show_badge' ),
 		);
 	}

@@ -1346,6 +1346,13 @@
 	white-space: nowrap;
 }
 
+/* "Keep the watermark at the edges": the preview shows a corner, below the badge. */
+.mediashield-settings__preview-watermark--edge {
+	inset-block-start: 40px;
+	inset-inline-start: auto;
+	inset-inline-end: var( --ms-space-3 );
+}
+
 .mediashield-settings__preview-button {
 	padding: var( --ms-space-2 ) var( --ms-space-5 );
 	border-radius: 4px;

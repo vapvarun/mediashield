@@ -283,23 +283,20 @@ class SessionController extends WP_REST_Controller {
 			);
 		}
 
-		// Build watermark config for the client.
-		$watermark_config = array(
-			// Read through Settings so the player gets the same defaults the
-			// Settings screen shows (it used its own 0.3 / 20 s fallbacks).
-			'enabled'       => (bool) \MediaShield\Core\Settings::get( 'ms_enabled' ),
-			'opacity'       => (float) \MediaShield\Core\Settings::get( 'ms_watermark_opacity' ),
-			'color'         => (string) \MediaShield\Core\Settings::get( 'ms_watermark_color' ),
-			'swap_interval' => (int) \MediaShield\Core\Settings::get( 'ms_watermark_swap_interval' ),
-			// Key is `text` (not `username`) to match what assets/js/watermark.js
-			// reads; otherwise the overlay renders the IP only on desktop and is
-			// blank on mobile. Pro's AdvancedConfig filter overwrites `text` when
-			// active. This response is the only place a viewer's name and IP are
-			// sent: the page config must stay cacheable.
-			// WordPress stores the display name HTML-escaped ("Tom &amp; Jerry"),
-			// and the canvas paints text as is, so decode it (card 10497708826).
-			'text'          => wp_specialchars_decode( wp_get_current_user()->display_name, ENT_QUOTES ),
-			'ip'            => $ip,
+		// Build watermark config for the client: the page's site-wide config
+		// (one source of settings and defaults), plus the viewer's own text
+		// and IP. Key is `text` (not `username`) to match what
+		// assets/js/watermark.js reads. Pro's AdvancedConfig filter overwrites
+		// `text` when active. This response is the only place a viewer's name
+		// and IP are sent: the page config must stay cacheable.
+		$watermark_config = array_merge(
+			\MediaShield\Player\Watermark::get_config(),
+			array(
+				// WordPress stores the display name HTML-escaped ("Tom &amp; Jerry"),
+				// and the canvas paints text as is, so decode it (card 10497708826).
+				'text' => wp_specialchars_decode( wp_get_current_user()->display_name, ENT_QUOTES ),
+				'ip'   => $ip,
+			)
 		);
 
 		/**

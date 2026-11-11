@@ -92,6 +92,11 @@ class Settings {
 				'default'  => 30,
 				'validate' => $min_int( 1 ),
 			),
+			// Off by default so existing sites keep the centre position.
+			'ms_watermark_edges_only'    => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
 
 			// Access.
 			'ms_allowed_domains'         => array(

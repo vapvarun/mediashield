@@ -319,7 +319,7 @@ const Settings = () => {
 						</span>
 					) }
 					<span
-						className="mediashield-settings__preview-watermark"
+						className={ 'mediashield-settings__preview-watermark' + ( settings?.ms_watermark_edges_only ? ' mediashield-settings__preview-watermark--edge' : '' ) }
 						style={ {
 							color: settings?.ms_watermark_color || '#ffffff',
 							opacity: settings?.ms_watermark_opacity ?? 0.5,
@@ -364,6 +364,13 @@ const Settings = () => {
 						updateSetting( 'ms_watermark_swap_interval', parseInt( val, 10 ) || 30 )
 					}
 					min={ 1 }
+					__nextHasNoMarginBottom
+				/>
+				<ToggleControl
+					label={ __( 'Keep the watermark at the edges', 'mediashield' ) }
+					help={ __( 'The watermark moves between the four corners only and never covers the middle of the video.', 'mediashield' ) }
+					checked={ !! settings?.ms_watermark_edges_only }
+					onChange={ ( val ) => updateSetting( 'ms_watermark_edges_only', val ) }
 					__nextHasNoMarginBottom
 				/>
 				<ToggleControl

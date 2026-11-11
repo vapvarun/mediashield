@@ -155,6 +155,7 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 Security release: self-hosted videos picked from the Media Library are now protected like uploaded ones.
 
+* New      - Watermark setting Keep the watermark at the edges moves the watermark between the four corners only, so it never covers the middle of the video. Off by default.
 * Improve  - Existing Media Library videos move to the protected folder in the background after the update, and playback keeps working throughout.
 * Improve  - A file also used elsewhere, such as in a post, an Elementor page, an ACF field, a widget or a Learnomy lesson, stays where it is, and a notice lists those videos with how to protect them.
 * Improve  - Deleting a video or uninstalling MediaShield puts a moved file back in its Media Library place instead of deleting it.

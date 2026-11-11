@@ -44,6 +44,10 @@
 
 		var ctx = canvas.getContext('2d');
 		var positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'];
+		// Owner option: keep the watermark off the middle of the lesson.
+		if (wmConfig.edges_only) {
+			positions.pop();
+		}
 		var currentPos = 0;
 		var SEP = ' · ';
 		var GAP = 8;

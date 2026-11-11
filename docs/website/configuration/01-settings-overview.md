@@ -43,6 +43,7 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Opacity | 0.5 | Watermark strength from 0 to 1. A decimal, not a percentage. |
 | Watermark Color | #ffffff | Colour of the watermark text, as a hex code. |
 | Position Swap Interval | 30 | Seconds before the watermark moves. Minimum 1. |
+| Keep the watermark at the edges | Off | The watermark uses the four corners only and never covers the middle of the video. |
 | Show MediaShield Badge | On | Small "Protected by MediaShield" label on the player. |
 | Allowed Domains | Empty | Sites allowed to embed your videos. Separate entries with commas, spaces or new lines, in any mix. A pasted web address is reduced to its domain. Empty allows any. See [Access Control](04-access-control.md). |
 | Max Concurrent Streams | 2 | Videos one account may watch at the same time. Minimum 1. |
