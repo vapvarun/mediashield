@@ -110,4 +110,40 @@ class AllowedDomainsTest extends WP_UnitTestCase {
 	public function test_empty_value_yields_no_domains(): void {
 		$this->assertSame( array(), $this->parse( "  \n\t " ) );
 	}
+
+	/**
+	 * Run the private domain check with a given Referer header.
+	 *
+	 * @param string $referer Referer header, '' for none.
+	 * @return bool Whether it allowed.
+	 */
+	private function domain_allows( string $referer ): bool {
+		if ( '' === $referer ) {
+			unset( $_SERVER['HTTP_REFERER'] );
+		} else {
+			$_SERVER['HTTP_REFERER'] = $referer;
+		}
+		$method = new ReflectionMethod( AccessControl::class, 'check_domain' );
+		$result = $method->invoke( null, 'partner-school.example' );
+		unset( $_SERVER['HTTP_REFERER'] );
+		return (bool) $result['allowed'];
+	}
+
+	/**
+	 * A student who opens their own lesson directly sends no Referer; the page
+	 * is this site, so Allowed Domains never blocks it (Basecamp 10499053739).
+	 */
+	public function test_own_lesson_opened_directly_is_allowed(): void {
+		$this->assertTrue( $this->domain_allows( '' ) );
+	}
+
+	/**
+	 * The whitelist still does its job for embeds on other sites.
+	 */
+	public function test_other_sites_are_still_checked(): void {
+		$this->assertTrue( $this->domain_allows( 'https://partner-school.example/course/' ), 'A listed site is allowed.' );
+		$this->assertTrue( $this->domain_allows( home_url( '/lesson/' ) ), 'This site is allowed.' );
+		$this->assertFalse( $this->domain_allows( 'https://hotlinker.example/page/' ), 'An unlisted site is refused.' );
+	}
 }
+
