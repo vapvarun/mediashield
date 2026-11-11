@@ -200,7 +200,7 @@ class Thumbnail {
 			'image/gif'  => 'gif',
 			'image/webp' => 'webp',
 		);
-		$ext = $ext_map[ $mime ] ?? 'jpg';
+		$ext     = $ext_map[ $mime ] ?? 'jpg';
 
 		// Never the platform video ID in the file name: the poster is shown to
 		// viewers who may not watch, and the ID of an unlisted video would get

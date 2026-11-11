@@ -354,7 +354,14 @@ class SessionController extends WP_REST_Controller {
 		$minute = intdiv( $now, MINUTE_IN_SECONDS );
 		$stored = get_transient( $key );
 		$count  = ( is_array( $stored ) && (int) ( $stored['minute'] ?? -1 ) === $minute ) ? (int) $stored['count'] + 1 : 1;
-		set_transient( $key, array( 'minute' => $minute, 'count' => $count ), 2 * MINUTE_IN_SECONDS );
+		set_transient(
+			$key,
+			array(
+				'minute' => $minute,
+				'count'  => $count,
+			),
+			2 * MINUTE_IN_SECONDS
+		);
 		return $count;
 	}
 
@@ -376,9 +383,9 @@ class SessionController extends WP_REST_Controller {
 		// Only a token we signed picks its own bucket. Anything else shares one
 		// bucket per caller, so a flood of made-up tokens is limited and writes
 		// one transient, not one per request.
-		$token    = (string) $request->get_param( 'token' );
-		$bucket   = SessionManager::validate_token( $token ) ? $token : 'invalid|' . ( get_current_user_id() ? get_current_user_id() : self::get_client_ip() );
-		$count = self::count_beat( $bucket, time() );
+		$token  = (string) $request->get_param( 'token' );
+		$bucket = SessionManager::validate_token( $token ) ? $token : 'invalid|' . ( get_current_user_id() ? get_current_user_id() : self::get_client_ip() );
+		$count  = self::count_beat( $bucket, time() );
 
 		if ( $count > 4 ) {
 			return new WP_Error(
