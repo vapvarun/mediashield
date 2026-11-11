@@ -346,7 +346,13 @@ class VideoPostType {
 						<progress id="ms-upload-progress" max="100" value="0" style="display:none;vertical-align:middle;"></progress>
 						<p id="ms-upload-status" class="description" role="status" aria-live="polite"></p>
 						<p class="description">
-							<?php esc_html_e( 'The file is stored on this site and played through a permission-checked URL, so the file path is never exposed. Large files are limited by your server’s upload size.', 'mediashield' ); ?>
+							<?php
+							if ( 'self_hosted' === \MediaShield\Upload\UploadManager::resolve_default_driver() ) {
+								esc_html_e( 'The file is stored on this site and played through a permission-checked URL, so the file path is never exposed. Large files are limited by your server’s upload size.', 'mediashield' );
+							} else {
+								esc_html_e( 'The file is sent to the Default Upload Target chosen in Settings and plays from there. Large files are limited by your server’s upload size.', 'mediashield' );
+							}
+							?>
 						</p>
 					</td>
 				</tr>

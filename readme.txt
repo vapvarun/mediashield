@@ -186,6 +186,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - A protected video whose watch session cannot start is stopped with a message, instead of playing without its watermark.
 * Fix      - An upload that gets an error page back, such as a 502, says the server could not be reached instead of Upload failed: 502.
 * Fix      - Signed HLS streams, such as Bunny with CDN token authentication, renew their address before it expires and after a long pause, so playback keeps its place instead of resetting to a blank player; if the renewal fails, the player says so and offers Try again.
+* Fix      - Uploads from Videos, Add New go to the Default Upload Target, such as Bunny Stream; they always went to this site.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.
