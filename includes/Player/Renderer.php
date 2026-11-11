@@ -388,6 +388,16 @@ class Renderer {
 				// The video's featured image: shown before a self-hosted video
 				// plays, and behind the login message, instead of a black box.
 				$poster = get_the_post_thumbnail_url( $video_id, 'large' );
+				// Posters saved before 1.4.2 are named after the platform video
+				// ID; a viewer who may not watch never gets one of those, since
+				// the ID of an unlisted video would get past Require login
+				// (Basecamp 10499285942). New posters carry no ID.
+				if ( $poster && $access_denied ) {
+					$raw_id = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+					if ( '' !== $raw_id && false !== stripos( wp_basename( (string) wp_parse_url( $poster, PHP_URL_PATH ) ), sanitize_file_name( $raw_id ) ) ) {
+						$poster = '';
+					}
+				}
 				if ( $poster ) :
 					?>
 					data-poster="<?php echo esc_url( $poster ); ?>"

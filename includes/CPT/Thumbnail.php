@@ -202,7 +202,11 @@ class Thumbnail {
 		);
 		$ext = $ext_map[ $mime ] ?? 'jpg';
 
-		$filename = sprintf( 'mediashield-%s-%s.%s', sanitize_key( $platform ), sanitize_file_name( $video_id ), $ext );
+		// Never the platform video ID in the file name: the poster is shown to
+		// viewers who may not watch, and the ID of an unlisted video would get
+		// past Require login (Basecamp 10499285942). A keyed hash stays stable
+		// per video without revealing it.
+		$filename = sprintf( 'mediashield-poster-%s.%s', substr( wp_hash( $platform . '|' . $video_id . '|' . $post_id ), 0, 12 ), $ext );
 
 		$file_array = array(
 			'name'     => $filename,
