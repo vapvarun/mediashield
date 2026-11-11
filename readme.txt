@@ -162,6 +162,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - Videos added from the setup wizard or the Video block follow Settings > Default Protection Level instead of always being saved as Standard, so on a site whose default is not Standard they now play at that default.
 * Fix      - The Videos list shows "Default" with the site's level, such as "Default (Standard)", for a video that follows the site default, instead of "None".
 * Fix      - The Video block's Protection Level list has a Site default choice, and the block preview in the editor shows the video's featured image.
+* Fix      - The LMS Integration upsell and the video screen no longer list Learnomy for lesson linking and auto-complete, which work with LearnDash, Tutor LMS and LifterLMS.
 * Fix      - A YouTube or Vimeo video pasted in the setup wizard or the Video block takes its real title instead of "youtube - VIDEO_ID".
 * Fix      - The watermark shows the member's name as written, so an ampersand in a name no longer shows as an HTML entity.
 * Fix      - On a site that never saved the watermark settings, the player uses the opacity and swap interval the Settings screen shows.

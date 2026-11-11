@@ -740,7 +740,7 @@ class VideoPostType {
 	public static function render_lms_teaser( \WP_Post $post ): void {
 		?>
 		<div class="ms-teaser-box">
-			<p><strong><?php esc_html_e( 'Link this video to a Learnomy, LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
+			<p><strong><?php esc_html_e( 'Link this video to a LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
 			<ul>
 				<li><?php esc_html_e( 'Auto-mark lesson complete on video finish', 'mediashield' ); ?></li>
 				<li><?php esc_html_e( 'Require course enrollment to watch', 'mediashield' ); ?></li>
