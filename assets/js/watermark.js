@@ -45,6 +45,58 @@
 		var ctx = canvas.getContext('2d');
 		var positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'];
 		var currentPos = 0;
+		var SEP = ' · ';
+		var GAP = 8;
+
+		// Player chrome sitting in the corners (badge top-left, speed top-right,
+		// fullscreen button bottom-right) and the browser's own control bar,
+		// which the DOM cannot measure. The watermark is drawn clear of them.
+		// ponytail: 64px covers the Chrome, Firefox and Safari bars; measure if one grows.
+		function insets(rect) {
+			var top = 0;
+			var bottom = 0;
+			el.querySelectorAll('.ms-badge, .ms-speed-control, .ms-fullscreen-btn').forEach(function (node) {
+				var r = node.getBoundingClientRect();
+				if (!r.height) return;
+				if (r.top - rect.top < rect.height / 2) {
+					top = Math.max(top, r.bottom - rect.top);
+				} else {
+					bottom = Math.max(bottom, rect.bottom - r.top);
+				}
+			});
+			var video = el.querySelector('video');
+			if (video && video.controls) {
+				bottom = Math.max(bottom, 64);
+			}
+			return { top: top + GAP, bottom: bottom + GAP };
+		}
+
+		// Split the text into lines no wider than maxW, breaking between the
+		// fields Pro joins with SEP; a part still too wide shrinks the font.
+		function layout(text, maxW, fontSize) {
+			var parts = text.split(SEP);
+			for (var size = fontSize; size >= 8; size--) {
+				ctx.font = size + 'px sans-serif';
+				var lines = [];
+				var line = '';
+				var fits = true;
+				for (var i = 0; i < parts.length; i++) {
+					var next = line ? line + SEP + parts[i] : parts[i];
+					if (line && ctx.measureText(next).width > maxW) {
+						lines.push(line);
+						next = parts[i];
+					}
+					line = next;
+					if (ctx.measureText(line).width > maxW) fits = false;
+				}
+				lines.push(line);
+				if (fits || size === 8) {
+					var w = 0;
+					lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
+					return { lines: lines, size: size, width: Math.min(w, maxW) };
+				}
+			}
+		}
 
 		function render() {
 			var rect = el.getBoundingClientRect();
@@ -59,7 +111,6 @@
 			var sizes = FONT_SIZES[ wmConfig.font_size ] || FONT_SIZES.medium;
 			var fontSize = sizes[ isMobile ? 1 : 0 ];
 
-			ctx.font = fontSize + 'px sans-serif';
 			// 0 is a valid opacity (the owner chose it); only a missing value
 			// falls back, to the Settings default.
 			var opacity = parseFloat(wmConfig.opacity);
@@ -69,15 +120,18 @@
 			// Build watermark text. Mobile: username only. Desktop: username + IP.
 			var text = wmConfig.text || '';
 			if (!isMobile && wmConfig.ip) {
-				text += ' \u00B7 ' + wmConfig.ip;
+				text += SEP + wmConfig.ip;
 			}
 
 			if (!text) return;
 
-			var metrics = ctx.measureText(text);
-			var textW = metrics.width;
-			var textH = fontSize;
-			var padding = 20;
+			var padding = isMobile ? 12 : 20;
+			var block = layout(text, canvas.width - 2 * padding, fontSize);
+			var lineH = Math.round(block.size * 1.25);
+			var blockH = lineH * block.lines.length;
+			var edge = insets(rect);
+			var top = Math.max(padding, edge.top);
+			var bottom = canvas.height - Math.max(padding, edge.bottom);
 
 			var pos = positions[currentPos % positions.length];
 			var x, y;
@@ -85,32 +139,39 @@
 			switch (pos) {
 				case 'top-left':
 					x = padding;
-					y = padding + textH;
+					y = top;
 					break;
 				case 'top-right':
-					x = canvas.width - textW - padding;
-					y = padding + textH;
+					x = canvas.width - block.width - padding;
+					y = top;
 					break;
 				case 'bottom-left':
 					x = padding;
-					y = canvas.height - padding;
+					y = bottom - blockH;
 					break;
 				case 'bottom-right':
-					x = canvas.width - textW - padding;
-					y = canvas.height - padding;
+					x = canvas.width - block.width - padding;
+					y = bottom - blockH;
 					break;
 				case 'center':
 				default:
-					x = (canvas.width - textW) / 2;
-					y = canvas.height / 2;
+					x = (canvas.width - block.width) / 2;
+					y = (canvas.height - blockH) / 2;
 					break;
 			}
 
-			ctx.fillText(text, x, y);
+			// A player too short for the chrome insets keeps the text on canvas.
+			y = Math.max(0, Math.min(y, canvas.height - blockH));
+			ctx.textBaseline = 'top';
+			block.lines.forEach(function (l, i) {
+				ctx.fillText(l, Math.max(padding, x), y + i * lineH);
+			});
 			ctx.globalAlpha = 1;
 		}
 
-		render();
+		// After every player-ready listener has run, so the badge exists and
+		// is measured.
+		setTimeout(render, 0);
 
 		// Position swap interval.
 		var swapMs = (parseInt(wmConfig.swap_interval, 10) || 30) * 1000;
