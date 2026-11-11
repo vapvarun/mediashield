@@ -452,8 +452,20 @@
 						url = data.url;
 						loadInto( url, resumeAt, wasPlaying, false !== afterError );
 						scheduleRefresh();
+						// A refresh that works clears what an earlier failed one said.
+						var stale = playerEl && playerEl.querySelector( '.ms-error-overlay' );
+						if ( stale ) stale.remove();
 					} )
 					.catch( function ( err ) {
+						// The early refresh runs while the address still plays:
+						// try again quietly until it expires, and only then say
+						// so. A retry is not a "refused right after a refresh".
+						if ( false === afterError && expiryOf( url ) * 1000 > Date.now() + 10000 ) {
+							lastRefreshAt = 0;
+							clearTimeout( refreshTimer );
+							refreshTimer = setTimeout( function () { refreshStream( true, false ); }, 10000 );
+							return;
+						}
 						if ( playerEl ) {
 							showErrorOverlay( playerEl, window.mediashieldRequest.message( err ), function () {
 								refreshStream( true );

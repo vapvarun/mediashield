@@ -25,7 +25,9 @@
 	};
 
 	var NETWORK_MESSAGE = __( 'The server could not be reached or did not answer properly. Check your connection and try again.', 'mediashield' );
-	var BROWSER_WORDS = /failed to fetch|load failed|networkerror|network request failed|unexpected token|not valid json|json\.parse|unexpected end of json/i;
+	// Whole phrases: Safari's "Load failed" must not match inside a server's
+	// own "Chunk upload failed with status 500.".
+	var BROWSER_WORDS = /failed to fetch|\bload failed|networkerror|network request failed|unexpected token|not valid json|json\.parse|unexpected end of json/i;
 
 	function isUnreachable( err ) {
 		if ( ! err ) {

@@ -41,8 +41,7 @@ These appear to developers and in the browser's network panel.
 | Code | Message | Meaning |
 |------|---------|---------|
 | `invalid_video_id` | Invalid video ID. | The ID is not a MediaShield video. |
-| `not_found` | Video not found. / Playlist not found. / Tag not found. | The item does not exist or was deleted. |
-| `unpublished` | Video is not available. | The video is not published. |
+| `not_found` | Video not found. / Playlist not found. / Tag not found. | The item does not exist, was deleted, or (for a video) is not published. An unpublished video answers exactly like a missing one, so its ID cannot be probed. |
 | `invalid_token` | Invalid session token. | The watch session expired or was altered. Reload the page. |
 | `not_self_hosted` | This endpoint only serves self-hosted videos. | The stream address was used for a platform video. |
 | `file_not_found` | Video file not found on disk. | The uploaded file was removed from `wp-content/uploads/mediashield/`. Upload it again. |

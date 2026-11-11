@@ -34,9 +34,9 @@ const DEBOUNCE_MS = 800;
  * The field keeps what is typed, so it can be emptied; only a whole number
  * inside min..max is saved. It used to save `parseInt( val ) || default` on
  * every keystroke, so emptying the field put the default back and typing 8
- * after it saved 308. A decimal point or exponent cannot be typed (1.5 used
- * to save 1), and a value outside the range says why it was not saved
- * instead of quietly going back on blur.
+ * after it saved 308. An exponent cannot be typed; a decimal such as 1.5,
+ * or a value outside the range, is not saved and the field says why instead
+ * of quietly going back on blur.
  *
  * @param {Object}   props          TextControl props.
  * @param {number}   props.value    Saved value.
@@ -69,8 +69,10 @@ const NumberField = ( { value, onCommit, min, max, help, ...props } ) => {
 				/* translators: 1: the value that was typed, 2: the rule it broke. */
 				? sprintf( __( '%1$s was not saved. %2$s', 'mediashield' ), refused, rule )
 				: help }
+			// A dot or comma is let through so "1.5" is refused with the rule
+			// below; swallowing it saved "15".
 			onKeyDown={ ( e ) => {
-				if ( [ '.', ',', 'e', 'E', '+' ].includes( e.key ) ) {
+				if ( [ 'e', 'E', '+' ].includes( e.key ) ) {
 					e.preventDefault();
 				}
 			} }

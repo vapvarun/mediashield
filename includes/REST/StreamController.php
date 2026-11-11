@@ -132,12 +132,11 @@ class StreamController extends WP_REST_Controller {
 	public function stream_url_permissions_check( WP_REST_Request $request ): bool|WP_Error {
 		// The same gates as the page render, in the same order: a real,
 		// published video first, then the viewer's access.
+		// An unpublished video answers exactly like an unknown id, so nobody can
+		// probe which ids are drafts (BC#10499264493).
 		$video = get_post( (int) $request->get_param( 'video_id' ) );
-		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
+		if ( ! $video || 'mediashield_video' !== $video->post_type || 'publish' !== $video->post_status ) {
 			return new WP_Error( 'mediashield_not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
-		}
-		if ( 'publish' !== $video->post_status ) {
-			return new WP_Error( 'mediashield_access_denied', __( 'This video is not published.', 'mediashield' ), array( 'status' => 403 ) );
 		}
 
 		$access = AccessControl::can_watch( (int) $video->ID, get_current_user_id() );
@@ -230,13 +229,10 @@ class StreamController extends WP_REST_Controller {
 		$video_id = (int) $request->get_param( 'video_id' );
 
 		// Verify the video exists and is a mediashield_video CPT.
+		// Unpublished answers like unknown, so a draft id cannot be probed.
 		$video = get_post( $video_id );
-		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
+		if ( ! $video || 'mediashield_video' !== $video->post_type || 'publish' !== $video->post_status ) {
 			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
-		}
-
-		if ( 'publish' !== $video->post_status ) {
-			return new WP_Error( 'unpublished', __( 'Video is not available.', 'mediashield' ), array( 'status' => 403 ) );
 		}
 
 		// Only self-hosted videos are served through this endpoint.

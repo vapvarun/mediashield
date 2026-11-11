@@ -85,13 +85,14 @@ class StreamRefreshAccessTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Fails before the fix: a draft video got a fresh address.
+	 * Fails before the fix: a draft video got a fresh address. Refused as not
+	 * found since BC#10499264493, the same answer as an unknown id.
 	 */
 	public function test_draft_video_is_refused(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		wp_update_post( array( 'ID' => $this->video, 'post_status' => 'draft' ) );
 
-		$this->assertSame( 403, $this->refresh( $this->video )->get_status() );
+		$this->assertSame( 404, $this->refresh( $this->video )->get_status() );
 	}
 
 	/**
@@ -103,5 +104,27 @@ class StreamRefreshAccessTest extends WP_UnitTestCase {
 
 		$this->assertSame( 404, $this->refresh( $post )->get_status() );
 		$this->assertSame( 404, $this->refresh( 999999 )->get_status() );
+	}
+
+	/**
+	 * A draft id answers exactly like an unknown id, so a guest cannot probe
+	 * which ids are unpublished videos (BC#10499264493). Fails before the fix:
+	 * a draft answered 403 "This video is not published." on the refresh, 403
+	 * on the stream and 403 on session start, an unknown id 404.
+	 */
+	public function test_a_draft_answers_like_an_unknown_id(): void {
+		update_option( 'ms_require_login', false );
+		wp_set_current_user( 0 );
+		$draft = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'draft' ) );
+		update_post_meta( $draft, '_ms_platform', 'self' );
+
+		foreach ( array( $draft, 999999 ) as $id ) {
+			$this->assertSame( 404, $this->refresh( $id )->get_status(), "refresh {$id}" );
+			$this->assertSame( 404, rest_do_request( new WP_REST_Request( 'GET', "/mediashield/v1/stream/{$id}" ) )->get_status(), "stream {$id}" );
+
+			$start = new WP_REST_Request( 'POST', '/mediashield/v1/session/start' );
+			$start->set_param( 'video_id', $id );
+			$this->assertSame( 404, rest_do_request( $start )->get_status(), "session start {$id}" );
+		}
 	}
 }

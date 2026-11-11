@@ -250,13 +250,10 @@ class SessionController extends WP_REST_Controller {
 			return new WP_Error( 'invalid_video_id', __( 'Invalid video ID.', 'mediashield' ), array( 'status' => 400 ) );
 		}
 
+		// Unpublished answers like unknown, so a draft id cannot be probed.
 		$video = get_post( $video_id );
-		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
+		if ( ! $video || 'mediashield_video' !== $video->post_type || 'publish' !== $video->post_status ) {
 			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
-		}
-
-		if ( 'publish' !== $video->post_status ) {
-			return new WP_Error( 'unpublished', __( 'Video is not available.', 'mediashield' ), array( 'status' => 403 ) );
 		}
 
 		// Access control check.

@@ -187,13 +187,13 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - A long watermark wraps onto more lines, or gets smaller, to fit the player, so every field the owner chose is visible on phones.
 * Fix      - A guest's watermark reads Guest and their IP, as documented, without a stray separator in front.
 * Fix      - Settings changed quickly one after another are all saved; before, only the last one was kept while the screen still said Settings saved. Saving... shows while a save is in progress, and leaving the screen straight after a change also saves it.
-* Fix      - Number settings such as Position Swap Interval take whole numbers only, can be cleared and retyped, and say why a value was not saved; before, an emptied field put its default back (typing 8 saved 308) and 1.5 quietly saved 1.
+* Fix      - Number settings such as Position Swap Interval take whole numbers only, can be cleared and retyped, and say why a value was not saved, a decimal such as 1.5 included; before, an emptied field put its default back (typing 8 saved 308) and 1.5 saved 15.
 * Fix      - A browser zoomed to 125% or more is no longer mistaken for open developer tools, so students are not flagged or paused for zooming.
 * Fix      - Erasing a member's personal data no longer reports that some data was not erased, and next to MediaShield Pro 1.4.1 it also removes their playback events and exports their activity alerts first.
 * Fix      - When the server cannot be reached or answers with an error page, MediaShield screens say so in one plain sentence instead of browser or parser errors: settings say Not saved and offer Retry, the Videos list offers Try again instead of showing 0 videos, and the setup wizard's first video no longer fails silently.
 * Fix      - A protected video whose watch session cannot start is stopped with a message, instead of playing without its watermark.
-* Fix      - An upload that gets an error page back, such as a 502, says the server could not be reached instead of Upload failed: 502.
-* Fix      - Signed HLS streams, such as Bunny with CDN token authentication, renew their address before it expires and after a long pause, so playback keeps its place instead of resetting to a blank player; if the renewal fails, the player says so and offers Try again.
+* Fix      - An upload that gets an error page back, such as a 502, says the server could not be reached instead of Upload failed: 502, and an upload the server refused shows the server's own reason, such as Chunk upload failed with status 500.
+* Fix      - Signed HLS streams, such as Bunny with CDN token authentication, renew their address before it expires and after a long pause, so playback keeps its place instead of resetting to a blank player; if a renewal fails while the video still plays, the player retries quietly, says so with Try again only when the address is about to run out, and clears that message as soon as a renewal works.
 * Fix      - Uploads from Videos, Add New go to the Default Upload Target, such as Bunny Stream; they always went to this site.
 * Fix      - Names and video titles with an ampersand or apostrophe show as written on the Viewers, Milestones and Dashboard screens instead of as HTML entities such as &amp;amp;.
 * Fix      - Activating MediaShield with WP-CLI or the Plugins screen's bulk Activate no longer jumps to the setup wizard on the next admin page you open.
@@ -202,6 +202,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.
 * Security - The player page no longer prints a self-hosted video's stored file name or a direct address into the protected folder.
 * Security - The stream address refresh only answers for a published MediaShield video, and gives exactly the address the page itself would show the viewer; it used to sign an address for any id the viewer could name.
+* Security - An unpublished video answers Video not found, exactly like an ID that does not exist, on the stream, stream refresh and session start, so visitors cannot discover which IDs are drafts.
 * Dev      - New command wp mediashield repair restore-library-files and new filter mediashield_library_file_in_use.
 * Dev      - New shared reader window.mediashieldRequest (message and readJSON) for request failures, and the bin/request-error-check.php guard in local CI.
 * Compat   - Aligned with MediaShield Pro 1.4.2. Install both updates together.
