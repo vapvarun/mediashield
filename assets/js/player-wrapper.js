@@ -283,7 +283,20 @@
 			video.autoplay = options.autoplay === true;
 			video.loop     = options.loop === true;
 			video.muted    = options.muted === true;
+			// The browser's own fullscreen shows the bare <video>, with no
+			// watermark. So: no native fullscreen button, a double-click
+			// fullscreens the player instead, and on iPhone (which ignores
+			// controlsList) the video plays inline and its native fullscreen
+			// is left at once. MediaShield's button keeps the watermark.
 			video.setAttribute( 'controlsList', 'nodownload nofullscreen noremoteplayback' );
+			video.setAttribute( 'playsinline', '' );
+			video.addEventListener( 'dblclick', function ( e ) {
+				e.preventDefault();
+				toggleFullscreen( target.closest( '.ms-protected-player' ) || target );
+			} );
+			video.addEventListener( 'webkitbeginfullscreen', function () {
+				if ( video.webkitExitFullscreen ) video.webkitExitFullscreen();
+			} );
 			video.preload = 'metadata';
 			if ( options.poster ) video.poster = options.poster;
 			video.style.width = '100%';
@@ -564,8 +577,12 @@
 	function toggleFullscreen( container ) {
 		if ( document.fullscreenElement ) {
 			document.exitFullscreen();
-		} else {
+		} else if ( container.requestFullscreen ) {
 			container.requestFullscreen().catch( function () {} );
+		} else {
+			// iPhone Safari can fullscreen only a <video>, which drops the
+			// watermark; fill the window with the player instead.
+			container.classList.toggle( 'ms-is-fullscreen' );
 		}
 	}
 
@@ -1238,10 +1255,18 @@
 			var container = btn ? btn.closest( '.ms-protected-player' ) : null;
 			if ( ! container ) return;
 
-			if ( document.fullscreenElement ) {
-				document.exitFullscreen();
-			} else {
-				container.requestFullscreen().catch( function () {} );
+			toggleFullscreen( container );
+		} );
+
+		// Last guard for any other way into native fullscreen (a browser that
+		// ignores controlsList, a context menu, another script): a bare
+		// protected <video> is never left fullscreen, because it shows no
+		// watermark. Swapping to the player is refused without a fresh user
+		// gesture, so it exits; the player's own button still works.
+		document.addEventListener( 'fullscreenchange', function () {
+			var fs = document.fullscreenElement;
+			if ( fs && 'VIDEO' === fs.tagName && fs.closest( '.ms-protected-player' ) ) {
+				document.exitFullscreen().catch( function () {} );
 			}
 		} );
 	}

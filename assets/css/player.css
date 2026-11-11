@@ -320,20 +320,33 @@ iframe.ms-player-target {
 }
 
 /* Fullscreen mode — container fills viewport, watermark stays on top */
-.ms-protected-player:fullscreen {
+.ms-protected-player:fullscreen,
+.ms-protected-player.ms-is-fullscreen {
 	width: 100vw;
 	height: 100vh;
 	background: var(--ms-player-bg);
 }
 
-.ms-protected-player:fullscreen .ms-player-target {
+/* iPhone has no element fullscreen: the player fills the window instead. */
+.ms-protected-player.ms-is-fullscreen {
+	position: fixed;
+	inset: 0;
+	z-index: 999999;
+	max-width: none;
+	margin: 0;
+}
+
+.ms-protected-player:fullscreen .ms-player-target,
+.ms-protected-player.ms-is-fullscreen .ms-player-target {
 	width: 100%;
 	height: 100%;
 	aspect-ratio: unset;
 }
 
 .ms-protected-player:fullscreen .ms-player-target iframe,
-.ms-protected-player:fullscreen .ms-player-target video {
+.ms-protected-player:fullscreen .ms-player-target video,
+.ms-protected-player.ms-is-fullscreen .ms-player-target iframe,
+.ms-protected-player.ms-is-fullscreen .ms-player-target video {
 	width: 100%;
 	height: 100%;
 	object-fit: contain;
@@ -341,17 +354,20 @@ iframe.ms-player-target {
 
 /* Vimeo's SDK (responsive: true) wraps its iframe in a div padded to 16:9;
    in fullscreen that pins the video to the top on non-16:9 screens. */
-.ms-protected-player:fullscreen .ms-player-target > div {
+.ms-protected-player:fullscreen .ms-player-target > div,
+.ms-protected-player.ms-is-fullscreen .ms-player-target > div {
 	padding: 0 !important;
 	height: 100%;
 }
 
-.ms-protected-player:fullscreen .ms-watermark-canvas {
+.ms-protected-player:fullscreen .ms-watermark-canvas,
+.ms-protected-player.ms-is-fullscreen .ms-watermark-canvas {
 	width: 100%;
 	height: 100%;
 }
 
-.ms-protected-player:fullscreen .ms-fullscreen-btn {
+.ms-protected-player:fullscreen .ms-fullscreen-btn,
+.ms-protected-player.ms-is-fullscreen .ms-fullscreen-btn {
 	bottom: 20px;
 	right: 20px;
 }

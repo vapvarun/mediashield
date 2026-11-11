@@ -68,10 +68,16 @@
 			});
 		}
 
-		// Add nodownload to video controls.
+		// Add nodownload and nofullscreen to the video controls, keeping the
+		// tokens already there. Replacing the list dropped the player's
+		// nofullscreen, and the browser's fullscreen shows no watermark.
 		var videos = el.querySelectorAll('video');
 		videos.forEach(function (video) {
-			video.setAttribute('controlsList', 'nodownload');
+			var tokens = (video.getAttribute('controlsList') || '').split(/\s+/).filter(Boolean);
+			['nodownload', 'nofullscreen'].forEach(function (t) {
+				if (tokens.indexOf(t) === -1) tokens.push(t);
+			});
+			video.setAttribute('controlsList', tokens.join(' '));
 
 			// Hide source: move src to data attribute, load via JS.
 			if (protConfig.hide_source !== false || isStrict) {
