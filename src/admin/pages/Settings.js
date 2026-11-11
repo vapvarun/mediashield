@@ -158,7 +158,7 @@ const Settings = () => {
 	const [ error, setError ] = useState( '' );
 	const debounceRef = useRef( null );
 
-	const { createSuccessNotice, createErrorNotice } = useDispatch( noticesStore );
+	const { createSuccessNotice, createErrorNotice, createInfoNotice } = useDispatch( noticesStore );
 
 	useEffect( () => {
 		let cancelled = false;
@@ -194,6 +194,10 @@ const Settings = () => {
 			if ( ! Object.keys( data ).length ) return;
 			pendingRef.current = {};
 
+			// One notice id: "Saving..." is replaced by Saved or by the error.
+			const notice = { type: 'snackbar', id: 'mediashield-autosave' };
+			createInfoNotice( __( 'Saving…', 'mediashield' ), notice );
+
 			apiFetch( {
 				url: `${ config.restUrl }settings`,
 				method: 'PUT',
@@ -205,18 +209,18 @@ const Settings = () => {
 				keepalive,
 			} )
 				.then( () => {
-					createSuccessNotice( __( 'Settings saved.', 'mediashield' ), { type: 'snackbar' } );
+					createSuccessNotice( __( 'Settings saved.', 'mediashield' ), notice );
 				} )
 				.catch( ( err ) => {
 					// Keep what failed for the next save, unless changed since.
 					pendingRef.current = { ...data, ...pendingRef.current };
 					createErrorNotice(
 						err.message || __( 'Failed to save.', 'mediashield' ),
-						{ type: 'snackbar' }
+						notice
 					);
 				} );
 		},
-		[ createSuccessNotice, createErrorNotice ]
+		[ createSuccessNotice, createErrorNotice, createInfoNotice ]
 	);
 
 	const saveField = useCallback(
