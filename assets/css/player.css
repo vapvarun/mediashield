@@ -101,7 +101,7 @@ iframe.ms-player-target {
 /* With that spacer gone, core's responsive-embed rule must not take the
    iframe out of flow either. The YouTube API makes the iframe the target
    itself, so absolute + height 100% here would leave the player zero tall. */
-.wp-block-embed .wp-block-embed__wrapper .ms-protected-player iframe.ms-player-target {
+.wp-block-embed .wp-block-embed__wrapper .ms-protected-player:not(:fullscreen) iframe.ms-player-target {
 	position: relative;
 	height: auto;
 }
@@ -337,6 +337,13 @@ iframe.ms-player-target {
 	width: 100%;
 	height: 100%;
 	object-fit: contain;
+}
+
+/* Vimeo's SDK (responsive: true) wraps its iframe in a div padded to 16:9;
+   in fullscreen that pins the video to the top on non-16:9 screens. */
+.ms-protected-player:fullscreen .ms-player-target > div {
+	padding: 0 !important;
+	height: 100%;
 }
 
 .ms-protected-player:fullscreen .ms-watermark-canvas {
