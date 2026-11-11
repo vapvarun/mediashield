@@ -151,7 +151,8 @@
 			uploadMsg.textContent = '';
 		} );
 
-		uploadBtn.addEventListener( 'click', function () {
+		// done (optional) runs only after a successful upload.
+		var startUpload = function ( done ) {
 			if ( ! fileField.files.length ) {
 				return;
 			}
@@ -234,6 +235,13 @@
 				}
 
 				uploadMsg.textContent = labels.uploadDone || 'Uploaded.';
+				// The file is stored now; clear it so a later save does not
+				// upload it a second time.
+				fileField.value = '';
+				uploadBtn.disabled = true;
+				if ( done ) {
+					done();
+				}
 			} );
 
 			xhr.addEventListener( 'error', function () {
@@ -242,7 +250,36 @@
 			} );
 
 			xhr.send( form );
+		};
+
+		uploadBtn.addEventListener( 'click', function () {
+			startUpload( null );
 		} );
+
+		// Pressing Publish or Update with a file chosen but not uploaded used to
+		// save an empty video with no warning. Upload first, then save with the
+		// same button the owner pressed.
+		var postForm = fileField.form;
+		if ( postForm ) {
+			postForm.addEventListener( 'submit', function ( e ) {
+				if ( ! fileField.files.length ) {
+					return;
+				}
+				e.preventDefault();
+				if ( fileField.disabled ) {
+					// Already uploading; saving now would store an empty video.
+					return;
+				}
+				var submitter = e.submitter || null;
+				startUpload( function () {
+					if ( postForm.requestSubmit ) {
+						postForm.requestSubmit( submitter );
+					} else {
+						postForm.submit();
+					}
+				} );
+			} );
+		}
 	}
 
 	// 2) Copy-to-clipboard buttons (replaces inline onclick + script).
