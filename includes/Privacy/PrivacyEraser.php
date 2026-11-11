@@ -275,7 +275,7 @@ class PrivacyEraser {
 		);
 
 		if ( $video_ids && $cache === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $cache ) ) ) {
-			$wpdb->query( "DELETE FROM {$cache} WHERE video_id IN (" . implode( ',', $video_ids ) . ')' );
+			$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE video_id IN (' . implode( ',', array_fill( 0, count( $video_ids ), '%d' ) ) . ')', $cache, ...$video_ids ) );
 		}
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 

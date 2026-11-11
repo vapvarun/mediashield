@@ -290,7 +290,8 @@ class AnalyticsController extends WP_REST_Controller {
 		$sessions = "{$wpdb->prefix}ms_watch_sessions";
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$stats = $wpdb->get_row(
+		$played = SessionManager::played_sql(); // Constant SQL fragment, no input.
+		$stats  = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT
 				COUNT(*) AS total_sessions,
@@ -299,7 +300,7 @@ class AnalyticsController extends WP_REST_Controller {
 				SUM(total_seconds) AS total_watch_time,
 				MAX(last_heartbeat) AS last_watched
 			 FROM {$sessions}
-			 WHERE video_id = %d AND " . SessionManager::played_sql(),
+			 WHERE video_id = %d AND {$played}",
 				$video_id
 			)
 		);
