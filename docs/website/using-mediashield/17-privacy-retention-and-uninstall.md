@@ -23,7 +23,7 @@ For each watch session: user ID, video ID, IP address, browser details, device t
 ## Erase one person's data
 
 1. Go to **Tools > Erase Personal Data** and confirm the request.
-2. MediaShield clears the IP address and browser details on their sessions, in the live table and the archive. The session rows remain without that detail so your totals stay correct. Milestone records and earned tags are deleted.
+2. MediaShield anonymizes their sessions, in the live table and the archive: the IP address and browser details are cleared and the session is no longer linked to their account. The session rows remain so your totals stay correct, and they count as guest views from then on. Milestone records and earned tags are deleted.
 
 ## Keep or move old history
 

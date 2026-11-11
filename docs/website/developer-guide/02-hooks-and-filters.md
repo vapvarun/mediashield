@@ -146,7 +146,7 @@ Fires while rendering a player whose platform needs adaptive streaming (self-hos
 
 ### mediashield_privacy_before_erase
 
-Fires before MediaShield's GDPR eraser deletes or anonymizes rows for a given email. Use to roll your own removals into the GDPR receipt.
+Fires before MediaShield's GDPR eraser deletes or anonymizes rows for a given email. Use to roll your own removals into the GDPR receipt. The person's watch sessions still carry their user ID at this point; the eraser sets it to 0 afterwards, so remove anything you find through those sessions here.
 
 **Parameters:** `$email` (string), `$user` (WP_User or false), `$page` (int), `$counters` (stdClass, passed by reference)
 

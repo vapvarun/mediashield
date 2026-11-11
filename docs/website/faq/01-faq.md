@@ -99,7 +99,7 @@ Their streams stop immediately. To stop them starting new ones, change what they
 
 **Does MediaShield work with GDPR requests?**
 
-It supports them. MediaShield registers with WordPress's built-in privacy tools. Personal Data Export returns all watch sessions, milestones, and earned milestone tags for a user. Personal Data Erasure anonymizes IP addresses and user agents in watch sessions (the sessions themselves are kept for aggregate analytics), and deletes milestone records and the user's earned-tag data.
+It supports them. MediaShield registers with WordPress's built-in privacy tools. Personal Data Export returns all watch sessions, milestones, and earned milestone tags for a user. Personal Data Erasure anonymizes watch sessions: it clears the IP address and user agent and unlinks each session from the account (the sessions themselves are kept for aggregate analytics), and deletes milestone records and the user's earned-tag data.
 
 **What data does MediaShield collect?**
 

@@ -125,7 +125,7 @@ No. MediaShield only loads its CSS and JavaScript on pages that contain video co
 
 = Is it GDPR compliant? =
 
-Yes. MediaShield registers personal data exporters and erasers with the WordPress privacy tools. Watch session PII (IP address, user agent) is anonymized during erasure while aggregate analytics are retained. Archived sessions are covered too, in both the export and the erasure.
+Yes. MediaShield registers personal data exporters and erasers with the WordPress privacy tools. Erasure anonymizes watch sessions: the IP address and user agent are cleared and each session is unlinked from the account, while aggregate analytics are retained. Archived sessions are covered too, in both the export and the erasure.
 
 = Can I customize the access control logic? =
 

@@ -2,7 +2,7 @@
 /**
  * GDPR Personal Data Eraser.
  *
- * Anonymizes watch sessions, removes milestones, milestone-earned tag
+ * Anonymises watch sessions (no IP, no browser string, user_id 0), removes milestones, milestone-earned tag
  * records, and (when Pro is active) activity alerts for a given user email
  * via the WordPress privacy erasure system.
  *
@@ -83,12 +83,17 @@ class PrivacyEraser {
 		do_action( 'mediashield_privacy_before_erase', $email, $user, $page, $counters );
 
 		if ( $user ) {
-			// Anonymize watch sessions (keep aggregate data, remove PII).
+			// Anonymise watch sessions: the rows stay for the owner's totals, but
+			// with no IP, no browser string and user_id 0 they no longer point
+			// at the person (owner decision 2026-11-11, card 10488481105).
+			// Pro removes its session-linked rows (playback events) through
+			// mediashield_privacy_before_erase above, while user_id still
+			// matches.
 			$sessions_table = "{$wpdb->prefix}ms_watch_sessions";
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table queries for GDPR erasure.
 			$sessions_updated = (int) $wpdb->query(
 				$wpdb->prepare(
-					"UPDATE {$sessions_table} SET ip_address = '', user_agent = '' WHERE user_id = %d AND ( ip_address != '' OR user_agent != '' )",
+					"UPDATE {$sessions_table} SET user_id = 0, ip_address = '', user_agent = '' WHERE user_id = %d",
 					$user->ID
 				)
 			);
@@ -115,32 +120,18 @@ class PrivacyEraser {
 			);
 
 			$archived_updated = 0;
-			$archived_total   = 0;
 			if ( $archive_exists ) {
 				$archived_updated = (int) $wpdb->query(
 					$wpdb->prepare(
-						"UPDATE {$archive_table} SET ip_address = '', user_agent = '' WHERE user_id = %d AND ( ip_address != '' OR user_agent != '' )",
+						"UPDATE {$archive_table} SET user_id = 0, ip_address = '', user_agent = '' WHERE user_id = %d",
 						$user->ID
 					)
 				);
 				$items_removed   += $archived_updated;
-
-				$archived_total = (int) $wpdb->get_var(
-					$wpdb->prepare(
-						"SELECT COUNT(*) FROM {$archive_table} WHERE user_id = %d",
-						$user->ID
-					)
-				);
 			}
 
-			// Sessions themselves are retained (anonymized, not deleted) for aggregate analytics.
-			$total_sessions  = (int) $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$sessions_table} WHERE user_id = %d",
-					$user->ID
-				)
-			);
-			$items_retained += $total_sessions + $archived_total;
+			// The anonymised sessions are kept (not deleted) for the totals.
+			$items_retained += $sessions_updated + $archived_updated;
 
 			// Remove milestone rows (the per-user reached_at timestamps for
 			// 25/50/75/100% completion). Built on the Free side by the

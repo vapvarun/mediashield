@@ -225,4 +225,29 @@ class RetentionAndPrivacyTest extends WP_UnitTestCase {
 
 		$this->assertSame( 0, $remaining, 'Archived personal data must be erased too.' );
 	}
+
+	/**
+	 * Card 10488481105 (owner decision 2026-11-11): an erased member's
+	 * sessions stay for the totals but no longer point at the member.
+	 */
+	public function test_erasure_unlinks_sessions_from_the_member(): void {
+		global $wpdb;
+
+		$user  = self::factory()->user->create( array( 'user_email' => 'unlink@example.test' ) );
+		$other = self::factory()->user->create();
+
+		$this->insert_session( $this->sessions, $user, gmdate( 'Y-m-d H:i:s' ), 'unlink-live' );
+		$this->insert_session( $this->archive, $user, '2019-01-01 00:00:00', 'unlink-archived' );
+		$this->insert_session( $this->sessions, $other, gmdate( 'Y-m-d H:i:s' ), 'unlink-other' );
+
+		$result = PrivacyEraser::erase( 'unlink@example.test', 1 );
+
+		foreach ( array( $this->sessions, $this->archive ) as $table ) {
+			$this->assertSame( 0, (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE user_id = %d", $user ) ), "{$table} still points at the member." );
+		}
+		$this->assertSame( 1, $this->count_rows( $this->sessions, 'unlink-live' ), 'The session is kept for the totals.' );
+		$this->assertSame( '60', (string) $wpdb->get_var( "SELECT total_seconds FROM {$this->sessions} WHERE session_token = 'unlink-live'" ) );
+		$this->assertSame( (string) $other, (string) $wpdb->get_var( "SELECT user_id FROM {$this->sessions} WHERE session_token = 'unlink-other'" ), 'Another member is untouched.' );
+		$this->assertSame( 2, $result['items_retained'], 'Both kept sessions are reported as retained.' );
+	}
 }
