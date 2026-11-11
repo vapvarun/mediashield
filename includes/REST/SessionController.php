@@ -335,19 +335,27 @@ class SessionController extends WP_REST_Controller {
 	}
 
 	/**
-	 * The heartbeat rate-limit key for a caller in the current clock minute.
+	 * Count one heartbeat for a caller in the current clock minute.
 	 *
 	 * Counting per clock minute, not "60 seconds since the last beat": setting
 	 * the expiry on every beat meant a session beating every 30 seconds never
 	 * left its window, so beat 5 was refused and progress stopped about two
-	 * minutes into every video (Basecamp 10499263338).
+	 * minutes into every video (Basecamp 10499263338). One transient per
+	 * caller holds the minute and its count, so a site without an object
+	 * cache keeps one row per session, not one per session per minute
+	 * (Basecamp 10499594171).
 	 *
 	 * @param string $bucket The caller's bucket (session token or caller id).
 	 * @param int    $now    Unix time.
-	 * @return string Transient key.
+	 * @return int Beats counted in this minute, including this one.
 	 */
-	private static function rate_key( string $bucket, int $now ): string {
-		return 'ms_rate_' . hash( 'sha256', $bucket . '|' . intdiv( $now, MINUTE_IN_SECONDS ) );
+	private static function count_beat( string $bucket, int $now ): int {
+		$key    = 'ms_rate_' . hash( 'sha256', $bucket );
+		$minute = intdiv( $now, MINUTE_IN_SECONDS );
+		$stored = get_transient( $key );
+		$count  = ( is_array( $stored ) && (int) ( $stored['minute'] ?? -1 ) === $minute ) ? (int) $stored['count'] + 1 : 1;
+		set_transient( $key, array( 'minute' => $minute, 'count' => $count ), 2 * MINUTE_IN_SECONDS );
+		return $count;
 	}
 
 	/**
@@ -370,10 +378,7 @@ class SessionController extends WP_REST_Controller {
 		// one transient, not one per request.
 		$token    = (string) $request->get_param( 'token' );
 		$bucket   = SessionManager::validate_token( $token ) ? $token : 'invalid|' . ( get_current_user_id() ? get_current_user_id() : self::get_client_ip() );
-		$rate_key = self::rate_key( $bucket, time() );
-		$count    = (int) get_transient( $rate_key );
-		++$count;
-		set_transient( $rate_key, $count, 2 * MINUTE_IN_SECONDS );
+		$count = self::count_beat( $bucket, time() );
 
 		if ( $count > 4 ) {
 			return new WP_Error(

@@ -94,31 +94,30 @@ class HeartbeatRateLimitTest extends WP_UnitTestCase {
 	 */
 	/**
 	 * A session beating every 30 seconds keeps recording progress (Basecamp
-	 * 10499263338). The window is a clock minute; the old code reset a
-	 * 60-second expiry on every beat, so the window never closed and beat 5
-	 * was refused about two minutes into every video. Each beat here starts a
-	 * fresh window, as it does once a minute has passed.
+	 * 10499263338), and keeps one stored row, not one per minute (Basecamp
+	 * 10499594171). The window is a clock minute; the old code reset a
+	 * 60-second expiry on every beat, so beat 5 was refused about two minutes
+	 * into every video.
 	 */
 	public function test_beats_across_minutes_are_never_refused(): void {
-		$user = self::factory()->user->create();
-		wp_set_current_user( $user );
-		$video   = self::factory()->post->create(
-			array(
-				'post_type'   => 'mediashield_video',
-				'post_status' => 'publish',
-			)
-		);
-		$session = SessionManager::start( $video, $user, '203.0.113.6', 'UA' );
-		$key     = new \ReflectionMethod( \MediaShield\REST\SessionController::class, 'rate_key' );
+		global $wpdb;
+		$count = new \ReflectionMethod( \MediaShield\REST\SessionController::class, 'count_beat' );
+		$start = 1700000000 - ( 1700000000 % 60 );
+		$rows  = static fn(): int => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '\\_transient\\_ms\\_rate\\_%'" );
+		$before = $rows();
 
-		for ( $i = 0; $i < 10; $i++ ) {
-			delete_transient( $key->invoke( null, $session['session_token'], time() ) );
-			$this->assertNotSame( 429, $this->beat( $session['session_token'] ), "Beat {$i} in a new minute." );
+		// Thirty minutes of beats every 30 s: never more than 2 in one minute.
+		for ( $beat = 0; $beat < 60; $beat++ ) {
+			$this->assertLessThanOrEqual( 4, $count->invoke( null, 'session-a', $start + 30 * $beat ), "Beat {$beat} stays under the limit." );
 		}
+		$this->assertLessThanOrEqual( $before + 1, $rows(), 'One stored row for the whole session.' );
 
-		$now = 1700000000 - ( 1700000000 % 60 );
-		$this->assertSame( $key->invoke( null, 'b', $now ), $key->invoke( null, 'b', $now + 30 ), 'Beats within one minute share a window.' );
-		$this->assertNotSame( $key->invoke( null, 'b', $now ), $key->invoke( null, 'b', $now + 60 ), 'The next minute is a new window.' );
+		// A flood inside one minute is still refused from the 5th.
+		$n = 0;
+		for ( $i = 0; $i < 5; $i++ ) {
+			$n = $count->invoke( null, 'session-b', $start + 3 );
+		}
+		$this->assertSame( 5, $n, 'The 5th beat in one minute is counted as the 5th, so it is refused.' );
 	}
 
 	public function test_a_flood_of_invalid_tokens_is_limited(): void {
