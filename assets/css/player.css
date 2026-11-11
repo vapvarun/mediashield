@@ -176,6 +176,25 @@ iframe.ms-player-target {
 	margin: 0;
 }
 
+/* Retry on a failure that may pass (dropped connection, expired stream). */
+.ms-error-retry {
+	margin-block-start: var(--ms-space-4);
+	min-height: var(--ms-tap-min);
+	padding: 0 var(--ms-space-5);
+	border: 0;
+	border-radius: var(--ms-radius-sm);
+	background: var(--ms-accent);
+	color: var(--ms-on-overlay);
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.ms-error-retry:hover,
+.ms-error-retry:focus-visible {
+	background: var(--ms-accent-hover);
+}
+
 /* Login overlay */
 .ms-login-overlay {
 	position: absolute;

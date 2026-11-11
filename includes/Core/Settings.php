@@ -456,6 +456,7 @@ class Settings {
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL
 				// produces. Without it the viewer just stares at a dead player.
+				'retry'           => __( 'Try again', 'mediashield' ),
 				'loadFailed'      => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
 				'concurrentLimit' => __( 'Too many active streams. Please close another video first.', 'mediashield' ),
 				'playlistFailed'  => __( 'This video could not be loaded. Please try again.', 'mediashield' ),

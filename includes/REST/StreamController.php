@@ -145,7 +145,22 @@ class StreamController extends WP_REST_Controller {
 	 */
 	public function stream_url( WP_REST_Request $request ): WP_REST_Response {
 		$video_id = (int) $request->get_param( 'video_id' );
-		return rest_ensure_response( array( 'url' => self::signed_url( $video_id, get_current_user_id() ) ) );
+		$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
+		$stored   = (string) get_post_meta( $video_id, '_ms_stream_url', true );
+
+		// A self-hosted file plays through our own signed /stream URL.
+		if ( ( '' === $platform || \MediaShield\Support\Platforms::SELF_HOSTED === $platform ) && '' === $stored ) {
+			return rest_ensure_response( array( 'url' => self::signed_url( $video_id, get_current_user_id() ) ) );
+		}
+
+		// Anything else (Pro's signed Bunny HLS) is minted fresh through the
+		// same filter the page render uses, so an expired address can be
+		// replaced mid-playback.
+		return rest_ensure_response(
+			array(
+				'url' => \MediaShield\Player\Renderer::stream_url( $video_id, $platform, (string) get_post_meta( $video_id, '_ms_platform_video_id', true ), $stored ),
+			)
+		);
 	}
 
 	/**

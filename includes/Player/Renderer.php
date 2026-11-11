@@ -111,6 +111,40 @@ class Renderer {
 	}
 
 	/**
+	 * The direct stream URL a player should load for a video.
+	 *
+	 * One place for the page render and for /stream/{id}/url, which a player
+	 * calls when a signed address expires mid-playback (BC#10497708913).
+	 *
+	 * @param int    $video_id          Video CPT post ID.
+	 * @param string $platform          Platform slug.
+	 * @param string $platform_video_id Provider id / GUID.
+	 * @param string $stored            Stored `_ms_stream_url`, usually empty.
+	 * @return string
+	 */
+	public static function stream_url( int $video_id, string $platform, string $platform_video_id, string $stored ): string {
+		/**
+		 * Filter the direct stream URL for a video.
+		 *
+		 * A stream URL is what lets MediaShield play the video in a real
+		 * <video> element instead of an opaque provider iframe, which is the
+		 * difference between having a controllable player (watermark, speed,
+		 * accurate progress, in-video ad breaks) and not. Platform integrations
+		 * that can derive one — Pro knows each Bunny library's pull zone, so it
+		 * can build the HLS playlist URL from the video GUID — supply it here
+		 * for videos that were imported before the URL was recorded.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param string $stream_url        Stored stream URL, usually empty.
+		 * @param int    $video_id          Video CPT post ID.
+		 * @param string $platform          Platform slug (self, bunny, youtube…).
+		 * @param string $platform_video_id Provider-side video id / GUID.
+		 */
+		return (string) apply_filters( 'mediashield_video_stream_url', $stored, $video_id, $platform, $platform_video_id );
+	}
+
+	/**
 	 * Render the protected player container for a video CPT.
 	 *
 	 * @param int    $video_id        Video CPT post ID.
@@ -146,25 +180,7 @@ class Renderer {
 		$source_url        = get_post_meta( $video_id, '_ms_source_url', true );
 		$stream_url        = get_post_meta( $video_id, '_ms_stream_url', true );
 
-		/**
-		 * Filter the direct stream URL for a video.
-		 *
-		 * A stream URL is what lets MediaShield play the video in a real
-		 * <video> element instead of an opaque provider iframe, which is the
-		 * difference between having a controllable player (watermark, speed,
-		 * accurate progress, in-video ad breaks) and not. Platform integrations
-		 * that can derive one — Pro knows each Bunny library's pull zone, so it
-		 * can build the HLS playlist URL from the video GUID — supply it here
-		 * for videos that were imported before the URL was recorded.
-		 *
-		 * @since 1.2.0
-		 *
-		 * @param string $stream_url        Stored stream URL, usually empty.
-		 * @param int    $video_id          Video CPT post ID.
-		 * @param string $platform          Platform slug (self, bunny, youtube…).
-		 * @param string $platform_video_id Provider-side video id / GUID.
-		 */
-		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
+		$stream_url = self::stream_url( $video_id, (string) $platform, (string) $platform_video_id, (string) $stream_url );
 
 		// Per-video override, then the owner's global default, then 'standard'.
 		// Shared with PlayerWrapper so the auto-wrap path cannot resolve this
