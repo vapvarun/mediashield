@@ -169,10 +169,22 @@ class AccessControl {
 			// (bookmark, email, typed, the redirect after login), and a REST
 			// call from a logged-in member carries a nonce only this site's
 			// pages hand out. Neither can be a page elsewhere, so the site's
-			// own students are never blocked (Basecamp 10499053739). A
-			// guest's player request with no Referer still needs the filter.
+			// own students are never blocked (Basecamp 10499053739). A page
+			// framed elsewhere, and a guest's player request with no Referer,
+			// are still refused unless the filter opts in.
+			// Sec-Fetch-* are set by the browser and cannot be removed by the
+			// page doing the framing, so a lesson framed on another site with
+			// referrerpolicy=no-referrer is still told apart from a direct
+			// visit. A browser too old to send them is treated as a direct
+			// visit, so students are never blocked.
+			$dest    = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ) ) : '';
+			$site    = isset( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ) ) : '';
+			$framed  = in_array( $dest, array( 'iframe', 'frame', 'embed', 'object' ), true );
 			$is_rest = defined( 'REST_REQUEST' ) && REST_REQUEST;
-			if ( ( ! $is_rest && ! wp_doing_ajax() ) || ( $is_rest && is_user_logged_in() ) ) {
+			if ( ! $framed && ! $is_rest && ! wp_doing_ajax() ) {
+				return self::allow();
+			}
+			if ( $is_rest && is_user_logged_in() && 'cross-site' !== $site ) {
 				return self::allow();
 			}
 

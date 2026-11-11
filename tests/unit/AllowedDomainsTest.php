@@ -140,6 +140,28 @@ class AllowedDomainsTest extends WP_UnitTestCase {
 	/**
 	 * The whitelist still does its job for embeds on other sites.
 	 */
+	public function test_a_lesson_framed_elsewhere_without_referer_is_refused(): void {
+		$_SERVER['HTTP_SEC_FETCH_DEST'] = 'iframe';
+		$_SERVER['HTTP_SEC_FETCH_SITE'] = 'cross-site';
+		$allowed = $this->domain_allows( '' );
+		unset( $_SERVER['HTTP_SEC_FETCH_DEST'], $_SERVER['HTTP_SEC_FETCH_SITE'] );
+		$this->assertFalse( $allowed, 'A lesson framed on another site with no Referer stays refused.' );
+	}
+
+	/**
+	 * A direct visit, as browsers report it, passes.
+	 */
+	public function test_a_direct_visit_reported_by_the_browser_is_allowed(): void {
+		$_SERVER['HTTP_SEC_FETCH_DEST'] = 'document';
+		$_SERVER['HTTP_SEC_FETCH_SITE'] = 'none';
+		$allowed = $this->domain_allows( '' );
+		unset( $_SERVER['HTTP_SEC_FETCH_DEST'], $_SERVER['HTTP_SEC_FETCH_SITE'] );
+		$this->assertTrue( $allowed );
+	}
+
+	/**
+	 * The whitelist still does its job for embeds on other sites.
+	 */
 	public function test_other_sites_are_still_checked(): void {
 		$this->assertTrue( $this->domain_allows( 'https://partner-school.example/course/' ), 'A listed site is allowed.' );
 		$this->assertTrue( $this->domain_allows( home_url( '/lesson/' ) ), 'This site is allowed.' );
