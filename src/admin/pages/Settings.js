@@ -429,7 +429,7 @@ const Settings = () => {
 				/>
 				<ToggleControl
 					label={ __( 'Keep the watermark at the edges', 'mediashield' ) }
-					help={ __( 'The watermark moves between the four corners only and never covers the middle of the video.', 'mediashield' ) }
+					help={ __( 'Keeps the watermark in the corners, off the centre of the video.', 'mediashield' ) }
 					checked={ !! settings?.ms_watermark_edges_only }
 					onChange={ ( val ) => updateSetting( 'ms_watermark_edges_only', val ) }
 					__nextHasNoMarginBottom

@@ -29,7 +29,7 @@ Go to **MediaShield > Settings > Watermark**:
 
 **Position Swap Interval** - How many seconds the watermark stays in one position. Default is 30. Shorter intervals (10-15 seconds) make the watermark harder to crop out of a recording because it covers more of the frame over time.
 
-**Keep the watermark at the edges** - Off by default. When on, the watermark moves between the four corners only and never covers the middle of the video, which suits lessons where the centre of the frame matters.
+**Keep the watermark at the edges** - Off by default. When on, the watermark moves between the corners only, off the centre of the video, which suits lessons where the centre of the frame matters. On a short player, such as a phone, a long watermark can still reach towards the middle.
 
 ## How the watermark works technically
 
