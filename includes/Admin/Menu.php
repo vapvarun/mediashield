@@ -112,14 +112,16 @@ class Menu {
 			'mediashield-admin',
 			'mediashieldAdmin',
 			array(
-				'restUrl'     => rest_url( 'mediashield/v1/' ),
-				'wpRestUrl'   => rest_url( 'wp/v2/' ),
-				'nonce'       => wp_create_nonce( 'wp_rest' ),
-				'version'     => $ver,
-				'userId'      => get_current_user_id(),
-				'adminUrl'    => admin_url(),
-				'siteUrl'     => home_url(),
-				'isProActive' => defined( 'MEDIASHIELD_PRO_VERSION' ),
+				'restUrl'           => rest_url( 'mediashield/v1/' ),
+				'wpRestUrl'         => rest_url( 'wp/v2/' ),
+				'nonce'             => wp_create_nonce( 'wp_rest' ),
+				'version'           => $ver,
+				'userId'            => get_current_user_id(),
+				'adminUrl'          => admin_url(),
+				'siteUrl'           => home_url(),
+				'isProActive'       => defined( 'MEDIASHIELD_PRO_VERSION' ),
+				// The Videos list labels a video with no level of its own.
+				'defaultProtection' => \MediaShield\Core\Settings::get( 'ms_default_protection' ),
 			)
 		);
 

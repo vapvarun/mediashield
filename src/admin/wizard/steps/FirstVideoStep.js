@@ -34,8 +34,8 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 					meta: {
 						_ms_platform: platform,
 						_ms_platform_video_id: platformVideoId,
+						// No protection level: the video follows the site default.
 						_ms_source_url: url,
-						_ms_protection_level: 'standard',
 					},
 				},
 			} );

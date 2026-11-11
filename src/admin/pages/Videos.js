@@ -123,9 +123,24 @@ const ProtectionBadge = ( { level } ) => {
 		strict: __( 'Strict', 'mediashield' ),
 	};
 
+	// An empty level means the video follows the site default; say so,
+	// instead of showing "None" for a video that is actually protected.
+	if ( ! level ) {
+		const def = window.mediashieldAdmin?.defaultProtection || 'standard';
+		return (
+			<span className={ `mediashield-badge mediashield-badge--${ def }` }>
+				{ sprintf(
+					/* translators: %s: the site's default protection level, e.g. Standard. */
+					__( 'Default (%s)', 'mediashield' ),
+					map[ def ] || def
+				) }
+			</span>
+		);
+	}
+
 	return (
-		<span className={ `mediashield-badge mediashield-badge--${ level || 'none' }` }>
-			{ map[ level ] || level || map.none }
+		<span className={ `mediashield-badge mediashield-badge--${ level }` }>
+			{ map[ level ] || level }
 		</span>
 	);
 };

@@ -34,7 +34,9 @@ export default function Edit( { attributes, setAttributes } ) {
 	// Fetch video data when videoId changes.
 	useEffect( () => {
 		if ( videoId > 0 ) {
-			apiFetch( { path: `/wp/v2/mediashield-videos/${ videoId }` } )
+			// _embed brings the featured image, so the preview shows the poster
+			// instead of the live platform iframe.
+			apiFetch( { path: `/wp/v2/mediashield-videos/${ videoId }?_embed=wp:featuredmedia` } )
 				.then( ( data ) => setVideo( data ) )
 				.catch( () => setVideo( null ) );
 		}
@@ -62,8 +64,8 @@ export default function Edit( { attributes, setAttributes } ) {
 					meta: {
 						_ms_platform: platform,
 						_ms_platform_video_id: platformVideoId,
+						// No protection level: the video follows the site default.
 						_ms_source_url: pasteUrl,
-						_ms_protection_level: 'standard',
 					},
 				},
 			} );
@@ -175,8 +177,10 @@ export default function Edit( { attributes, setAttributes } ) {
 
 					<SelectControl
 						label={ __( 'Protection Level', 'mediashield' ) }
-						value={ video.meta?._ms_protection_level || 'standard' }
+						value={ video.meta?._ms_protection_level || '' }
 						options={ [
+							// Empty = follow MediaShield > Settings > Default protection.
+							{ label: __( 'Site default', 'mediashield' ), value: '' },
 							{ label: __( 'None — Free preview', 'mediashield' ), value: 'none' },
 							{ label: __( 'Basic — Login + right-click block', 'mediashield' ), value: 'basic' },
 							{ label: __( 'Standard — Watermark + tracking', 'mediashield' ), value: 'standard' },
