@@ -177,6 +177,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - A long watermark wraps onto more lines, or gets smaller, to fit the player, so every field the owner chose is visible on phones.
 * Fix      - A guest's watermark reads Guest and their IP, as documented, without a stray separator in front.
 * Fix      - Settings changed quickly one after another are all saved; before, only the last one was kept while the screen still said Settings saved. Leaving the screen straight after a change also saves it.
+* Fix      - Number settings such as Position Swap Interval can be cleared and retyped; before, an emptied field put its default back, so typing 8 saved 308.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.

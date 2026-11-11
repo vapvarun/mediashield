@@ -28,6 +28,43 @@ const config = window.mediashieldAdmin || {};
 const lmsConfig = window.mediashieldProLMS || {};
 const DEBOUNCE_MS = 800;
 
+/**
+ * A whole-number setting that can be retyped.
+ *
+ * The field keeps what is typed, so it can be emptied; only a number inside
+ * min..max is saved, and leaving the field shows the saved value again. It
+ * used to save `parseInt( val ) || default` on every keystroke, so emptying
+ * the field put the default back and typing 8 after it saved 308.
+ *
+ * @param {Object}   props          TextControl props.
+ * @param {number}   props.value    Saved value.
+ * @param {Function} props.onCommit Called with each valid number.
+ * @param {number}   props.min      Smallest allowed value.
+ * @param {number}   [props.max]    Largest allowed value.
+ */
+const NumberField = ( { value, onCommit, min, max, ...props } ) => {
+	const [ draft, setDraft ] = useState( null );
+
+	return (
+		<TextControl
+			{ ...props }
+			type="number"
+			min={ min }
+			max={ max }
+			value={ draft ?? value }
+			onChange={ ( val ) => {
+				setDraft( val );
+				const n = Number( val );
+				if ( '' !== val && Number.isInteger( n ) && n >= min && ( undefined === max || n <= max ) ) {
+					onCommit( n );
+				}
+			} }
+			onBlur={ () => setDraft( null ) }
+			__nextHasNoMarginBottom
+		/>
+	);
+};
+
 const LMS_PCT_OPTIONS = [
 	{ label: '25%', value: 25 },
 	{ label: '50%', value: 50 },
@@ -383,16 +420,12 @@ const Settings = () => {
 						enableAlpha={ false }
 					/>
 				</div>
-				<TextControl
+				<NumberField
 					label={ __( 'Position Swap Interval', 'mediashield' ) }
 					help={ __( 'Seconds between watermark position changes. Moving the watermark stops a viewer cropping it out, so lower is safer and higher is less distracting.', 'mediashield' ) }
-					type="number"
 					value={ settings?.ms_watermark_swap_interval ?? 30 }
-					onChange={ ( val ) =>
-						updateSetting( 'ms_watermark_swap_interval', parseInt( val, 10 ) || 30 )
-					}
+					onCommit={ ( val ) => updateSetting( 'ms_watermark_swap_interval', val ) }
 					min={ 1 }
-					__nextHasNoMarginBottom
 				/>
 				<ToggleControl
 					label={ __( 'Keep the watermark at the edges', 'mediashield' ) }
@@ -451,7 +484,7 @@ const Settings = () => {
 					'mediashield'
 				) }
 			>
-				<TextControl
+				<NumberField
 					label={ __( 'Keep watch history for (months)', 'mediashield' ) }
 					help={
 						Number( settings?.ms_session_retention_months ?? 0 ) > 0
@@ -464,17 +497,10 @@ const Settings = () => {
 									'mediashield'
 							  )
 					}
-					type="number"
 					min={ 0 }
 					max={ 120 }
 					value={ settings?.ms_session_retention_months ?? 0 }
-					onChange={ ( val ) =>
-						updateSetting(
-							'ms_session_retention_months',
-							parseInt( val, 10 ) || 0
-						)
-					}
-					__nextHasNoMarginBottom
+					onCommit={ ( val ) => updateSetting( 'ms_session_retention_months', val ) }
 				/>
 			</SectionCard>
 
@@ -622,7 +648,7 @@ const Settings = () => {
 							onChange={ ( val ) => updateSetting( 'ms_ads_preroll', val ) }
 							__nextHasNoMarginBottom
 						/>
-						<TextControl
+						<NumberField
 							label={ __( 'Mid-roll Count', 'mediashield' ) }
 							help={
 								( settings?.ms_ads_midroll_count ?? 3 ) > 0
@@ -634,17 +660,10 @@ const Settings = () => {
 									)
 									: __( 'No mid-roll breaks will play. When enabled, breaks are spaced evenly across the middle of the video, between the 10th and 90th percent mark (0-10, default: 3).', 'mediashield' )
 							}
-							type="number"
 							min={ 0 }
 							max={ 10 }
 							value={ settings?.ms_ads_midroll_count ?? 3 }
-							onChange={ ( val ) =>
-								updateSetting(
-									'ms_ads_midroll_count',
-									Math.max( 0, Math.min( 10, parseInt( val, 10 ) || 0 ) )
-								)
-							}
-							__nextHasNoMarginBottom
+							onCommit={ ( val ) => updateSetting( 'ms_ads_midroll_count', val ) }
 						/>
 						<ToggleControl
 							label={ __( 'Require Full View', 'mediashield' ) }
@@ -654,20 +673,13 @@ const Settings = () => {
 							__nextHasNoMarginBottom
 						/>
 						{ ! settings?.ms_ads_require_full_view && (
-							<TextControl
+							<NumberField
 								label={ __( 'Skip Delay (seconds)', 'mediashield' ) }
 								help={ __( 'Seconds before the Skip button unlocks on each ad. 0 = skippable immediately. Clamped 0–60. Default: 5.', 'mediashield' ) }
-								type="number"
 								min={ 0 }
 								max={ 60 }
 								value={ settings?.ms_ads_skip_after ?? 5 }
-								onChange={ ( val ) =>
-									updateSetting(
-										'ms_ads_skip_after',
-										Math.max( 0, Math.min( 60, parseInt( val, 10 ) || 0 ) )
-									)
-								}
-								__nextHasNoMarginBottom
+								onCommit={ ( val ) => updateSetting( 'ms_ads_skip_after', val ) }
 							/>
 						) }
 						<ToggleControl
