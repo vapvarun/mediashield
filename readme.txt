@@ -167,6 +167,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - For that role, the All, Published, Drafts and Trash counts above the Videos list count only its own videos, the ones the list shows.
 * Security - Poster images no longer reveal a video's YouTube, Vimeo, Wistia or Bunny ID to visitors; new posters carry no ID, and the update renames existing posters and their sizes, titles and addresses in the background.
 * Security - A playlist's video list no longer shows a visitor who may not watch a poster that is still named after the video ID.
+* Security - Video titles and addresses no longer carry the platform video ID; a pasted video with no title is named "Video 123", and the update cleans old "youtube - ID" titles and addresses in the background. A poster address pasted by hand before the update stops working.
 * Fix      - A video whose watch session cannot start stays stopped with a message and a retry, instead of playing without its watermark.
 * Fix      - Watch progress, completion, resume, milestones and lesson auto-complete keep recording past the first two minutes of a video.
 * Fix      - Videos added from the setup wizard or the Video block follow Settings > Default Protection Level instead of always being saved as Standard, so on a site whose default is not Standard they now play at that default.
@@ -174,6 +175,9 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - The Video block's Protection Level list has a Site default choice, and the block preview in the editor shows the video's featured image.
 * Fix      - The LMS Integration upsell and the video screen no longer list Learnomy for lesson linking and auto-complete, which work with LearnDash, Tutor LMS and LifterLMS.
 * Fix      - A YouTube or Vimeo video pasted in the setup wizard or the Video block takes its real title instead of "youtube - VIDEO_ID".
+* Fix      - Leaving a video before the first progress save keeps the place reached, so the member can resume.
+* Fix      - A number setting sent as text, such as watermark opacity "abc", is refused instead of saved as 0.
+* Fix      - Analytics count a session only once the video played, so page loads no longer inflate sessions and the Dashboard average matches Top Videos.
 * Fix      - The watermark shows the member's name as written, so an ampersand in a name no longer shows as an HTML entity.
 * Fix      - On a site that never saved the watermark settings, the player uses the opacity and swap interval the Settings screen shows.
 * Fix      - YouTube and Vimeo videos fill the screen in fullscreen, also inside a YouTube or Vimeo embed block.
