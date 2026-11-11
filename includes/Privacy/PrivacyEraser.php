@@ -161,8 +161,11 @@ class PrivacyEraser {
 			$user_tags_deleted = (int) delete_user_meta( $user->ID, '_ms_video_tags' );
 			$items_removed    += $user_tags_deleted;
 
-			// Remove activity alerts for this user (Pro table, only if it exists).
-			if ( defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+			// Remove activity alerts for this user (Pro table). Pro 1.4.2 and
+			// later exports and erases its own table; this stays only for an
+			// older Pro running next to this Free version.
+			// ponytail: delete this block once Pro below 1.4.2 is unsupported.
+			if ( defined( 'MEDIASHIELD_PRO_VERSION' ) && version_compare( MEDIASHIELD_PRO_VERSION, '1.4.2', '<' ) ) {
 				$alerts_table = "{$wpdb->prefix}ms_activity_alerts";
 
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema check.
