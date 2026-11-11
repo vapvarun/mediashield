@@ -483,9 +483,9 @@
 }
 
 /* Column widths per page for uniform feel */
-.mediashield-videos .mediashield-table th:nth-child(1) { width: 25%; }
+.mediashield-videos .mediashield-table th:nth-child(1) { width: 22%; }
 .mediashield-videos .mediashield-table th:nth-child(2) { width: 14%; }
-.mediashield-videos .mediashield-table th:nth-child(3) { width: 13%; }
+.mediashield-videos .mediashield-table th:nth-child(3) { width: 16%; }
 .mediashield-videos .mediashield-table th:nth-child(4) { width: 13%; }
 .mediashield-videos .mediashield-table th:nth-child(5) { width: 35%; }
 
