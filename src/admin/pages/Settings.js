@@ -48,6 +48,20 @@ const DEBOUNCE_MS = 800;
 const NumberField = ( { value, onCommit, min, max, help, ...props } ) => {
 	const [ draft, setDraft ] = useState( null );
 	const [ refused, setRefused ] = useState( null );
+	// A value is committed once typing has settled (or on blur), never per
+	// key: typing "1.5" committed the "1" on the way and then refused 1.5,
+	// so the setting quietly became 1 (Basecamp 10499264493).
+	const pending = useRef( null );
+	const timer = useRef( null );
+	const commitPending = () => {
+		clearTimeout( timer.current );
+		if ( null !== pending.current ) {
+			const n = pending.current;
+			pending.current = null;
+			onCommit( n );
+		}
+	};
+	useEffect( () => () => commitPending(), [] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const rule = undefined === max
 		/* translators: %d: smallest allowed number. */
@@ -78,16 +92,24 @@ const NumberField = ( { value, onCommit, min, max, help, ...props } ) => {
 			} }
 			onChange={ ( val ) => {
 				setDraft( val );
+				clearTimeout( timer.current );
+				pending.current = null;
 				if ( '' === val ) return;
 				const n = Number( val );
+				// "1." is still being typed: wait for what follows the dot.
+				if ( /[.,]$/.test( val ) ) return;
 				if ( Number.isInteger( n ) && n >= min && ( undefined === max || n <= max ) ) {
 					setRefused( null );
-					onCommit( n );
+					pending.current = n;
+					timer.current = setTimeout( commitPending, DEBOUNCE_MS );
 				} else {
 					setRefused( val );
 				}
 			} }
-			onBlur={ () => setDraft( null ) }
+			onBlur={ () => {
+				commitPending();
+				setDraft( null );
+			} }
 			__nextHasNoMarginBottom
 		/>
 	);

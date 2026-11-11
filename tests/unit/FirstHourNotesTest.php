@@ -95,6 +95,14 @@ class FirstHourNotesTest extends WP_UnitTestCase {
 		$this->assertNull( Settings::sanitize( 'ms_watermark_swap_interval', 'soon' ) );
 		$this->assertSame( 0.3, Settings::sanitize( 'ms_watermark_opacity', '0.3' ) );
 		$this->assertSame( 1.0, Settings::sanitize( 'ms_watermark_opacity', 7 ) );
+		$this->assertNull( Settings::sanitize( 'ms_watermark_swap_interval', '1.5' ), 'A whole-number setting refuses 1.5 instead of saving 1.' );
+		$this->assertSame( 12, Settings::sanitize( 'ms_watermark_swap_interval', '12' ) );
+	}
+
+	public function test_names_and_titles_decode_numeric_entities(): void {
+		$this->assertSame( "Lesson 3 \u{2013} Intro", \MediaShield\Support\Text::plain( 'Lesson 3 &#8211; Intro' ) );
+		$this->assertSame( 'Tom & Jerry', \MediaShield\Support\Text::plain( 'Tom &amp; Jerry' ) );
+		$this->assertSame( '<script>', \MediaShield\Support\Text::plain( '&lt;script&gt;' ), 'The result is text; callers escape it for output.' );
 	}
 
 	public function test_a_load_that_never_played_is_not_counted_as_a_view(): void {

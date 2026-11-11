@@ -264,7 +264,7 @@ class AnalyticsController extends WP_REST_Controller {
 					function ( $row ) {
 						return array(
 							'video_id'       => (int) $row->video_id,
-							'title'          => sanitize_text_field( wp_specialchars_decode( (string) $row->post_title, ENT_QUOTES ) ),
+							'title'          => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->post_title ) ),
 							'session_count'  => (int) $row->session_count,
 							'avg_completion' => round( (float) $row->avg_completion, 1 ),
 						);
@@ -371,9 +371,9 @@ class AnalyticsController extends WP_REST_Controller {
 				return array(
 					'id'            => (int) $row->id,
 					'video_id'      => (int) $row->video_id,
-					'video_title'   => sanitize_text_field( wp_specialchars_decode( (string) $row->video_title, ENT_QUOTES ) ),
+					'video_title'   => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->video_title ) ),
 					'user_id'       => (int) $row->user_id,
-					'user_name'     => sanitize_text_field( wp_specialchars_decode( (string) $row->user_name, ENT_QUOTES ) ),
+					'user_name'     => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->user_name ) ),
 					'milestone_pct' => (int) $row->milestone_pct,
 					'reached_at'    => self::utc_marked( $row->reached_at ),
 				);
@@ -438,7 +438,7 @@ class AnalyticsController extends WP_REST_Controller {
 			function ( $row ) {
 				return array(
 					'user_id'        => (int) $row->user_id,
-					'display_name'   => sanitize_text_field( wp_specialchars_decode( (string) $row->display_name, ENT_QUOTES ) ),
+					'display_name'   => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->display_name ) ),
 					'email'          => sanitize_email( $row->user_email ),
 					'videos_watched' => (int) $row->videos_watched,
 					'avg_completion' => round( (float) $row->avg_completion, 1 ),
@@ -505,14 +505,14 @@ class AnalyticsController extends WP_REST_Controller {
 				'videos_watched' => $counts ? (int) $counts->videos : 0,
 				'user'     => array(
 					'id'           => $user_id,
-					'display_name' => $user ? sanitize_text_field( wp_specialchars_decode( $user->display_name, ENT_QUOTES ) ) : '',
+					'display_name' => $user ? sanitize_text_field( \MediaShield\Support\Text::plain( $user->display_name ) ) : '',
 					'email'        => $user ? sanitize_email( $user->user_email ) : '',
 				),
 				'sessions' => array_map(
 					function ( $row ) {
 						return array(
 							'video_id'       => (int) $row->video_id,
-							'title'          => sanitize_text_field( wp_specialchars_decode( (string) $row->post_title, ENT_QUOTES ) ),
+							'title'          => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->post_title ) ),
 							'completion_pct' => round( (float) $row->completion_pct, 1 ),
 							'total_seconds'  => (int) $row->total_seconds,
 							'max_position'   => (float) $row->max_position,
@@ -576,7 +576,7 @@ class AnalyticsController extends WP_REST_Controller {
 
 				return array(
 					'video_id'       => (int) $row->video_id,
-					'title'          => sanitize_text_field( wp_specialchars_decode( (string) $row->post_title, ENT_QUOTES ) ),
+					'title'          => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->post_title ) ),
 					'thumbnail_url'  => $thumbnail_url ? esc_url( $thumbnail_url ) : '',
 					'completion_pct' => round( (float) $row->completion_pct, 1 ),
 					'max_position'   => (float) $row->max_position,
@@ -702,9 +702,9 @@ class AnalyticsController extends WP_REST_Controller {
 				return array(
 					'id'             => (int) $row->id,
 					'video_id'       => (int) $row->video_id,
-					'video_title'    => sanitize_text_field( wp_specialchars_decode( (string) $row->video_title, ENT_QUOTES ) ),
+					'video_title'    => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->video_title ) ),
 					'user_id'        => (int) $row->user_id,
-					'user_name'      => sanitize_text_field( wp_specialchars_decode( (string) ( $row->user_name ?? __( 'Guest', 'mediashield' ) ), ENT_QUOTES ) ),
+					'user_name'      => sanitize_text_field( \MediaShield\Support\Text::plain( (string) ( $row->user_name ?? __( 'Guest', 'mediashield' ) ) ) ),
 					'milestone_pct'  => (int) $row->milestone_pct,
 					'reached_at'     => (string) $row->reached_at, // raw UTC for clients that prefer ISO
 					'reached_at_fmt' => self::local_datetime( (string) $row->reached_at ),

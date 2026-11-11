@@ -377,6 +377,10 @@ class Settings {
 		if ( in_array( $entry['type'], array( 'integer', 'float' ), true ) && ! is_numeric( $value ) ) {
 			return null;
 		}
+		// A whole-number setting refuses 1.5 instead of saving 1.
+		if ( 'integer' === $entry['type'] && (float) $value !== (float) (int) $value ) {
+			return null;
+		}
 		$sanitized = match ( $entry['type'] ) {
 			'boolean' => (bool) $value,
 			'integer' => (int) $value,
