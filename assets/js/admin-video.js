@@ -192,19 +192,25 @@
 			xhr.addEventListener( 'load', function () {
 				finish();
 
-				var body = {};
+				var body = null;
 				try {
 					body = JSON.parse( xhr.responseText );
 				} catch ( err ) {
-					body = {};
+					body = null;
 				}
 
-				if ( xhr.status < 200 || xhr.status >= 300 ) {
+				if ( xhr.status < 200 || xhr.status >= 300 || ! body ) {
 					// Show the server's own reason. A bare "upload failed" sends
 					// the owner hunting for a cause the response already named -
-					// wrong file type, too large, no permission.
+					// wrong file type, too large, no permission. An answer that
+					// is not JSON (a 502 page) gets the calm network sentence,
+					// not "Upload failed: 502".
+					var failure = body || { code: 'invalid_json' };
+					if ( ! body ) {
+						failure.code = 'invalid_json';
+					}
 					uploadMsg.textContent = ( labels.uploadFailed || 'Upload failed:' ) + ' ' +
-						( body.message || xhr.status );
+						window.mediashieldRequest.message( failure );
 					return;
 				}
 
@@ -246,7 +252,7 @@
 
 			xhr.addEventListener( 'error', function () {
 				finish();
-				uploadMsg.textContent = labels.uploadNetwork || 'Upload failed.';
+				uploadMsg.textContent = ( labels.uploadFailed || 'Upload failed:' ) + ' ' + window.mediashieldRequest.message( { code: 'network' } );
 			} );
 
 			xhr.send( form );
