@@ -68,29 +68,29 @@
 			.then( function ( res ) {
 				if ( res.ok ) {
 					session.failCount = 0;
-				} else {
-					session.failCount = ( session.failCount || 0 ) + 1;
-					if ( session.failCount >= 3 ) {
-						console.warn( 'MediaShield: heartbeat failed 3 times, stopping for token ' + session.token );
-						session.stopped = true;
-						if ( session.intervalId ) {
-							clearInterval( session.intervalId );
-							session.intervalId = null;
-						}
-					}
+					return;
 				}
-			} )
-			.catch( function ( err ) {
+				// A 5xx is the server having a moment, like a dropped
+				// connection: keep the 30 s beat so progress is recorded once
+				// it answers again. Only refusals count towards stopping.
+				if ( res.status >= 500 ) {
+					console.warn( 'MediaShield: heartbeat not answered (' + res.status + '), will retry' );
+					return;
+				}
 				session.failCount = ( session.failCount || 0 ) + 1;
-				console.warn( 'MediaShield: heartbeat failed', err );
 				if ( session.failCount >= 3 ) {
-					console.warn( 'MediaShield: heartbeat failed 3 times, stopping for token ' + session.token );
+					console.warn( 'MediaShield: heartbeat refused 3 times, stopping for token ' + session.token );
 					session.stopped = true;
 					if ( session.intervalId ) {
 						clearInterval( session.intervalId );
 						session.intervalId = null;
 					}
 				}
+			} )
+			.catch( function ( err ) {
+				// Dropped connection: transient, the next beat tries again.
+				// Stopping here lost every later position of the viewing.
+				console.warn( 'MediaShield: heartbeat failed, will retry', err );
 			} );
 	}
 

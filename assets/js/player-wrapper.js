@@ -894,7 +894,7 @@
 			container.setAttribute( 'tabindex', '0' );
 			container.addEventListener( 'keydown', function ( e ) {
 				var a = el._msAdapter;
-				if ( ! a ) return;
+				if ( ! a || el._msBlocked ) return;
 				switch ( e.key ) {
 					case ' ':
 						e.preventDefault();
@@ -1131,6 +1131,7 @@
 				// message inline so the viewer knows why the player is idle. The
 				// REST handler returns the localised text in `data.message`.
 				if ( status === 429 || data.code === 'concurrent_limit' ) {
+					blockPlayback( el, adapter );
 					showErrorOverlay( el, data.message || t( 'concurrentLimit', 'Too many active streams. Please close another video first.' ) );
 					window.dispatchEvent( new CustomEvent( 'mediashield:concurrent-limit', {
 						bubbles: true,
@@ -1142,6 +1143,7 @@
 				// Handle access-denied responses (403 or error codes).
 				if ( status === 403 || data.code === 'access_denied' || data.code === 'login_required' ) {
 					var reason = data.code || 'access_denied';
+					blockPlayback( el, adapter );
 
 					// Show login overlay for login_required when user is not logged in.
 					if ( reason === 'login_required' && ! config.isLoggedIn ) {
@@ -1176,6 +1178,7 @@
 				}
 
 				if ( data.session_token ) {
+					el._msBlocked = false;
 					el.dataset.sessionToken = data.session_token;
 
 					// Resume position via adapter — only when Resume Playback is
@@ -1202,11 +1205,39 @@
 			} )
 			.catch( function ( err ) {
 				// No session means no watermark: never leave a protected video
-				// playing unmarked. Say why, calmly, and stop it.
-				var video = el.querySelector( 'video' );
-				if ( video ) video.pause();
-				showErrorOverlay( el, window.mediashieldRequest.message( err ) );
+				// playing unmarked. Say why, calmly, keep it stopped until a
+				// session starts, and offer a retry (the failure may pass).
+				blockPlayback( el, adapter );
+				showErrorOverlay( el, window.mediashieldRequest.message( err ), function () {
+					startSession( el, videoId, adapter );
+				} );
 			} );
+	}
+
+	/**
+	 * Stop the player and keep it stopped until a session starts.
+	 *
+	 * Session start runs when the player is ready, usually before the viewer
+	 * presses play, so a one-off pause() did nothing: Space (our shortcut) or
+	 * the native controls started the video unmarked behind the message.
+	 * el._msBlocked gates the shortcut; a play listener re-pauses a <video>.
+	 * startSession() clears it once a session token arrives.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {Object}      adapter Player adapter, when there is one.
+	 */
+	function blockPlayback( el, adapter ) {
+		el._msBlocked = true;
+		if ( adapter ) adapter.pause();
+		var video = el.querySelector( 'video' );
+		if ( ! video ) return;
+		video.pause();
+		if ( ! video._msBlockListener ) {
+			video._msBlockListener = true;
+			video.addEventListener( 'play', function () {
+				if ( el._msBlocked ) video.pause();
+			} );
+		}
 	}
 
 	// ─── Load-failure watchdog ──────────────────────────────────
