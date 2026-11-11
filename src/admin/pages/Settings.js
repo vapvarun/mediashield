@@ -157,6 +157,15 @@ const Settings = () => {
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const debounceRef = useRef( null );
+	// What the watermark preview says. Pro owns its field names and sends
+	// { text, caption } whenever its Watermark Fields change.
+	const [ previewWords, setPreviewWords ] = useState( null );
+
+	useEffect( () => {
+		const onPreview = ( e ) => setPreviewWords( e.detail || null );
+		window.addEventListener( 'mediashield:watermark-preview', onPreview );
+		return () => window.removeEventListener( 'mediashield:watermark-preview', onPreview );
+	}, [] );
 
 	const { createSuccessNotice, createErrorNotice, createInfoNotice } = useDispatch( noticesStore );
 
@@ -420,7 +429,7 @@ const Settings = () => {
 							opacity: settings?.ms_watermark_opacity ?? 0.5,
 						} }
 					>
-						{ __( 'Viewer Name', 'mediashield' ) } · 203.0.113.7
+						{ previewWords?.text || __( 'Viewer Name', 'mediashield' ) + ' · 203.0.113.7' }
 					</span>
 					<span
 						className="mediashield-settings__preview-button"
@@ -430,7 +439,7 @@ const Settings = () => {
 					</span>
 				</div>
 				<p className="mediashield-settings__preview-caption">
-					{ __( 'Preview. The watermark shows each viewer\'s own name and IP address and moves around the video.', 'mediashield' ) }
+					{ previewWords?.caption || __( 'Preview. The watermark shows each viewer\'s own name and IP address and moves around the video.', 'mediashield' ) }
 				</p>
 				<RangeControl
 					label={ __( 'Opacity', 'mediashield' ) }

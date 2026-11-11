@@ -1342,8 +1342,8 @@
 	position: absolute;
 	inset-block-start: 38%;
 	inset-inline-start: 22%;
+	max-inline-size: 70%;
 	font: 16px sans-serif;
-	white-space: nowrap;
 }
 
 .mediashield-number-field.is-refused .components-base-control__help {

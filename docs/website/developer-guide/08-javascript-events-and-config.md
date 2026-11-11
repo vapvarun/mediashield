@@ -23,6 +23,7 @@ window.addEventListener( 'mediashield:player-ready', function ( e ) {
 | `mediashield:devtools-detected` | `window` | `strategy` (`debugger_timing`; `size_delta` before 1.4.2) | Developer tools were detected, before the beacon is sent. |
 | `mediashield:ended` | the player element, bubbles | none | Playback reached the end. The playlist uses it to advance. |
 | `mediashield:player-destroy` | `window` | `el` | A player element is being replaced (the playlist does this when it swaps in the next video). The tracker ends the session and the wrapper cleans up. |
+| `mediashield:watermark-preview` | `window` (admin Settings screen) | `{ text, caption }`, or `null` | Since 1.4.2. Sets the words in the Watermark preview on MediaShield > Settings; `null` puts back the default name and IP. Pro sends it from its Watermark Fields. |
 
 There is no `mediashield:playlist-switch` event. To react to a playlist moving on, listen for `mediashield:player-destroy` followed by the next `mediashield:player-ready`.
 
