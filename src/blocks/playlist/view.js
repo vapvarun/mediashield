@@ -121,8 +121,7 @@
 				headers: shared.nonce ? { 'X-WP-Nonce': shared.nonce } : {},
 			} )
 				.then( function ( res ) {
-					if ( ! res.ok ) throw new Error( 'HTTP ' + res.status );
-					return res.json();
+					return window.mediashieldRequest.readJSON( res );
 				} )
 				.then( function ( data ) {
 					if ( mine !== request ) return;

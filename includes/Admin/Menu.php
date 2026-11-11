@@ -83,7 +83,7 @@ class Menu {
 		wp_enqueue_script(
 			'mediashield-admin',
 			$build_url . 'index.js',
-			$asset['dependencies'],
+			array_merge( $asset['dependencies'], array( 'mediashield-request' ) ),
 			$asset['version'],
 			true
 		);
@@ -92,7 +92,7 @@ class Menu {
 		wp_enqueue_script(
 			'mediashield-admin-notice',
 			MEDIASHIELD_URL . 'assets/js/admin-notice.js',
-			array(),
+			array( 'mediashield-request' ),
 			$ver,
 			true
 		);

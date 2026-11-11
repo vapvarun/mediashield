@@ -185,7 +185,7 @@ class VideoPostType {
 		}
 
 		wp_enqueue_style( 'mediashield-admin-video', MEDIASHIELD_URL . 'assets/css/admin-video.css', array(), MEDIASHIELD_VERSION );
-		wp_enqueue_script( 'mediashield-admin-video', MEDIASHIELD_URL . 'assets/js/admin-video.js', array(), MEDIASHIELD_VERSION, true );
+		wp_enqueue_script( 'mediashield-admin-video', MEDIASHIELD_URL . 'assets/js/admin-video.js', array( 'mediashield-request' ), MEDIASHIELD_VERSION, true );
 		wp_localize_script(
 			'mediashield-admin-video',
 			'mediashieldVideoAdmin',

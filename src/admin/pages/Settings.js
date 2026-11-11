@@ -180,7 +180,7 @@ const Settings = () => {
 				if ( ! cancelled ) setSettings( res );
 			} )
 			.catch( ( err ) => {
-				if ( ! cancelled ) setError( err.message || __( 'Failed to load settings.', 'mediashield' ) );
+				if ( ! cancelled ) setError( window.mediashieldRequest.message( err, __( 'Failed to load settings.', 'mediashield' ) ) );
 			} )
 			.finally( () => {
 				if ( ! cancelled ) setLoading( false );
@@ -223,9 +223,15 @@ const Settings = () => {
 				.catch( ( err ) => {
 					// Keep what failed for the next save, unless changed since.
 					pendingRef.current = { ...data, ...pendingRef.current };
+					// Say plainly that nothing was saved, and offer the retry, so
+					// a field showing the new value is not mistaken for saved.
 					createErrorNotice(
-						err.message || __( 'Failed to save.', 'mediashield' ),
-						notice
+						sprintf(
+							/* translators: %s: why the save failed. */
+							__( 'Not saved. %s', 'mediashield' ),
+							window.mediashieldRequest.message( err, __( 'Failed to save.', 'mediashield' ) )
+						),
+						{ ...notice, actions: [ { label: __( 'Retry', 'mediashield' ), onClick: () => flush() } ] }
 					);
 				} );
 		},

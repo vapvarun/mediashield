@@ -38,7 +38,15 @@ class Assets {
 	 * Register hooks.
 	 */
 	public static function register(): void {
+		add_action( 'init', array( __CLASS__, 'register_request_reader' ) );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_frontend' ) );
+		// The block editor's Video and Playlist blocks make requests too.
+		add_action(
+			'enqueue_block_editor_assets',
+			static function () {
+				wp_enqueue_script( 'mediashield-request' );
+			}
+		);
 
 		// Listen for adaptive-streaming requests from Renderer/PlayerWrapper.
 		//
@@ -59,6 +67,25 @@ class Assets {
 				wp_enqueue_script( 'mediashield-hls' );
 			}
 		);
+	}
+
+	/**
+	 * Register the shared request-failure reader (window.mediashieldRequest).
+	 *
+	 * On every request, admin and front end, so any MediaShield or MediaShield
+	 * Pro script can name 'mediashield-request' as a dependency. It turns a
+	 * dropped connection or a non-JSON answer into one calm sentence and keeps
+	 * a real server refusal's own message (assets/js/request.js).
+	 */
+	public static function register_request_reader(): void {
+		wp_register_script(
+			'mediashield-request',
+			MEDIASHIELD_URL . 'assets/js/request.js',
+			array( 'wp-i18n' ),
+			MEDIASHIELD_VERSION,
+			true
+		);
+		wp_set_script_translations( 'mediashield-request', 'mediashield', MEDIASHIELD_PATH . 'languages' );
 	}
 
 	/**
@@ -100,7 +127,7 @@ class Assets {
 		wp_register_script(
 			'mediashield-player-wrapper',
 			$url . 'assets/js/player-wrapper.js',
-			array(),
+			array( 'mediashield-request' ),
 			$ver,
 			true
 		);

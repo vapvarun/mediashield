@@ -153,7 +153,7 @@ class SetupWizard {
 		wp_enqueue_script(
 			'mediashield-wizard',
 			$build_url . 'index.js',
-			$asset['dependencies'],
+			array_merge( $asset['dependencies'], array( 'mediashield-request' ) ),
 			$asset['version'],
 			true
 		);

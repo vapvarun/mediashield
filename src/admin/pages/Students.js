@@ -108,11 +108,12 @@ const StudentDetail = ( { userId, onBack } ) => {
 					name: res.user?.display_name || '',
 					email: res.user?.email || '',
 					sessions,
-					videoCount: new Set( sessions.map( ( s ) => s.video_id ) ).size,
+					videoCount: res.videos_watched ?? new Set( sessions.map( ( s ) => s.video_id ) ).size,
+					totalPages: res.total_pages || 1,
 				} );
 			} )
 			.catch( ( err ) => {
-				if ( ! cancelled ) setError( err.message || __( 'Failed to load details.', 'mediashield' ) );
+				if ( ! cancelled ) setError( window.mediashieldRequest.message( err, __( 'Failed to load details.', 'mediashield' ) ) );
 			} )
 			.finally( () => {
 				if ( ! cancelled ) setLoading( false );
@@ -227,7 +228,7 @@ const Students = () => {
 		} )
 			.then( ( res ) => setUsers( res.map( ( u ) => ( { ...u, name: u.display_name || u.name || '', id: u.user_id || u.id } ) ) ) )
 			.catch( ( err ) =>
-				setError( err.message || __( 'Failed to load viewers.', 'mediashield' ) )
+				setError( window.mediashieldRequest.message( err, __( 'Failed to load viewers.', 'mediashield' ) ) )
 			)
 			.finally( () => setLoading( false ) );
 	}, [ search ] );

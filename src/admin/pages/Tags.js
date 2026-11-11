@@ -37,7 +37,7 @@ const Tags = () => {
 		} )
 			.then( ( res ) => setTags( res ) )
 			.catch( ( err ) =>
-				setError( err.message || __( 'Failed to load tags.', 'mediashield' ) )
+				setError( window.mediashieldRequest.message( err, __( 'Failed to load tags.', 'mediashield' ) ) )
 			)
 			.finally( () => setLoading( false ) );
 	}, [] );
@@ -66,7 +66,7 @@ const Tags = () => {
 			} )
 			.catch( ( err ) => {
 				createErrorNotice(
-					err.message || __( 'Could not create tag.', 'mediashield' ),
+					window.mediashieldRequest.message( err, __( 'Could not create tag.', 'mediashield' ) ),
 					{ type: 'snackbar' }
 				);
 			} )
@@ -88,7 +88,7 @@ const Tags = () => {
 				} )
 				.catch( ( err ) => {
 					createErrorNotice(
-						err.message || __( 'Could not delete tag.', 'mediashield' ),
+						window.mediashieldRequest.message( err, __( 'Could not delete tag.', 'mediashield' ) ),
 						{ type: 'snackbar' }
 					);
 				} )

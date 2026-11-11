@@ -99,7 +99,7 @@
 
 		try {
 			fetch( cfg.ajaxUrl, { method: 'POST', body: body, credentials: 'same-origin' } )
-				.then( function ( r ) { return r.json(); } )
+				.then( function ( r ) { return window.mediashieldRequest.readJSON( r ); } )
 				.then( function ( res ) {
 					if ( ! res || ! res.success || ! res.data ) {
 						fallback();

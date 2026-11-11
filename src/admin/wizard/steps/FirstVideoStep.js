@@ -14,11 +14,13 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 	const [ url, setUrl ] = useState( '' );
 	const [ creating, setCreating ] = useState( false );
 	const [ created, setCreated ] = useState( null );
+	const [ failed, setFailed ] = useState( '' );
 
 	const handleCreate = async () => {
 		if ( ! url.trim() ) return;
 
 		setCreating( true );
+		setFailed( '' );
 		const platform = detectPlatform( url );
 		const platformVideoId = extractVideoId( url, platform );
 
@@ -42,8 +44,8 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 
 			setCreated( { id: video.id, platform } );
 		} catch ( err ) {
-			// eslint-disable-next-line no-console
-			console.error( 'Failed to create video', err );
+			// It used to fail silently: the button just came back.
+			setFailed( window.mediashieldRequest.message( err, __( 'The video could not be added. Try again.', 'mediashield' ) ) );
 		}
 
 		setCreating( false );
@@ -81,6 +83,9 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 								</>
 							) }
 						</Button>
+						{ failed && (
+							<p className="ms-wizard__error" role="alert">{ failed }</p>
+						) }
 					</div>
 				) : (
 					<div className="ms-wizard__success-banner">

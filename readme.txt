@@ -181,11 +181,14 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - Number settings such as Position Swap Interval take whole numbers only, can be cleared and retyped, and say why a value was not saved; before, an emptied field put its default back (typing 8 saved 308) and 1.5 quietly saved 1.
 * Fix      - A browser zoomed to 125% or more is no longer mistaken for open developer tools, so students are not flagged or paused for zooming.
 * Fix      - Erasing a member's personal data no longer reports that some data was not erased, and next to MediaShield Pro 1.4.1 it also removes their playback events and exports their activity alerts first.
+* Fix      - When the server cannot be reached or answers with an error page, MediaShield screens say so in one plain sentence instead of browser or parser errors: settings say Not saved and offer Retry, the Videos list offers Try again instead of showing 0 videos, and the setup wizard's first video no longer fails silently.
+* Fix      - A protected video whose watch session cannot start is stopped with a message, instead of playing without its watermark.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.
 * Security - The player page no longer prints a self-hosted video's stored file name or a direct address into the protected folder.
 * Dev      - New command wp mediashield repair restore-library-files and new filter mediashield_library_file_in_use.
+* Dev      - New shared reader window.mediashieldRequest (message and readJSON) for request failures, and the bin/request-error-check.php guard in local CI.
 * Compat   - Aligned with MediaShield Pro 1.4.2. Install both updates together.
 
 = 1.4.1 - November 2026 =

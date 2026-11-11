@@ -342,7 +342,7 @@
 					fetch( refreshUrl.toString(), {
 						headers: { 'X-WP-Nonce': config.nonce },
 					} )
-						.then( function ( res ) { return res.ok ? res.json() : Promise.reject( res ); } )
+						.then( function ( res ) { return window.mediashieldRequest.readJSON( res ); } )
 						.then( function ( data ) {
 							video.src = data.url;
 							video.addEventListener( 'loadedmetadata', function () {
@@ -971,8 +971,14 @@
 			body: JSON.stringify( { video_id: videoId } ),
 		} )
 			.then( function ( res ) {
-				return res.json().then( function ( data ) {
-					return { status: res.status, data: data };
+				// Refusals (403, 429) are JSON and handled below; an answer that
+				// is not JSON (a 502 page) is a network failure.
+				return res.json().catch( function () {
+					var failure = new Error( window.mediashieldRequest.networkMessage );
+					failure.code = 'network';
+					throw failure;
+				} ).then( function ( data ) {
+					return { status: res.status, data: data || {} };
 				} );
 			} )
 			.then( function ( result ) {
@@ -1053,7 +1059,11 @@
 				}
 			} )
 			.catch( function ( err ) {
-				console.warn( 'MediaShield: session start failed', err );
+				// No session means no watermark: never leave a protected video
+				// playing unmarked. Say why, calmly, and stop it.
+				var video = el.querySelector( 'video' );
+				if ( video ) video.pause();
+				showErrorOverlay( el, window.mediashieldRequest.message( err ) );
 			} );
 	}
 

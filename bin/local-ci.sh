@@ -176,6 +176,10 @@ if [ -x bin/architecture-checks.sh ]; then
   run_stage "2.2" "Architecture invariants (plan/INVARIANTS.yaml gates)" bash bin/architecture-checks.sh
 fi
 
+# 2.3 - every request failure reads through window.mediashieldRequest
+# (assets/js/request.js); card 10498410926.
+run_stage "2.3" "Request failures read calm (request-error-check)" php bin/request-error-check.php .
+
 # ─── 3.x — Manifest freshness ────────────────────────────────────────────────
 
 if [ "$MODE" != "quick" ]; then
