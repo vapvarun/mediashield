@@ -1346,6 +1346,10 @@
 	white-space: nowrap;
 }
 
+.mediashield-number-field.is-refused .components-base-control__help {
+	color: var( --ms-color-error );
+}
+
 /* "Keep the watermark at the edges": the preview shows a corner, below the badge. */
 .mediashield-settings__preview-watermark--edge {
 	inset-block-start: 40px;

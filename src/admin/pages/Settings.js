@@ -31,32 +31,58 @@ const DEBOUNCE_MS = 800;
 /**
  * A whole-number setting that can be retyped.
  *
- * The field keeps what is typed, so it can be emptied; only a number inside
- * min..max is saved, and leaving the field shows the saved value again. It
- * used to save `parseInt( val ) || default` on every keystroke, so emptying
- * the field put the default back and typing 8 after it saved 308.
+ * The field keeps what is typed, so it can be emptied; only a whole number
+ * inside min..max is saved. It used to save `parseInt( val ) || default` on
+ * every keystroke, so emptying the field put the default back and typing 8
+ * after it saved 308. A decimal point or exponent cannot be typed (1.5 used
+ * to save 1), and a value outside the range says why it was not saved
+ * instead of quietly going back on blur.
  *
  * @param {Object}   props          TextControl props.
  * @param {number}   props.value    Saved value.
  * @param {Function} props.onCommit Called with each valid number.
  * @param {number}   props.min      Smallest allowed value.
  * @param {number}   [props.max]    Largest allowed value.
+ * @param {string}   [props.help]   Help text, replaced by the reason while a value is refused.
  */
-const NumberField = ( { value, onCommit, min, max, ...props } ) => {
+const NumberField = ( { value, onCommit, min, max, help, ...props } ) => {
 	const [ draft, setDraft ] = useState( null );
+	const [ refused, setRefused ] = useState( null );
+
+	const rule = undefined === max
+		/* translators: %d: smallest allowed number. */
+		? sprintf( __( 'Enter a whole number, %d or more.', 'mediashield' ), min )
+		/* translators: 1: smallest allowed number, 2: largest allowed number. */
+		: sprintf( __( 'Enter a whole number from %1$d to %2$d.', 'mediashield' ), min, max );
 
 	return (
 		<TextControl
 			{ ...props }
+			className={ refused !== null ? 'mediashield-number-field is-refused' : 'mediashield-number-field' }
 			type="number"
+			inputMode="numeric"
+			step={ 1 }
 			min={ min }
 			max={ max }
 			value={ draft ?? value }
+			help={ refused !== null
+				/* translators: 1: the value that was typed, 2: the rule it broke. */
+				? sprintf( __( '%1$s was not saved. %2$s', 'mediashield' ), refused, rule )
+				: help }
+			onKeyDown={ ( e ) => {
+				if ( [ '.', ',', 'e', 'E', '+' ].includes( e.key ) ) {
+					e.preventDefault();
+				}
+			} }
 			onChange={ ( val ) => {
 				setDraft( val );
+				if ( '' === val ) return;
 				const n = Number( val );
-				if ( '' !== val && Number.isInteger( n ) && n >= min && ( undefined === max || n <= max ) ) {
+				if ( Number.isInteger( n ) && n >= min && ( undefined === max || n <= max ) ) {
+					setRefused( null );
 					onCommit( n );
+				} else {
+					setRefused( val );
 				}
 			} }
 			onBlur={ () => setDraft( null ) }
