@@ -140,7 +140,7 @@ Fires while rendering a player whose platform needs adaptive streaming (self-hos
 
 **Parameters:** `$context` (array with keys: `user_id`, `ip`, `url`, `strategy`, `ua`, `screen`, `at`)
 
-`strategy` is `size_delta` or `debugger_timing`. `at` is a UTC MySQL timestamp.
+`strategy` is `debugger_timing` (`size_delta`, a window-size check that fired on browser zoom, is no longer sent since 1.4.2). `at` is a UTC MySQL timestamp.
 
 ---
 

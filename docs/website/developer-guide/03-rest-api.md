@@ -120,7 +120,7 @@ The `upload_mediashield` capability is separate from `manage_options` so instruc
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| POST | `/protection/devtools-event` | valid `wp_rest` nonce (guests allowed) | Beacon endpoint for client-side devtools detection. Args: `strategy`, `url`, `ua`, `screen`. Responds `{ recorded: true }` and fires `mediashield_devtools_detected`; free does not log it or store it. `strategy` is required and must be `size_delta` or `debugger_timing`. |
+| POST | `/protection/devtools-event` | valid `wp_rest` nonce (guests allowed) | Beacon endpoint for client-side devtools detection. Args: `strategy`, `url`, `ua`, `screen`. Responds `{ recorded: true }` and fires `mediashield_devtools_detected`; free does not log it or store it. `strategy` is required and must be `size_delta` or `debugger_timing`; the player sends only `debugger_timing` since 1.4.2. |
 
 Rate limited to one recorded event per user and IP per hour. A limited request still returns 200 with `{ recorded: false, reason: "rate_limited" }`.
 

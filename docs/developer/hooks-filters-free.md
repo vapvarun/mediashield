@@ -274,7 +274,7 @@ add_action( 'mediashield_devtools_detected', function( $context ) {
 |-------|------|-------------|
 | `$context` | array | `{ user_id:int, ip:string, url:string, strategy:string, ua:string, screen:string, at:string }` |
 
-`strategy` is one of `size_delta` or `debugger_timing`. `at` is a UTC mysql timestamp.
+`strategy` is `debugger_timing` (`size_delta`, a window-size check that fired on browser zoom, is no longer sent since 1.4.2). `at` is a UTC mysql timestamp.
 
 ---
 
@@ -1214,5 +1214,5 @@ All on `window`, all `CustomEvent`.
 |-------|--------------|--------|-------|
 | `mediashield:player-ready` | `player-wrapper.js` (3 sites: no video id, session started, and the unprotected path) | `{ el, videoId, adapter }`, plus `{ token, resumePosition, watermarkConfig }` on the session-started dispatch | The main integration event. `watermark.js`, `tracker.js`, `protection.js` and `ad-breaks.js` all bootstrap off it. Not cancelable. |
 | `mediashield:concurrent-limit` | `player-wrapper.js` | `{ el, videoId, message }` | Fired on HTTP 429 / `concurrent_limit` from `/session/start`, alongside the inline error overlay. `bubbles: true`, not cancelable. |
-| `mediashield:devtools-detected` | `protection.js` | `{ strategy }` | Client-side only, fired before the beacon POST. `strategy` is `size_delta` or `debugger_timing`. |
+| `mediashield:devtools-detected` | `protection.js` | `{ strategy }` | Client-side only, fired before the beacon POST. `strategy` is `debugger_timing` (`size_delta` before 1.4.2). |
 | `mediashield:playlist-switch` | `src/blocks/playlist/view.js` | see source | Fired when the playlist block advances to another video. |

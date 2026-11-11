@@ -110,7 +110,7 @@ Status values depend on the driver. `self_hosted` uploads are synchronous, so it
 
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
-| POST | `/protection/devtools-event` | `beacon_permission` - a valid `wp_rest` nonce, from the `X-WP-Nonce` header or a `_wpnonce` param. No capability, and **not** logged-in-only: anonymous playback has to be able to report. | Beacon endpoint for client-side devtools detection. Body: `{ strategy (required, one of `size_delta` \| `debugger_timing`), url, ua, screen }`. Fires the `mediashield_devtools_detected` action. |
+| POST | `/protection/devtools-event` | `beacon_permission` - a valid `wp_rest` nonce, from the `X-WP-Nonce` header or a `_wpnonce` param. No capability, and **not** logged-in-only: anonymous playback has to be able to report. | Beacon endpoint for client-side devtools detection. Body: `{ strategy (required, one of `size_delta` \| `debugger_timing`; the player sends only `debugger_timing` since 1.4.2), url, ua, screen }`. Fires the `mediashield_devtools_detected` action. |
 
 Rate limited to one recorded event per user+IP per hour via a transient; a throttled call still returns 200 with `{ recorded: false, reason: 'rate_limited' }`.
 

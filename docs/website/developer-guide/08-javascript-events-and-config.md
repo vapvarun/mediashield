@@ -20,7 +20,7 @@ window.addEventListener( 'mediashield:player-ready', function ( e ) {
 | `mediashield:player-ready` | `window` | `el`, `videoId` (0), `adapter` | Fired without a session when the player has no video ID (nothing to track). Check `token` before using it. |
 | `mediashield:access-denied` | `window`, cancelable | `el`, `videoId`, `reason` | `POST /session/start` was refused. Call `event.preventDefault()` to suppress the built-in overlay and draw your own. |
 | `mediashield:concurrent-limit` | `window` | `el`, `videoId`, `message` | Session start was refused because the viewer is at the stream limit. |
-| `mediashield:devtools-detected` | `window` | `strategy` (`size_delta` or `debugger_timing`) | Developer tools were detected, before the beacon is sent. |
+| `mediashield:devtools-detected` | `window` | `strategy` (`debugger_timing`; `size_delta` before 1.4.2) | Developer tools were detected, before the beacon is sent. |
 | `mediashield:ended` | the player element, bubbles | none | Playback reached the end. The playlist uses it to advance. |
 | `mediashield:player-destroy` | `window` | `el` | A player element is being replaced (the playlist does this when it swaps in the next video). The tracker ends the session and the wrapper cleans up. |
 
