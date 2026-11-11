@@ -119,33 +119,61 @@ const Settings = () => {
 		};
 	}, [] );
 
-	const saveField = useCallback(
-		( key, value ) => {
-			if ( debounceRef.current ) clearTimeout( debounceRef.current );
+	// Changes made within DEBOUNCE_MS of each other are saved together. The
+	// timer used to carry only the last key, so the earlier change was lost
+	// while the screen still said saved.
+	const pendingRef = useRef( {} );
 
-			debounceRef.current = setTimeout( () => {
-				apiFetch( {
-					url: `${ config.restUrl }settings`,
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': config.nonce,
-					},
-					data: { [ key ]: value },
+	const flush = useCallback(
+		( keepalive = false ) => {
+			clearTimeout( debounceRef.current );
+			const data = pendingRef.current;
+			if ( ! Object.keys( data ).length ) return;
+			pendingRef.current = {};
+
+			apiFetch( {
+				url: `${ config.restUrl }settings`,
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': config.nonce,
+				},
+				data,
+				keepalive,
+			} )
+				.then( () => {
+					createSuccessNotice( __( 'Settings saved.', 'mediashield' ), { type: 'snackbar' } );
 				} )
-					.then( () => {
-						createSuccessNotice( __( 'Settings saved.', 'mediashield' ), { type: 'snackbar' } );
-					} )
-					.catch( ( err ) => {
-						createErrorNotice(
-							err.message || __( 'Failed to save.', 'mediashield' ),
-							{ type: 'snackbar' }
-						);
-					} );
-			}, DEBOUNCE_MS );
+				.catch( ( err ) => {
+					// Keep what failed for the next save, unless changed since.
+					pendingRef.current = { ...data, ...pendingRef.current };
+					createErrorNotice(
+						err.message || __( 'Failed to save.', 'mediashield' ),
+						{ type: 'snackbar' }
+					);
+				} );
 		},
 		[ createSuccessNotice, createErrorNotice ]
 	);
+
+	const saveField = useCallback(
+		( key, value ) => {
+			pendingRef.current[ key ] = value;
+			clearTimeout( debounceRef.current );
+			debounceRef.current = setTimeout( flush, DEBOUNCE_MS );
+		},
+		[ flush ]
+	);
+
+	// Leaving the screen, or the page, within DEBOUNCE_MS still saves.
+	useEffect( () => {
+		const onUnload = () => flush( true );
+		window.addEventListener( 'beforeunload', onUnload );
+		return () => {
+			window.removeEventListener( 'beforeunload', onUnload );
+			flush();
+		};
+	}, [ flush ] );
 
 	const updateSetting = useCallback(
 		( key, value ) => {
