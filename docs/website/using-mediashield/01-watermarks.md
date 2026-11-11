@@ -27,13 +27,16 @@ Go to **MediaShield > Settings > Watermark**:
 
 **Color** - The watermark text color, default white. Choose a color that is readable against your typical video content. If your videos tend to be dark, white works well. If they tend to be light, a dark color is better.
 
-**Position Swap Interval** - How many seconds the watermark stays in one position. Default is 30. Shorter intervals (10-15 seconds) make the watermark harder to crop out of a recording because it covers more of the frame over time.
+**Position Swap Interval** - How many seconds the watermark stays in one position, in whole seconds from 1 up. Default is 30. A decimal such as 1.5 is not saved, and the screen says so. Shorter intervals (10-15 seconds) make the watermark harder to crop out of a recording because it covers more of the frame over time.
+
+**Keep the watermark at the edges** - Off by default. When on, the watermark moves between the corners only, off the centre of the video, which suits lessons where the centre of the frame matters. On a short player, such as a phone, a long watermark can still reach towards the middle.
 
 ## How the watermark works technically
 
 The watermark is a canvas element rendered on top of the video player container. It:
 
-- Cycles through five positions - the four corners and the center - at the interval you set
+- Cycles through five positions - the four corners and the center - at the interval you set, or the four corners only with Keep the watermark at the edges on
+- Sits clear of the player's badge, speed button, fullscreen button and control bar, and wraps onto more lines when it is wider than the player
 - Redraws when the player is resized, and stays visible in fullscreen
 - Watches its own element, and reacts if the page tries to remove or hide it
 
@@ -65,11 +68,11 @@ For the wider picture of what protection can and cannot do, see "What MediaShiel
 
 ## Revoking access when you catch a leak
 
-If you identify a leak from watermark forensics, MediaShield can terminate every active stream for that account. There is no button for it in the admin in this release; it is an administrator REST call:
+If you identify a leak from watermark forensics, go to **MediaShield > Viewers**, click **Revoke session** on that member's row and confirm. It is also an administrator REST call:
 
 ```
 POST /wp-json/mediashield/v1/session/revoke-user
 { "user_id": 42 }
 ```
 
-Their current streams stop, and the `mediashield_user_access_revoked` action fires so you can log the event. To stop them starting new ones, change what they are allowed to watch - remove the role the video requires, or deactivate the account - then take any further action outside MediaShield.
+It ends every active watch session for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. Use the action to log the event. To stop them watching, change what they are allowed to watch - remove the role the video requires, or deactivate the account - then take any further action outside MediaShield.

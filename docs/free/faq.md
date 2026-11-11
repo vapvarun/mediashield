@@ -197,7 +197,7 @@ Partly. MediaShield can end every active session a user holds in one action, and
 Yes. MediaShield registers with WordPress's built-in privacy tools:
 
 * **Personal Data Export:** exports all watch sessions, milestones, and tags associated with a user.
-* **Personal Data Erasure:** anonymizes personal information (IP address, user agent) in watch sessions while aggregate analytics are retained. Deletes milestones and tag assignments.
+* **Personal Data Erasure:** anonymizes watch sessions (clears the IP address and user agent, and unlinks each session from the account) while aggregate analytics are retained. Deletes milestones and tag assignments.
 
 ### What data does MediaShield collect?
 

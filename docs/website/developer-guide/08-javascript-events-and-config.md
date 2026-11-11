@@ -20,9 +20,10 @@ window.addEventListener( 'mediashield:player-ready', function ( e ) {
 | `mediashield:player-ready` | `window` | `el`, `videoId` (0), `adapter` | Fired without a session when the player has no video ID (nothing to track). Check `token` before using it. |
 | `mediashield:access-denied` | `window`, cancelable | `el`, `videoId`, `reason` | `POST /session/start` was refused. Call `event.preventDefault()` to suppress the built-in overlay and draw your own. |
 | `mediashield:concurrent-limit` | `window` | `el`, `videoId`, `message` | Session start was refused because the viewer is at the stream limit. |
-| `mediashield:devtools-detected` | `window` | `strategy` (`size_delta` or `debugger_timing`) | Developer tools were detected, before the beacon is sent. |
+| `mediashield:devtools-detected` | `window` | `strategy` (`debugger_timing`; `size_delta` before 1.4.2) | Developer tools were detected, before the beacon is sent. |
 | `mediashield:ended` | the player element, bubbles | none | Playback reached the end. The playlist uses it to advance. |
 | `mediashield:player-destroy` | `window` | `el` | A player element is being replaced (the playlist does this when it swaps in the next video). The tracker ends the session and the wrapper cleans up. |
+| `mediashield:watermark-preview` | `window` (admin Settings screen) | `{ text, caption }`, or `null` | Since 1.4.2. Sets the words in the Watermark preview on MediaShield > Settings; `null` puts back the default name and IP. Pro sends it from its Watermark Fields. |
 
 There is no `mediashield:playlist-switch` event. To react to a playlist moving on, listen for `mediashield:player-destroy` followed by the next `mediashield:player-ready`.
 
@@ -41,6 +42,15 @@ Localized onto the player script by `Settings::frontend_config()` and filterable
 | `messages` | Every viewer-facing string (login overlay, access denied, load failed, concurrent limit, resume prompt, ad labels and so on). Owner-edited messages are passed through untouched; defaults are translated. |
 
 Protection settings travel separately, through `mediashield_protection_config`.
+
+## window.mediashieldRequest
+
+A shared reader for failed requests, used by every MediaShield screen and the player since 1.4.2.
+
+- `mediashieldRequest.readJSON( response )` reads a `fetch()` response as JSON and rejects with a plain error when the body is an error page (such as a 502) instead of JSON.
+- `mediashieldRequest.message( error, fallback )` returns one plain sentence for the person: the network sentence when the server could not be reached or did not answer properly, otherwise the server's own message, otherwise `fallback`.
+
+Use it in add-on screens so a dropped connection never shows "Failed to fetch" or a JSON parser error.
 
 ## Admin SPA filter
 

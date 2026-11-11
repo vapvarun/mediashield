@@ -90,7 +90,7 @@ const Milestones = () => {
 			parse: false,
 		} )
 			.then( async ( res ) => {
-				const json = await res.json();
+				const json = await window.mediashieldRequest.readJSON( res );
 				if ( ! cancelled ) {
 					setMilestones( json );
 					setTotalPages( parseInt( res.headers.get( 'X-WP-TotalPages' ), 10 ) || 1 );
@@ -99,7 +99,7 @@ const Milestones = () => {
 			} )
 			.catch( ( err ) => {
 				if ( ! cancelled ) {
-					setError( err.message || __( 'Failed to load milestones.', 'mediashield' ) );
+					setError( window.mediashieldRequest.message( err, __( 'Failed to load milestones.', 'mediashield' ) ) );
 				}
 			} )
 			.finally( () => {

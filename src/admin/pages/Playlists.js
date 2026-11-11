@@ -36,7 +36,7 @@ const Playlists = () => {
 				if ( ! cancelled ) setPlaylists( res );
 			} )
 			.catch( ( err ) => {
-				if ( ! cancelled ) setError( err.message || __( 'Failed to load playlists.', 'mediashield' ) );
+				if ( ! cancelled ) setError( window.mediashieldRequest.message( err, __( 'Failed to load playlists.', 'mediashield' ) ) );
 			} )
 			.finally( () => {
 				if ( ! cancelled ) setLoading( false );

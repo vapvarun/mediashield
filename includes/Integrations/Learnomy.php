@@ -23,6 +23,7 @@ namespace MediaShield\Integrations;
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Embed\EmbedLink;
+use MediaShield\Upload\LibraryFiles;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -41,6 +42,39 @@ class Learnomy {
 	 */
 	public static function register(): void {
 		add_filter( 'learnomy_rest_lesson_payload', array( __CLASS__, 'add_embed_to_payload' ), 10, 3 );
+		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 3 );
+	}
+
+	/**
+	 * Is this Media Library file played or embedded by a Learnomy lesson or course?
+	 *
+	 * A plain "Video" lesson, a course intro video or lesson text can name the
+	 * file by URL in Learnomy's own tables, where MediaShield's post scan
+	 * cannot see it. Moving the file would break that lesson, so it is
+	 * reported as used and left in place (Upload\LibraryFiles). A query error
+	 * also counts as used: when in doubt the file stays where it is.
+	 *
+	 * @since 1.4.2
+	 *
+	 * @param string $where      Where it is used so far, '' when nowhere.
+	 * @param string $relative   File path relative to the uploads folder.
+	 * @param int    $attachment Media Library item, or 0.
+	 * @return string
+	 */
+	public static function library_file_in_use( $where, $relative, $attachment ): string {
+		if ( '' !== (string) $where || ! function_exists( '\\Learnomy\\table' ) ) {
+			return (string) $where;
+		}
+		$relative = (string) $relative;
+		$lessons  = \Learnomy\table( 'lessons' );
+		// Older Learnomy schemas have no media_id; that query's error is ignored, the URL check stands.
+		if ( LibraryFiles::table_mentions_file( $lessons, array( 'video_url', 'content' ), $relative )
+			|| ( (int) $attachment > 0 && LibraryFiles::table_has_value( $lessons, 'media_id', (int) $attachment ) ) ) {
+			return __( 'a Learnomy lesson', 'mediashield' );
+		}
+		return LibraryFiles::table_mentions_file( \Learnomy\table( 'courses' ), array( 'video_url', 'content', 'description' ), $relative )
+			? __( 'a Learnomy course', 'mediashield' )
+			: '';
 	}
 
 	/**

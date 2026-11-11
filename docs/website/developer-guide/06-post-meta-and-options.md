@@ -6,7 +6,7 @@ Everything MediaShield stores outside its own tables, verified against the 1.4.0
 
 ## Video post meta (`mediashield_video`)
 
-Registered with `register_post_meta()` and `show_in_rest`, so they round-trip through `/wp/v2/mediashield-videos`. Writing them needs `edit_posts`.
+Registered with `register_post_meta()` and `show_in_rest`, so they round-trip through `/wp/v2/mediashield-videos`. Writing them needs `edit_post` on that video. `_ms_source_url`, `_ms_platform_video_id` and `_ms_stream_url` are returned only to people who can edit the video; visitors and members get no meta.
 
 | Meta key | Type | Default | Purpose |
 |----------|------|---------|---------|
@@ -30,6 +30,9 @@ Saved from the video edit screen. Not registered for REST.
 | `_ms_player_endscreen_text`, `_ms_player_endscreen_url` | string | Per-video end screen message and link. |
 | `_ms_library_id` | string | Bunny library ID, read from the pasted URL. |
 | `_ms_owned_file` | string | File name this video owns in `uploads/mediashield/`. An empty string means "claimed, no file". The stream endpoint serves only the owner's file. |
+| `_ms_library_file` | `moved`, `in_use`, `none`, `restored` | Since 1.4.2. Whether this video's Media Library file was moved into `uploads/mediashield/`, left because the file is used elsewhere, needed nothing, or was moved back. Its presence marks the video as checked. |
+| `_ms_library_kept` | string | Since 1.4.2. The source URL the owner moved back with restore. While the video still plays it, saving does not move it again. |
+| `_ms_library_restore` | array | Since 1.4.2. On a video and on its Media Library item: the old path, source URL and status, so the move can be undone. |
 | `_ms_access_type` | string | Not written by Free. An extension sets it to declare its own gate; a non-empty value lets anonymous visitors reach `POST /session/start`. |
 
 The video's featured image is the thumbnail (`CPT\Thumbnail` sideloads the platform thumbnail).

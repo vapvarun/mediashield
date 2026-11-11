@@ -80,6 +80,15 @@
 	border: none;
 }
 
+/* A video that is not 16:9 (4:3, portrait) is letterboxed inside the 16:9
+   player, never stretched or cropped. Browsers default a <video> to contain,
+   but a theme or LMS rule on `video` (object-fit, height: auto) used to win
+   over the one-class selector above; two classes outrank `.entry-content video`. */
+.ms-protected-player .ms-player-target video {
+	height: 100%;
+	object-fit: contain;
+}
+
 /* The YouTube API turns the target itself into the iframe and stamps
    height="360" on it. That attribute beat aspect-ratio, so every YouTube video
    was 360px tall at any width: letterboxed on desktop, near-square on a phone. */
@@ -101,7 +110,7 @@ iframe.ms-player-target {
 /* With that spacer gone, core's responsive-embed rule must not take the
    iframe out of flow either. The YouTube API makes the iframe the target
    itself, so absolute + height 100% here would leave the player zero tall. */
-.wp-block-embed .wp-block-embed__wrapper .ms-protected-player iframe.ms-player-target {
+.wp-block-embed .wp-block-embed__wrapper .ms-protected-player:not(:fullscreen) iframe.ms-player-target {
 	position: relative;
 	height: auto;
 }
@@ -165,6 +174,25 @@ iframe.ms-player-target {
 .ms-error-message p {
 	font-size: var(--ms-font-size-lg);
 	margin: 0;
+}
+
+/* Retry on a failure that may pass (dropped connection, expired stream). */
+.ms-error-retry {
+	margin-block-start: var(--ms-space-4);
+	min-height: var(--ms-tap-min);
+	padding: 0 var(--ms-space-5);
+	border: 0;
+	border-radius: var(--ms-radius-sm);
+	background: var(--ms-accent);
+	color: var(--ms-on-overlay);
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.ms-error-retry:hover,
+.ms-error-retry:focus-visible {
+	background: var(--ms-accent-hover);
 }
 
 /* Login overlay */
@@ -320,31 +348,54 @@ iframe.ms-player-target {
 }
 
 /* Fullscreen mode — container fills viewport, watermark stays on top */
-.ms-protected-player:fullscreen {
+.ms-protected-player:fullscreen,
+.ms-protected-player.ms-is-fullscreen {
 	width: 100vw;
 	height: 100vh;
 	background: var(--ms-player-bg);
 }
 
-.ms-protected-player:fullscreen .ms-player-target {
+/* iPhone has no element fullscreen: the player fills the window instead. */
+.ms-protected-player.ms-is-fullscreen {
+	position: fixed;
+	inset: 0;
+	z-index: 999999;
+	max-width: none;
+	margin: 0;
+}
+
+.ms-protected-player:fullscreen .ms-player-target,
+.ms-protected-player.ms-is-fullscreen .ms-player-target {
 	width: 100%;
 	height: 100%;
 	aspect-ratio: unset;
 }
 
 .ms-protected-player:fullscreen .ms-player-target iframe,
-.ms-protected-player:fullscreen .ms-player-target video {
+.ms-protected-player:fullscreen .ms-player-target video,
+.ms-protected-player.ms-is-fullscreen .ms-player-target iframe,
+.ms-protected-player.ms-is-fullscreen .ms-player-target video {
 	width: 100%;
 	height: 100%;
 	object-fit: contain;
 }
 
-.ms-protected-player:fullscreen .ms-watermark-canvas {
+/* Vimeo's SDK (responsive: true) wraps its iframe in a div padded to 16:9;
+   in fullscreen that pins the video to the top on non-16:9 screens. */
+.ms-protected-player:fullscreen .ms-player-target > div,
+.ms-protected-player.ms-is-fullscreen .ms-player-target > div {
+	padding: 0 !important;
+	height: 100%;
+}
+
+.ms-protected-player:fullscreen .ms-watermark-canvas,
+.ms-protected-player.ms-is-fullscreen .ms-watermark-canvas {
 	width: 100%;
 	height: 100%;
 }
 
-.ms-protected-player:fullscreen .ms-fullscreen-btn {
+.ms-protected-player:fullscreen .ms-fullscreen-btn,
+.ms-protected-player.ms-is-fullscreen .ms-fullscreen-btn {
 	bottom: 20px;
 	right: 20px;
 }

@@ -28,6 +28,8 @@ class Menu {
 	 */
 	public static function register(): void {
 		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
+		add_action( 'pre_get_posts', array( __CLASS__, 'scope_creator_video_list' ) );
+		add_filter( 'wp_count_posts', array( __CLASS__, 'scope_creator_video_counts' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_pro_notice' ) );
 		add_action( 'wp_ajax_ms_dismiss_pro_notice', array( __CLASS__, 'dismiss_pro_notice' ) );
@@ -46,6 +48,63 @@ class Menu {
 			'dashicons-video-alt3',
 			30
 		);
+
+		// A creator granted upload_mediashield (FIRST_HOUR C1) is not an admin
+		// and cannot open the MediaShield screen, and the video type is kept
+		// out of the menu, so the capability had no way in (Basecamp
+		// 10499285740). Give them the classic Videos list and Add New.
+		if ( ! current_user_can( 'manage_options' ) && current_user_can( 'upload_mediashield' ) ) {
+			add_menu_page(
+				__( 'Videos', 'mediashield' ),
+				__( 'Videos', 'mediashield' ),
+				'upload_mediashield',
+				'edit.php?post_type=mediashield_video',
+				'',
+				'dashicons-video-alt3',
+				30
+			);
+			add_submenu_page( 'edit.php?post_type=mediashield_video', __( 'All videos', 'mediashield' ), __( 'All videos', 'mediashield' ), 'upload_mediashield', 'edit.php?post_type=mediashield_video' );
+			add_submenu_page( 'edit.php?post_type=mediashield_video', __( 'Add New Video', 'mediashield' ), __( 'Add New', 'mediashield' ), 'upload_mediashield', 'post-new.php?post_type=mediashield_video' );
+		}
+	}
+
+	/**
+	 * A creator who cannot edit others' videos sees only their own in the
+	 * Videos list (Basecamp 10499285740, FIRST_HOUR C2), the same rule as the
+	 * core "Mine" view. Editors and admins keep the full list.
+	 *
+	 * @param \WP_Query $query The main admin list query.
+	 */
+	public static function scope_creator_video_list( \WP_Query $query ): void {
+		if ( $query->is_main_query() && 'mediashield_video' === $query->get( 'post_type' ) && self::creator_list_is_scoped() ) {
+			$query->set( 'author', get_current_user_id() );
+		}
+	}
+
+	/**
+	 * The status links above that list (All, Published, Drafts, Trash) count
+	 * the same videos the list shows (Basecamp 10499835623). Core counts every
+	 * author's, so a creator read "Drafts (6)" and got an empty list.
+	 *
+	 * @param object $counts Core's counts by status.
+	 * @param string $type   Post type counted.
+	 * @return object
+	 */
+	public static function scope_creator_video_counts( $counts, $type ) {
+		if ( 'mediashield_video' !== $type || ! self::creator_list_is_scoped() ) {
+			return $counts;
+		}
+		return \MediaShield\CPT\VideoPostType::count_by_author( get_current_user_id() );
+	}
+
+	/**
+	 * Is this the Videos list of someone who may not edit others' videos?
+	 *
+	 * @return bool
+	 */
+	private static function creator_list_is_scoped(): bool {
+		global $pagenow;
+		return is_admin() && 'edit.php' === $pagenow && ! current_user_can( 'edit_others_posts' );
 	}
 
 	/**
@@ -83,7 +142,7 @@ class Menu {
 		wp_enqueue_script(
 			'mediashield-admin',
 			$build_url . 'index.js',
-			$asset['dependencies'],
+			array_merge( $asset['dependencies'], array( 'mediashield-request' ) ),
 			$asset['version'],
 			true
 		);
@@ -92,7 +151,7 @@ class Menu {
 		wp_enqueue_script(
 			'mediashield-admin-notice',
 			MEDIASHIELD_URL . 'assets/js/admin-notice.js',
-			array(),
+			array( 'mediashield-request' ),
 			$ver,
 			true
 		);
@@ -112,14 +171,16 @@ class Menu {
 			'mediashield-admin',
 			'mediashieldAdmin',
 			array(
-				'restUrl'     => rest_url( 'mediashield/v1/' ),
-				'wpRestUrl'   => rest_url( 'wp/v2/' ),
-				'nonce'       => wp_create_nonce( 'wp_rest' ),
-				'version'     => $ver,
-				'userId'      => get_current_user_id(),
-				'adminUrl'    => admin_url(),
-				'siteUrl'     => home_url(),
-				'isProActive' => defined( 'MEDIASHIELD_PRO_VERSION' ),
+				'restUrl'           => rest_url( 'mediashield/v1/' ),
+				'wpRestUrl'         => rest_url( 'wp/v2/' ),
+				'nonce'             => wp_create_nonce( 'wp_rest' ),
+				'version'           => $ver,
+				'userId'            => get_current_user_id(),
+				'adminUrl'          => admin_url(),
+				'siteUrl'           => home_url(),
+				'isProActive'       => defined( 'MEDIASHIELD_PRO_VERSION' ),
+				// The Videos list labels a video with no level of its own.
+				'defaultProtection' => \MediaShield\Player\Protection::default_level(),
 			)
 		);
 

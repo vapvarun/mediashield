@@ -52,7 +52,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
 			.then( setItems )
-			.catch( ( err ) => createErrorNotice( err.message || __( 'Could not load playlist items.', 'mediashield' ), { type: 'snackbar' } ) )
+			.catch( ( err ) => createErrorNotice( window.mediashieldRequest.message( err, __( 'Could not load playlist items.', 'mediashield' ) ), { type: 'snackbar' } ) )
 			.finally( () => setLoading( false ) );
 	}, [ playlistId, createErrorNotice ] );
 
@@ -71,7 +71,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 				fetchItems();
 				createSuccessNotice( __( 'Added.', 'mediashield' ), { type: 'snackbar' } );
 			} )
-			.catch( ( err ) => createErrorNotice( err.message || __( 'Add failed.', 'mediashield' ), { type: 'snackbar' } ) )
+			.catch( ( err ) => createErrorNotice( window.mediashieldRequest.message( err, __( 'Add failed.', 'mediashield' ) ), { type: 'snackbar' } ) )
 			.finally( () => setSaving( false ) );
 	}, [ playlistId, fetchItems, createSuccessNotice, createErrorNotice ] );
 
@@ -90,7 +90,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 				setItems( ( prev ) => prev.filter( ( i ) => i.item_id !== itemId ) );
 				createSuccessNotice( __( 'Removed.', 'mediashield' ), { type: 'snackbar' } );
 			} )
-			.catch( ( err ) => createErrorNotice( err.message || __( 'Remove failed.', 'mediashield' ), { type: 'snackbar' } ) )
+			.catch( ( err ) => createErrorNotice( window.mediashieldRequest.message( err, __( 'Remove failed.', 'mediashield' ) ), { type: 'snackbar' } ) )
 			.finally( () => setSaving( false ) );
 	}, [ playlistId, createSuccessNotice, createErrorNotice ] );
 
@@ -110,7 +110,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 			},
 		} )
 			.catch( ( err ) => {
-				createErrorNotice( err.message || __( 'Reorder failed.', 'mediashield' ), { type: 'snackbar' } );
+				createErrorNotice( window.mediashieldRequest.message( err, __( 'Reorder failed.', 'mediashield' ) ), { type: 'snackbar' } );
 				fetchItems();
 			} )
 			.finally( () => setSaving( false ) );

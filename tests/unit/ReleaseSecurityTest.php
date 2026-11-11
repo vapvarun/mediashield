@@ -363,9 +363,15 @@ class ReleaseSecurityTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		$this->assertArrayNotHasKey( 'meta', rest_do_request( $read )->get_data() );
 
+		// 1.4.2 (Basecamp 10482094152): writing posts is not enough. An author
+		// who cannot edit this video gets its public meta but not its address.
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
 		$data = rest_do_request( $read )->get_data();
-		$this->assertSame( 'https://example.test/wp-content/uploads/2026/11/lesson.mp4', $data['meta']['_ms_source_url'] ?? '', 'The Video block still reads it.' );
+		$this->assertArrayNotHasKey( '_ms_source_url', $data['meta'] );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$data = rest_do_request( $read )->get_data();
+		$this->assertSame( 'https://example.test/wp-content/uploads/2026/11/lesson.mp4', $data['meta']['_ms_source_url'] ?? '', 'Someone who can edit the video still reads it for the Video block.' );
 	}
 
 	/**

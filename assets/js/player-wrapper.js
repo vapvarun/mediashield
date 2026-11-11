@@ -283,7 +283,20 @@
 			video.autoplay = options.autoplay === true;
 			video.loop     = options.loop === true;
 			video.muted    = options.muted === true;
+			// The browser's own fullscreen shows the bare <video>, with no
+			// watermark. So: no native fullscreen button, a double-click
+			// fullscreens the player instead, and on iPhone (which ignores
+			// controlsList) the video plays inline and its native fullscreen
+			// is left at once. MediaShield's button keeps the watermark.
 			video.setAttribute( 'controlsList', 'nodownload nofullscreen noremoteplayback' );
+			video.setAttribute( 'playsinline', '' );
+			video.addEventListener( 'dblclick', function ( e ) {
+				e.preventDefault();
+				toggleFullscreen( target.closest( '.ms-protected-player' ) || target );
+			} );
+			video.addEventListener( 'webkitbeginfullscreen', function () {
+				if ( video.webkitExitFullscreen ) video.webkitExitFullscreen();
+			} );
 			video.preload = 'metadata';
 			if ( options.poster ) video.poster = options.poster;
 			video.style.width = '100%';
@@ -329,7 +342,7 @@
 					fetch( refreshUrl.toString(), {
 						headers: { 'X-WP-Nonce': config.nonce },
 					} )
-						.then( function ( res ) { return res.ok ? res.json() : Promise.reject( res ); } )
+						.then( function ( res ) { return window.mediashieldRequest.readJSON( res ); } )
 						.then( function ( data ) {
 							video.src = data.url;
 							video.addEventListener( 'loadedmetadata', function () {
@@ -342,6 +355,140 @@
 							if ( container ) showErrorOverlay( container, t( 'loadFailed', 'This video could not be loaded.' ) );
 						} );
 				} );
+			}
+
+			// A signed adaptive stream (Bunny with CDN token auth) expires
+			// mid-lesson: every segment after the expiry is refused, and the
+			// player used to reset to 0 with a blank screen. Ask the
+			// existing /stream/{id}/url for a freshly signed address ahead of
+			// the expiry and on any refusal, and reload at the same time. The
+			// source is never switched to the provider's iframe embed URL, a
+			// page that a <video> can never play.
+			var playerEl       = target.closest ? target.closest( '.ms-protected-player' ) : null;
+			var refreshVideoId = playerEl ? parseInt( playerEl.dataset.videoId, 10 ) || 0 : 0;
+			var refreshing     = null;
+			var refreshTimer   = null;
+			var hls            = null;
+
+			var expiryOf = function ( u ) {
+				var m = /[?&\/]expires=(\d+)/.exec( u || '' );
+				return m ? parseInt( m[ 1 ], 10 ) : 0;
+			};
+
+			// hls.js resolves every child playlist and segment against the
+			// FIRST playlist address, so a fresh token is applied by swapping
+			// that address's signed prefix for the fresh one on each request
+			// (xhrSetup below). No reload, so no stall: the buffer stays.
+			var firstUrl  = url;
+			var signedFrom = '';
+			var signedTo   = '';
+			var commonTail = function ( a, b ) {
+				var n = 0;
+				while ( n < a.length && n < b.length && a.charAt( a.length - 1 - n ) === b.charAt( b.length - 1 - n ) ) n++;
+				return n;
+			};
+
+			var loadInto = function ( u, resumeAt, wasPlaying, afterError ) {
+				var resume = function () {
+					if ( resumeAt > 0 ) video.currentTime = resumeAt;
+					if ( wasPlaying ) video.play().catch( function () {} );
+				};
+				if ( hls ) {
+					var tail = commonTail( firstUrl, u );
+					signedFrom = firstUrl.slice( 0, firstUrl.length - tail );
+					signedTo   = u.slice( 0, u.length - tail );
+					// Loading stopped on a refusal: pick up where it was.
+					if ( afterError ) {
+						hls.startLoad( resumeAt );
+						if ( wasPlaying ) video.play().catch( function () {} );
+					}
+				} else {
+					video.addEventListener( 'loadedmetadata', resume, { once: true } );
+					video.src = u;
+				}
+			};
+
+			var scheduleRefresh = function () {
+				clearTimeout( refreshTimer );
+				var exp = expiryOf( url );
+				if ( ! exp || ! refreshVideoId ) return;
+				// 30 s ahead; a clock that disagrees with the server is
+				// covered by the refusal handlers below.
+				refreshTimer = setTimeout( function () {
+					// Paused: refresh on resume instead, so a paused player
+					// is not reloaded under the viewer.
+					if ( video.paused ) {
+						video.addEventListener( 'play', function () { refreshStream(); }, { once: true } );
+					} else {
+						refreshStream( true, false );
+					}
+				}, Math.max( 5000, exp * 1000 - Date.now() - 30000 ) );
+			};
+
+			var lastRefreshAt = 0;
+			var refreshStream = function ( fromRetry, afterError ) {
+				if ( refreshing || ! refreshVideoId || ! config.restUrl ) return;
+				// Refused again right after a refresh: the address is not the
+				// problem, so stop and say so instead of looping.
+				if ( true !== fromRetry && Date.now() - lastRefreshAt < 15000 ) {
+					if ( playerEl ) {
+						showErrorOverlay( playerEl, t( 'loadFailed', 'This video could not be loaded.' ), function () {
+							refreshStream( true );
+						} );
+					}
+					return;
+				}
+				lastRefreshAt = Date.now();
+				var resumeAt   = video.currentTime;
+				var wasPlaying = ! video.paused;
+				refreshing = fetch( config.restUrl + 'stream/' + refreshVideoId + '/url', {
+					headers: { 'X-WP-Nonce': config.nonce },
+				} )
+					.then( function ( res ) { return window.mediashieldRequest.readJSON( res ); } )
+					.then( function ( data ) {
+						if ( ! data || ! data.url ) {
+							throw { code: 'network' };
+						}
+						url = data.url;
+						loadInto( url, resumeAt, wasPlaying, false !== afterError );
+						scheduleRefresh();
+						// A refresh that works clears what an earlier failed one said.
+						var stale = playerEl && playerEl.querySelector( '.ms-error-overlay' );
+						if ( stale ) stale.remove();
+					} )
+					.catch( function ( err ) {
+						// The early refresh runs while the address still plays:
+						// try again quietly until it expires, and only then say
+						// so. A retry is not a "refused right after a refresh".
+						if ( false === afterError && expiryOf( url ) * 1000 > Date.now() + 10000 ) {
+							lastRefreshAt = 0;
+							clearTimeout( refreshTimer );
+							refreshTimer = setTimeout( function () { refreshStream( true, false ); }, 10000 );
+							return;
+						}
+						if ( playerEl ) {
+							showErrorOverlay( playerEl, window.mediashieldRequest.message( err ), function () {
+								refreshStream( true );
+							} );
+						}
+					} )
+					.then( function () {
+						refreshing = null;
+					} );
+			};
+
+			// Also a signed provider MP4 (Bunny's MP4 fallback); our own
+			// self-hosted ms_token stream has its own refresh above.
+			if ( refreshVideoId && ( isAdaptive || expiryOf( url ) ) && -1 === url.indexOf( 'ms_token=' ) ) {
+				// Native HLS (iOS Safari): a refused segment surfaces as an
+				// element error. Registered before the load watchdog so a
+				// recoverable refusal never shows its overlay.
+				video.addEventListener( 'error', function ( e ) {
+					if ( hls ) return;
+					e.stopImmediatePropagation();
+					refreshStream();
+				} );
+				scheduleRefresh();
 			}
 
 			watchForLoadFailure( video, target );
@@ -357,9 +504,10 @@
 				shaka.polyfill.installAll();
 				var player = new shaka.Player( video );
 				adapter._shakaPlayer = player;
-				player.load( url ).catch( function ( err ) {
-					console.warn( 'MediaShield: Shaka load error', err );
-					video.src = sourceUrl || url;
+				player.load( url ).catch( function () {
+					// Never fall back to the iframe embed URL: a <video>
+					// cannot play an HTML page.
+					if ( playerEl ) showErrorOverlay( playerEl, t( 'loadFailed', 'This video could not be loaded.' ) );
 				} );
 				return adapter;
 			}
@@ -371,18 +519,37 @@
 			// to play it, so trusting canPlayType would hand Chrome a source it
 			// silently fails on — the exact browser this library is here for.
 			if ( url.indexOf( '.m3u8' ) > -1 && typeof Hls !== 'undefined' && Hls.isSupported() ) {
-				var hls = new Hls( { enableWorker: true } );
+				hls = new Hls( {
+					enableWorker: true,
+					xhrSetup: function ( xhr, reqUrl ) {
+						if ( signedFrom && signedTo && 0 === reqUrl.indexOf( signedFrom ) ) {
+							xhr.open( 'GET', signedTo + reqUrl.slice( signedFrom.length ), true );
+						}
+					},
+				} );
 				adapter._hls = hls;
 				hls.on( Hls.Events.ERROR, function ( event, data ) {
+					// An expired token: refused playlist or segment. Refresh
+					// and carry on, fatal or not (hls.js would only retry the
+					// same refused address).
+					if ( data && data.response && 403 === data.response.code ) {
+						refreshStream();
+						return;
+					}
 					// Only fatal errors are worth acting on; hls.js recovers
 					// from the rest on its own.
 					if ( ! data || ! data.fatal ) {
 						return;
 					}
-					console.warn( 'MediaShield: HLS error', data.type );
-					hls.destroy();
-					adapter._hls = null;
-					video.src = sourceUrl || url;
+					if ( Hls.ErrorTypes.MEDIA_ERROR === data.type ) {
+						hls.recoverMediaError();
+						return;
+					}
+					if ( Hls.ErrorTypes.NETWORK_ERROR === data.type ) {
+						refreshStream();
+						return;
+					}
+					if ( playerEl ) showErrorOverlay( playerEl, t( 'loadFailed', 'This video could not be loaded.' ) );
 				} );
 				hls.loadSource( url );
 				hls.attachMedia( video );
@@ -564,8 +731,12 @@
 	function toggleFullscreen( container ) {
 		if ( document.fullscreenElement ) {
 			document.exitFullscreen();
-		} else {
+		} else if ( container.requestFullscreen ) {
 			container.requestFullscreen().catch( function () {} );
+		} else {
+			// iPhone Safari can fullscreen only a <video>, which drops the
+			// watermark; fill the window with the player instead.
+			container.classList.toggle( 'ms-is-fullscreen' );
 		}
 	}
 
@@ -735,7 +906,7 @@
 			container.setAttribute( 'tabindex', '0' );
 			container.addEventListener( 'keydown', function ( e ) {
 				var a = el._msAdapter;
-				if ( ! a ) return;
+				if ( ! a || el._msBlocked ) return;
 				switch ( e.key ) {
 					case ' ':
 						e.preventDefault();
@@ -954,8 +1125,14 @@
 			body: JSON.stringify( { video_id: videoId } ),
 		} )
 			.then( function ( res ) {
-				return res.json().then( function ( data ) {
-					return { status: res.status, data: data };
+				// Refusals (403, 429) are JSON and handled below; an answer that
+				// is not JSON (a 502 page) is a network failure.
+				return res.json().catch( function () {
+					var failure = new Error( window.mediashieldRequest.networkMessage );
+					failure.code = 'network';
+					throw failure;
+				} ).then( function ( data ) {
+					return { status: res.status, data: data || {} };
 				} );
 			} )
 			.then( function ( result ) {
@@ -966,6 +1143,7 @@
 				// message inline so the viewer knows why the player is idle. The
 				// REST handler returns the localised text in `data.message`.
 				if ( status === 429 || data.code === 'concurrent_limit' ) {
+					blockPlayback( el, adapter );
 					showErrorOverlay( el, data.message || t( 'concurrentLimit', 'Too many active streams. Please close another video first.' ) );
 					window.dispatchEvent( new CustomEvent( 'mediashield:concurrent-limit', {
 						bubbles: true,
@@ -977,6 +1155,7 @@
 				// Handle access-denied responses (403 or error codes).
 				if ( status === 403 || data.code === 'access_denied' || data.code === 'login_required' ) {
 					var reason = data.code || 'access_denied';
+					blockPlayback( el, adapter );
 
 					// Show login overlay for login_required when user is not logged in.
 					if ( reason === 'login_required' && ! config.isLoggedIn ) {
@@ -1011,6 +1190,7 @@
 				}
 
 				if ( data.session_token ) {
+					el._msBlocked = false;
 					el.dataset.sessionToken = data.session_token;
 
 					// Resume position via adapter — only when Resume Playback is
@@ -1033,11 +1213,52 @@
 							adapter: adapter,
 						},
 					} ) );
+					return;
 				}
+
+				// Any other answer without a session token (a JSON 5xx is what
+				// WordPress sends for a fatal in REST) is a failed start: no
+				// token means no watermark, so keep the video stopped and say so.
+				blockPlayback( el, adapter );
+				showErrorOverlay( el, window.mediashieldRequest.networkMessage, function () {
+					startSession( el, videoId, adapter );
+				} );
 			} )
 			.catch( function ( err ) {
-				console.warn( 'MediaShield: session start failed', err );
+				// No session means no watermark: never leave a protected video
+				// playing unmarked. Say why, calmly, keep it stopped until a
+				// session starts, and offer a retry (the failure may pass).
+				blockPlayback( el, adapter );
+				showErrorOverlay( el, window.mediashieldRequest.message( err ), function () {
+					startSession( el, videoId, adapter );
+				} );
 			} );
+	}
+
+	/**
+	 * Stop the player and keep it stopped until a session starts.
+	 *
+	 * Session start runs when the player is ready, usually before the viewer
+	 * presses play, so a one-off pause() did nothing: Space (our shortcut) or
+	 * the native controls started the video unmarked behind the message.
+	 * el._msBlocked gates the shortcut; a play listener re-pauses a <video>.
+	 * startSession() clears it once a session token arrives.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {Object}      adapter Player adapter, when there is one.
+	 */
+	function blockPlayback( el, adapter ) {
+		el._msBlocked = true;
+		if ( adapter ) adapter.pause();
+		var video = el.querySelector( 'video' );
+		if ( ! video ) return;
+		video.pause();
+		if ( ! video._msBlockListener ) {
+			video._msBlockListener = true;
+			video.addEventListener( 'play', function () {
+				if ( el._msBlocked ) video.pause();
+			} );
+		}
 	}
 
 	// ─── Load-failure watchdog ──────────────────────────────────
@@ -1106,7 +1327,7 @@
 	// access denied when no upstream listener handles the dispatch, etc. Sits
 	// on top of the player container so the viewer can read why the player
 	// isn't loading. Single instance per container — repeated calls replace.
-	function showErrorOverlay( el, message ) {
+	function showErrorOverlay( el, message, onRetry ) {
 		var existing = el.querySelector( '.ms-error-overlay' );
 		if ( existing ) existing.remove();
 
@@ -1122,6 +1343,21 @@
 		text.textContent = String( message || '' );
 
 		inner.appendChild( text );
+
+		// A failure that may pass (a dropped connection, an expired stream
+		// address) offers a retry instead of a dead end.
+		if ( 'function' === typeof onRetry ) {
+			var retry = document.createElement( 'button' );
+			retry.type = 'button';
+			retry.className = 'ms-error-retry';
+			retry.textContent = t( 'retry', 'Try again' );
+			retry.addEventListener( 'click', function () {
+				overlay.remove();
+				onRetry();
+			} );
+			inner.appendChild( retry );
+		}
+
 		overlay.appendChild( inner );
 		el.appendChild( overlay );
 	}
@@ -1238,10 +1474,18 @@
 			var container = btn ? btn.closest( '.ms-protected-player' ) : null;
 			if ( ! container ) return;
 
-			if ( document.fullscreenElement ) {
-				document.exitFullscreen();
-			} else {
-				container.requestFullscreen().catch( function () {} );
+			toggleFullscreen( container );
+		} );
+
+		// Last guard for any other way into native fullscreen (a browser that
+		// ignores controlsList, a context menu, another script): a bare
+		// protected <video> is never left fullscreen, because it shows no
+		// watermark. Swapping to the player is refused without a fresh user
+		// gesture, so it exits; the player's own button still works.
+		document.addEventListener( 'fullscreenchange', function () {
+			var fs = document.fullscreenElement;
+			if ( fs && 'VIDEO' === fs.tagName && fs.closest( '.ms-protected-player' ) ) {
+				document.exitFullscreen().catch( function () {} );
 			}
 		} );
 	}

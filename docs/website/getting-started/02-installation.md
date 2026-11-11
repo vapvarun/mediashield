@@ -17,7 +17,7 @@
 2. Choose the ZIP file and click **Install Now**.
 3. Click **Activate Plugin**.
 
-After activation, MediaShield redirects you to the setup wizard.
+After activation, MediaShield redirects you to the setup wizard. Activating it with WP-CLI or with the Plugins screen's bulk Activate does not open the wizard; open `wp-admin/admin.php?page=mediashield-wizard` to run it, or set everything under **MediaShield > Settings**.
 
 Alternatively, unzip the file and upload the `mediashield` folder to `/wp-content/plugins/` via FTP, then activate from **Plugins**.
 

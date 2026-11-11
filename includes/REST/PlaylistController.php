@@ -248,7 +248,10 @@ class PlaylistController extends WP_REST_Controller {
 				'title'      => sanitize_text_field( $item->video_title ),
 				'status'     => $item->video_status,
 				'platform'   => sanitize_text_field( ! empty( $item->platform ) ? $item->platform : 'self' ),
-				'source_url' => esc_url( ! empty( $item->source_url ) ? $item->source_url : '' ),
+				// Only for people who may edit that video, the same bar as its
+				// meta on /wp/v2/mediashield-videos: an author editing a playlist
+				// must not read the file address of someone else's paid video.
+				'source_url' => ! empty( $item->source_url ) && current_user_can( 'edit_post', (int) $item->video_id ) ? esc_url( $item->source_url ) : '',
 				'duration'   => (int) ( ! empty( $item->duration ) ? $item->duration : 0 ),
 				'thumbnail'  => ! empty( $thumb_url ) ? $thumb_url : '',
 			);

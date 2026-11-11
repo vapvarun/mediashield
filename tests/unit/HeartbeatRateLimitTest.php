@@ -92,6 +92,34 @@ class HeartbeatRateLimitTest extends WP_UnitTestCase {
 	 * Made-up tokens share one bucket per caller: limited, and one transient.
 	 * Keyed on the token text they each got a fresh bucket and an options row.
 	 */
+	/**
+	 * A session beating every 30 seconds keeps recording progress (Basecamp
+	 * 10499263338), and keeps one stored row, not one per minute (Basecamp
+	 * 10499594171). The window is a clock minute; the old code reset a
+	 * 60-second expiry on every beat, so beat 5 was refused about two minutes
+	 * into every video.
+	 */
+	public function test_beats_across_minutes_are_never_refused(): void {
+		global $wpdb;
+		$count = new \ReflectionMethod( \MediaShield\REST\SessionController::class, 'count_beat' );
+		$start = 1700000000 - ( 1700000000 % 60 );
+		$rows  = static fn(): int => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '\\_transient\\_ms\\_rate\\_%'" );
+		$before = $rows();
+
+		// Thirty minutes of beats every 30 s: never more than 2 in one minute.
+		for ( $beat = 0; $beat < 60; $beat++ ) {
+			$this->assertLessThanOrEqual( 4, $count->invoke( null, 'session-a', $start + 30 * $beat ), "Beat {$beat} stays under the limit." );
+		}
+		$this->assertLessThanOrEqual( $before + 1, $rows(), 'One stored row for the whole session.' );
+
+		// A flood inside one minute is still refused from the 5th.
+		$n = 0;
+		for ( $i = 0; $i < 5; $i++ ) {
+			$n = $count->invoke( null, 'session-b', $start + 3 );
+		}
+		$this->assertSame( 5, $n, 'The 5th beat in one minute is counted as the 5th, so it is refused.' );
+	}
+
 	public function test_a_flood_of_invalid_tokens_is_limited(): void {
 		global $wpdb;
 

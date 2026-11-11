@@ -33,7 +33,7 @@ export default function PlaylistPlaybackOptions( { playlistId } ) {
 				setCountdown( String( res.meta?._ms_countdown || 5 ) );
 			} )
 			.catch( ( err ) => {
-				if ( ! cancelled ) createErrorNotice( err.message || __( 'Could not load playback options.', 'mediashield' ), { type: 'snackbar' } );
+				if ( ! cancelled ) createErrorNotice( window.mediashieldRequest.message( err, __( 'Could not load playback options.', 'mediashield' ) ), { type: 'snackbar' } );
 			} );
 		return () => {
 			cancelled = true;
@@ -55,7 +55,7 @@ export default function PlaylistPlaybackOptions( { playlistId } ) {
 			} )
 			.catch( ( err ) => {
 				setMeta( previous );
-				createErrorNotice( err.message || __( 'Could not save playback options.', 'mediashield' ), { type: 'snackbar' } );
+				createErrorNotice( window.mediashieldRequest.message( err, __( 'Could not save playback options.', 'mediashield' ) ), { type: 'snackbar' } );
 			} )
 			.finally( () => setSaving( false ) );
 	}, [ meta, playlistId, createSuccessNotice, createErrorNotice ] );

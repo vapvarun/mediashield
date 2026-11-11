@@ -337,7 +337,7 @@ class PlayerWrapper {
 					}
 
 					// Same poster attribute Renderer::render() prints.
-					$poster = get_the_post_thumbnail_url( $video_post_id, 'large' );
+					$poster = \MediaShield\CPT\Thumbnail::poster_url( (int) $video_post_id, 'large' );
 					if ( $poster ) {
 						$overrides_attr .= ' data-poster="' . esc_url( $poster ) . '"';
 					}
@@ -353,7 +353,7 @@ class PlayerWrapper {
 					? ' data-access-type="' . esc_attr( $access_type ) . '"'
 					: '';
 				$access_type_attr .= Renderer::guest_allowed_attr( $video_post_id );
-				if ( Renderer::withhold_addresses( $video_post_id, $platform_video_id, $src_url, $stream_url ) ) {
+				if ( Renderer::withhold_addresses( $video_post_id, $platform_video_id, $src_url, $stream_url, (string) $platform ) ) {
 					$access_type_attr .= ' data-access-denied="1"';
 				}
 

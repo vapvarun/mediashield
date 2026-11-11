@@ -62,12 +62,20 @@ class RewriteRulesUpgradeTest extends WP_UnitTestCase {
 	 * A site already at v7 keeps its rules: the step runs once.
 	 */
 	public function test_site_at_v7_keeps_its_rules(): void {
-		$rules = array( 'custom/?$' => 'index.php?custom=1' );
+		global $wpdb;
+		$before = get_option( 'rewrite_rules' );
+		$rules  = array( 'custom/?$' => 'index.php?custom=1' );
 		update_option( 'rewrite_rules', $rules );
 		update_option( 'ms_db_version', 7 );
 
 		Migrator::run();
 
 		$this->assertSame( $rules, get_option( 'rewrite_rules' ) );
+
+		// Since v8 a v7 site runs the migrator, whose dbDelta commits the test
+		// transaction, so the custom rules above would outlive this test and
+		// break permalinks in later ones. Put back what was there and commit that.
+		update_option( 'rewrite_rules', $before );
+		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Test isolation, see above.
 	}
 }

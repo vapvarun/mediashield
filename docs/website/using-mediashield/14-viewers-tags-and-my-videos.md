@@ -15,9 +15,11 @@ You can see how an individual member is doing, group members by what they have c
 
 ## Find out how one member is doing
 
-1. Go to **MediaShield > Viewers**.
+1. Go to **MediaShield > Viewers**. Members who watched most recently come first, 20 per page, with **Previous** and **Next** below the list.
 2. Type a name or email in the search box.
-3. Click the member. You see each video they started, their progress, and when they last watched. The detail covers their 100 most recent sessions.
+3. Click the member. You see each video they started, their progress, and when they last watched, 20 sessions per page.
+
+**Revoke session** on a member's row ends their active watch sessions after you confirm, for example when an account is shared. See [Limit Streams and Stop Sharing](09-limit-streams-and-stop-sharing.md).
 
 If a member says their progress is missing, check the video's protection level first.
 

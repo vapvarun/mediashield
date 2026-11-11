@@ -15,7 +15,7 @@ Staff get the access they need and no more, and members can only see their own p
 | Open the MediaShield screens, change settings, run the wizard | Administrators (users who can manage options) |
 | Create and edit videos and playlists | Administrators. The edit screens follow normal WordPress rules for posts. |
 | Manage tags, add playlist items, read analytics | Administrators |
-| Upload a video file | Anyone holding the `upload_mediashield` capability. Administrators have it by default. |
+| Upload a video file | Anyone holding the `upload_mediashield` capability. Administrators have it by default. A role that has it but cannot manage options gets a **Videos** menu with **All videos** and **Add New**, lists only its own videos (unless it can edit others' posts), and the counts above the list count only those videos. |
 | End a user's active sessions | Administrators, through the REST request in [Limit Streams and Stop Sharing](09-limit-streams-and-stop-sharing.md) |
 
 ## Let another role upload videos

@@ -44,7 +44,23 @@ class StaleStreamTokenTest extends WP_UnitTestCase {
 		);
 		update_post_meta( $this->video_id, '_ms_platform', 'self' );
 
+		// A real file this video owns: the render prints a signed /stream URL
+		// only then, and the refresh route runs the same steps.
+		$dir = trailingslashit( wp_upload_dir()['basedir'] ) . 'mediashield';
+		wp_mkdir_p( $dir );
+		file_put_contents( $dir . '/stale-token-test.mp4', 'x' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		update_post_meta( $this->video_id, '_ms_platform_video_id', 'stale-token-test.mp4' );
+		update_post_meta( $this->video_id, '_ms_owned_file', 'stale-token-test.mp4' );
+
 		do_action( 'rest_api_init' );
+	}
+
+	/**
+	 * Remove the fixture file.
+	 */
+	public function tear_down(): void {
+		wp_delete_file( trailingslashit( wp_upload_dir()['basedir'] ) . 'mediashield/stale-token-test.mp4' );
+		parent::tear_down();
 	}
 
 	/**

@@ -98,6 +98,43 @@ class PrivacyExporter {
 					$items[] = $entry;
 				}
 			}
+
+			// Group 4 — activity alerts, only next to an older Pro (below
+			// 1.4.2). Free's eraser deletes them in that pairing, and an older
+			// Pro never exported them, so they were erased unseen. Pro 1.4.2
+			// exports its own table.
+			// ponytail: delete with PrivacyEraser's old-Pro blocks.
+			if ( PrivacyEraser::pro_below_142() ) {
+				$alerts = self::query_old_pro_alerts( (int) $user->ID, $offset );
+				foreach ( $alerts as $alert ) {
+					$items[] = array(
+						'group_id'    => 'mediashield-activity-alerts',
+						'group_label' => __( 'MediaShield Activity Alerts', 'mediashield' ),
+						'item_id'     => "mediashield-activity-alert-{$alert->id}",
+						'data'        => array(
+							array(
+								'name'  => __( 'Video', 'mediashield' ),
+								'value' => sanitize_text_field( (string) ( $alert->post_title ?? '' ) ),
+							),
+							array(
+								'name'  => __( 'Alert', 'mediashield' ),
+								'value' => sanitize_text_field( (string) $alert->alert_type ),
+							),
+							array(
+								'name'  => __( 'Details', 'mediashield' ),
+								'value' => sanitize_text_field( (string) $alert->message ),
+							),
+							array(
+								'name'  => __( 'Raised At', 'mediashield' ),
+								'value' => $alert->created_at,
+							),
+						),
+					);
+				}
+				if ( count( $alerts ) === self::PER_PAGE ) {
+					$done = false;
+				}
+			}
 		}
 
 		/**
@@ -325,5 +362,38 @@ class PrivacyExporter {
 			);
 		}
 		return $items;
+	}
+
+	/**
+	 * Page of an older Pro's activity alerts about a user ([] when the table is absent).
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $offset  SQL offset.
+	 * @return array<int, object>
+	 */
+	private static function query_old_pro_alerts( int $user_id, int $offset ): array {
+		global $wpdb;
+		$alerts = "{$wpdb->prefix}ms_activity_alerts";
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Pro table, GDPR export.
+		if ( $alerts !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $alerts ) ) ) {
+			return array();
+		}
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT a.id, a.alert_type, a.message, a.created_at, p.post_title
+				 FROM {$alerts} a
+				 LEFT JOIN {$wpdb->posts} p ON a.video_id = p.ID
+				 WHERE a.user_id = %d
+				 ORDER BY a.id DESC
+				 LIMIT %d OFFSET %d",
+				$user_id,
+				self::PER_PAGE,
+				$offset
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return is_array( $rows ) ? $rows : array();
 	}
 }

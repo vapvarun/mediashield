@@ -130,7 +130,16 @@ class StreamController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function stream_url_permissions_check( WP_REST_Request $request ): bool|WP_Error {
-		$access = AccessControl::can_watch( (int) $request->get_param( 'video_id' ), get_current_user_id() );
+		// The same gates as the page render, in the same order: a real,
+		// published video first, then the viewer's access.
+		// An unpublished video answers exactly like an unknown id, so nobody can
+		// probe which ids are drafts (BC#10499264493).
+		$video = get_post( (int) $request->get_param( 'video_id' ) );
+		if ( ! $video || 'mediashield_video' !== $video->post_type || 'publish' !== $video->post_status ) {
+			return new WP_Error( 'mediashield_not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
+		}
+
+		$access = AccessControl::can_watch( (int) $video->ID, get_current_user_id() );
 		if ( ! $access['allowed'] ) {
 			return new WP_Error( 'mediashield_access_denied', $access['reason'], array( 'status' => 403 ) );
 		}
@@ -143,10 +152,28 @@ class StreamController extends WP_REST_Controller {
 	 * @param WP_REST_Request $request Request object.
 	 * @return WP_REST_Response
 	 */
-	public function stream_url( WP_REST_Request $request ): WP_REST_Response {
+	public function stream_url( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$video_id = (int) $request->get_param( 'video_id' );
-		return rest_ensure_response( array( 'url' => self::signed_url( $video_id, get_current_user_id() ) ) );
+
+		// Exactly the page render's two steps (Renderer::addresses() then
+		// protect_addresses()), so a refresh can never hand out an address
+		// the page would withhold: our signed /stream URL for a self-hosted
+		// file, a freshly signed provider URL (Pro's Bunny HLS) otherwise.
+		$addresses = \MediaShield\Player\Renderer::addresses( $video_id );
+		if ( get_option( 'ms_enabled', true ) ) {
+			$addresses = \MediaShield\Player\Renderer::protect_addresses( $video_id, $addresses );
+			if ( $addresses['access_denied'] ) {
+				return new WP_Error( 'mediashield_access_denied', __( 'You do not have access to this video.', 'mediashield' ), array( 'status' => 403 ) );
+			}
+		}
+
+		if ( '' === $addresses['stream_url'] ) {
+			return new WP_Error( 'mediashield_no_stream', __( 'This video has no stream address to refresh.', 'mediashield' ), array( 'status' => 404 ) );
+		}
+
+		return rest_ensure_response( array( 'url' => $addresses['stream_url'] ) );
 	}
+
 
 	/**
 	 * Permission check — uses the same mediashield_can_watch filter as SessionController.
@@ -202,13 +229,10 @@ class StreamController extends WP_REST_Controller {
 		$video_id = (int) $request->get_param( 'video_id' );
 
 		// Verify the video exists and is a mediashield_video CPT.
+		// Unpublished answers like unknown, so a draft id cannot be probed.
 		$video = get_post( $video_id );
-		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
+		if ( ! $video || 'mediashield_video' !== $video->post_type || 'publish' !== $video->post_status ) {
 			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
-		}
-
-		if ( 'publish' !== $video->post_status ) {
-			return new WP_Error( 'unpublished', __( 'Video is not available.', 'mediashield' ), array( 'status' => 403 ) );
 		}
 
 		// Only self-hosted videos are served through this endpoint.
@@ -292,6 +316,38 @@ class StreamController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Which bytes does a "Range: bytes=..." header ask for?
+	 *
+	 * RFC 9110 14.1.1: "bytes=-N" is the last N bytes, and an end past the
+	 * file means "to the end". Unsatisfiable only when the start is past the
+	 * file (the caller answers 416).
+	 *
+	 * @param string $header    Range header value.
+	 * @param int    $file_size File size in bytes.
+	 * @return array{0:int,1:int}|null First and last byte, or null when unsatisfiable.
+	 */
+	public static function byte_range( string $header, int $file_size ): ?array {
+		$start = 0;
+		$end   = $file_size - 1;
+		if ( ! preg_match( '/bytes=(\d*)-(\d*)/', $header, $matches ) ) {
+			return array( $start, $end );
+		}
+
+		if ( '' === $matches[1] && '' !== $matches[2] ) {
+			$start = max( 0, $file_size - (int) $matches[2] );
+		} else {
+			if ( '' !== $matches[1] ) {
+				$start = (int) $matches[1];
+			}
+			if ( '' !== $matches[2] ) {
+				$end = min( (int) $matches[2], $file_size - 1 );
+			}
+		}
+
+		return ( $start > $end || $start >= $file_size ) ? null : array( $start, $end );
+	}
+
+	/**
 	 * Serve a video file with HTTP range support for seeking.
 	 *
 	 * @param string $file_path Absolute path to the video file.
@@ -310,24 +366,14 @@ class StreamController extends WP_REST_Controller {
 
 		if ( ! empty( $range_header ) ) {
 			// Parse Range: bytes=start-end.
-			if ( preg_match( '/bytes=(\d*)-(\d*)/', $range_header, $matches ) ) {
-				$range_start = $matches[1];
-				$range_end   = $matches[2];
-
-				if ( '' !== $range_start ) {
-					$start = (int) $range_start;
-				}
-
-				if ( '' !== $range_end ) {
-					$end = (int) $range_end;
-				}
-
-				// Validate range.
-				if ( $start > $end || $start >= $file_size || $end >= $file_size ) {
+			if ( preg_match( '/bytes=(\d*)-(\d*)/', $range_header ) ) {
+				$range = self::byte_range( $range_header, (int) $file_size );
+				if ( null === $range ) {
 					status_header( 416 );
 					header( "Content-Range: bytes */{$file_size}" );
 					exit;
 				}
+				list( $start, $end ) = $range;
 
 				status_header( 206 );
 				header( "Content-Range: bytes {$start}-{$end}/{$file_size}" );

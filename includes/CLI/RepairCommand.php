@@ -195,4 +195,47 @@ final class RepairCommand {
 			)
 		);
 	}
+
+	/**
+	 * Moves Media Library files that MediaShield protected back to where they were.
+	 *
+	 * Since 1.4.2 a self-hosted video's Media Library file is moved into the
+	 * protected folder and its Media Library entry made private. This undoes
+	 * that: the file returns to its old path, the entry to its old status, and
+	 * the video plays the public file again. If the old name has been taken
+	 * since, the file gets the next free name beside it; nothing is
+	 * overwritten. A restored video is not moved again when saved while it
+	 * still plays that file; a different file, or an upload, is protected.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--video=<id>]
+	 * : Restore one video only.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp mediashield repair restore-library-files
+	 *     wp mediashield repair restore-library-files --video=42
+	 *
+	 * @subcommand restore-library-files
+	 *
+	 * @param array $args       Positional args (unused).
+	 * @param array $assoc_args Associative args.
+	 */
+	public function restore_library_files( $args, $assoc_args ): void {
+		if ( ! empty( $assoc_args['video'] ) ) {
+			$id = (int) $assoc_args['video'];
+			if ( \MediaShield\Upload\LibraryFiles::restore( $id ) ) {
+				WP_CLI::success( sprintf( 'Video %d plays from its Media Library file again.', $id ) );
+				return;
+			}
+			WP_CLI::error( sprintf( 'Video %d has no moved file, or the file could not be moved back.', $id ) );
+		}
+
+		$result = \MediaShield\Upload\LibraryFiles::restore_all();
+		if ( $result['failed'] ) {
+			WP_CLI::warning( sprintf( 'Could not restore videos %s: the file is missing or the folder is not writable.', implode( ', ', $result['failed'] ) ) );
+		}
+		WP_CLI::success( sprintf( 'Restored %d video file(s).', $result['restored'] ) );
+	}
 }

@@ -3,7 +3,7 @@
  *
  * Blocks right-click, Ctrl+S/Cmd+S, loads video src via JS to prevent
  * easy source inspection. Adds "Protected by MediaShield" badge.
- * Detects DevTools via window-size delta and debugger timing; fires
+ * Detects DevTools via debugger timing; fires
  * `mediashield:devtools-detected` event and optionally pauses playback.
  *
  * @package MediaShield
@@ -68,10 +68,16 @@
 			});
 		}
 
-		// Add nodownload to video controls.
+		// Add nodownload and nofullscreen to the video controls, keeping the
+		// tokens already there. Replacing the list dropped the player's
+		// nofullscreen, and the browser's fullscreen shows no watermark.
 		var videos = el.querySelectorAll('video');
 		videos.forEach(function (video) {
-			video.setAttribute('controlsList', 'nodownload');
+			var tokens = (video.getAttribute('controlsList') || '').split(/\s+/).filter(Boolean);
+			['nodownload', 'nofullscreen'].forEach(function (t) {
+				if (tokens.indexOf(t) === -1) tokens.push(t);
+			});
+			video.setAttribute('controlsList', tokens.join(' '));
 
 			// Hide source: move src to data attribute, load via JS.
 			if (protConfig.hide_source !== false || isStrict) {
@@ -108,13 +114,15 @@
 	/**
 	 * Initialize DevTools detection.
 	 *
-	 * Two strategies run in parallel:
-	 *   1. Size-delta check -- docked DevTools widen outerWidth/outerHeight
-	 *      vs innerWidth/innerHeight. Threshold 200px avoids false positives
-	 *      on browser scrollbars and OS chrome.
-	 *   2. Debugger-timing check -- a `debugger;` statement is a no-op when
-	 *      DevTools is closed; when DevTools is open, the browser pauses,
-	 *      yielding a multi-hundred-millisecond gap we can measure.
+	 * Debugger-timing check: a `debugger;` statement is a no-op when DevTools
+	 * is closed; when DevTools is open (docked or not) the browser pauses on
+	 * it, yielding a multi-hundred-millisecond gap we can measure.
+	 *
+	 * There is no window-size check any more. outerWidth - innerWidth grows
+	 * with browser zoom (1440px at 150% leaves a 480px gap), so a zoomed page
+	 * looked like docked DevTools and students were flagged or paused with
+	 * nothing open. The zoom level cannot be told apart from a docked panel
+	 * in the page, and the debugger check already catches a docked panel.
 	 *
 	 * Mobile viewports and touch devices skip detection (too many false
 	 * positives from on-screen keyboards and orientation changes).
@@ -125,26 +133,9 @@
 		var isSmall = window.innerWidth < 1024;
 		if (isTouch || isSmall) return;
 
-		var sizeCheckMs = 1000;
 		var debuggerCheckMs = 4000;
-		var sizeThreshold = 200;
 
-		// Strategy 1: size delta, debounced.
-		var sizeTimer = null;
-		function runSizeCheck() {
-			var widthDelta = window.outerWidth - window.innerWidth;
-			var heightDelta = window.outerHeight - window.innerHeight;
-			if (widthDelta > sizeThreshold || heightDelta > sizeThreshold) {
-				onDetected('size_delta');
-			}
-		}
-		setInterval(runSizeCheck, sizeCheckMs);
-		window.addEventListener('resize', function () {
-			if (sizeTimer) clearTimeout(sizeTimer);
-			sizeTimer = setTimeout(runSizeCheck, 300);
-		});
-
-		// Strategy 2: debugger-timing check.
+		// Debugger-timing check.
 		function runDebuggerCheck() {
 			var start = performance.now();
 			// eslint-disable-next-line no-debugger

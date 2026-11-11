@@ -92,6 +92,11 @@ class Settings {
 				'default'  => 30,
 				'validate' => $min_int( 1 ),
 			),
+			// Off by default so existing sites keep the centre position.
+			'ms_watermark_edges_only'    => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
 
 			// Access.
 			'ms_allowed_domains'         => array(
@@ -367,7 +372,15 @@ class Settings {
 			return null;
 		}
 
-		$entry     = $schema[ $key ];
+		$entry = $schema[ $key ];
+		// A number setting refuses text: (float) 'abc' is 0, an invisible watermark.
+		if ( in_array( $entry['type'], array( 'integer', 'float' ), true ) && ! is_numeric( $value ) ) {
+			return null;
+		}
+		// A whole-number setting refuses 1.5 instead of saving 1.
+		if ( 'integer' === $entry['type'] && (float) $value !== (float) (int) $value ) {
+			return null;
+		}
 		$sanitized = match ( $entry['type'] ) {
 			'boolean' => (bool) $value,
 			'integer' => (int) $value,
@@ -451,6 +464,7 @@ class Settings {
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL
 				// produces. Without it the viewer just stares at a dead player.
+				'retry'           => __( 'Try again', 'mediashield' ),
 				'loadFailed'      => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
 				'concurrentLimit' => __( 'Too many active streams. Please close another video first.', 'mediashield' ),
 				'playlistFailed'  => __( 'This video could not be loaded. Please try again.', 'mediashield' ),

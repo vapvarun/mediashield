@@ -8,13 +8,13 @@
 >
 > Two categories are hand-patched because the generator cannot see them, and **must be re-patched after any regeneration**: `ms_watch_sessions_archive` (created by `str_replace()` on the sessions schema, not a literal `CREATE TABLE`) and the Setup Wizard's `add_submenu_page`. Four more (`post_types`, `capabilities`, `settings`, `wp_cli`) come back 0 from the generator and are ground-truthed in the summary. All of it is recorded under `notes.generator_blind_spots` and `notes.summary_hand_verified` - read those before trusting a count that looks wrong.
 >
-> **25 REST routes** in `mediashield/v1` (incl. `/wizard/complete`, `/playlists/{id}/player/{video_id}` and `/stream/{id}/url`); WP core adds 6 more `wp/v2` routes for the two CPTs. **2 AJAX** (`ms_dismiss_pro_notice`, `health-check-mediashield-upload-dir-protected` for the Site Health screen), **2 admin pages**, **6 tables**, **3 blocks**, **3 shortcodes**, **2 CPTs**, **3 cron jobs** (2 recurring: `ms_cleanup_inactive_sessions` hourly, `ms_archive_old_sessions` monthly; 1 one-off: `ms_restore_archived_sessions` — plus the bundled EDD SDK's weekly WP-Cron licence check), **47 hooks fired** (14 actions + 33 filters, verified by scanning `do_action`/`apply_filters` in `includes/` and `src/`, excluding docblocks and line comments) plus the JS-side `mediashield_admin_routes` `wp.hooks` filter, **35 settings** (authoritative source: `array_keys( Settings::schema() )`), **1 capability** (`upload_mediashield`), **2 WP-CLI commands** (`mediashield scale`, `mediashield repair`). Service count is a manifest-only concept and **has not been re-verified for 1.3.0** — do not quote the manifest's `34` as current. **Release-ready as of the 2026-05-26 wppqa baseline** — which was taken against 1.2.0 and has NOT been re-run for 1.3.0; treat it as "no known blockers carried forward", not as a 1.3.0 sign-off — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
+> **25 REST routes** in `mediashield/v1` (incl. `/wizard/complete`, `/playlists/{id}/player/{video_id}` and `/stream/{id}/url`); WP core adds 6 more `wp/v2` routes for the two CPTs. **2 AJAX** (`ms_dismiss_pro_notice`, `health-check-mediashield-upload-dir-protected` for the Site Health screen), **2 admin pages**, **6 tables**, **3 blocks**, **3 shortcodes**, **2 CPTs**, **3 cron jobs** (2 recurring: `ms_cleanup_inactive_sessions` hourly, `ms_archive_old_sessions` monthly; 1 one-off: `ms_restore_archived_sessions` — plus the bundled EDD SDK's weekly WP-Cron licence check), **47 hooks fired** (14 actions + 33 filters, verified by scanning `do_action`/`apply_filters` in `includes/` and `src/`, excluding docblocks and line comments) plus the JS-side `mediashield_admin_routes` `wp.hooks` filter, **36 settings** (authoritative source: `array_keys( Settings::schema() )`), **1 capability** (`upload_mediashield`), **2 WP-CLI commands** (`mediashield scale`, `mediashield repair`). Service count is a manifest-only concept and **has not been re-verified for 1.3.0** — do not quote the manifest's `34` as current. **Release-ready as of the 2026-05-26 wppqa baseline** — which was taken against 1.2.0 and has NOT been re-run for 1.3.0; treat it as "no known blockers carried forward", not as a 1.3.0 sign-off — see [`audit/wppqa-baseline-2026-05-26/SUMMARY.md`](audit/wppqa-baseline-2026-05-26/SUMMARY.md) (all clean; the 2026-05-11 HIGH `nonce-no-cap` at `Menu.php:174` and the 2 MEDIUM inline-onclick findings on `VideoPostType.php` have all been resolved). See also [`audit/FEATURE_AUDIT.md`](audit/FEATURE_AUDIT.md), [`audit/CODE_FLOWS.md`](audit/CODE_FLOWS.md), [`audit/ROLE_MATRIX.md`](audit/ROLE_MATRIX.md), [`audit/derived/cross-plugin-coupling.json`](audit/derived/cross-plugin-coupling.json). Open `audit/graph.html` (`cd audit && python3 -m http.server 8765`) for an interactive Cytoscape view. Refresh via `/wp-plugin-onboard --refresh` after non-trivial changes.
 
 > **Verifying a Ready-for-Testing card?** Follow [`docs/standards/rft-verification.md`](docs/standards/rft-verification.md) — five questions per card, a verdict format that stays comparable across the whole column, and the standing traps. The cards change every cycle; the method does not. Pre-RFT gating is the companion [`docs/standards/qa-catalog.md`](docs/standards/qa-catalog.md).
 
 Video protection for WordPress -- dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
 
-- **Version:** 1.4.0
+- **Version:** 1.4.2
 - **Requires:** PHP 8.1, WordPress 6.5
 - **Text Domain:** mediashield
 - **Namespace:** `MediaShield\`
@@ -54,7 +54,7 @@ includes/
   CPT/
     VideoPostType.php        mediashield_video CPT + meta
     PlaylistPostType.php     mediashield_playlist CPT + meta
-    Thumbnail.php            Video thumbnail handling
+    Thumbnail.php            Video posters: the one platform-poster sideload (`sideload_poster()`, also used by Pro), `poster_filename()` (keyed hash, never the platform ID), `poster_url()` (read every rendered poster through it), and the 1.4.2 upgrade job `ms_rename_id_posters` that renames posters saved under the platform ID (file, sizes, title, slug, GUID, caption, alt). Its posters carry attachment meta `_ms_platform_poster` = 1; only a marked poster is ever replaced or deleted, and `sideload_poster()` refuses when the video's featured image is the owner's
   DB/
     Schema.php               dbDelta for all 6 free tables
   REST/
@@ -84,6 +84,7 @@ includes/
     MilestoneTracker.php     25/50/75/100% completion tracking. When a milestone with a configured tag fires, the tag is promoted into the unified `ms_tags` dictionary (via `TagManager::ensure()`) and the video↔tag link recorded in `ms_video_tags`. The per-user earn record stays in `_ms_video_tags` user meta but now carries `tag_id` alongside the display string for cross-reference.
   Upload/
     UploadManager.php        Driver registry (mediashield_upload_drivers filter)
+    LibraryFiles.php         (1.4.2) Moves a self-hosted video's Media Library file into uploads/mediashield/ (attachment kept, made private, so /wp/v2/media hides it). Skips files used elsewhere (path plain or JSON-escaped in posts, meta, options; Media Library id in blocks, `_thumbnail_id`, `_elementor_data`, ACF fields, the Video widget; Learnomy via `mediashield_library_file_in_use`; a failed scan counts as a use). On save, moves only a file the saver may `edit_post` (no Media Library item: `edit_others_posts`). Upgrade job `ms_protect_library_files`, on-save check, owner notice, restore() on video delete / uninstall / `wp mediashield repair restore-library-files`. Never deletes a file.
     Drivers/
       DriverInterface.php    Upload driver contract
       SelfHosted.php         Local wp-content upload driver
@@ -165,6 +166,7 @@ assets/
   - `_ms_platform` (string, default `self`) -- hosting platform
   - `_ms_platform_video_id` (string) -- external platform video ID
   - `_ms_source_url` (string) -- direct video URL
+  - REST: `_ms_source_url`, `_ms_platform_video_id`, `_ms_stream_url` are returned only to users with `edit_post` on that video (1.4.2, `VideoPostType::hide_meta_from_viewers`); no meta at all for users without `edit_posts`. Writes need `edit_post`.
   - `_ms_protection_level` (string, default `standard`) -- standard/drm
   - `_ms_access_role` (string) -- required role slug
   - `_ms_duration` (integer) -- video duration in seconds
@@ -291,7 +293,7 @@ A 4th shortcode, `[mediashield_upload]`, is registered by **Pro** — but only a
 
 ## WordPress Hooks
 
-Verified against 1.3.0 source (`do_action` / `apply_filters` in `includes/` and `src/`, docblock and line-comment mentions excluded): **14 actions + 33 filters = 47 hooks fired by Free.** (1.4.1 added `mediashield_guest_can_watch` and `mediashield_video_watch_url`.)
+Verified against 1.3.0 source (`do_action` / `apply_filters` in `includes/` and `src/`, docblock and line-comment mentions excluded): **14 actions + 33 filters = 47 hooks fired by Free.** (1.4.1 added `mediashield_guest_can_watch` and `mediashield_video_watch_url`; 1.4.2 added `mediashield_library_file_in_use`, `mediashield_library_files_batch_size` and `mediashield_poster_rename_batch_size`.)
 
 Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `mediashield_default_upload_driver` added; `mediashield_delete_remote_media` added and then removed again - remote deletion is not an opt-in any more, it does not exist. The previous figure here read 15 actions + 29 filters; the total was right but the split was not. Pro fires 20 more of its own and re-applies `mediashield_enqueue_frontend`. Two further hooks are Action Scheduler *job* hooks fired by Pro (`mediashield_generate_pdf`, `mediashield_fire_webhook`), and `mediashield_admin_routes` is a JS-side `wp.hooks` filter, not a PHP one.
 
@@ -341,6 +343,9 @@ Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `media
 | `mediashield_session_allow_anonymous_start` | $allow, $video_id, $access_type, $request | Whether an anonymous `POST /session/start` may reach the handler. Defaults true when `ms_require_login` is off or `_ms_access_type` is set. (`SessionController.php:220`) |
 | `mediashield_guest_can_watch` | $allowed, $video_id | Return true to let a guest past Require Login for one video (LMS free previews). Role, domain and `mediashield_can_watch` still apply. One answer for can_watch, `/session/start` and the player's `data-guest-allowed` via `AccessControl::login_gate_applies()`. |
 | `mediashield_video_watch_url` | $url, $video_id, $user_id | Page where a member watches a video, used by My Videos. The video CPT is not public; '' renders the title as plain text with no Resume link. |
+| `mediashield_library_file_in_use` | $where, $relative, $attachment_id, $video_id | Report a use of a Media Library file MediaShield cannot see; non-empty leaves the file public and lists it in the owner notice. Learnomy integration answers for lesson/course URLs. |
+| `mediashield_library_files_batch_size` | $batch | Videos per pass of `ms_protect_library_files` (10-200, default 50). |
+| `mediashield_poster_rename_batch_size` | $batch | Videos per pass of `ms_rename_id_posters` (10-200, default 50). |
 | `mediashield_shortcode_source_url` | $url, $video_id, $atts | Override the source URL a `[mediashield]` shortcode resolves to (`Shortcode.php:61`) |
 | `mediashield_stored_filename` | $obscured, $original_name | The randomised on-disk filename for a self-hosted upload (`SelfHosted.php:144`) |
 | `mediashield_video_ad_breaks` | $breaks, $video_id, $duration | In-video ad breaks. Populated by the WB Ad Manager bridge; empty when no ad source is active. (`Renderer.php:263`) |

@@ -112,7 +112,9 @@ class PlaylistRenderer {
 		<div class="ms-playlist-items">
 			<?php
 			foreach ( $items as $idx => $item ) :
-				$thumb = get_the_post_thumbnail_url( (int) $item->video_id, 'medium' );
+				$thumb = \MediaShield\CPT\Thumbnail::poster_url( (int) $item->video_id, 'medium' );
+				// A placeholder title ("youtube - <id>") would show the ID.
+				$item_title = \MediaShield\CPT\Thumbnail::display_title( (int) $item->video_id, (string) $item->video_title );
 
 				?>
 				<div class="ms-playlist-item <?php echo esc_attr( 0 === $idx ? 'is-active' : '' ); ?>"
@@ -120,7 +122,7 @@ class PlaylistRenderer {
 					data-index="<?php echo esc_attr( (string) $idx ); ?>">
 					<span class="ms-playlist-item-num"><?php echo esc_html( (string) ( $idx + 1 ) ); ?></span>
 					<?php if ( $thumb ) : ?>
-						<img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $item->video_title ); ?>" class="ms-playlist-item-thumb" loading="lazy" />
+						<img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $item_title ); ?>" class="ms-playlist-item-thumb" loading="lazy" />
 					<?php else : ?>
 						<?php
 						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons::svg returns inline SVG built from a vendored Lucide path map; no user input.
@@ -134,7 +136,7 @@ class PlaylistRenderer {
 						?>
 					<?php endif; ?>
 					<div class="ms-playlist-item-info">
-						<span class="ms-playlist-item-title"><?php echo esc_html( $item->video_title ); ?></span>
+						<span class="ms-playlist-item-title"><?php echo esc_html( $item_title ); ?></span>
 						<?php
 						// Length, when known. This used to print the raw platform
 						// slug ("youtube", "self"), which tells a viewer nothing.

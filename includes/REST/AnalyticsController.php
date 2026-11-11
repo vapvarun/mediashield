@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Access\SessionManager;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -132,6 +133,18 @@ class AnalyticsController extends WP_REST_Controller {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_user_detail' ),
 				'permission_callback' => array( $this, 'admin_check' ),
+				'args'                => array(
+					'per_page' => array(
+						'type'              => 'integer',
+						'default'           => 20,
+						'sanitize_callback' => 'absint',
+					),
+					'page'     => array(
+						'type'              => 'integer',
+						'default'           => 1,
+						'sanitize_callback' => 'absint',
+					),
+				),
 			)
 		);
 
@@ -181,16 +194,20 @@ class AnalyticsController extends WP_REST_Controller {
 		$now_utc = current_time( 'mysql', true );
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
+		// Only sessions that played: every page view opens one (see played_sql()).
+		$played   = SessionManager::played_sql();
+		$played_s = SessionManager::played_sql( 's' );
+
 		$total_sessions = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval})",
+				"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}",
 				$now_utc
 			)
 		);
 
 		$avg_completion = (float) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND completion_pct > 0",
+				"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}",
 				$now_utc
 			)
 		);
@@ -211,7 +228,7 @@ class AnalyticsController extends WP_REST_Controller {
 			$wpdb->prepare(
 				"SELECT DATE(CONVERT_TZ(started_at, '+00:00', %s)) AS date, COUNT(*) AS count
 				 FROM {$sessions}
-				 WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval})
+				 WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}
 				 GROUP BY DATE(CONVERT_TZ(started_at, '+00:00', %s))
 				 ORDER BY date ASC",
 				$offset,
@@ -226,7 +243,7 @@ class AnalyticsController extends WP_REST_Controller {
 				"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
 				 FROM {$sessions} s
 				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_status = 'publish'
-				 WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval})
+				 WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played_s}
 				 GROUP BY s.video_id
 				 ORDER BY session_count DESC
 				 LIMIT 5",
@@ -247,7 +264,7 @@ class AnalyticsController extends WP_REST_Controller {
 					function ( $row ) {
 						return array(
 							'video_id'       => (int) $row->video_id,
-							'title'          => sanitize_text_field( $row->post_title ),
+							'title'          => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->post_title ) ),
 							'session_count'  => (int) $row->session_count,
 							'avg_completion' => round( (float) $row->avg_completion, 1 ),
 						);
@@ -273,7 +290,8 @@ class AnalyticsController extends WP_REST_Controller {
 		$sessions = "{$wpdb->prefix}ms_watch_sessions";
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$stats = $wpdb->get_row(
+		$played = SessionManager::played_sql(); // Constant SQL fragment, no input.
+		$stats  = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT
 				COUNT(*) AS total_sessions,
@@ -282,7 +300,7 @@ class AnalyticsController extends WP_REST_Controller {
 				SUM(total_seconds) AS total_watch_time,
 				MAX(last_heartbeat) AS last_watched
 			 FROM {$sessions}
-			 WHERE video_id = %d",
+			 WHERE video_id = %d AND {$played}",
 				$video_id
 			)
 		);
@@ -354,9 +372,9 @@ class AnalyticsController extends WP_REST_Controller {
 				return array(
 					'id'            => (int) $row->id,
 					'video_id'      => (int) $row->video_id,
-					'video_title'   => sanitize_text_field( ! empty( $row->video_title ) ? $row->video_title : '' ),
+					'video_title'   => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->video_title ) ),
 					'user_id'       => (int) $row->user_id,
-					'user_name'     => sanitize_text_field( ! empty( $row->user_name ) ? $row->user_name : '' ),
+					'user_name'     => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->user_name ) ),
 					'milestone_pct' => (int) $row->milestone_pct,
 					'reached_at'    => self::utc_marked( $row->reached_at ),
 				);
@@ -421,7 +439,7 @@ class AnalyticsController extends WP_REST_Controller {
 			function ( $row ) {
 				return array(
 					'user_id'        => (int) $row->user_id,
-					'display_name'   => sanitize_text_field( $row->display_name ),
+					'display_name'   => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->display_name ) ),
 					'email'          => sanitize_email( $row->user_email ),
 					'videos_watched' => (int) $row->videos_watched,
 					'avg_completion' => round( (float) $row->avg_completion, 1 ),
@@ -447,36 +465,55 @@ class AnalyticsController extends WP_REST_Controller {
 	public function get_user_detail( WP_REST_Request $request ): WP_REST_Response {
 		global $wpdb;
 
-		$user_id = (int) $request['user_id'];
+		$user_id  = (int) $request['user_id'];
+		$per_page = min( 100, max( 1, (int) $request['per_page'] ) );
+		$page     = max( 1, (int) $request['page'] );
+		$table    = "{$wpdb->prefix}ms_watch_sessions";
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table query.
+		// Paged: a long-time member can have thousands of sessions, and the
+		// old fixed LIMIT 100 hid everything older. Served by
+		// idx_user_heartbeat (user_id, last_heartbeat).
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
+		$counts = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT COUNT(*) AS sessions, COUNT( DISTINCT video_id ) AS videos FROM {$table} WHERE user_id = %d",
+				$user_id
+			)
+		);
 		$sessions = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT s.video_id, p.post_title, s.completion_pct, s.total_seconds,
 					s.max_position, s.last_heartbeat, s.started_at
-			 FROM {$wpdb->prefix}ms_watch_sessions s
+			 FROM {$table} s
 			 LEFT JOIN {$wpdb->posts} p ON s.video_id = p.ID
 			 WHERE s.user_id = %d
-			 ORDER BY s.last_heartbeat DESC
-			 LIMIT 100",
-				$user_id
+			 ORDER BY s.last_heartbeat DESC, s.id DESC
+			 LIMIT %d OFFSET %d",
+				$user_id,
+				$per_page,
+				( $page - 1 ) * $per_page
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		$user = get_userdata( $user_id );
+		$total = $counts ? (int) $counts->sessions : 0;
+		$user  = get_userdata( $user_id );
 
-		return rest_ensure_response(
+		$response = rest_ensure_response(
 			array(
+				'total'          => $total,
+				'total_pages'    => (int) max( 1, ceil( $total / $per_page ) ),
+				'videos_watched' => $counts ? (int) $counts->videos : 0,
 				'user'     => array(
 					'id'           => $user_id,
-					'display_name' => $user ? sanitize_text_field( $user->display_name ) : '',
+					'display_name' => $user ? sanitize_text_field( \MediaShield\Support\Text::plain( $user->display_name ) ) : '',
 					'email'        => $user ? sanitize_email( $user->user_email ) : '',
 				),
 				'sessions' => array_map(
 					function ( $row ) {
 						return array(
 							'video_id'       => (int) $row->video_id,
-							'title'          => sanitize_text_field( ! empty( $row->post_title ) ? $row->post_title : '' ),
+							'title'          => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->post_title ) ),
 							'completion_pct' => round( (float) $row->completion_pct, 1 ),
 							'total_seconds'  => (int) $row->total_seconds,
 							'max_position'   => (float) $row->max_position,
@@ -488,6 +525,10 @@ class AnalyticsController extends WP_REST_Controller {
 				),
 			)
 		);
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) max( 1, (int) ceil( $total / $per_page ) ) );
+
+		return $response;
 	}
 
 	/**
@@ -536,7 +577,7 @@ class AnalyticsController extends WP_REST_Controller {
 
 				return array(
 					'video_id'       => (int) $row->video_id,
-					'title'          => sanitize_text_field( ! empty( $row->post_title ) ? $row->post_title : '' ),
+					'title'          => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->post_title ) ),
 					'thumbnail_url'  => $thumbnail_url ? esc_url( $thumbnail_url ) : '',
 					'completion_pct' => round( (float) $row->completion_pct, 1 ),
 					'max_position'   => (float) $row->max_position,
@@ -662,9 +703,9 @@ class AnalyticsController extends WP_REST_Controller {
 				return array(
 					'id'             => (int) $row->id,
 					'video_id'       => (int) $row->video_id,
-					'video_title'    => sanitize_text_field( (string) $row->video_title ),
+					'video_title'    => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->video_title ) ),
 					'user_id'        => (int) $row->user_id,
-					'user_name'      => sanitize_text_field( (string) ( $row->user_name ?? __( 'Guest', 'mediashield' ) ) ),
+					'user_name'      => sanitize_text_field( \MediaShield\Support\Text::plain( (string) ( $row->user_name ?? __( 'Guest', 'mediashield' ) ) ) ),
 					'milestone_pct'  => (int) $row->milestone_pct,
 					'reached_at'     => (string) $row->reached_at, // raw UTC for clients that prefer ISO
 					'reached_at_fmt' => self::local_datetime( (string) $row->reached_at ),

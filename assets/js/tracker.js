@@ -68,29 +68,29 @@
 			.then( function ( res ) {
 				if ( res.ok ) {
 					session.failCount = 0;
-				} else {
-					session.failCount = ( session.failCount || 0 ) + 1;
-					if ( session.failCount >= 3 ) {
-						console.warn( 'MediaShield: heartbeat failed 3 times, stopping for token ' + session.token );
-						session.stopped = true;
-						if ( session.intervalId ) {
-							clearInterval( session.intervalId );
-							session.intervalId = null;
-						}
-					}
+					return;
 				}
-			} )
-			.catch( function ( err ) {
+				// A 5xx is the server having a moment, like a dropped
+				// connection: keep the 30 s beat so progress is recorded once
+				// it answers again. Only refusals count towards stopping.
+				if ( res.status >= 500 ) {
+					console.warn( 'MediaShield: heartbeat not answered (' + res.status + '), will retry' );
+					return;
+				}
 				session.failCount = ( session.failCount || 0 ) + 1;
-				console.warn( 'MediaShield: heartbeat failed', err );
 				if ( session.failCount >= 3 ) {
-					console.warn( 'MediaShield: heartbeat failed 3 times, stopping for token ' + session.token );
+					console.warn( 'MediaShield: heartbeat refused 3 times, stopping for token ' + session.token );
 					session.stopped = true;
 					if ( session.intervalId ) {
 						clearInterval( session.intervalId );
 						session.intervalId = null;
 					}
 				}
+			} )
+			.catch( function ( err ) {
+				// Dropped connection: transient, the next beat tries again.
+				// Stopping here lost every later position of the viewing.
+				console.warn( 'MediaShield: heartbeat failed, will retry', err );
 			} );
 	}
 
@@ -125,13 +125,26 @@
 	}
 
 	/**
+	 * The session/end body: the token plus the place reached, so a viewer who
+	 * leaves before the first heartbeat still has a place to resume.
+	 */
+	function finalBeat( session ) {
+		var duration = session.duration || getPlayerDuration( session.el, session.adapter ) || 0;
+		return {
+			token: session.token,
+			position: getPlayerPosition( session.el, session.adapter ) || 0,
+			duration: duration,
+		};
+	}
+
+	/**
 	 * End all sessions on page unload.
 	 */
 	function endAllSessions() {
 		activeSessions.forEach( function ( session ) {
 			if ( session.intervalId ) clearInterval( session.intervalId );
 
-			var data = JSON.stringify( { token: session.token } );
+			var data = JSON.stringify( finalBeat( session ) );
 
 			if ( navigator.sendBeacon ) {
 				var blob = new Blob( [ data ], { type: 'application/json' } );
@@ -183,8 +196,9 @@
 			fetch( config.restUrl + 'session/end', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
-				body: JSON.stringify( { token: session.token } ),
+				body: JSON.stringify( finalBeat( session ) ),
 				keepalive: true,
+			// ms-silent-ok: the page is unloading; nobody is left to tell.
 			} ).catch( function () {} );
 			return false;
 		} );

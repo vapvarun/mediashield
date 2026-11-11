@@ -49,7 +49,7 @@ export default function WatermarkStep( { onSave, initialData } ) {
 					help={ __( 'How often the watermark moves to a new position.', 'mediashield' ) }
 					type="number"
 					value={ swapInterval }
-					onChange={ ( val ) => { setSwapInterval( parseInt( val, 10 ) ); onSave( { ms_watermark_swap_interval: parseInt( val, 10 ) } ); } }
+					onChange={ ( val ) => { setSwapInterval( val ); const n = parseInt( val, 10 ); if ( n >= 1 ) onSave( { ms_watermark_swap_interval: n } ); } }
 					min={ 5 }
 					max={ 120 }
 				/>

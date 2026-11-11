@@ -144,8 +144,10 @@ class AccessControl {
 	/**
 	 * Check HTTP referer against the allowed-domain whitelist.
 	 *
-	 * Empty Referer is treated as a bypass attempt — when a whitelist is
-	 * configured, the safe default is to deny rather than allow. Sites that
+	 * A page this site renders, and a logged-in member's REST call, are this
+	 * site and always pass. Otherwise an empty Referer is treated as a bypass
+	 * attempt — when a whitelist is configured, the safe default is to deny
+	 * rather than allow. Sites that
 	 * legitimately need to support same-origin direct access from
 	 * privacy-respecting browsers can opt in via the
 	 * `mediashield_allow_empty_referer` filter.
@@ -162,6 +164,30 @@ class AccessControl {
 		$referer = wp_get_raw_referer();
 
 		if ( empty( $referer ) ) {
+			// The whitelist is about where the player is EMBEDDED. A page this
+			// site renders is this site, whatever link brought the visitor in
+			// (bookmark, email, typed, the redirect after login), and a REST
+			// call from a logged-in member carries a nonce only this site's
+			// pages hand out. Neither can be a page elsewhere, so the site's
+			// own students are never blocked (Basecamp 10499053739). A page
+			// framed elsewhere, and a guest's player request with no Referer,
+			// are still refused unless the filter opts in.
+			// Sec-Fetch-* are set by the browser and cannot be removed by the
+			// page doing the framing, so a lesson framed on another site with
+			// referrerpolicy=no-referrer is still told apart from a direct
+			// visit. A browser too old to send them is treated as a direct
+			// visit, so students are never blocked.
+			$dest    = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ) ) : '';
+			$site    = isset( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ) ) : '';
+			$framed  = in_array( $dest, array( 'iframe', 'frame', 'embed', 'object' ), true );
+			$is_rest = defined( 'REST_REQUEST' ) && REST_REQUEST;
+			if ( ! $framed && ! $is_rest && ! wp_doing_ajax() ) {
+				return self::allow();
+			}
+			if ( $is_rest && is_user_logged_in() && 'cross-site' !== $site ) {
+				return self::allow();
+			}
+
 			/**
 			 * Filter whether to allow video playback when the HTTP Referer
 			 * header is absent. Defaults to false (deny) — keeps the whitelist

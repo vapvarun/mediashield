@@ -101,7 +101,7 @@ Status values depend on the driver. `self_hosted` uploads are synchronous, so it
 | GET | `/videos/{id}/stats` | `manage_options` | Per-video statistics. |
 | GET | `/analytics/milestones` | `manage_options` | Milestone completion data across all videos. Params: `per_page` (default 20), `page` (default 1), `video_id` (default 0 = all). |
 | GET | `/analytics/users` | `manage_options` | User engagement list. Params: `per_page` (default 20), `page` (default 1), `search` (default `''`). |
-| GET | `/analytics/users/{user_id}` | `manage_options` | Single user detail: every video watched, max position, completion %, milestone history. |
+| GET | `/analytics/users/{user_id}` | `manage_options` | Single user detail, paged (`page`, `per_page` up to 100): sessions newest first with video, max position and completion %, plus `total`, `total_pages` and `videos_watched`. |
 | GET | `/analytics/my-videos` | logged_in | Current user's watched videos. No admin cap required. |
 
 ---
@@ -110,7 +110,7 @@ Status values depend on the driver. `self_hosted` uploads are synchronous, so it
 
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
-| POST | `/protection/devtools-event` | `beacon_permission` - a valid `wp_rest` nonce, from the `X-WP-Nonce` header or a `_wpnonce` param. No capability, and **not** logged-in-only: anonymous playback has to be able to report. | Beacon endpoint for client-side devtools detection. Body: `{ strategy (required, one of `size_delta` \| `debugger_timing`), url, ua, screen }`. Fires the `mediashield_devtools_detected` action. |
+| POST | `/protection/devtools-event` | `beacon_permission` - a valid `wp_rest` nonce, from the `X-WP-Nonce` header or a `_wpnonce` param. No capability, and **not** logged-in-only: anonymous playback has to be able to report. | Beacon endpoint for client-side devtools detection. Body: `{ strategy (required, one of `size_delta` \| `debugger_timing`; the player sends only `debugger_timing` since 1.4.2), url, ua, screen }`. Fires the `mediashield_devtools_detected` action. |
 
 Rate limited to one recorded event per user+IP per hour via a transient; a throttled call still returns 200 with `{ recorded: false, reason: 'rate_limited' }`.
 

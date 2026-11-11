@@ -123,9 +123,24 @@ const ProtectionBadge = ( { level } ) => {
 		strict: __( 'Strict', 'mediashield' ),
 	};
 
+	// An empty level means the video follows the site default; say so,
+	// instead of showing "None" for a video that is actually protected.
+	if ( ! level ) {
+		const def = window.mediashieldAdmin?.defaultProtection || 'standard';
+		return (
+			<span className={ `mediashield-badge mediashield-badge--${ def }` }>
+				{ sprintf(
+					/* translators: %s: the site's default protection level, e.g. Standard. */
+					__( 'Default (%s)', 'mediashield' ),
+					map[ def ] || def
+				) }
+			</span>
+		);
+	}
+
 	return (
-		<span className={ `mediashield-badge mediashield-badge--${ level || 'none' }` }>
-			{ map[ level ] || level || map.none }
+		<span className={ `mediashield-badge mediashield-badge--${ level }` }>
+			{ map[ level ] || level }
 		</span>
 	);
 };
@@ -149,6 +164,8 @@ const Videos = () => {
 	const [ totalPages, setTotalPages ] = useState( 1 );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
+	// Bumped by Retry to run the list request again.
+	const [ attempt, setAttempt ] = useState( 0 );
 	const [ previewVideo, setPreviewVideo ] = useState( null );
 
 	const { createSuccessNotice, createErrorNotice } = useDispatch( noticesStore );
@@ -212,7 +229,7 @@ const Videos = () => {
 			parse: false,
 		} )
 			.then( async ( res ) => {
-				const json = await res.json();
+				const json = await window.mediashieldRequest.readJSON( res );
 				if ( ! cancelled ) {
 					setVideos( json );
 					const tp = parseInt( res.headers.get( 'X-WP-TotalPages' ), 10 ) || 1;
@@ -223,7 +240,7 @@ const Videos = () => {
 			} )
 			.catch( ( err ) => {
 				if ( ! cancelled ) {
-					setError( err.message || __( 'Failed to load videos.', 'mediashield' ) );
+					setError( window.mediashieldRequest.message( err, __( 'Failed to load videos.', 'mediashield' ) ) );
 				}
 			} )
 			.finally( () => {
@@ -235,14 +252,14 @@ const Videos = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [ page, debouncedSearch ] );
+	}, [ page, debouncedSearch, attempt ] );
 
 	return (
 		<div className="mediashield-page mediashield-videos">
 			<header className="mediashield-page__header">
 				<h1>
 					{ __( 'Videos', 'mediashield' ) }
-					{ ! loading && (
+					{ ! loading && ! error && (
 						<span className="mediashield-page__header-subtitle">
 							{ total } { total === 1 ? __( 'video', 'mediashield' ) : __( 'videos', 'mediashield' ) }
 						</span>
@@ -275,8 +292,11 @@ const Videos = () => {
 			) }
 
 			{ error && (
-				<div className="mediashield-notice mediashield-notice--error">
-					{ error }
+				<div className="mediashield-notice mediashield-notice--error" role="alert">
+					{ error }{ ' ' }
+					<Button variant="secondary" onClick={ () => setAttempt( ( n ) => n + 1 ) }>
+						{ __( 'Try again', 'mediashield' ) }
+					</Button>
 				</div>
 			) }
 

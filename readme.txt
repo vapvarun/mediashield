@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -125,7 +125,7 @@ No. MediaShield only loads its CSS and JavaScript on pages that contain video co
 
 = Is it GDPR compliant? =
 
-Yes. MediaShield registers personal data exporters and erasers with the WordPress privacy tools. Watch session PII (IP address, user agent) is anonymized during erasure while aggregate analytics are retained. Archived sessions are covered too, in both the export and the erasure.
+Yes. MediaShield registers personal data exporters and erasers with the WordPress privacy tools. Erasure anonymizes watch sessions: the IP address and user agent are cleared and each session is unlinked from the account, while aggregate analytics are retained. Archived sessions are covered too, in both the export and the erasure.
 
 = Can I customize the access control logic? =
 
@@ -150,6 +150,65 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 6. Session tracking with concurrent stream management
 
 == Changelog ==
+
+= 1.4.2 - November 2026 =
+
+Security release: self-hosted videos picked from the Media Library are now protected like uploaded ones.
+
+* New      - Watermark setting Keep the watermark at the edges keeps the watermark in the corners, off the centre of the video. Off by default.
+* New      - A Revoke session button on each Viewers row ends that member's active watch sessions after you confirm on the screen.
+* Improve  - Existing Media Library videos move to the protected folder in the background after the update, and playback keeps working throughout.
+* Improve  - A file also used elsewhere, such as in a post, an Elementor page, an ACF field, a widget or a Learnomy lesson, stays where it is, and a notice lists those videos with how to protect them.
+* Improve  - Deleting a video or uninstalling MediaShield puts a moved file back in its Media Library place instead of deleting it.
+* Improve  - A viewer's watch history on the Viewers screen is paged, 20 sessions at a time with Previous and Next, instead of stopping at the 100 most recent.
+* Improve  - The Viewers list is paged, 20 viewers at a time with Previous and Next, so a site with thousands of viewers can reach every one instead of the 20 most recent.
+* Fix      - Allowed Domains no longer blocks your own students who open a lesson from a bookmark, an email link or after logging in; embeds on other sites are still checked.
+* Fix      - A role given the upload permission gets a Videos menu with Add New, and sees only its own videos unless it can edit others' posts.
+* Fix      - For that role, the All, Published, Drafts and Trash counts above the Videos list count only its own videos, the ones the list shows.
+* Fix      - A video whose watch session cannot start stays stopped with a message and a retry, instead of playing without its watermark.
+* Fix      - Watch progress, completion, resume, milestones and lesson auto-complete keep recording past the first two minutes of a video.
+* Fix      - Videos added from the setup wizard or the Video block follow Settings > Default Protection Level instead of always being saved as Standard, so on a site whose default is not Standard they now play at that default.
+* Fix      - The Videos list shows "Default" with the site's level, such as "Default (Standard)", for a video that follows the site default, instead of "None".
+* Fix      - The Video block's Protection Level list has a Site default choice, and the block preview in the editor shows the video's featured image.
+* Fix      - The LMS Integration upsell and the video screen no longer list Learnomy for lesson linking and auto-complete, which work with LearnDash, Tutor LMS and LifterLMS.
+* Fix      - A YouTube or Vimeo video pasted in the setup wizard or the Video block takes its real title instead of "youtube - VIDEO_ID".
+* Fix      - Leaving a video before the first progress save keeps the place reached, so the member can resume.
+* Fix      - A number setting sent as text, such as watermark opacity "abc", is refused instead of saved as 0.
+* Fix      - Analytics count a session only once the video played, so page loads no longer inflate sessions and the Dashboard average matches Top Videos.
+* Fix      - On a site that never saved the watermark settings, the player uses the opacity and swap interval the Settings screen shows.
+* Fix      - YouTube and Vimeo videos fill the screen in fullscreen, also inside a YouTube or Vimeo embed block.
+* Fix      - Pressing Publish or Update with a video file chosen but not yet uploaded uploads it first, instead of saving a video with no file.
+* Fix      - Self-hosted videos answer byte-range requests for the end of the file correctly, so players that ask for the last part of a video can play it.
+* Fix      - Erasing a member's personal data also unlinks their watch sessions from their account, so the sessions kept for your totals are anonymous.
+* Fix      - Double-clicking a protected video, or using the browser's own fullscreen, no longer shows the video without its watermark; fullscreen always keeps the watermark, and on iPhone the player fills the screen instead.
+* Fix      - HLS videos, such as Bunny Stream in the full player, play in Chrome, Firefox and Edge on block themes; the streaming library was never loaded there.
+* Fix      - A video that is not 16:9, such as 4:3 or portrait, is letterboxed in the player instead of being stretched, cropped or overflowing when a theme or LMS styles videos.
+* Fix      - A watermark opacity of 0 is drawn at 0 instead of 30%, so students see what the settings preview shows.
+* Fix      - The watermark is no longer hidden under the MediaShield badge, the speed button, the fullscreen button or the video's control bar.
+* Fix      - A long watermark wraps onto more lines, or gets smaller, to fit the player, so every field the owner chose is visible on phones.
+* Fix      - A guest's watermark reads Guest and their IP, as documented, without a stray separator in front.
+* Fix      - Settings changed quickly one after another are all saved; before, only the last one was kept while the screen still said Settings saved. Saving... shows while a save is in progress, and leaving the screen straight after a change also saves it.
+* Fix      - Number settings such as Position Swap Interval take whole numbers only, can be cleared and retyped, and say why a value was not saved, a decimal such as 1.5 included; before, an emptied field put its default back (typing 8 saved 308) and 1.5 saved 15.
+* Fix      - A browser zoomed to 125% or more is no longer mistaken for open developer tools, so students are not flagged or paused for zooming.
+* Fix      - Erasing a member's personal data no longer reports that some data was not erased, and next to MediaShield Pro 1.4.1 it also removes their playback events and exports their activity alerts first.
+* Fix      - When the server cannot be reached or answers with an error page, MediaShield screens say so in one plain sentence instead of browser or parser errors: settings say Not saved and offer Retry, the Videos list offers Try again instead of showing 0 videos, and the setup wizard's first video no longer fails silently.
+* Fix      - An upload that gets an error page back, such as a 502, says the server could not be reached instead of Upload failed: 502, and an upload the server refused shows the server's own reason, such as Chunk upload failed with status 500.
+* Fix      - Signed HLS streams, such as Bunny with CDN token authentication, renew their address before it expires and after a long pause, so playback keeps its place instead of resetting to a blank player; if a renewal fails while the video still plays, the player retries quietly, says so with Try again only when the address is about to run out, and clears that message as soon as a renewal works.
+* Fix      - Uploads from Videos, Add New go to the Default Upload Target, such as Bunny Stream; they always went to this site.
+* Fix      - Names and video titles with an ampersand, apostrophe or dash show as written in the watermark and on the Viewers, Milestones and Dashboard screens, instead of as HTML entities such as &amp;amp; or &#8211;.
+* Fix      - Activating MediaShield with WP-CLI or the Plugins screen's bulk Activate no longer jumps to the setup wizard on the next admin page you open.
+* Security - Poster images no longer reveal a video's YouTube, Vimeo, Wistia or Bunny ID to visitors; new posters carry no ID, and the update renames existing posters and their sizes, titles and addresses in the background.
+* Security - A playlist's video list no longer shows a visitor who may not watch a poster that is still named after the video ID.
+* Security - Video titles and addresses no longer carry the platform video ID; a pasted video with no title is named "Video 123", and the update cleans old "youtube - ID" titles and addresses in the background. A poster address pasted by hand before the update stops working.
+* Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
+* Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
+* Security - Saving a video moves its Media Library file only when the person saving may edit that file.
+* Security - The player page no longer prints a self-hosted video's stored file name or a direct address into the protected folder.
+* Security - The stream address refresh only answers for a published MediaShield video, and gives exactly the address the page itself would show the viewer; it used to sign an address for any id the viewer could name.
+* Security - An unpublished video answers Video not found, exactly like an ID that does not exist, on the stream, stream refresh and session start, so visitors cannot discover which IDs are drafts.
+* Dev      - New command wp mediashield repair restore-library-files and new filter mediashield_library_file_in_use.
+* Dev      - New shared reader window.mediashieldRequest (message and readJSON) for request failures, and the bin/request-error-check.php guard in local CI.
+* Compat   - Aligned with MediaShield Pro 1.4.2. Install both updates together.
 
 = 1.4.1 - November 2026 =
 
@@ -351,6 +410,9 @@ Bug fixes, accessibility and UX polish, a complete documentation set, and new de
 * 8 actions and 8 filters for developer integrations.
 
 == Upgrade Notice ==
+
+= 1.4.2 =
+Security release: self-hosted videos picked from the Media Library move into the protected folder so non-buyers cannot download them. A notice lists what moved. Update Pro to 1.4.2 at the same time.
 
 = 1.4.0 =
 Protected video no longer returns access denied after a cached page goes stale, embed-block videos are protected, and playlists play through the protected player. Update Pro to 1.4.0 at the same time.

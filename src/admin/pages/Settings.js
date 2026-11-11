@@ -28,6 +28,93 @@ const config = window.mediashieldAdmin || {};
 const lmsConfig = window.mediashieldProLMS || {};
 const DEBOUNCE_MS = 800;
 
+/**
+ * A whole-number setting that can be retyped.
+ *
+ * The field keeps what is typed, so it can be emptied; only a whole number
+ * inside min..max is saved. It used to save `parseInt( val ) || default` on
+ * every keystroke, so emptying the field put the default back and typing 8
+ * after it saved 308. An exponent cannot be typed; a decimal such as 1.5,
+ * or a value outside the range, is not saved and the field says why instead
+ * of quietly going back on blur.
+ *
+ * @param {Object}   props          TextControl props.
+ * @param {number}   props.value    Saved value.
+ * @param {Function} props.onCommit Called with each valid number.
+ * @param {number}   props.min      Smallest allowed value.
+ * @param {number}   [props.max]    Largest allowed value.
+ * @param {string}   [props.help]   Help text, replaced by the reason while a value is refused.
+ */
+const NumberField = ( { value, onCommit, min, max, help, ...props } ) => {
+	const [ draft, setDraft ] = useState( null );
+	const [ refused, setRefused ] = useState( null );
+	// A value is committed once typing has settled (or on blur), never per
+	// key: typing "1.5" committed the "1" on the way and then refused 1.5,
+	// so the setting quietly became 1 (Basecamp 10499264493).
+	const pending = useRef( null );
+	const timer = useRef( null );
+	const commitPending = () => {
+		clearTimeout( timer.current );
+		if ( null !== pending.current ) {
+			const n = pending.current;
+			pending.current = null;
+			onCommit( n );
+		}
+	};
+	useEffect( () => () => commitPending(), [] ); // eslint-disable-line react-hooks/exhaustive-deps
+
+	const rule = undefined === max
+		/* translators: %d: smallest allowed number. */
+		? sprintf( __( 'Enter a whole number, %d or more.', 'mediashield' ), min )
+		/* translators: 1: smallest allowed number, 2: largest allowed number. */
+		: sprintf( __( 'Enter a whole number from %1$d to %2$d.', 'mediashield' ), min, max );
+
+	return (
+		<TextControl
+			{ ...props }
+			className={ refused !== null ? 'mediashield-number-field is-refused' : 'mediashield-number-field' }
+			type="number"
+			inputMode="numeric"
+			step={ 1 }
+			min={ min }
+			max={ max }
+			value={ draft ?? value }
+			help={ refused !== null
+				/* translators: 1: the value that was typed, 2: the rule it broke. */
+				? sprintf( __( '%1$s was not saved. %2$s', 'mediashield' ), refused, rule )
+				: help }
+			// A dot or comma is let through so "1.5" is refused with the rule
+			// below; swallowing it saved "15".
+			onKeyDown={ ( e ) => {
+				if ( [ 'e', 'E', '+' ].includes( e.key ) ) {
+					e.preventDefault();
+				}
+			} }
+			onChange={ ( val ) => {
+				setDraft( val );
+				clearTimeout( timer.current );
+				pending.current = null;
+				if ( '' === val ) return;
+				const n = Number( val );
+				// "1." is still being typed: wait for what follows the dot.
+				if ( /[.,]$/.test( val ) ) return;
+				if ( Number.isInteger( n ) && n >= min && ( undefined === max || n <= max ) ) {
+					setRefused( null );
+					pending.current = n;
+					timer.current = setTimeout( commitPending, DEBOUNCE_MS );
+				} else {
+					setRefused( val );
+				}
+			} }
+			onBlur={ () => {
+				commitPending();
+				setDraft( null );
+			} }
+			__nextHasNoMarginBottom
+		/>
+	);
+};
+
 const LMS_PCT_OPTIONS = [
 	{ label: '25%', value: 25 },
 	{ label: '50%', value: 50 },
@@ -94,8 +181,17 @@ const Settings = () => {
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const debounceRef = useRef( null );
+	// What the watermark preview says. Pro owns its field names and sends
+	// { text, caption } whenever its Watermark Fields change.
+	const [ previewWords, setPreviewWords ] = useState( null );
 
-	const { createSuccessNotice, createErrorNotice } = useDispatch( noticesStore );
+	useEffect( () => {
+		const onPreview = ( e ) => setPreviewWords( e.detail || null );
+		window.addEventListener( 'mediashield:watermark-preview', onPreview );
+		return () => window.removeEventListener( 'mediashield:watermark-preview', onPreview );
+	}, [] );
+
+	const { createSuccessNotice, createErrorNotice, createInfoNotice } = useDispatch( noticesStore );
 
 	useEffect( () => {
 		let cancelled = false;
@@ -108,7 +204,7 @@ const Settings = () => {
 				if ( ! cancelled ) setSettings( res );
 			} )
 			.catch( ( err ) => {
-				if ( ! cancelled ) setError( err.message || __( 'Failed to load settings.', 'mediashield' ) );
+				if ( ! cancelled ) setError( window.mediashieldRequest.message( err, __( 'Failed to load settings.', 'mediashield' ) ) );
 			} )
 			.finally( () => {
 				if ( ! cancelled ) setLoading( false );
@@ -119,33 +215,71 @@ const Settings = () => {
 		};
 	}, [] );
 
+	// Changes made within DEBOUNCE_MS of each other are saved together. The
+	// timer used to carry only the last key, so the earlier change was lost
+	// while the screen still said saved.
+	const pendingRef = useRef( {} );
+
+	const flush = useCallback(
+		( keepalive = false ) => {
+			clearTimeout( debounceRef.current );
+			const data = pendingRef.current;
+			if ( ! Object.keys( data ).length ) return;
+			pendingRef.current = {};
+
+			// One notice id: "Saving..." is replaced by Saved or by the error.
+			const notice = { type: 'snackbar', id: 'mediashield-autosave' };
+			createInfoNotice( __( 'Saving…', 'mediashield' ), notice );
+
+			apiFetch( {
+				url: `${ config.restUrl }settings`,
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': config.nonce,
+				},
+				data,
+				keepalive,
+			} )
+				.then( () => {
+					createSuccessNotice( __( 'Settings saved.', 'mediashield' ), notice );
+				} )
+				.catch( ( err ) => {
+					// Keep what failed for the next save, unless changed since.
+					pendingRef.current = { ...data, ...pendingRef.current };
+					// Say plainly that nothing was saved, and offer the retry, so
+					// a field showing the new value is not mistaken for saved.
+					createErrorNotice(
+						sprintf(
+							/* translators: %s: why the save failed. */
+							__( 'Not saved. %s', 'mediashield' ),
+							window.mediashieldRequest.message( err, __( 'Failed to save.', 'mediashield' ) )
+						),
+						{ ...notice, actions: [ { label: __( 'Retry', 'mediashield' ), onClick: () => flush() } ] }
+					);
+				} );
+		},
+		[ createSuccessNotice, createErrorNotice, createInfoNotice ]
+	);
+
 	const saveField = useCallback(
 		( key, value ) => {
-			if ( debounceRef.current ) clearTimeout( debounceRef.current );
-
-			debounceRef.current = setTimeout( () => {
-				apiFetch( {
-					url: `${ config.restUrl }settings`,
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': config.nonce,
-					},
-					data: { [ key ]: value },
-				} )
-					.then( () => {
-						createSuccessNotice( __( 'Settings saved.', 'mediashield' ), { type: 'snackbar' } );
-					} )
-					.catch( ( err ) => {
-						createErrorNotice(
-							err.message || __( 'Failed to save.', 'mediashield' ),
-							{ type: 'snackbar' }
-						);
-					} );
-			}, DEBOUNCE_MS );
+			pendingRef.current[ key ] = value;
+			clearTimeout( debounceRef.current );
+			debounceRef.current = setTimeout( flush, DEBOUNCE_MS );
 		},
-		[ createSuccessNotice, createErrorNotice ]
+		[ flush ]
 	);
+
+	// Leaving the screen, or the page, within DEBOUNCE_MS still saves.
+	useEffect( () => {
+		const onUnload = () => flush( true );
+		window.addEventListener( 'beforeunload', onUnload );
+		return () => {
+			window.removeEventListener( 'beforeunload', onUnload );
+			flush();
+		};
+	}, [ flush ] );
 
 	const updateSetting = useCallback(
 		( key, value ) => {
@@ -211,7 +345,13 @@ const Settings = () => {
 					help={ __( 'Applied to new videos unless overridden per-video.', 'mediashield' ) }
 					value={ settings?.ms_default_protection || 'standard' }
 					options={ PROTECTION_OPTIONS }
-					onChange={ ( val ) => updateSetting( 'ms_default_protection', val ) }
+					onChange={ ( val ) => {
+						updateSetting( 'ms_default_protection', val );
+						// Videos reads the default from the page config, printed
+						// once at load; keep it current so "Default (X)" is right
+						// without a reload.
+						if ( window.mediashieldAdmin ) window.mediashieldAdmin.defaultProtection = val;
+					} }
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
@@ -319,13 +459,13 @@ const Settings = () => {
 						</span>
 					) }
 					<span
-						className="mediashield-settings__preview-watermark"
+						className={ 'mediashield-settings__preview-watermark' + ( settings?.ms_watermark_edges_only ? ' mediashield-settings__preview-watermark--edge' : '' ) }
 						style={ {
 							color: settings?.ms_watermark_color || '#ffffff',
 							opacity: settings?.ms_watermark_opacity ?? 0.5,
 						} }
 					>
-						{ __( 'Viewer Name', 'mediashield' ) } · 203.0.113.7
+						{ previewWords?.text || __( 'Viewer Name', 'mediashield' ) + ' · 203.0.113.7' }
 					</span>
 					<span
 						className="mediashield-settings__preview-button"
@@ -335,7 +475,7 @@ const Settings = () => {
 					</span>
 				</div>
 				<p className="mediashield-settings__preview-caption">
-					{ __( 'Preview. The watermark shows each viewer\'s own name and IP address and moves around the video.', 'mediashield' ) }
+					{ previewWords?.caption || __( 'Preview. The watermark shows each viewer\'s own name and IP address and moves around the video.', 'mediashield' ) }
 				</p>
 				<RangeControl
 					label={ __( 'Opacity', 'mediashield' ) }
@@ -355,15 +495,18 @@ const Settings = () => {
 						enableAlpha={ false }
 					/>
 				</div>
-				<TextControl
+				<NumberField
 					label={ __( 'Position Swap Interval', 'mediashield' ) }
 					help={ __( 'Seconds between watermark position changes. Moving the watermark stops a viewer cropping it out, so lower is safer and higher is less distracting.', 'mediashield' ) }
-					type="number"
 					value={ settings?.ms_watermark_swap_interval ?? 30 }
-					onChange={ ( val ) =>
-						updateSetting( 'ms_watermark_swap_interval', parseInt( val, 10 ) || 30 )
-					}
+					onCommit={ ( val ) => updateSetting( 'ms_watermark_swap_interval', val ) }
 					min={ 1 }
+				/>
+				<ToggleControl
+					label={ __( 'Keep the watermark at the edges', 'mediashield' ) }
+					help={ __( 'Keeps the watermark in the corners, off the centre of the video.', 'mediashield' ) }
+					checked={ !! settings?.ms_watermark_edges_only }
+					onChange={ ( val ) => updateSetting( 'ms_watermark_edges_only', val ) }
 					__nextHasNoMarginBottom
 				/>
 				<ToggleControl
@@ -416,7 +559,7 @@ const Settings = () => {
 					'mediashield'
 				) }
 			>
-				<TextControl
+				<NumberField
 					label={ __( 'Keep watch history for (months)', 'mediashield' ) }
 					help={
 						Number( settings?.ms_session_retention_months ?? 0 ) > 0
@@ -429,17 +572,10 @@ const Settings = () => {
 									'mediashield'
 							  )
 					}
-					type="number"
 					min={ 0 }
 					max={ 120 }
 					value={ settings?.ms_session_retention_months ?? 0 }
-					onChange={ ( val ) =>
-						updateSetting(
-							'ms_session_retention_months',
-							parseInt( val, 10 ) || 0
-						)
-					}
-					__nextHasNoMarginBottom
+					onCommit={ ( val ) => updateSetting( 'ms_session_retention_months', val ) }
 				/>
 			</SectionCard>
 
@@ -587,7 +723,7 @@ const Settings = () => {
 							onChange={ ( val ) => updateSetting( 'ms_ads_preroll', val ) }
 							__nextHasNoMarginBottom
 						/>
-						<TextControl
+						<NumberField
 							label={ __( 'Mid-roll Count', 'mediashield' ) }
 							help={
 								( settings?.ms_ads_midroll_count ?? 3 ) > 0
@@ -599,17 +735,10 @@ const Settings = () => {
 									)
 									: __( 'No mid-roll breaks will play. When enabled, breaks are spaced evenly across the middle of the video, between the 10th and 90th percent mark (0-10, default: 3).', 'mediashield' )
 							}
-							type="number"
 							min={ 0 }
 							max={ 10 }
 							value={ settings?.ms_ads_midroll_count ?? 3 }
-							onChange={ ( val ) =>
-								updateSetting(
-									'ms_ads_midroll_count',
-									Math.max( 0, Math.min( 10, parseInt( val, 10 ) || 0 ) )
-								)
-							}
-							__nextHasNoMarginBottom
+							onCommit={ ( val ) => updateSetting( 'ms_ads_midroll_count', val ) }
 						/>
 						<ToggleControl
 							label={ __( 'Require Full View', 'mediashield' ) }
@@ -619,20 +748,13 @@ const Settings = () => {
 							__nextHasNoMarginBottom
 						/>
 						{ ! settings?.ms_ads_require_full_view && (
-							<TextControl
+							<NumberField
 								label={ __( 'Skip Delay (seconds)', 'mediashield' ) }
 								help={ __( 'Seconds before the Skip button unlocks on each ad. 0 = skippable immediately. Clamped 0–60. Default: 5.', 'mediashield' ) }
-								type="number"
 								min={ 0 }
 								max={ 60 }
 								value={ settings?.ms_ads_skip_after ?? 5 }
-								onChange={ ( val ) =>
-									updateSetting(
-										'ms_ads_skip_after',
-										Math.max( 0, Math.min( 60, parseInt( val, 10 ) || 0 ) )
-									)
-								}
-								__nextHasNoMarginBottom
+								onCommit={ ( val ) => updateSetting( 'ms_ads_skip_after', val ) }
 							/>
 						) }
 						<ToggleControl
@@ -720,7 +842,7 @@ const Settings = () => {
 							<strong>{ __( 'Advanced Watermark', 'mediashield' ) }</strong> — { __( '7 configurable fields (username, email, IP, user ID, timestamp, site name, custom text)', 'mediashield' ) }
 						</div>
 						<div className="ms-upsell-feature">
-							<strong>{ __( 'LMS Integration', 'mediashield' ) }</strong> — { __( 'Auto-complete Learnomy, LearnDash, Tutor LMS, or LifterLMS lessons on video completion', 'mediashield' ) }
+							<strong>{ __( 'LMS Integration', 'mediashield' ) }</strong> — { __( 'Auto-complete LearnDash, Tutor LMS, or LifterLMS lessons on video completion', 'mediashield' ) }
 						</div>
 						<div className="ms-upsell-feature">
 							<strong>{ __( 'Platform Browsers', 'mediashield' ) }</strong> — { __( 'Browse & bulk import videos from Bunny, YouTube, Vimeo, Wistia', 'mediashield' ) }

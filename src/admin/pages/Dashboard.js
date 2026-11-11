@@ -79,7 +79,7 @@ const Dashboard = () => {
 			} )
 			.catch( ( err ) => {
 				if ( ! cancelled ) {
-					setError( err.message || __( 'Failed to load analytics.', 'mediashield' ) );
+					setError( window.mediashieldRequest.message( err, __( 'Failed to load analytics.', 'mediashield' ) ) );
 				}
 			} )
 			.finally( () => {

@@ -140,13 +140,13 @@ Fires while rendering a player whose platform needs adaptive streaming (self-hos
 
 **Parameters:** `$context` (array with keys: `user_id`, `ip`, `url`, `strategy`, `ua`, `screen`, `at`)
 
-`strategy` is `size_delta` or `debugger_timing`. `at` is a UTC MySQL timestamp.
+`strategy` is `debugger_timing` (`size_delta`, a window-size check that fired on browser zoom, is no longer sent since 1.4.2). `at` is a UTC MySQL timestamp.
 
 ---
 
 ### mediashield_privacy_before_erase
 
-Fires before MediaShield's GDPR eraser deletes or anonymizes rows for a given email. Use to roll your own removals into the GDPR receipt.
+Fires before MediaShield's GDPR eraser deletes or anonymizes rows for a given email. Use to roll your own removals into the GDPR receipt. The person's watch sessions still carry their user ID at this point; the eraser sets it to 0 afterwards, so remove anything you find through those sessions here.
 
 **Parameters:** `$email` (string), `$user` (WP_User or false), `$page` (int), `$counters` (stdClass, passed by reference)
 
@@ -268,6 +268,36 @@ add_filter( 'mediashield_upload_drivers', function( $drivers ) {
 *Since 1.3.0.* Filter the on-disk filename for a self-hosted upload. Stored names carry a random token so a file path is impractical to guess; return the plain sanitised name to opt out.
 
 **Parameters:** `$obscured` (string), `$original_name` (string)
+
+---
+
+### mediashield_library_file_in_use
+
+*Since 1.4.2.* Report a use of a Media Library file that MediaShield cannot see, so the file is left in place instead of being moved into the protected folder. Return where it is used, in a few words the owner will read in the notice (for example `a Learnomy lesson`). MediaShield's Learnomy integration uses it for lesson and course URLs.
+
+**Parameters:** `$where` (string, '' when unused so far), `$relative` (string, path below the uploads folder), `$attachment_id` (int, 0 when none), `$video_id` (int)
+
+```php
+add_filter( 'mediashield_library_file_in_use', function( $where, $relative ) {
+    return '' === $where && my_plugin_uses_file( $relative ) ? 'a My Plugin page' : $where;
+}, 10, 2 );
+```
+
+---
+
+### mediashield_library_files_batch_size
+
+*Since 1.4.2.* Videos checked per pass of the one-off `ms_protect_library_files` job. Default 50, clamped to 10-200.
+
+**Parameters:** `$batch` (int)
+
+---
+
+### mediashield_poster_rename_batch_size
+
+*Since 1.4.2.* Videos checked per pass of the one-off `ms_rename_id_posters` job, which renames posters saved under the platform video ID. Default 50, clamped to 10-200.
+
+**Parameters:** `$batch` (int)
 
 ---
 

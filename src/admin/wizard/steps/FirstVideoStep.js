@@ -14,11 +14,13 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 	const [ url, setUrl ] = useState( '' );
 	const [ creating, setCreating ] = useState( false );
 	const [ created, setCreated ] = useState( null );
+	const [ failed, setFailed ] = useState( '' );
 
 	const handleCreate = async () => {
 		if ( ! url.trim() ) return;
 
 		setCreating( true );
+		setFailed( '' );
 		const platform = detectPlatform( url );
 		const platformVideoId = extractVideoId( url, platform );
 
@@ -27,23 +29,23 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 				path: '/wp/v2/mediashield-videos',
 				method: 'POST',
 				data: {
-					title: platformVideoId
-						? `${ platform } - ${ platformVideoId }`
-						: url.substring( 0, 60 ),
+					// Never the platform ID: the server gives the video the platform's
+					// title or "Video 123", and a slug to match.
+					title: platformVideoId ? '' : url.substring( 0, 60 ),
 					status: 'publish',
 					meta: {
 						_ms_platform: platform,
 						_ms_platform_video_id: platformVideoId,
+						// No protection level: the video follows the site default.
 						_ms_source_url: url,
-						_ms_protection_level: 'standard',
 					},
 				},
 			} );
 
 			setCreated( { id: video.id, platform } );
 		} catch ( err ) {
-			// eslint-disable-next-line no-console
-			console.error( 'Failed to create video', err );
+			// It used to fail silently: the button just came back.
+			setFailed( window.mediashieldRequest.message( err, __( 'The video could not be added. Try again.', 'mediashield' ) ) );
 		}
 
 		setCreating( false );
@@ -81,6 +83,9 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 								</>
 							) }
 						</Button>
+						{ failed && (
+							<p className="ms-wizard__error" role="alert">{ failed }</p>
+						) }
 					</div>
 				) : (
 					<div className="ms-wizard__success-banner">

@@ -31,7 +31,7 @@ When on, MediaShield stops printing the file's own address in the page and point
 
 It does nothing for YouTube, Vimeo, Wistia, or Bunny embeds, and the setting says so in the admin. Those play in the provider's iframe, whose address has to contain the provider's video ID for playback to work at all. Blanking it would break the video and protect nothing.
 
-**Detect Developer Tools** - Detects when a viewer opens browser developer tools while watching, using window-size delta and debugger-timing heuristics. On by default.
+**Detect Developer Tools** - Detects when a viewer opens browser developer tools while watching, using a debugger-timing check, which browser zoom does not affect. On by default.
 
 **Pause Video When Detected** - Pauses playback and shows an overlay when developer tools are detected. Off by default; detection is recorded either way. Videos set to Strict force this on.
 

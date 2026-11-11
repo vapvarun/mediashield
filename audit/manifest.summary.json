@@ -18,13 +18,13 @@
     "ajax": 2,
     "admin_pages": 2,
     "tables": 6,
-    "hooks_fired": 64,
+    "hooks_fired": 66,
     "blocks": 3,
     "shortcodes": 3,
-    "cron": 4,
+    "cron": 5,
     "post_types": 2,
     "capabilities": 1,
-    "settings": 34,
+    "settings": 36,
     "wp_cli": 2
   },
   "detail_files": {
@@ -35,7 +35,7 @@
       "tables: ms_watch_sessions_archive is created by str_replace() on the sessions schema (DB/Schema.php:84-88), not a literal CREATE TABLE, so write-manifest.mjs cannot see it. Patched in from ground truth; re-patch after every regeneration until the generator learns this pattern.",
       "admin_pages: SetupWizard's add_submenu_page (includes/Admin/SetupWizard.php) was missed; only Menu.php's add_menu_page was found. Patched in from ground truth."
     ],
-    "summary_hand_verified": "post_types, capabilities, settings and wp_cli come back 0 from the v3 generator on this plugin - CPTs are registered inside a wrapper method (CPT/*PostType::register_post_type), the capability and WP-CLI commands are registered in the bootstrap file rather than includes/, and settings live in Settings::schema(). Values here are ground-truthed: 2 CPTs (mediashield_video, mediashield_playlist), 1 capability (upload_mediashield), 34 settings (count( Settings::schema() ), confirmed live), 2 WP-CLI commands (mediashield scale, mediashield repair)."
+    "summary_hand_verified": "post_types, capabilities, settings and wp_cli come back 0 from the v3 generator on this plugin - CPTs are registered inside a wrapper method (CPT/*PostType::register_post_type), the capability and WP-CLI commands are registered in the bootstrap file rather than includes/, and settings live in Settings::schema(). Values here are ground-truthed: 2 CPTs (mediashield_video, mediashield_playlist), 1 capability (upload_mediashield), 36 settings (count( Settings::schema() ), confirmed live 2026-11-11 incl. ms_watermark_edges_only), 2 WP-CLI commands (mediashield scale, mediashield repair)."
   },
   "read_me_first": "Counts here are code-verified and coverage-gated against grep ground truth. Where the generator has a known blind spot it is listed under notes.generator_blind_spots and the value was hand-patched - re-patch after any regeneration."
 }

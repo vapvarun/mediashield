@@ -110,10 +110,21 @@ class SessionController extends WP_REST_Controller {
 				'callback'            => array( $this, 'end_session' ),
 				'permission_callback' => array( $this, 'session_permissions_check' ),
 				'args'                => array(
-					'token' => array(
+					'token'    => array(
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+					// Optional: the last place reached, for a viewer who leaves before the first heartbeat.
+					'position' => array(
+						'type'    => 'number',
+						'default' => 0,
+						'minimum' => 0,
+					),
+					'duration' => array(
+						'type'    => 'number',
+						'default' => 0,
+						'minimum' => 0,
 					),
 				),
 			)
@@ -250,13 +261,10 @@ class SessionController extends WP_REST_Controller {
 			return new WP_Error( 'invalid_video_id', __( 'Invalid video ID.', 'mediashield' ), array( 'status' => 400 ) );
 		}
 
+		// Unpublished answers like unknown, so a draft id cannot be probed.
 		$video = get_post( $video_id );
-		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
+		if ( ! $video || 'mediashield_video' !== $video->post_type || 'publish' !== $video->post_status ) {
 			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
-		}
-
-		if ( 'publish' !== $video->post_status ) {
-			return new WP_Error( 'unpublished', __( 'Video is not available.', 'mediashield' ), array( 'status' => 403 ) );
 		}
 
 		// Access control check.
@@ -283,19 +291,21 @@ class SessionController extends WP_REST_Controller {
 			);
 		}
 
-		// Build watermark config for the client.
-		$watermark_config = array(
-			'enabled'       => (bool) get_option( 'ms_enabled', true ),
-			'opacity'       => (float) get_option( 'ms_watermark_opacity', 0.3 ),
-			'color'         => get_option( 'ms_watermark_color', '#ffffff' ),
-			'swap_interval' => (int) get_option( 'ms_watermark_swap_interval', 20 ),
-			// Key is `text` (not `username`) to match what assets/js/watermark.js
-			// reads; otherwise the overlay renders the IP only on desktop and is
-			// blank on mobile. Pro's AdvancedConfig filter overwrites `text` when
-			// active. This response is the only place a viewer's name and IP are
-			// sent: the page config must stay cacheable.
-			'text'          => wp_get_current_user()->display_name,
-			'ip'            => $ip,
+		// Build watermark config for the client: the page's site-wide config
+		// (one source of settings and defaults), plus the viewer's own text
+		// and IP. Key is `text` (not `username`) to match what
+		// assets/js/watermark.js reads. Pro's AdvancedConfig filter overwrites
+		// `text` when active. This response is the only place a viewer's name
+		// and IP are sent: the page config must stay cacheable.
+		$watermark_config = array_merge(
+			\MediaShield\Player\Watermark::get_config(),
+			array(
+				// WordPress stores the display name HTML-escaped ("Tom &amp; Jerry"),
+				// and the canvas paints text as is, so decode it (card 10497708826).
+				// A guest has no name; the docs promise "Guest" plus the IP.
+				'text' => is_user_logged_in() ? \MediaShield\Support\Text::plain( wp_get_current_user()->display_name ) : __( 'Guest', 'mediashield' ),
+				'ip'   => $ip,
+			)
 		);
 
 		/**
@@ -333,6 +343,37 @@ class SessionController extends WP_REST_Controller {
 	}
 
 	/**
+	 * Count one heartbeat for a caller in the current clock minute.
+	 *
+	 * Counting per clock minute, not "60 seconds since the last beat": setting
+	 * the expiry on every beat meant a session beating every 30 seconds never
+	 * left its window, so beat 5 was refused and progress stopped about two
+	 * minutes into every video (Basecamp 10499263338). One transient per
+	 * caller holds the minute and its count, so a site without an object
+	 * cache keeps one row per session, not one per session per minute
+	 * (Basecamp 10499594171).
+	 *
+	 * @param string $bucket The caller's bucket (session token or caller id).
+	 * @param int    $now    Unix time.
+	 * @return int Beats counted in this minute, including this one.
+	 */
+	private static function count_beat( string $bucket, int $now ): int {
+		$key    = 'ms_rate_' . hash( 'sha256', $bucket );
+		$minute = intdiv( $now, MINUTE_IN_SECONDS );
+		$stored = get_transient( $key );
+		$count  = ( is_array( $stored ) && (int) ( $stored['minute'] ?? -1 ) === $minute ) ? (int) $stored['count'] + 1 : 1;
+		set_transient(
+			$key,
+			array(
+				'minute' => $minute,
+				'count'  => $count,
+			),
+			2 * MINUTE_IN_SECONDS
+		);
+		return $count;
+	}
+
+	/**
 	 * POST /session/heartbeat — track playback progress.
 	 *
 	 * @param WP_REST_Request $request Request object.
@@ -350,12 +391,9 @@ class SessionController extends WP_REST_Controller {
 		// Only a token we signed picks its own bucket. Anything else shares one
 		// bucket per caller, so a flood of made-up tokens is limited and writes
 		// one transient, not one per request.
-		$token    = (string) $request->get_param( 'token' );
-		$bucket   = SessionManager::validate_token( $token ) ? $token : 'invalid|' . ( get_current_user_id() ? get_current_user_id() : self::get_client_ip() );
-		$rate_key = 'ms_rate_' . hash( 'sha256', $bucket );
-		$count    = (int) get_transient( $rate_key );
-		++$count;
-		set_transient( $rate_key, $count, 60 );
+		$token  = (string) $request->get_param( 'token' );
+		$bucket = SessionManager::validate_token( $token ) ? $token : 'invalid|' . ( get_current_user_id() ? get_current_user_id() : self::get_client_ip() );
+		$count  = self::count_beat( $bucket, time() );
 
 		if ( $count > 4 ) {
 			return new WP_Error(
@@ -392,7 +430,11 @@ class SessionController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function end_session( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$success = SessionManager::end( $request->get_param( 'token' ) );
+		$success = SessionManager::end(
+			(string) $request->get_param( 'token' ),
+			(float) $request->get_param( 'position' ),
+			(float) $request->get_param( 'duration' )
+		);
 
 		if ( ! $success ) {
 			return new WP_Error( 'invalid_token', __( 'Invalid session token.', 'mediashield' ), array( 'status' => 401 ) );

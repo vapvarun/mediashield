@@ -51,9 +51,9 @@ Guests are never counted. With no account there is nothing to share, and countin
 
 ### Revoking a user's sessions
 
-MediaShield can terminate every active session for one account, which fires `mediashield_user_access_revoked` and immediately breaks their streams.
+Go to **MediaShield > Viewers**, click **Revoke session** on the member's row, then **Revoke** to confirm. It ends every active watch session for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop them watching, change what they are allowed to watch or deactivate the account.
 
-There is no button for it in the admin in this release. It is available as an authenticated REST call for administrators:
+The same action is an authenticated REST call for administrators:
 
 ```
 POST /wp-json/mediashield/v1/session/revoke-user
@@ -67,6 +67,8 @@ Anything that can make an authenticated WordPress REST request as an administrat
 **Allowed Domains** (Settings > Access, stored as `ms_allowed_domains`) - the domains that may embed your videos. Put one per line, or separate them with commas or spaces - any mix works. Pasting a full web address is fine too; only the domain part is used. Leave empty to allow embeds from any domain.
 
 To set it: open **MediaShield > Settings > Access**, type each domain (for example `partner.example`), and save. Then open a page on a listed site and on an unlisted site to check that only the listed one plays the video.
+
+Your own site is never blocked by this list. A student who opens a lesson directly, from a bookmark, an email link or the page they land on after logging in, plays the video even though the browser sends no referring address. A page on another site that frames your lesson is still checked, also when it hides its address. Browsers older than Safari 16.4 do not say whether a page is framed, so on those a framed page with no address counts as a direct visit.
 
 When a list is set:
 - Requests from your own site's domain are always allowed

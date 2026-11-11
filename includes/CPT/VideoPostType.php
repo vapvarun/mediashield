@@ -26,7 +26,7 @@ class VideoPostType {
 	public static function register(): void {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
-		add_filter( 'rest_prepare_mediashield_video', array( __CLASS__, 'hide_meta_from_viewers' ) );
+		add_filter( 'rest_prepare_mediashield_video', array( __CLASS__, 'hide_meta_from_viewers' ), 10, 2 );
 		add_action( 'add_meta_boxes', array( __CLASS__, 'register_meta_boxes' ) );
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'save_meta_box' ), 10, 2 );
 		// After the meta box (10) on the edit screen, and after REST has written
@@ -185,7 +185,7 @@ class VideoPostType {
 		}
 
 		wp_enqueue_style( 'mediashield-admin-video', MEDIASHIELD_URL . 'assets/css/admin-video.css', array(), MEDIASHIELD_VERSION );
-		wp_enqueue_script( 'mediashield-admin-video', MEDIASHIELD_URL . 'assets/js/admin-video.js', array(), MEDIASHIELD_VERSION, true );
+		wp_enqueue_script( 'mediashield-admin-video', MEDIASHIELD_URL . 'assets/js/admin-video.js', array( 'mediashield-request' ), MEDIASHIELD_VERSION, true );
 		wp_localize_script(
 			'mediashield-admin-video',
 			'mediashieldVideoAdmin',
@@ -346,7 +346,13 @@ class VideoPostType {
 						<progress id="ms-upload-progress" max="100" value="0" style="display:none;vertical-align:middle;"></progress>
 						<p id="ms-upload-status" class="description" role="status" aria-live="polite"></p>
 						<p class="description">
-							<?php esc_html_e( 'The file is stored on this site and played through a permission-checked URL, so the file path is never exposed. Large files are limited by your server’s upload size.', 'mediashield' ); ?>
+							<?php
+							if ( 'self_hosted' === \MediaShield\Upload\UploadManager::resolve_default_driver() ) {
+								esc_html_e( 'The file is stored on this site and played through a permission-checked URL, so the file path is never exposed. Large files are limited by your server’s upload size.', 'mediashield' );
+							} else {
+								esc_html_e( 'The file is sent to the Default Upload Target chosen in Settings and plays from there. Large files are limited by your server’s upload size.', 'mediashield' );
+							}
+							?>
 						</p>
 					</td>
 				</tr>
@@ -740,7 +746,7 @@ class VideoPostType {
 	public static function render_lms_teaser( \WP_Post $post ): void {
 		?>
 		<div class="ms-teaser-box">
-			<p><strong><?php esc_html_e( 'Link this video to a Learnomy, LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
+			<p><strong><?php esc_html_e( 'Link this video to a LearnDash, Tutor LMS, or LifterLMS lesson.', 'mediashield' ); ?></strong></p>
 			<ul>
 				<li><?php esc_html_e( 'Auto-mark lesson complete on video finish', 'mediashield' ); ?></li>
 				<li><?php esc_html_e( 'Require course enrollment to watch', 'mediashield' ); ?></li>
@@ -918,25 +924,44 @@ class VideoPostType {
 	}
 
 	/**
-	 * Keep the video's meta out of wp/v2 responses for people who cannot edit content.
+	 * Meta that leads to the media itself: the file or stream address and the provider id.
+	 *
+	 * @since 1.4.2
+	 */
+	public const PROTECTED_META = array( '_ms_source_url', '_ms_platform_video_id', '_ms_stream_url' );
+
+	/**
+	 * Keep the video's addresses out of wp/v2 responses for anyone who cannot edit that video.
 	 *
 	 * The meta carries the source URL and provider id, the very addresses the
 	 * player withholds from a viewer who may not watch. Anyone could read them
-	 * from /wp/v2/mediashield-videos. The Video block reads them to preview a
-	 * video, so people who can write posts keep them, the same bar as the
-	 * playlist items route.
+	 * from /wp/v2/mediashield-videos (1.4.0), and in 1.4.1 anyone who could
+	 * write posts still could, for every video: a contributor or a course
+	 * instructor read the file address of a paid lesson video
+	 * (Basecamp 10482094152). The bar is now the video itself, the same
+	 * `edit_post` check WordPress applies to `context=edit`.
+	 *
+	 * The filter runs for every response shape (`_fields`, `context=edit`,
+	 * `_embed`, lists), because WordPress applies `_fields` after it. People
+	 * who can write posts keep the rest of the meta (platform, duration), which
+	 * the Video block's picker shows; visitors and members get none.
 	 *
 	 * @since 1.4.1
 	 *
 	 * @param \WP_REST_Response $response Prepared response.
+	 * @param \WP_Post          $post     The video.
 	 * @return \WP_REST_Response
 	 */
-	public static function hide_meta_from_viewers( \WP_REST_Response $response ): \WP_REST_Response {
-		if ( current_user_can( 'edit_posts' ) ) {
+	public static function hide_meta_from_viewers( \WP_REST_Response $response, \WP_Post $post ): \WP_REST_Response {
+		if ( current_user_can( 'edit_post', $post->ID ) ) {
 			return $response;
 		}
 		$data = $response->get_data();
-		unset( $data['meta'] );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			unset( $data['meta'] );
+		} elseif ( isset( $data['meta'] ) && is_array( $data['meta'] ) ) {
+			$data['meta'] = array_diff_key( $data['meta'], array_flip( self::PROTECTED_META ) );
+		}
 		$response->set_data( $data );
 		return $response;
 	}
@@ -1007,8 +1032,8 @@ class VideoPostType {
 					'type'              => $args['type'],
 					'default'           => $args['default'],
 					'sanitize_callback' => $args['sanitize'] ?? ( 'string' === $args['type'] ? 'sanitize_text_field' : 'absint' ),
-					'auth_callback'     => function () {
-						return current_user_can( 'edit_posts' );
+					'auth_callback'     => static function ( $allowed, $meta_key, $object_id ) {
+						return current_user_can( 'edit_post', (int) $object_id );
 					},
 				)
 			);
@@ -1038,8 +1063,8 @@ class VideoPostType {
 				'type'              => 'object',
 				'default'           => array(),
 				'sanitize_callback' => array( __CLASS__, 'sanitize_milestone_tags' ),
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
+				'auth_callback'     => static function ( $allowed, $meta_key, $object_id ) {
+					return current_user_can( 'edit_post', (int) $object_id );
 				},
 			)
 		);
@@ -1075,5 +1100,36 @@ class VideoPostType {
 		}
 
 		return $clean;
+	}
+
+	/**
+	 * How many videos does one author have in each status?
+	 *
+	 * The per-author twin of core's wp_count_posts(), for the status links of
+	 * a Videos list scoped to its author (Admin\Menu::scope_creator_video_counts()).
+	 * Served by the posts table's post_author index.
+	 *
+	 * @param int $author_id Author user ID.
+	 * @return object Status name => count, every registered status present.
+	 */
+	public static function count_by_author( int $author_id ): object {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One grouped count per list screen, as core's wp_count_posts() runs.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT post_status, COUNT( * ) AS num_posts FROM {$wpdb->posts} WHERE post_type = %s AND post_author = %d GROUP BY post_status",
+				'mediashield_video',
+				$author_id
+			),
+			ARRAY_A
+		);
+
+		$counts = array_fill_keys( get_post_stati(), 0 );
+		foreach ( (array) $rows as $row ) {
+			$counts[ $row['post_status'] ] = (int) $row['num_posts'];
+		}
+
+		return (object) $counts;
 	}
 }

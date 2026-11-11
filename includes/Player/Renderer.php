@@ -111,6 +111,86 @@ class Renderer {
 	}
 
 	/**
+	 * The direct stream URL a player should load for a video.
+	 *
+	 * One place for the page render and for /stream/{id}/url, which a player
+	 * calls when a signed address expires mid-playback (BC#10497708913).
+	 *
+	 * @param int    $video_id          Video CPT post ID.
+	 * @param string $platform          Platform slug.
+	 * @param string $platform_video_id Provider id / GUID.
+	 * @param string $stored            Stored `_ms_stream_url`, usually empty.
+	 * @return string
+	 */
+	public static function stream_url( int $video_id, string $platform, string $platform_video_id, string $stored ): string {
+		/**
+		 * Filter the direct stream URL for a video.
+		 *
+		 * A stream URL is what lets MediaShield play the video in a real
+		 * <video> element instead of an opaque provider iframe, which is the
+		 * difference between having a controllable player (watermark, speed,
+		 * accurate progress, in-video ad breaks) and not. Platform integrations
+		 * that can derive one — Pro knows each Bunny library's pull zone, so it
+		 * can build the HLS playlist URL from the video GUID — supply it here
+		 * for videos that were imported before the URL was recorded.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param string $stream_url        Stored stream URL, usually empty.
+		 * @param int    $video_id          Video CPT post ID.
+		 * @param string $platform          Platform slug (self, bunny, youtube…).
+		 * @param string $platform_video_id Provider-side video id / GUID.
+		 */
+		return (string) apply_filters( 'mediashield_video_stream_url', $stored, $video_id, $platform, $platform_video_id );
+	}
+
+	/**
+	 * A video's player addresses as stored, with the stream URL resolved.
+	 *
+	 * Step one of the page render; /stream/{id}/url runs the same two steps
+	 * (this, then protect_addresses()), so a refreshed address is never one
+	 * the page itself would not print.
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return array{platform: string, platform_video_id: string, source_url: string, stream_url: string}
+	 */
+	public static function addresses( int $video_id ): array {
+		$platform_raw      = (string) get_post_meta( $video_id, '_ms_platform', true );
+		$platform          = '' !== $platform_raw ? $platform_raw : 'self';
+		$platform_video_id = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+
+		return array(
+			'platform'          => $platform,
+			'platform_video_id' => $platform_video_id,
+			'source_url'        => (string) get_post_meta( $video_id, '_ms_source_url', true ),
+			'stream_url'        => self::stream_url( $video_id, $platform, $platform_video_id, (string) get_post_meta( $video_id, '_ms_stream_url', true ) ),
+		);
+	}
+
+	/**
+	 * Apply the render's protection to addresses() for the current viewer.
+	 *
+	 * Hide Video Source routing (Protection::filter_player_urls) and the
+	 * access decision (withhold_addresses, which asks AccessControl::can_watch:
+	 * Require Login, guest rules, roles, domains, LMS enrollment through
+	 * mediashield_can_watch). A viewer who may not watch gets every address
+	 * blanked and access_denied true.
+	 *
+	 * @param int   $video_id  Video CPT post ID.
+	 * @param array $addresses From addresses().
+	 * @return array addresses() plus access_denied.
+	 */
+	public static function protect_addresses( int $video_id, array $addresses ): array {
+		$safe                    = Protection::filter_player_urls( $video_id, $addresses['platform'], $addresses['source_url'], $addresses['stream_url'] );
+		$addresses['source_url'] = (string) $safe['source_url'];
+		$addresses['stream_url'] = (string) $safe['stream_url'];
+
+		$addresses['access_denied'] = self::withhold_addresses( $video_id, $addresses['platform_video_id'], $addresses['source_url'], $addresses['stream_url'], $addresses['platform'] );
+
+		return $addresses;
+	}
+
+	/**
 	 * Render the protected player container for a video CPT.
 	 *
 	 * @param int    $video_id        Video CPT post ID.
@@ -140,31 +220,11 @@ class Renderer {
 			);
 		}
 
-		$platform_raw      = get_post_meta( $video_id, '_ms_platform', true );
-		$platform          = ! empty( $platform_raw ) ? $platform_raw : 'self';
-		$platform_video_id = get_post_meta( $video_id, '_ms_platform_video_id', true );
-		$source_url        = get_post_meta( $video_id, '_ms_source_url', true );
-		$stream_url        = get_post_meta( $video_id, '_ms_stream_url', true );
-
-		/**
-		 * Filter the direct stream URL for a video.
-		 *
-		 * A stream URL is what lets MediaShield play the video in a real
-		 * <video> element instead of an opaque provider iframe, which is the
-		 * difference between having a controllable player (watermark, speed,
-		 * accurate progress, in-video ad breaks) and not. Platform integrations
-		 * that can derive one — Pro knows each Bunny library's pull zone, so it
-		 * can build the HLS playlist URL from the video GUID — supply it here
-		 * for videos that were imported before the URL was recorded.
-		 *
-		 * @since 1.2.0
-		 *
-		 * @param string $stream_url        Stored stream URL, usually empty.
-		 * @param int    $video_id          Video CPT post ID.
-		 * @param string $platform          Platform slug (self, bunny, youtube…).
-		 * @param string $platform_video_id Provider-side video id / GUID.
-		 */
-		$stream_url = (string) apply_filters( 'mediashield_video_stream_url', (string) $stream_url, $video_id, $platform, (string) $platform_video_id );
+		$addresses         = self::addresses( $video_id );
+		$platform          = $addresses['platform'];
+		$platform_video_id = $addresses['platform_video_id'];
+		$source_url        = $addresses['source_url'];
+		$stream_url        = $addresses['stream_url'];
 
 		// Per-video override, then the owner's global default, then 'standard'.
 		// Shared with PlayerWrapper so the auto-wrap path cannot resolve this
@@ -199,11 +259,11 @@ class Renderer {
 		// deliberately hands the viewer the plain URL so the video still plays
 		// with protection off, and routing it through the gated /stream/
 		// endpoint instead would re-impose a check the operator just disabled.
-		$safe_urls  = Protection::filter_player_urls( $video_id, (string) $platform, (string) $source_url, $stream_url );
-		$source_url = $safe_urls['source_url'];
-		$stream_url = $safe_urls['stream_url'];
-
-		$access_denied = self::withhold_addresses( $video_id, $platform_video_id, $source_url, $stream_url );
+		$addresses         = self::protect_addresses( $video_id, $addresses );
+		$platform_video_id = $addresses['platform_video_id'];
+		$source_url        = $addresses['source_url'];
+		$stream_url        = $addresses['stream_url'];
+		$access_denied     = $addresses['access_denied'];
 
 		// Enqueue frontend assets (only loads when video content exists).
 		Assets::enqueue();
@@ -327,7 +387,9 @@ class Renderer {
 				<?php
 				// The video's featured image: shown before a self-hosted video
 				// plays, and behind the login message, instead of a black box.
-				$poster = get_the_post_thumbnail_url( $video_id, 'large' );
+				// Through Thumbnail::poster_url(), so a poster still named after
+				// the platform ID never reaches a viewer who may not watch.
+				$poster = \MediaShield\CPT\Thumbnail::poster_url( $video_id, 'large', ! $access_denied );
 				if ( $poster ) :
 					?>
 					data-poster="<?php echo esc_url( $poster ); ?>"
@@ -380,23 +442,51 @@ class Renderer {
 	}
 
 	/**
-	 * Blank every address of a video the current viewer may not watch.
+	 * Decide which of a video's addresses the page may carry for the current viewer.
 	 *
-	 * Not the source URL, not the provider id (a Bunny embed or an unlisted Vimeo
-	 * id plays on its own), not even our signed /stream address. The player asks
-	 * /session/start for the reason and shows the login or access message from
-	 * there. Shared with PlayerWrapper, so the shortcode, block, playlist page,
-	 * playlist player route and auto-wrapped embeds expose the same thing.
+	 * The one place both renderers (Renderer and PlayerWrapper: shortcode,
+	 * block, playlist page, playlist player route, embed page, auto-wrapped
+	 * embeds) ask before printing an address.
+	 *
+	 * Always, for every viewer: a self-hosted video's provider id is blanked.
+	 * For `self` it is the obscured file name in uploads/mediashield/, and on a
+	 * host that does not honour the folder's deny rule (nginx) that name is a
+	 * permanent download link, the very thing the random name exists to keep
+	 * private (Basecamp 10482094152). The player never needs it: it streams
+	 * self-hosted video from the signed /stream URL and reads the id only for
+	 * YouTube, Vimeo and Wistia. A raw URL into that folder is blanked for the
+	 * same reason; playback goes through /stream.
+	 *
+	 * For a viewer who may not watch: every address is blanked, not the source
+	 * URL, not the provider id (a Bunny embed or an unlisted Vimeo id plays on
+	 * its own), not even our signed /stream address. The player asks
+	 * /session/start for the reason and shows the login or access message.
 	 *
 	 * @since 1.4.1
+	 * @since 1.4.2 Blanks the self-hosted file name and protected-folder URLs for everyone.
 	 *
 	 * @param int    $video_id          Video CPT post ID.
-	 * @param string $platform_video_id Provider id, blanked in place when denied.
-	 * @param string $source_url        Source URL, blanked in place when denied.
+	 * @param string $platform_video_id Provider id, blanked in place when it may not be shown.
+	 * @param string $source_url        Source URL, blanked in place when it may not be shown.
 	 * @param string $stream_url        Stream URL, blanked in place when denied.
+	 * @param string $platform          Platform slug; read from the video when ''.
 	 * @return bool True when the viewer may not watch; print data-access-denied.
 	 */
-	public static function withhold_addresses( int $video_id, &$platform_video_id, &$source_url, &$stream_url ): bool {
+	public static function withhold_addresses( int $video_id, &$platform_video_id, &$source_url, &$stream_url, string $platform = '' ): bool {
+		if ( '' === $platform ) {
+			$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
+		}
+		if ( '' === $platform || 'self' === $platform ) {
+			$platform_video_id = '';
+		}
+		$protected_folder = trailingslashit( wp_upload_dir()['baseurl'] ) . 'mediashield/';
+		foreach ( array( &$source_url, &$stream_url ) as &$url ) {
+			if ( '' !== (string) $url && false !== stripos( preg_replace( '#^https?:#i', '', (string) $url ), preg_replace( '#^https?:#i', '', $protected_folder ) ) ) {
+				$url = '';
+			}
+		}
+		unset( $url );
+
 		if ( AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'] ) {
 			return false;
 		}

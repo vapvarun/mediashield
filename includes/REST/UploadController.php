@@ -56,9 +56,12 @@ class UploadController extends WP_REST_Controller {
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					// Empty means "the site's Default Upload Target". A default of
+					// 'self_hosted' here made the setting unreachable: every
+					// upload went to this site even with Bunny or Auto chosen.
 					'driver' => array(
 						'type'              => 'string',
-						'default'           => 'self_hosted',
+						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
 					// Fill in an existing video instead of creating one. The

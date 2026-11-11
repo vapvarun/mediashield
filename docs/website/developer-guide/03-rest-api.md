@@ -109,7 +109,7 @@ The `upload_mediashield` capability is separate from `manage_options` so instruc
 | GET | `/videos/{id}/stats` | manage_options | Per-video statistics. |
 | GET | `/analytics/milestones` | manage_options | Milestone log. Args: `page`, `per_page` (default 20), `video_id`. Total counts come back in the `X-WP-Total` and `X-WP-TotalPages` headers. |
 | GET | `/analytics/users` | manage_options | Viewer list. Args: `page`, `per_page` (default 20), `search`. |
-| GET | `/analytics/users/{user_id}` | manage_options | One viewer: their 100 most recent sessions with video title, completion, watch time, furthest position, and timestamps. Milestone history, IP, and device type are not included in this payload. |
+| GET | `/analytics/users/{user_id}` | manage_options | One viewer's sessions, newest first, paged (`page`, `per_page` up to 100, default 20; `total`, `total_pages` and `videos_watched` in the body, `X-WP-Total` / `X-WP-TotalPages` headers), with video title, completion, watch time, furthest position, and timestamps. Milestone history, IP, and device type are not included in this payload. |
 | GET | `/analytics/my-videos` | logged in | Current user's watched videos. No admin capability required. |
 
 `period` values other than the four listed fall back to 7 days. "Today" means the last 24 hours, not the calendar day.
@@ -120,7 +120,7 @@ The `upload_mediashield` capability is separate from `manage_options` so instruc
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| POST | `/protection/devtools-event` | valid `wp_rest` nonce (guests allowed) | Beacon endpoint for client-side devtools detection. Args: `strategy`, `url`, `ua`, `screen`. Responds `{ recorded: true }` and fires `mediashield_devtools_detected`; free does not log it or store it. `strategy` is required and must be `size_delta` or `debugger_timing`. |
+| POST | `/protection/devtools-event` | valid `wp_rest` nonce (guests allowed) | Beacon endpoint for client-side devtools detection. Args: `strategy`, `url`, `ua`, `screen`. Responds `{ recorded: true }` and fires `mediashield_devtools_detected`; free does not log it or store it. `strategy` is required and must be `size_delta` or `debugger_timing`; the player sends only `debugger_timing` since 1.4.2. |
 
 Rate limited to one recorded event per user and IP per hour. A limited request still returns 200 with `{ recorded: false, reason: "rate_limited" }`.
 
@@ -142,3 +142,7 @@ Videos and playlists are custom post types with `show_in_rest` enabled, so the s
 - `/wp/v2/mediashield-playlists` and `/wp/v2/mediashield-playlists/{id}`
 
 Video and playlist meta (`_ms_platform`, `_ms_source_url`, `_ms_protection_level`, `_ms_duration`, the player overrides, the playlist playback options) is registered with `show_in_rest`, so it round-trips through the `meta` object on those routes. This is how the block editor creates a video from a pasted URL.
+
+Who sees the video meta (since 1.4.2): the addresses that lead to the media (`_ms_source_url`, `_ms_platform_video_id`, `_ms_stream_url`) are returned only to people who can edit that video (`edit_post`). People who can write posts but not edit this video get the other meta, which the Video block picker shows. Visitors and members get no `meta` at all. This holds for every response shape, including `_fields`, `context=edit`, `_embed` and list requests. Writing any video meta needs `edit_post` on that video. The playlist items route (`GET /playlists/{id}/items`) applies the same rule to each item's `source_url`. Player markup never carries a self-hosted video's stored file name (`data-platform-video-id` is empty for `self`) or a direct URL into `uploads/mediashield/`; playback uses the signed `/stream/{id}` URL.
+
+A Media Library file that a self-hosted video plays from is moved into `uploads/mediashield/` and its Media Library item becomes private (see [Background Jobs and WP-CLI](07-background-jobs-and-wp-cli.md)), so `/wp/v2/media` no longer lists it for anyone who cannot read private media.

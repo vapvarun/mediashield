@@ -72,7 +72,7 @@ export default function Wizard() {
 			// eslint-disable-next-line no-console
 			console.error( 'MediaShield wizard: save failed', err );
 			createErrorNotice(
-				err.message || __( 'Failed to save settings. Please try again.', 'mediashield' ),
+				window.mediashieldRequest.message( err, __( 'Failed to save settings. Please try again.', 'mediashield' ) ),
 				{ type: 'snackbar' }
 			);
 		}
@@ -114,7 +114,7 @@ export default function Wizard() {
 			// eslint-disable-next-line no-console
 			console.error( 'MediaShield wizard: finish failed', err );
 			createErrorNotice(
-				err.message || __( 'Failed to complete the wizard. Please try again.', 'mediashield' ),
+				window.mediashieldRequest.message( err, __( 'Failed to complete the wizard. Please try again.', 'mediashield' ) ),
 				{ type: 'snackbar' }
 			);
 			setSaving( false );
