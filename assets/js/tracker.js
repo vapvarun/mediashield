@@ -185,6 +185,7 @@
 				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
 				body: JSON.stringify( { token: session.token } ),
 				keepalive: true,
+			// ms-silent-ok: the page is unloading; nobody is left to tell.
 			} ).catch( function () {} );
 			return false;
 		} );

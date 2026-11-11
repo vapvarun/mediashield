@@ -14,6 +14,11 @@
  *   1. a response parsed with `.json()` instead of mediashieldRequest.readJSON();
  *   2. a caught error's `.message` shown directly (err / error / e / ex /
  *      reason) instead of through mediashieldRequest.message().
+ *   3. in a script that also saves (POST / PUT / PATCH / DELETE, or an
+ *      auto-save), a catch that is empty or only logs: a failed load then
+ *      leaves defaults on screen that the next save stores over the owner's
+ *      real data (card 10499285498). A deliberate silence carries an
+ *      `ms-silent-ok:` comment with its reason on the same or previous line.
  *
  * RUN:  php bin/request-error-check.php [plugin-dir]   (default: this plugin)
  *       MediaShield Pro's local CI runs it against Pro with the sibling Free copy.
@@ -47,13 +52,23 @@ foreach ( $files as $file ) {
 	if ( 'assets/js/request.js' === $rel ) {
 		continue;
 	}
-	foreach ( explode( "\n", (string) file_get_contents( $file ) ) as $i => $line ) {
+	$text  = (string) file_get_contents( $file );
+	$saves = (bool) preg_match( "/method:\s*['\"](POST|PUT|PATCH|DELETE)['\"]|useAutoSave|saveField\(/i", $text );
+	$lines = explode( "\n", $text );
+	foreach ( $lines as $i => $line ) {
 		$code = trim( $line );
 		if ( str_starts_with( $code, '//' ) || str_starts_with( $code, '*' ) || str_starts_with( $code, '/*' ) ) {
 			continue;
 		}
 		if ( preg_match( '/\.json\(\s*\)(?!\s*\.catch)/', $line ) ) {
 			$fail[] = sprintf( "%s:%d parses a response with .json() instead of mediashieldRequest.readJSON(): %s", $rel, $i + 1, substr( $code, 0, 100 ) );
+		}
+		$silent_ok = false !== strpos( $line, 'ms-silent-ok:' ) || ( $i > 0 && false !== strpos( $lines[ $i - 1 ], 'ms-silent-ok:' ) );
+		// play(), requestFullscreen() and exitFullscreen() are not requests: a
+		// browser may refuse them, and that refusal is meant to be quiet.
+		$not_request = (bool) preg_match( '/\.(play|requestFullscreen|exitFullscreen|webkitExitFullscreen)\(\)\s*\.catch/', $line );
+		if ( $saves && ! $silent_ok && ! $not_request && preg_match( '/\.catch\(\s*(?:\(\s*[\w\s,]*\)\s*=>|function\s*\([^)]*\))\s*(?:\{\s*(?:console\.\w+\([^;]*\);?\s*)?\}|null|undefined|console\.\w+\([^)]*\))\s*\)/', $line ) ) {
+			$fail[] = sprintf( "%s:%d swallows a failed request in a script that saves (a failed load can be saved over real data): %s", $rel, $i + 1, substr( $code, 0, 100 ) );
 		}
 		if ( preg_match( '/(?<![\w.])(err|error|e|ex|reason)\??\.message\b/', $line ) && false === strpos( $line, 'mediashieldRequest' ) ) {
 			$fail[] = sprintf( "%s:%d shows a caught error's message instead of mediashieldRequest.message(): %s", $rel, $i + 1, substr( $code, 0, 100 ) );
