@@ -27,6 +27,8 @@ class PlatformTitleTest extends WP_UnitTestCase {
 	 */
 	public function set_up(): void {
 		parent::set_up();
+		// The test case resets post types between tests, which drops the REST meta.
+		\MediaShield\CPT\VideoPostType::register_meta();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		add_filter(
