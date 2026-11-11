@@ -298,8 +298,11 @@ class PosterNameTest extends WP_UnitTestCase {
 	}
 
 	public function test_rest_create_with_no_title_gets_no_id_in_title_or_slug(): void {
+		// The test case resets post types between tests, which drops the REST meta.
+		\MediaShield\CPT\VideoPostType::register_meta();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-		add_filter( 'pre_http_request', static fn() => new \WP_Error( 'msposter_no_network', 'No network in tests.' ) );
+		$offline = static fn() => new \WP_Error( 'msposter_no_network', 'No network in tests.' );
+		add_filter( 'pre_http_request', $offline );
 		$request = new \WP_REST_Request( 'POST', '/wp/v2/mediashield-videos' );
 		$request->set_body_params(
 			array(
@@ -318,5 +321,6 @@ class PosterNameTest extends WP_UnitTestCase {
 		$this->assertFalse( Thumbnail::carries_id( wp_json_encode( array( $data['title'], $data['slug'], $data['link'], $data['guid'] ) ), self::YT_ID ) );
 		$this->assertSame( Thumbnail::neutral_title( (int) $data['id'] ), get_post( (int) $data['id'] )->post_title );
 		$this->assertSame( Thumbnail::neutral_title( (int) $data['id'] ), $data['title']['rendered'] );
+		remove_filter( 'pre_http_request', $offline );
 	}
 }

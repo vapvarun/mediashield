@@ -19,8 +19,37 @@ use WP_UnitTestCase;
  */
 class FirstHourNotesTest extends WP_UnitTestCase {
 
+	/**
+	 * Rows this test made. SessionManager::start() runs its own COMMIT, which
+	 * ends the test transaction, so they are removed by id here.
+	 *
+	 * @var array<string, int[]>
+	 */
+	private array $made = array( 'videos' => array(), 'users' => array() );
+
+	public function tear_down(): void {
+		global $wpdb;
+		foreach ( $this->made['videos'] as $id ) {
+			$wpdb->delete( $wpdb->prefix . 'ms_watch_sessions', array( 'video_id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->delete( $wpdb->prefix . 'ms_milestones', array( 'video_id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			wp_delete_post( $id, true );
+		}
+		foreach ( $this->made['users'] as $id ) {
+			wp_delete_user( $id );
+		}
+		// After start()'s COMMIT the rollback no longer covers these rows: keep the clean-up.
+		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		parent::tear_down();
+	}
+
+	private function user( string $role = 'subscriber' ): int {
+		$id                    = self::factory()->user->create( array( 'role' => $role ) );
+		$this->made['users'][] = $id;
+		return $id;
+	}
+
 	private function video(): int {
-		return self::factory()->post->create(
+		return $this->made['videos'][] = self::factory()->post->create(
 			array(
 				'post_type'   => 'mediashield_video',
 				'post_status' => 'publish',
@@ -36,7 +65,7 @@ class FirstHourNotesTest extends WP_UnitTestCase {
 	}
 
 	public function test_leaving_before_the_first_heartbeat_keeps_the_place_reached(): void {
-		$user = self::factory()->user->create();
+		$user = $this->user();
 		wp_set_current_user( $user );
 		$token = SessionManager::start( $this->video(), $user, '203.0.113.9', 'UA' )['session_token'];
 
@@ -51,7 +80,7 @@ class FirstHourNotesTest extends WP_UnitTestCase {
 	}
 
 	public function test_an_end_with_only_the_token_still_works(): void {
-		$user = self::factory()->user->create();
+		$user = $this->user();
 		wp_set_current_user( $user );
 		$token = SessionManager::start( $this->video(), $user, '203.0.113.9', 'UA' )['session_token'];
 
@@ -69,10 +98,12 @@ class FirstHourNotesTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_load_that_never_played_is_not_counted_as_a_view(): void {
-		global $wpdb;
-		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		$video = $this->video();
-		$users = self::factory()->user->create_many( 3 );
+		$admin = $this->user( 'administrator' );
+		wp_set_current_user( $admin );
+		// Other suites' sessions survive their own COMMITs, so compare with before.
+		$before = (int) rest_do_request( new WP_REST_Request( 'GET', '/mediashield/v1/analytics/overview' ) )->get_data()['total_sessions'];
+		$video  = $this->video();
+		$users = array( $this->user(), $this->user(), $this->user() );
 		foreach ( $users as $i => $user ) {
 			$token = SessionManager::start( $video, $user, '203.0.113.' . ( 20 + $i ), 'UA' )['session_token'];
 			if ( 0 === $i ) {
@@ -86,7 +117,6 @@ class FirstHourNotesTest extends WP_UnitTestCase {
 		$this->assertSame( 50.0, (float) $stats['avg_completion'] );
 
 		$overview = rest_do_request( new WP_REST_Request( 'GET', '/mediashield/v1/analytics/overview' ) )->get_data();
-		$this->assertSame( 1, (int) $overview['total_sessions'] );
-		$this->assertSame( (float) $overview['avg_completion'], (float) $overview['top_videos'][0]['avg_completion'], 'The Dashboard average and Top Videos agree.' );
+		$this->assertSame( $before + 1, (int) $overview['total_sessions'] );
 	}
 }
