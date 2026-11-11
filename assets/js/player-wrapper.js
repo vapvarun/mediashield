@@ -1201,7 +1201,16 @@
 							adapter: adapter,
 						},
 					} ) );
+					return;
 				}
+
+				// Any other answer without a session token (a JSON 5xx is what
+				// WordPress sends for a fatal in REST) is a failed start: no
+				// token means no watermark, so keep the video stopped and say so.
+				blockPlayback( el, adapter );
+				showErrorOverlay( el, window.mediashieldRequest.networkMessage, function () {
+					startSession( el, videoId, adapter );
+				} );
 			} )
 			.catch( function ( err ) {
 				// No session means no watermark: never leave a protected video
