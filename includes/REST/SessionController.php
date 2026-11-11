@@ -285,10 +285,12 @@ class SessionController extends WP_REST_Controller {
 
 		// Build watermark config for the client.
 		$watermark_config = array(
-			'enabled'       => (bool) get_option( 'ms_enabled', true ),
-			'opacity'       => (float) get_option( 'ms_watermark_opacity', 0.3 ),
-			'color'         => get_option( 'ms_watermark_color', '#ffffff' ),
-			'swap_interval' => (int) get_option( 'ms_watermark_swap_interval', 20 ),
+			// Read through Settings so the player gets the same defaults the
+			// Settings screen shows (it used its own 0.3 / 20 s fallbacks).
+			'enabled'       => (bool) \MediaShield\Core\Settings::get( 'ms_enabled' ),
+			'opacity'       => (float) \MediaShield\Core\Settings::get( 'ms_watermark_opacity' ),
+			'color'         => (string) \MediaShield\Core\Settings::get( 'ms_watermark_color' ),
+			'swap_interval' => (int) \MediaShield\Core\Settings::get( 'ms_watermark_swap_interval' ),
 			// Key is `text` (not `username`) to match what assets/js/watermark.js
 			// reads; otherwise the overlay renders the IP only on desktop and is
 			// blank on mobile. Pro's AdvancedConfig filter overwrites `text` when
