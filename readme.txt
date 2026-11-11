@@ -180,6 +180,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - Settings changed quickly one after another are all saved; before, only the last one was kept while the screen still said Settings saved. Saving... shows while a save is in progress, and leaving the screen straight after a change also saves it.
 * Fix      - Number settings such as Position Swap Interval take whole numbers only, can be cleared and retyped, and say why a value was not saved; before, an emptied field put its default back (typing 8 saved 308) and 1.5 quietly saved 1.
 * Fix      - A browser zoomed to 125% or more is no longer mistaken for open developer tools, so students are not flagged or paused for zooming.
+* Fix      - Erasing a member's personal data no longer reports that some data was not erased, and next to MediaShield Pro 1.4.1 it also removes their playback events and exports their activity alerts first.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.

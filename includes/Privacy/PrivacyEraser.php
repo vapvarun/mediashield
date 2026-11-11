@@ -91,6 +91,15 @@ class PrivacyEraser {
 			// matches.
 			$sessions_table = "{$wpdb->prefix}ms_watch_sessions";
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table queries for GDPR erasure.
+
+			// An older Pro (below 1.4.2) does not hook the action above: its
+			// own eraser finds playback events through sessions.user_id, which
+			// the UPDATE below zeroes first, so the events were left behind.
+			// Delete them here while the sessions still name the person.
+			// ponytail: delete with the alerts block below once Pro below 1.4.2 is unsupported.
+			if ( self::pro_below_142() ) {
+				$items_removed += self::erase_old_pro_playback_events( (int) $user->ID, $sessions_table );
+			}
 			$sessions_updated = (int) $wpdb->query(
 				$wpdb->prepare(
 					"UPDATE {$sessions_table} SET user_id = 0, ip_address = '', user_agent = '' WHERE user_id = %d",
@@ -130,8 +139,10 @@ class PrivacyEraser {
 				$items_removed   += $archived_updated;
 			}
 
-			// The anonymised sessions are kept (not deleted) for the totals.
-			$items_retained += $sessions_updated + $archived_updated;
+			// The anonymised sessions are kept for the totals, but with no IP,
+			// browser string or user they are no longer personal data, so they
+			// count as removed only. Counting them as retained as well made
+			// WordPress say some personal data was not erased.
 
 			// Remove milestone rows (the per-user reached_at timestamps for
 			// 25/50/75/100% completion). Built on the Free side by the
@@ -156,7 +167,7 @@ class PrivacyEraser {
 			// later exports and erases its own table; this stays only for an
 			// older Pro running next to this Free version.
 			// ponytail: delete this block once Pro below 1.4.2 is unsupported.
-			if ( defined( 'MEDIASHIELD_PRO_VERSION' ) && version_compare( MEDIASHIELD_PRO_VERSION, '1.4.2', '<' ) ) {
+			if ( self::pro_below_142() ) {
 				$alerts_table = "{$wpdb->prefix}ms_activity_alerts";
 
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema check.
@@ -213,5 +224,61 @@ class PrivacyEraser {
 		 * @param int           $page   Pagination page (always 1 for this eraser).
 		 */
 		return apply_filters( 'mediashield_privacy_erase_result', $result, $email, $user, $page );
+	}
+
+	/**
+	 * Is an older MediaShield Pro (below 1.4.2) active next to this Free?
+	 *
+	 * Pro 1.4.2 erases and exports its own tables (alerts, playback events)
+	 * through mediashield_privacy_before_erase; an older Pro does not.
+	 *
+	 * @return bool
+	 */
+	public static function pro_below_142(): bool {
+		return defined( 'MEDIASHIELD_PRO_VERSION' ) && version_compare( MEDIASHIELD_PRO_VERSION, '1.4.2', '<' );
+	}
+
+	/**
+	 * Delete an older Pro's playback events for a user, and the heatmap cache
+	 * rows of the videos they touched, while the sessions still carry user_id.
+	 *
+	 * @param int    $user_id        User being erased.
+	 * @param string $sessions_table Watch sessions table name.
+	 * @return int Events deleted.
+	 */
+	private static function erase_old_pro_playback_events( int $user_id, string $sessions_table ): int {
+		global $wpdb;
+
+		$events = "{$wpdb->prefix}ms_playback_events";
+		$cache  = "{$wpdb->prefix}ms_heatmap_cache";
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Pro tables, GDPR erasure.
+		if ( $events !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $events ) ) ) {
+			return 0;
+		}
+
+		$video_ids = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT ws.video_id FROM {$events} pe INNER JOIN {$sessions_table} ws ON pe.session_id = ws.id WHERE ws.user_id = %d",
+					$user_id
+				)
+			)
+		);
+
+		$deleted = (int) $wpdb->query(
+			$wpdb->prepare(
+				"DELETE pe FROM {$events} pe INNER JOIN {$sessions_table} ws ON pe.session_id = ws.id WHERE ws.user_id = %d",
+				$user_id
+			)
+		);
+
+		if ( $video_ids && $cache === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $cache ) ) ) {
+			$wpdb->query( "DELETE FROM {$cache} WHERE video_id IN (" . implode( ',', $video_ids ) . ')' );
+		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return $deleted;
 	}
 }

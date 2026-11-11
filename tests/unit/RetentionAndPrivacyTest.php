@@ -248,6 +248,9 @@ class RetentionAndPrivacyTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $this->count_rows( $this->sessions, 'unlink-live' ), 'The session is kept for the totals.' );
 		$this->assertSame( '60', (string) $wpdb->get_var( "SELECT total_seconds FROM {$this->sessions} WHERE session_token = 'unlink-live'" ) );
 		$this->assertSame( (string) $other, (string) $wpdb->get_var( "SELECT user_id FROM {$this->sessions} WHERE session_token = 'unlink-other'" ), 'Another member is untouched.' );
-		$this->assertSame( 2, $result['items_retained'], 'Both kept sessions are reported as retained.' );
+		// Anonymised rows are no longer personal data: counting them as
+		// retained made WordPress report that some data was not erased.
+		$this->assertSame( 0, $result['items_retained'], 'Anonymised sessions are not reported as retained.' );
+		$this->assertGreaterThanOrEqual( 2, $result['items_removed'], 'Both anonymised sessions count as removed.' );
 	}
 }
