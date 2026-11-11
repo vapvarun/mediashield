@@ -125,13 +125,26 @@
 	}
 
 	/**
+	 * The session/end body: the token plus the place reached, so a viewer who
+	 * leaves before the first heartbeat still has a place to resume.
+	 */
+	function finalBeat( session ) {
+		var duration = session.duration || getPlayerDuration( session.el, session.adapter ) || 0;
+		return {
+			token: session.token,
+			position: getPlayerPosition( session.el, session.adapter ) || 0,
+			duration: duration,
+		};
+	}
+
+	/**
 	 * End all sessions on page unload.
 	 */
 	function endAllSessions() {
 		activeSessions.forEach( function ( session ) {
 			if ( session.intervalId ) clearInterval( session.intervalId );
 
-			var data = JSON.stringify( { token: session.token } );
+			var data = JSON.stringify( finalBeat( session ) );
 
 			if ( navigator.sendBeacon ) {
 				var blob = new Blob( [ data ], { type: 'application/json' } );
@@ -183,7 +196,7 @@
 			fetch( config.restUrl + 'session/end', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
-				body: JSON.stringify( { token: session.token } ),
+				body: JSON.stringify( finalBeat( session ) ),
 				keepalive: true,
 			// ms-silent-ok: the page is unloading; nobody is left to tell.
 			} ).catch( function () {} );

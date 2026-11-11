@@ -110,10 +110,21 @@ class SessionController extends WP_REST_Controller {
 				'callback'            => array( $this, 'end_session' ),
 				'permission_callback' => array( $this, 'session_permissions_check' ),
 				'args'                => array(
-					'token' => array(
+					'token'    => array(
 						'type'              => 'string',
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_text_field',
+					),
+					// Optional: the last place reached, for a viewer who leaves before the first heartbeat.
+					'position' => array(
+						'type'    => 'number',
+						'default' => 0,
+						'minimum' => 0,
+					),
+					'duration' => array(
+						'type'    => 'number',
+						'default' => 0,
+						'minimum' => 0,
 					),
 				),
 			)
@@ -419,7 +430,11 @@ class SessionController extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function end_session( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$success = SessionManager::end( $request->get_param( 'token' ) );
+		$success = SessionManager::end(
+			(string) $request->get_param( 'token' ),
+			(float) $request->get_param( 'position' ),
+			(float) $request->get_param( 'duration' )
+		);
 
 		if ( ! $success ) {
 			return new WP_Error( 'invalid_token', __( 'Invalid session token.', 'mediashield' ), array( 'status' => 401 ) );

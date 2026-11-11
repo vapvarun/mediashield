@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use MediaShield\Access\SessionManager;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -193,16 +194,20 @@ class AnalyticsController extends WP_REST_Controller {
 		$now_utc = current_time( 'mysql', true );
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
+		// Only sessions that played: every page view opens one (see played_sql()).
+		$played   = SessionManager::played_sql();
+		$played_s = SessionManager::played_sql( 's' );
+
 		$total_sessions = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval})",
+				"SELECT COUNT(*) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}",
 				$now_utc
 			)
 		);
 
 		$avg_completion = (float) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND completion_pct > 0",
+				"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}",
 				$now_utc
 			)
 		);
@@ -223,7 +228,7 @@ class AnalyticsController extends WP_REST_Controller {
 			$wpdb->prepare(
 				"SELECT DATE(CONVERT_TZ(started_at, '+00:00', %s)) AS date, COUNT(*) AS count
 				 FROM {$sessions}
-				 WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval})
+				 WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}
 				 GROUP BY DATE(CONVERT_TZ(started_at, '+00:00', %s))
 				 ORDER BY date ASC",
 				$offset,
@@ -238,7 +243,7 @@ class AnalyticsController extends WP_REST_Controller {
 				"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
 				 FROM {$sessions} s
 				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_status = 'publish'
-				 WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval})
+				 WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played_s}
 				 GROUP BY s.video_id
 				 ORDER BY session_count DESC
 				 LIMIT 5",
@@ -294,7 +299,7 @@ class AnalyticsController extends WP_REST_Controller {
 				SUM(total_seconds) AS total_watch_time,
 				MAX(last_heartbeat) AS last_watched
 			 FROM {$sessions}
-			 WHERE video_id = %d",
+			 WHERE video_id = %d AND " . SessionManager::played_sql(),
 				$video_id
 			)
 		);

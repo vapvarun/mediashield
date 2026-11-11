@@ -396,16 +396,41 @@ class SessionManager {
 	}
 
 	/**
+	 * SQL condition for a session that actually played.
+	 *
+	 * session/start is also the access gate, so every page view opens a
+	 * session; one that never played (no position, no seconds) is a load,
+	 * not a view, and is left out of the analytics totals and averages
+	 * (Basecamp 10499286227).
+	 *
+	 * @param string $alias Table alias, e.g. 's', or '' for none.
+	 * @return string
+	 */
+	public static function played_sql( string $alias = '' ): string {
+		$c = '' === $alias ? '' : $alias . '.';
+		return "({$c}max_position > 0 OR {$c}total_seconds > 0)";
+	}
+
+	/**
 	 * End a watch session.
 	 *
-	 * @param string $token HMAC session token.
+	 * A position sent with the end (the page is closing) is recorded first,
+	 * so leaving before the first heartbeat still keeps the place to resume.
+	 *
+	 * @param string $token    HMAC session token.
+	 * @param float  $position Last playback position in seconds, 0 when unknown.
+	 * @param float  $duration Video length in seconds, 0 when unknown.
 	 * @return bool Success.
 	 */
-	public static function end( string $token ): bool {
+	public static function end( string $token, float $position = 0.0, float $duration = 0.0 ): bool {
 		$parsed = self::validate_token( $token );
 
 		if ( ! $parsed ) {
 			return false;
+		}
+
+		if ( $position > 0 ) {
+			self::heartbeat( $token, $position, $duration, false );
 		}
 
 		global $wpdb;

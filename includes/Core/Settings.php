@@ -372,7 +372,11 @@ class Settings {
 			return null;
 		}
 
-		$entry     = $schema[ $key ];
+		$entry = $schema[ $key ];
+		// A number setting refuses text: (float) 'abc' is 0, an invisible watermark.
+		if ( in_array( $entry['type'], array( 'integer', 'float' ), true ) && ! is_numeric( $value ) ) {
+			return null;
+		}
 		$sanitized = match ( $entry['type'] ) {
 			'boolean' => (bool) $value,
 			'integer' => (int) $value,
