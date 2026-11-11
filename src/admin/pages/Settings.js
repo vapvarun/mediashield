@@ -321,7 +321,13 @@ const Settings = () => {
 					help={ __( 'Applied to new videos unless overridden per-video.', 'mediashield' ) }
 					value={ settings?.ms_default_protection || 'standard' }
 					options={ PROTECTION_OPTIONS }
-					onChange={ ( val ) => updateSetting( 'ms_default_protection', val ) }
+					onChange={ ( val ) => {
+						updateSetting( 'ms_default_protection', val );
+						// Videos reads the default from the page config, printed
+						// once at load; keep it current so "Default (X)" is right
+						// without a reload.
+						if ( window.mediashieldAdmin ) window.mediashieldAdmin.defaultProtection = val;
+					} }
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
