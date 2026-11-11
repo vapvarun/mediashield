@@ -1,0 +1,7 @@
+# Allowed CREATE TABLE statements. Editing this file needs the owner's yes in the commit body.
+# Standard: wbcom-scope-and-schema-standard.md
+ms_milestones
+ms_playlist_items
+ms_tags
+ms_video_tags
+ms_watch_sessions
