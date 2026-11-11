@@ -114,7 +114,8 @@ class PlatformTitleTest extends WP_UnitTestCase {
 	public function test_unknown_provider_sends_no_request(): void {
 		$id = $this->create( 'bunny', 'abc-123', 'https://iframe.mediadelivery.net/embed/806115/abc-123' );
 
-		$this->assertSame( 'bunny - abc-123', get_post( $id )->post_title );
+		// No oEmbed: the neutral title, never the ID (Basecamp 10499285942).
+		$this->assertSame( \MediaShield\CPT\Thumbnail::neutral_title( $id ), get_post( $id )->post_title );
 		$this->assertSame( array(), array_filter( $this->requests, static fn( $u ) => false !== strpos( $u, 'mediadelivery' ) ) );
 	}
 }

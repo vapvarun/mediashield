@@ -60,17 +60,18 @@ class Thumbnail {
 	}
 
 	/**
-	 * Replace the placeholder title the setup wizard and the Video block give
-	 * a pasted URL ("youtube - VIDEO_ID") with the platform's own title.
+	 * Give a video created through REST with no real title (empty, or the old
+	 * "youtube - VIDEO_ID" placeholder) the platform's own title, or a
+	 * neutral "Video 123", and a slug made from it.
 	 *
-	 * Only touches a title that is still exactly that placeholder, so a title
-	 * the owner typed is never overwritten. Platforms with no oEmbed (Bunny)
-	 * keep the placeholder.
+	 * A title the owner typed is never overwritten. The placeholder and its
+	 * slug would show the platform ID to guests in /wp/v2/mediashield-videos
+	 * and the playlist (Basecamp 10499285942).
 	 *
 	 * At most one oEmbed request, on REST create only (bulk and import paths
 	 * use wp_insert_post and never get here). Discovery is off, so a URL with
 	 * no known provider sends nothing; the request uses the WordPress HTTP
-	 * timeout. A failed fetch keeps the placeholder.
+	 * timeout. A failed fetch gives the neutral title.
 	 *
 	 * @param \WP_Post         $post     Post inserted or updated through REST.
 	 * @param \WP_REST_Request $request  Request (unused).
@@ -88,24 +89,153 @@ class Thumbnail {
 		if ( '' === $video_id || '' === $source || 'self' === $platform ) {
 			return;
 		}
-		if ( $post->post_title !== $platform . ' - ' . $video_id ) {
+		if ( '' !== trim( $post->post_title ) && ! self::is_placeholder_title( $post->post_title, $video_id ) ) {
 			return;
 		}
 
 		$data  = _wp_oembed_get_object()->get_data( $source, array( 'discover' => false ) );
 		$title = ( $data && ! empty( $data->title ) ) ? sanitize_text_field( (string) $data->title ) : '';
-		if ( '' === $title ) {
-			return;
+		if ( '' === $title || self::carries_id( $title, $video_id ) ) {
+			$title = self::neutral_title( $post->ID );
 		}
 
-		wp_update_post(
-			array(
-				'ID'         => $post->ID,
-				'post_title' => $title,
-			)
-		);
-		// The thumbnail handler (priority 10) reads the same object.
+		self::retitle_video( $post->ID, $title );
+		// The thumbnail handler (priority 10) and the REST response read the same object.
 		$post->post_title = $title;
+		$post->post_name  = (string) get_post_field( 'post_name', $post->ID );
+		$post->guid       = (string) get_post_field( 'guid', $post->ID );
+	}
+
+	/**
+	 * Is this a title MediaShield wrote, rather than one the owner typed?
+	 *
+	 * The setup wizard, the Video block and imports used "<platform> - <id>"
+	 * (shown as an en dash) or the bare ID / Bunny GUID when there was no title.
+	 *
+	 * @param string $title    Post title.
+	 * @param string $video_id Platform video ID.
+	 * @return bool
+	 */
+	public static function is_placeholder_title( string $title, string $video_id ): bool {
+		$title = trim( html_entity_decode( $title, ENT_QUOTES, 'UTF-8' ) );
+		if ( '' === $video_id || '' === $title ) {
+			return false;
+		}
+		return 0 === strcasecmp( $title, $video_id )
+			|| (bool) preg_match( '/^[a-z]+\s*[-\x{2013}\x{2014}]\s*' . preg_quote( $video_id, '/' ) . '$/iu', $title );
+	}
+
+	/**
+	 * The neutral title a video gets in place of a placeholder: "Video 123".
+	 *
+	 * @param int $video_id Video post ID.
+	 * @return string
+	 */
+	public static function neutral_title( int $video_id ): string {
+		/* translators: %d: video post ID. */
+		return sprintf( __( 'Video %d', 'mediashield' ), $video_id );
+	}
+
+	/**
+	 * The video title a viewer may be shown: a placeholder becomes the neutral title.
+	 *
+	 * @param int    $video_id Video post ID.
+	 * @param string $title    Stored title.
+	 * @return string
+	 */
+	public static function display_title( int $video_id, string $title ): string {
+		return self::is_placeholder_title( $title, (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) ) ? self::neutral_title( $video_id ) : $title;
+	}
+
+	/**
+	 * Set a video's title, a unique slug made from it, and the GUID that follows.
+	 *
+	 * Written directly, not through wp_update_post(), so the upgrade job does
+	 * not re-run every save_post handler (thumbnail fetch, file checks) per video.
+	 *
+	 * @param int    $video_id Video post ID.
+	 * @param string $title    New title.
+	 * @param string $slug_from Text the slug is made from; defaults to the title.
+	 */
+	private static function retitle_video( int $video_id, string $title, string $slug_from = '' ): void {
+		global $wpdb;
+		$post = get_post( $video_id );
+		if ( ! $post ) {
+			return;
+		}
+		$slug = wp_unique_post_slug( sanitize_title( '' !== $slug_from ? $slug_from : $title, (string) $video_id ), $video_id, $post->post_status, $post->post_type, (int) $post->post_parent );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- See the docblock; the cache is cleared below.
+		$wpdb->update(
+			$wpdb->posts,
+			array(
+				'post_title' => $title,
+				'post_name'  => $slug,
+			),
+			array( 'ID' => $video_id )
+		);
+		clean_post_cache( $video_id );
+		self::set_guid( $video_id, (string) get_permalink( $video_id ) );
+	}
+
+	/**
+	 * Write a post's GUID. No core API rewrites one; core sets it this way on insert.
+	 *
+	 * @param int    $id   Post ID.
+	 * @param string $guid New GUID.
+	 */
+	private static function set_guid( int $id, string $guid ): void {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- No core API updates a GUID; the cache is cleared below.
+		$wpdb->update( $wpdb->posts, array( 'guid' => $guid ), array( 'ID' => $id ) );
+		clean_post_cache( $id );
+	}
+
+	/**
+	 * Clean a video post that still carries its platform ID (1.4.2 upgrade).
+	 *
+	 * A placeholder title becomes "Video 123"; a slug or GUID with the ID is
+	 * rebuilt from the title. A title the owner typed is kept, even if it
+	 * contains the ID.
+	 *
+	 * @param int $video_id Video post ID.
+	 * @return bool True when anything changed.
+	 */
+	public static function clean_video_post( int $video_id ): bool {
+		$post        = get_post( $video_id );
+		$platform_id = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+		if ( ! $post || '' === $platform_id ) {
+			return false;
+		}
+
+		if ( self::is_placeholder_title( $post->post_title, $platform_id ) ) {
+			self::retitle_video( $video_id, self::neutral_title( $video_id ) );
+			return true;
+		}
+		if ( self::carries_id( $post->post_name, $platform_id ) && ! self::carries_id( $post->post_title, $platform_id ) ) {
+			self::retitle_video( $video_id, $post->post_title );
+			return true;
+		}
+		if ( self::carries_id( $post->guid, $platform_id ) && ! self::carries_id( (string) get_permalink( $video_id ), $platform_id ) ) {
+			self::set_guid( $video_id, (string) get_permalink( $video_id ) );
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Is this the exact file name an older MediaShield sideload gave a poster?
+	 *
+	 * Free: mediashield-<platform>-<id>.ext; Pro imports: <id>-thumbnail.ext;
+	 * each with WordPress's -1/-2 and -scaled suffixes. Lets the rename find
+	 * old posters without touching an owner image that merely contains the ID.
+	 *
+	 * @param string $name        File base name.
+	 * @param string $platform_id Platform video ID.
+	 * @return bool
+	 */
+	private static function is_old_poster_name( string $name, string $platform_id ): bool {
+		$id = preg_quote( sanitize_file_name( $platform_id ), '/' );
+		return (bool) preg_match( '/^(?:mediashield-[a-z]+-' . $id . '|' . $id . '-thumbnail)(?:-\d+)?(?:-scaled)?\.(?:jpe?g|png|gif|webp)$/i', $name );
 	}
 
 	/**
@@ -372,7 +502,7 @@ class Thumbnail {
 	}
 
 	/**
-	 * One pass of the 1.4.2 upgrade: rename the posters of the next videos.
+	 * One pass of the 1.4.2 upgrade: clean the next videos' titles and slugs, and rename their posters.
 	 *
 	 * Walks platform videos in ID order after the stored cursor, so a pass
 	 * interrupted half way resumes where it stopped, and a 2000-video site is
@@ -402,6 +532,7 @@ class Thumbnail {
 		}
 
 		foreach ( $ids as $id ) {
+			self::clean_video_post( (int) $id );
 			self::rename_posters( (int) $id );
 		}
 
@@ -459,6 +590,11 @@ class Thumbnail {
 		}
 
 		$file = (string) get_attached_file( $id, true );
+		// Only posters MediaShield made: marked, or still under the exact old
+		// sideload name. An owner image that merely contains the ID is theirs.
+		if ( ! self::is_platform_poster( $id ) && ! self::is_old_poster_name( wp_basename( $file ), $platform_id ) ) {
+			return false;
+		}
 		$meta = wp_get_attachment_metadata( $id, true );
 		$meta = is_array( $meta ) ? $meta : array();
 		$alt  = (string) get_post_meta( $id, '_wp_attachment_image_alt', true );
@@ -517,11 +653,7 @@ class Thumbnail {
 				'post_content' => self::carries_id( $post->post_content, $platform_id ) ? '' : $post->post_content,
 			)
 		);
-		// wp_update_post() never rewrites a GUID; core sets it the same way on insert.
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- No core API updates a GUID; the cache is cleared below.
-		$wpdb->update( $wpdb->posts, array( 'guid' => (string) wp_get_attachment_url( $id ) ), array( 'ID' => $id ) );
-		clean_post_cache( $id );
+		self::set_guid( $id, (string) wp_get_attachment_url( $id ) );
 		if ( self::carries_id( $alt, $platform_id ) ) {
 			update_post_meta( $id, '_wp_attachment_image_alt', $title );
 		}

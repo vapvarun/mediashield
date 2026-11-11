@@ -248,4 +248,75 @@ class PosterNameTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		$this->assertStringContainsString( 'ms-playlist-item-thumb"', PlaylistRenderer::render( $playlist ) );
 	}
+
+	public function test_upgrade_gives_a_placeholder_title_a_neutral_title_and_slug(): void {
+		global $wpdb;
+		// What the wizard and the Video block saved before 1.4.2.
+		$wpdb->update( $wpdb->posts, array( 'post_title' => 'youtube - ' . self::YT_ID, 'post_name' => sanitize_title( 'youtube - ' . self::YT_ID ), 'guid' => home_url( '/?mediashield_video=youtube-' . sanitize_title( self::YT_ID ) ) ), array( 'ID' => $this->video ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		clean_post_cache( $this->video );
+
+		$this->assertTrue( Thumbnail::clean_video_post( $this->video ) );
+		$post = get_post( $this->video );
+		$this->assertSame( Thumbnail::neutral_title( $this->video ), $post->post_title );
+		foreach ( array( $post->post_title, $post->post_name, $post->guid ) as $public ) {
+			$this->assertFalse( Thumbnail::carries_id( $public, self::YT_ID ), $public );
+		}
+		$this->assertFalse( Thumbnail::clean_video_post( $this->video ), 'A second run changes nothing.' );
+	}
+
+	public function test_upgrade_keeps_an_owner_title_and_cleans_only_its_slug(): void {
+		global $wpdb;
+		$wpdb->update( $wpdb->posts, array( 'post_name' => 'youtube-' . sanitize_title( self::YT_ID ) ), array( 'ID' => $this->video ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		clean_post_cache( $this->video );
+
+		$this->assertTrue( Thumbnail::clean_video_post( $this->video ) );
+		$post = get_post( $this->video );
+		$this->assertSame( 'Lesson one', $post->post_title );
+		$this->assertStringStartsWith( 'lesson-one', $post->post_name );
+		$this->assertFalse( Thumbnail::carries_id( $post->post_name, self::YT_ID ) );
+
+		// An owner title that contains the ID is theirs to keep.
+		$wpdb->update( $wpdb->posts, array( 'post_title' => 'Clip ' . self::YT_ID . ' recap' ), array( 'ID' => $this->video ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		clean_post_cache( $this->video );
+		Thumbnail::clean_video_post( $this->video );
+		$this->assertSame( 'Clip ' . self::YT_ID . ' recap', get_post( $this->video )->post_title );
+	}
+
+	public function test_an_owner_image_that_merely_contains_the_id_is_untouched(): void {
+		$id     = $this->poster( 'cover-' . self::YT_ID . '-final.jpg', 'Lesson cover' );
+		$before = $this->public_view( $id );
+
+		$this->assertSame( 0, Thumbnail::rename_posters( $this->video ) );
+		clean_post_cache( $id );
+		$this->assertSame( $before, $this->public_view( $id ) );
+	}
+
+	public function test_playlist_sidebar_never_shows_a_placeholder_title(): void {
+		$this->assertSame( Thumbnail::neutral_title( $this->video ), Thumbnail::display_title( $this->video, 'youtube – ' . self::YT_ID ) );
+		$this->assertSame( Thumbnail::neutral_title( $this->video ), Thumbnail::display_title( $this->video, self::YT_ID ) );
+		$this->assertSame( 'Lesson one', Thumbnail::display_title( $this->video, 'Lesson one' ) );
+	}
+
+	public function test_rest_create_with_no_title_gets_no_id_in_title_or_slug(): void {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		add_filter( 'pre_http_request', static fn() => new \WP_Error( 'msposter_no_network', 'No network in tests.' ) );
+		$request = new \WP_REST_Request( 'POST', '/wp/v2/mediashield-videos' );
+		$request->set_body_params(
+			array(
+				'title'  => '',
+				'status' => 'publish',
+				'meta'   => array(
+					'_ms_platform'          => 'youtube',
+					'_ms_platform_video_id' => self::YT_ID,
+					'_ms_source_url'        => 'https://www.youtube.com/watch?v=' . self::YT_ID,
+				),
+			)
+		);
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 201, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertFalse( Thumbnail::carries_id( wp_json_encode( array( $data['title'], $data['slug'], $data['link'], $data['guid'] ) ), self::YT_ID ) );
+		$this->assertSame( Thumbnail::neutral_title( (int) $data['id'] ), get_post( (int) $data['id'] )->post_title );
+		$this->assertSame( Thumbnail::neutral_title( (int) $data['id'] ), $data['title']['rendered'] );
+	}
 }

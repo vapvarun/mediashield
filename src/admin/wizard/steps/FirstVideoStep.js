@@ -29,9 +29,9 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 				path: '/wp/v2/mediashield-videos',
 				method: 'POST',
 				data: {
-					title: platformVideoId
-						? `${ platform } - ${ platformVideoId }`
-						: url.substring( 0, 60 ),
+					// Never the platform ID: the server gives the video the platform's
+					// title or "Video 123", and a slug to match.
+					title: platformVideoId ? '' : url.substring( 0, 60 ),
 					status: 'publish',
 					meta: {
 						_ms_platform: platform,
