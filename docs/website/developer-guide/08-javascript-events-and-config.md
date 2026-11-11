@@ -43,6 +43,15 @@ Localized onto the player script by `Settings::frontend_config()` and filterable
 
 Protection settings travel separately, through `mediashield_protection_config`.
 
+## window.mediashieldRequest
+
+A shared reader for failed requests, used by every MediaShield screen and the player since 1.4.2.
+
+- `mediashieldRequest.readJSON( response )` reads a `fetch()` response as JSON and rejects with a plain error when the body is an error page (such as a 502) instead of JSON.
+- `mediashieldRequest.message( error, fallback )` returns one plain sentence for the person: the network sentence when the server could not be reached or did not answer properly, otherwise the server's own message, otherwise `fallback`.
+
+Use it in add-on screens so a dropped connection never shows "Failed to fetch" or a JSON parser error.
+
 ## Admin SPA filter
 
 The admin app is a React app with hash routing. Add pages with the JavaScript filter `mediashield_admin_routes` (`wp.hooks`, not PHP). Route objects use `hash`, `label`, `icon`, `component`; see [Extension Architecture](05-extension-architecture.md).

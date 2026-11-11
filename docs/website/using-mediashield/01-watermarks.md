@@ -27,7 +27,7 @@ Go to **MediaShield > Settings > Watermark**:
 
 **Color** - The watermark text color, default white. Choose a color that is readable against your typical video content. If your videos tend to be dark, white works well. If they tend to be light, a dark color is better.
 
-**Position Swap Interval** - How many seconds the watermark stays in one position. Default is 30. Shorter intervals (10-15 seconds) make the watermark harder to crop out of a recording because it covers more of the frame over time.
+**Position Swap Interval** - How many seconds the watermark stays in one position, in whole seconds from 1 up. Default is 30. A decimal such as 1.5 is not saved, and the screen says so. Shorter intervals (10-15 seconds) make the watermark harder to crop out of a recording because it covers more of the frame over time.
 
 **Keep the watermark at the edges** - Off by default. When on, the watermark moves between the corners only, off the centre of the video, which suits lessons where the centre of the frame matters. On a short player, such as a phone, a long watermark can still reach towards the middle.
 

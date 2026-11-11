@@ -165,9 +165,6 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - Allowed Domains no longer blocks your own students who open a lesson from a bookmark, an email link or after logging in; embeds on other sites are still checked.
 * Fix      - A role given the upload permission gets a Videos menu with Add New, and sees only its own videos unless it can edit others' posts.
 * Fix      - For that role, the All, Published, Drafts and Trash counts above the Videos list count only its own videos, the ones the list shows.
-* Security - Poster images no longer reveal a video's YouTube, Vimeo, Wistia or Bunny ID to visitors; new posters carry no ID, and the update renames existing posters and their sizes, titles and addresses in the background.
-* Security - A playlist's video list no longer shows a visitor who may not watch a poster that is still named after the video ID.
-* Security - Video titles and addresses no longer carry the platform video ID; a pasted video with no title is named "Video 123", and the update cleans old "youtube - ID" titles and addresses in the background. A poster address pasted by hand before the update stops working.
 * Fix      - A video whose watch session cannot start stays stopped with a message and a retry, instead of playing without its watermark.
 * Fix      - Watch progress, completion, resume, milestones and lesson auto-complete keep recording past the first two minutes of a video.
 * Fix      - Videos added from the setup wizard or the Video block follow Settings > Default Protection Level instead of always being saved as Standard, so on a site whose default is not Standard they now play at that default.
@@ -178,7 +175,6 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - Leaving a video before the first progress save keeps the place reached, so the member can resume.
 * Fix      - A number setting sent as text, such as watermark opacity "abc", is refused instead of saved as 0.
 * Fix      - Analytics count a session only once the video played, so page loads no longer inflate sessions and the Dashboard average matches Top Videos.
-* Fix      - The watermark shows the member's name as written, so an ampersand in a name no longer shows as an HTML entity.
 * Fix      - On a site that never saved the watermark settings, the player uses the opacity and swap interval the Settings screen shows.
 * Fix      - YouTube and Vimeo videos fill the screen in fullscreen, also inside a YouTube or Vimeo embed block.
 * Fix      - Pressing Publish or Update with a video file chosen but not yet uploaded uploads it first, instead of saving a video with no file.
@@ -196,12 +192,14 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Fix      - A browser zoomed to 125% or more is no longer mistaken for open developer tools, so students are not flagged or paused for zooming.
 * Fix      - Erasing a member's personal data no longer reports that some data was not erased, and next to MediaShield Pro 1.4.1 it also removes their playback events and exports their activity alerts first.
 * Fix      - When the server cannot be reached or answers with an error page, MediaShield screens say so in one plain sentence instead of browser or parser errors: settings say Not saved and offer Retry, the Videos list offers Try again instead of showing 0 videos, and the setup wizard's first video no longer fails silently.
-* Fix      - A protected video whose watch session cannot start is stopped with a message, instead of playing without its watermark.
 * Fix      - An upload that gets an error page back, such as a 502, says the server could not be reached instead of Upload failed: 502, and an upload the server refused shows the server's own reason, such as Chunk upload failed with status 500.
 * Fix      - Signed HLS streams, such as Bunny with CDN token authentication, renew their address before it expires and after a long pause, so playback keeps its place instead of resetting to a blank player; if a renewal fails while the video still plays, the player retries quietly, says so with Try again only when the address is about to run out, and clears that message as soon as a renewal works.
 * Fix      - Uploads from Videos, Add New go to the Default Upload Target, such as Bunny Stream; they always went to this site.
-* Fix      - Names and video titles with an ampersand or apostrophe show as written on the Viewers, Milestones and Dashboard screens instead of as HTML entities such as &amp;amp;.
+* Fix      - Names and video titles with an ampersand, apostrophe or dash show as written in the watermark and on the Viewers, Milestones and Dashboard screens, instead of as HTML entities such as &amp;amp; or &#8211;.
 * Fix      - Activating MediaShield with WP-CLI or the Plugins screen's bulk Activate no longer jumps to the setup wizard on the next admin page you open.
+* Security - Poster images no longer reveal a video's YouTube, Vimeo, Wistia or Bunny ID to visitors; new posters carry no ID, and the update renames existing posters and their sizes, titles and addresses in the background.
+* Security - A playlist's video list no longer shows a visitor who may not watch a poster that is still named after the video ID.
+* Security - Video titles and addresses no longer carry the platform video ID; a pasted video with no title is named "Video 123", and the update cleans old "youtube - ID" titles and addresses in the background. A poster address pasted by hand before the update stops working.
 * Security - A visitor who had not bought a course could download a self-hosted video that came from the Media Library; the file is now moved to the protected folder and plays only through the protected player.
 * Security - Contributors, authors and instructors could read every video's file and stream address through the REST API; now only people who can edit a video receive them, playlist items included.
 * Security - Saving a video moves its Media Library file only when the person saving may edit that file.

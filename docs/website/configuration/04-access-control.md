@@ -68,6 +68,8 @@ Anything that can make an authenticated WordPress REST request as an administrat
 
 To set it: open **MediaShield > Settings > Access**, type each domain (for example `partner.example`), and save. Then open a page on a listed site and on an unlisted site to check that only the listed one plays the video.
 
+Your own site is never blocked by this list. A student who opens a lesson directly, from a bookmark, an email link or the page they land on after logging in, plays the video even though the browser sends no referring address. A page on another site that frames your lesson is still checked, also when it hides its address. Browsers older than Safari 16.4 do not say whether a page is framed, so on those a framed page with no address counts as a direct visit.
+
 When a list is set:
 - Requests from your own site's domain are always allowed
 - Requests from a listed domain, or any of its subdomains, are allowed
