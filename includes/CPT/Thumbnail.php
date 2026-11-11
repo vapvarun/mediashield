@@ -471,8 +471,9 @@ class Thumbnail {
 					$meta['sizes'][ $size ]['file'] = $move( (string) $data['file'] );
 				}
 			}
-			if ( ! empty( $meta['original_image'] ) ) {
-				$meta['original_image'] = $move( (string) $meta['original_image'] );
+			$original = (string) ( $meta['original_image'] ?? '' );
+			if ( '' !== $original ) {
+				$meta['original_image'] = $move( $original );
 			}
 			$new_file = $dir . '/' . $move( wp_basename( $file ) );
 			if ( $new_file !== $file ) {
