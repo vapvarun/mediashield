@@ -314,16 +314,21 @@ class StreamController extends WP_REST_Controller {
 				$range_start = $matches[1];
 				$range_end   = $matches[2];
 
-				if ( '' !== $range_start ) {
-					$start = (int) $range_start;
+				if ( '' === $range_start && '' !== $range_end ) {
+					// Suffix range "bytes=-N": the last N bytes (RFC 9110 14.1.1).
+					$start = max( 0, $file_size - (int) $range_end );
+				} else {
+					if ( '' !== $range_start ) {
+						$start = (int) $range_start;
+					}
+					if ( '' !== $range_end ) {
+						// An end past the file is allowed; it means "to the end".
+						$end = min( (int) $range_end, $file_size - 1 );
+					}
 				}
 
-				if ( '' !== $range_end ) {
-					$end = (int) $range_end;
-				}
-
-				// Validate range.
-				if ( $start > $end || $start >= $file_size || $end >= $file_size ) {
+				// Unsatisfiable only when the start is past the file.
+				if ( $start > $end || $start >= $file_size ) {
 					status_header( 416 );
 					header( "Content-Range: bytes */{$file_size}" );
 					exit;
