@@ -148,6 +148,7 @@ class PosterNameTest extends WP_UnitTestCase {
 
 		$this->assertIsInt( $id );
 		$this->assertSame( $id, (int) get_post_thumbnail_id( $this->video ) );
+		$this->assertTrue( Thumbnail::is_platform_poster( $id ), 'Marked as a MediaShield poster.' );
 		$this->assertStringNotContainsStringIgnoringCase( self::YT_ID, $this->public_view( $id ) );
 		$this->assertStringNotContainsStringIgnoringCase( sanitize_title( self::YT_ID ), $this->public_view( $id ) );
 	}
@@ -179,6 +180,7 @@ class PosterNameTest extends WP_UnitTestCase {
 			$this->assertFileDoesNotExist( dirname( $old ) . '/' . $size['file'] );
 		}
 		$this->assertSame( 'Lesson one', get_post( $id )->post_title );
+		$this->assertTrue( Thumbnail::is_platform_poster( $id ), 'A renamed poster is marked as MediaShield-made.' );
 		$this->assertSame( wp_get_attachment_url( $id ), get_post( $id )->guid );
 
 		// The next pass finds nothing left and finishes the job.
@@ -204,6 +206,24 @@ class PosterNameTest extends WP_UnitTestCase {
 		$this->assertSame( 0, Thumbnail::rename_posters( $this->video ) );
 		clean_post_cache( $id );
 		$this->assertSame( $before, $this->public_view( $id ) );
+		$this->assertFalse( Thumbnail::is_platform_poster( $id ) );
+	}
+
+	public function test_sideload_never_replaces_an_owner_featured_image(): void {
+		$owner    = $this->poster( 'my-lesson-cover.jpg', 'Lesson cover' );
+		$requests = 0;
+		$count    = static function ( $pre ) use ( &$requests ) {
+			++$requests;
+			return new \WP_Error( 'msposter_no_network', 'No network in tests.' );
+		};
+		add_filter( 'pre_http_request', $count );
+		$result = Thumbnail::sideload_poster( 'https://img.youtube.com/vi/' . self::YT_ID . '/maxresdefault.jpg', $this->video, 'youtube', self::YT_ID, 'Lesson one' );
+		remove_filter( 'pre_http_request', $count );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 0, $requests, 'Nothing is downloaded over an owner image.' );
+		$this->assertSame( $owner, (int) get_post_thumbnail_id( $this->video ) );
+		$this->assertNotNull( get_post( $owner ) );
 	}
 
 	public function test_playlist_sidebar_gives_a_guest_no_id_from_an_old_poster(): void {

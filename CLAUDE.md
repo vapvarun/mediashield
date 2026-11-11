@@ -54,7 +54,7 @@ includes/
   CPT/
     VideoPostType.php        mediashield_video CPT + meta
     PlaylistPostType.php     mediashield_playlist CPT + meta
-    Thumbnail.php            Video posters: the one platform-poster sideload (`sideload_poster()`, also used by Pro), `poster_filename()` (keyed hash, never the platform ID), `poster_url()` (read every rendered poster through it), and the 1.4.2 upgrade job `ms_rename_id_posters` that renames posters saved under the platform ID (file, sizes, title, slug, GUID, caption, alt)
+    Thumbnail.php            Video posters: the one platform-poster sideload (`sideload_poster()`, also used by Pro), `poster_filename()` (keyed hash, never the platform ID), `poster_url()` (read every rendered poster through it), and the 1.4.2 upgrade job `ms_rename_id_posters` that renames posters saved under the platform ID (file, sizes, title, slug, GUID, caption, alt). Its posters carry attachment meta `_ms_platform_poster` = 1; only a marked poster is ever replaced or deleted, and `sideload_poster()` refuses when the video's featured image is the owner's
   DB/
     Schema.php               dbDelta for all 6 free tables
   REST/

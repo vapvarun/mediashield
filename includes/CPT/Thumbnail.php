@@ -32,6 +32,13 @@ class Thumbnail {
 	private const RENAME_JOB = 'ms_rename_id_posters';
 
 	/**
+	 * Attachment meta: 1 on a poster MediaShield sideloaded (or renamed).
+	 * Only a poster with this mark may be replaced or deleted; any other
+	 * featured image is the owner's.
+	 */
+	public const PLATFORM_POSTER = '_ms_platform_poster';
+
+	/**
 	 * Register hooks.
 	 */
 	public static function register(): void {
@@ -174,6 +181,12 @@ class Thumbnail {
 	 * @return int|\WP_Error    Attachment ID on success, WP_Error on failure.
 	 */
 	public static function sideload_poster( string $url, int $post_id, string $platform, string $video_id, string $title ) {
+		// Never over an image the owner chose: that is their asset, not ours.
+		$current = (int) get_post_thumbnail_id( $post_id );
+		if ( $current > 0 && ! self::is_platform_poster( $current ) ) {
+			return new \WP_Error( 'mediashield_owner_poster', 'The video has a featured image the owner set; it is kept.' );
+		}
+
 		// Require the sideload helpers (these aren't loaded on frontend / REST).
 		if ( ! function_exists( 'download_url' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -257,6 +270,7 @@ class Thumbnail {
 		// the size the theme requests (e.g. post grids ask for medium).
 		$metadata = wp_generate_attachment_metadata( $attachment_id, $sideloaded['file'] );
 		wp_update_attachment_metadata( $attachment_id, $metadata );
+		update_post_meta( $attachment_id, self::PLATFORM_POSTER, 1 );
 		set_post_thumbnail( $post_id, $attachment_id );
 
 		return (int) $attachment_id;
@@ -278,6 +292,16 @@ class Thumbnail {
 	 */
 	public static function poster_filename( string $platform, string $video_id, int $post_id, string $ext = 'jpg' ): string {
 		return sprintf( 'mediashield-poster-%s.%s', substr( wp_hash( $platform . '|' . $video_id . '|' . $post_id ), 0, 12 ), $ext );
+	}
+
+	/**
+	 * Is this attachment a poster MediaShield sideloaded, so it may be replaced or deleted?
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool False for anything the owner uploaded or picked.
+	 */
+	public static function is_platform_poster( int $attachment_id ): bool {
+		return $attachment_id > 0 && '1' === (string) get_post_meta( $attachment_id, self::PLATFORM_POSTER, true );
 	}
 
 	/**
@@ -501,6 +525,8 @@ class Thumbnail {
 		if ( self::carries_id( $alt, $platform_id ) ) {
 			update_post_meta( $id, '_wp_attachment_image_alt', $title );
 		}
+		// Named after the platform ID, so MediaShield made it.
+		update_post_meta( $id, self::PLATFORM_POSTER, 1 );
 
 		return true;
 	}
