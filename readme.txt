@@ -164,6 +164,7 @@ Security release: self-hosted videos picked from the Media Library are now prote
 * Improve  - The Viewers list is paged, 20 viewers at a time with Previous and Next, so a site with thousands of viewers can reach every one instead of the 20 most recent.
 * Fix      - Allowed Domains no longer blocks your own students who open a lesson from a bookmark, an email link or after logging in; embeds on other sites are still checked.
 * Fix      - A role given the upload permission gets a Videos menu with Add New, and sees only its own videos unless it can edit others' posts.
+* Fix      - For that role, the All, Published, Drafts and Trash counts above the Videos list count only its own videos, the ones the list shows.
 * Security - Poster images no longer reveal a video's YouTube, Vimeo, Wistia or Bunny ID to visitors; new posters carry no ID, and the update renames existing posters and their sizes, titles and addresses in the background.
 * Security - A playlist's video list no longer shows a visitor who may not watch a poster that is still named after the video ID.
 * Fix      - A video whose watch session cannot start stays stopped with a message and a retry, instead of playing without its watermark.

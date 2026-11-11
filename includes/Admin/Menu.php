@@ -29,6 +29,7 @@ class Menu {
 	public static function register(): void {
 		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
 		add_action( 'pre_get_posts', array( __CLASS__, 'scope_creator_video_list' ) );
+		add_filter( 'wp_count_posts', array( __CLASS__, 'scope_creator_video_counts' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_pro_notice' ) );
 		add_action( 'wp_ajax_ms_dismiss_pro_notice', array( __CLASS__, 'dismiss_pro_notice' ) );
@@ -75,14 +76,35 @@ class Menu {
 	 * @param \WP_Query $query The main admin list query.
 	 */
 	public static function scope_creator_video_list( \WP_Query $query ): void {
-		if ( ! is_admin() || ! $query->is_main_query() || 'mediashield_video' !== $query->get( 'post_type' ) ) {
-			return;
+		if ( $query->is_main_query() && 'mediashield_video' === $query->get( 'post_type' ) && self::creator_list_is_scoped() ) {
+			$query->set( 'author', get_current_user_id() );
 		}
+	}
+
+	/**
+	 * The status links above that list (All, Published, Drafts, Trash) count
+	 * the same videos the list shows (Basecamp 10499835623). Core counts every
+	 * author's, so a creator read "Drafts (6)" and got an empty list.
+	 *
+	 * @param object $counts Core's counts by status.
+	 * @param string $type   Post type counted.
+	 * @return object
+	 */
+	public static function scope_creator_video_counts( $counts, $type ) {
+		if ( 'mediashield_video' !== $type || ! self::creator_list_is_scoped() ) {
+			return $counts;
+		}
+		return \MediaShield\CPT\VideoPostType::count_by_author( get_current_user_id() );
+	}
+
+	/**
+	 * Is this the Videos list of someone who may not edit others' videos?
+	 *
+	 * @return bool
+	 */
+	private static function creator_list_is_scoped(): bool {
 		global $pagenow;
-		if ( 'edit.php' !== $pagenow || current_user_can( 'edit_others_posts' ) ) {
-			return;
-		}
-		$query->set( 'author', get_current_user_id() );
+		return is_admin() && 'edit.php' === $pagenow && ! current_user_can( 'edit_others_posts' );
 	}
 
 	/**

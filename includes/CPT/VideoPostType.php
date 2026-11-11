@@ -1101,4 +1101,35 @@ class VideoPostType {
 
 		return $clean;
 	}
+
+	/**
+	 * How many videos does one author have in each status?
+	 *
+	 * The per-author twin of core's wp_count_posts(), for the status links of
+	 * a Videos list scoped to its author (Admin\Menu::scope_creator_video_counts()).
+	 * Served by the posts table's post_author index.
+	 *
+	 * @param int $author_id Author user ID.
+	 * @return object Status name => count, every registered status present.
+	 */
+	public static function count_by_author( int $author_id ): object {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One grouped count per list screen, as core's wp_count_posts() runs.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT post_status, COUNT( * ) AS num_posts FROM {$wpdb->posts} WHERE post_type = %s AND post_author = %d GROUP BY post_status",
+				'mediashield_video',
+				$author_id
+			),
+			ARRAY_A
+		);
+
+		$counts = array_fill_keys( get_post_stati(), 0 );
+		foreach ( (array) $rows as $row ) {
+			$counts[ $row['post_status'] ] = (int) $row['num_posts'];
+		}
+
+		return (object) $counts;
+	}
 }
