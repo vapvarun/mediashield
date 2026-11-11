@@ -120,7 +120,7 @@
 			// Build watermark text. Mobile: username only. Desktop: username + IP.
 			var text = wmConfig.text || '';
 			if (!isMobile && wmConfig.ip) {
-				text += SEP + wmConfig.ip;
+				text += (text ? SEP : '') + wmConfig.ip; // A guest has no name: no leading separator.
 			}
 
 			if (!text) return;
