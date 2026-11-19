@@ -297,7 +297,9 @@ final class ScaleCommand {
 	 */
 	public function benchmark( array $args, array $assoc_args ): void {
 		global $wpdb;
-		wp_cache_flush();
+		// The timed queries read the tables through $wpdb directly; no plugin data sits in
+		// the object cache, so there is no cache group to reset between runs. A full
+		// wp_cache_flush() would only empty every other plugin's cache on the site.
 
 		$sessions_table = $wpdb->prefix . 'ms_watch_sessions';
 		$milestones_tbl = $wpdb->prefix . 'ms_milestones';
@@ -342,7 +344,6 @@ final class ScaleCommand {
 		// Heartbeat — single-row PK update.
 		$results['session_heartbeat'] = self::time_op(
 			function () use ( $wpdb, $sessions_table, $session_id ) {
-				wp_cache_flush();
 				// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
 				$wpdb->query(
 					$wpdb->prepare(
@@ -358,7 +359,6 @@ final class ScaleCommand {
 		// can_watch — concurrent-stream count.
 		$results['access_can_watch'] = self::time_op(
 			function () use ( $wpdb, $sessions_table, $uid ) {
-				wp_cache_flush();
 				// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
 				$wpdb->get_var(
 					$wpdb->prepare(
@@ -373,7 +373,6 @@ final class ScaleCommand {
 		// Stream — signed-token lookup + freshness check.
 		$results['stream_signed_lookup'] = self::time_op(
 			function () use ( $wpdb, $sessions_table, $session_token, $video_id ) {
-				wp_cache_flush();
 				// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
 				$wpdb->get_row(
 					$wpdb->prepare(
@@ -389,7 +388,6 @@ final class ScaleCommand {
 		// Milestone record — idempotent INSERT IGNORE on UNIQUE (video_id,user_id,pct).
 		$results['milestone_record'] = self::time_op(
 			function () use ( $wpdb, $milestones_tbl, $uid, $video_id ) {
-				wp_cache_flush();
 				// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
 				$wpdb->query(
 					$wpdb->prepare(
@@ -408,7 +406,6 @@ final class ScaleCommand {
 		// Analytics overview — totals.
 		$results['analytics_overview'] = self::time_op(
 			function () use ( $wpdb, $sessions_table, $milestones_tbl ) {
-				wp_cache_flush();
 				// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
 				$wpdb->get_var( "SELECT COUNT(*) FROM {$sessions_table}" );
 				$wpdb->get_var( "SELECT COUNT(DISTINCT user_id) FROM {$sessions_table}" );
