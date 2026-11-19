@@ -364,7 +364,7 @@ const Settings = () => {
 					marginBottom: '16px',
 					paddingLeft: '2px',
 				} }>
-					<div><strong>{ __( 'None:', 'mediashield' ) }</strong> { __( 'No protection applied', 'mediashield' ) }</div>
+					<div><strong>{ __( 'None:', 'mediashield' ) }</strong> { __( 'No extra protection for the video. The site-wide Require Login setting still applies.', 'mediashield' ) }</div>
 					<div><strong>{ __( 'Basic:', 'mediashield' ) }</strong> { __( 'Login required, right-click disabled', 'mediashield' ) }</div>
 					<div><strong>{ __( 'Standard:', 'mediashield' ) }</strong> { __( 'Basic + watermark + session tracking', 'mediashield' ) }</div>
 					<div><strong>{ __( 'Strict:', 'mediashield' ) }</strong> { __( 'Standard + devtools detection + source hiding', 'mediashield' ) }</div>

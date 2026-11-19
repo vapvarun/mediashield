@@ -8,7 +8,7 @@ Before tuning individual controls, set the right protection level. The levels ar
 
 | Level | What happens |
 |-------|-------------|
-| None | Free preview. No login gate, no watermark, no session tracking. Player features (speed, resume, sticky, end screen) still work. |
+| None | No extra protection for this video: no watermark, no session tracking. The site-wide **Require Login** setting still applies, so while it is on a guest is asked to log in. For a public preview, turn Require Login off. Player features (speed, resume, sticky, end screen) still work. |
 | Basic | Login gate plus the protection controls below. No watermark, and no session tracking or milestones, because no watch session is started. |
 | Standard | Login gate, watermark, session tracking, and milestones. |
 | Strict | Everything in Standard, and forces developer-tools detection, pause-on-detection, and source-URL hiding on for that video even when those toggles are off globally. |

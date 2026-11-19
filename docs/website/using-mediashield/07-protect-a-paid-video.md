@@ -34,7 +34,7 @@ Your own administrator account always passes the access checks, so test as a dif
 
 | Level | Login | Watermark | Tracking and milestones | Detection and source hiding |
 |-------|-------|-----------|-------------------------|-----------------------------|
-| None | No | No | No | No |
+| None | Only when Require Login is on | No | No | No |
 | Basic | Yes | No | No | Right-click blocked |
 | Standard | Yes | Yes | Yes | Per your Protection settings |
 | Strict | Yes | Yes | Yes | Forced on |

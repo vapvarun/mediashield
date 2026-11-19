@@ -18,7 +18,7 @@ Fill in the fields:
 
 **Protection Level** - Pick the level for this video. The dropdown starts on your site-wide default and always stores an explicit value once you save.
 
-- **None** - Free preview. No gate, no watermark, no session tracking.
+- **None** - No extra protection: no watermark, no session tracking. The site-wide Require Login setting still applies, so guests are asked to log in while it is on.
 - **Basic** - Login gate and right-click blocking. No watermark, and no session tracking or milestones for this video.
 - **Standard** - Login gate, watermark, session tracking, and milestones.
 - **Strict** - Everything in Standard, and forces developer-tools detection and source-URL hiding on even if you have those switched off globally.

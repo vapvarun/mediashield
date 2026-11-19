@@ -77,7 +77,7 @@ Setting names such as `ms_watermark_opacity` are listed for developers in the [S
 
 **Default Protection Level** decides what a video gets when it has no level of its own:
 
-- None - No protection and no session tracking.
+- None - No extra protection and no session tracking. The site-wide Require Login setting still applies.
 - Basic - Login gate and right-click blocking. No watermark, and no tracking.
 - Standard - Login gate, watermark, tracking and milestones.
 - Strict - Standard, plus developer-tools detection, pause on detection and source hiding forced on.

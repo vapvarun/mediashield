@@ -21,6 +21,13 @@
       "guard": "tests/unit/TagVideoCountTest.php",
       "added": "2026-11-20",
       "proven_failing_on": "d709ca8 (video_count missing)"
+    },
+    {
+      "card": "10526229932",
+      "title": "Protection level None was labelled Free preview / No protection, but the site-wide Require Login still gates guests",
+      "guard": "audit/journeys/customer/protection-levels.md (card:10526229932)",
+      "added": "2026-11-20",
+      "proven_failing_on": "5dd4bfc (labels read Free preview / No protection)"
     }
   ]
 }

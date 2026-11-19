@@ -44,7 +44,7 @@ export default function GeneralStep( { onSave, initialData } ) {
 					value={ protection }
 					options={ [
 						{ label: __( 'Standard (Watermark + Tracking)', 'mediashield' ), value: 'standard' },
-						{ label: __( 'None (No protection)', 'mediashield' ), value: 'none' },
+						{ label: __( 'None (No extra protection)', 'mediashield' ), value: 'none' },
 					] }
 					onChange={ ( val ) => { setProtection( val ); save( 'ms_default_protection', val ); } }
 					__nextHasNoMarginBottom
