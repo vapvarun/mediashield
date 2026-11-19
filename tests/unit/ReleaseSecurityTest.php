@@ -325,6 +325,42 @@ class ReleaseSecurityTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * BC#10527057137 / BC#10525937831. Fails before the fix: can_watch() was
+	 * asked only for guests, so a logged-in member a rule refuses (a role, an
+	 * enrollment check on mediashield_can_watch) still got a signed embed link.
+	 */
+	public function test_learnomy_payload_asks_can_watch_for_logged_in_viewers(): void {
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		update_post_meta( $video, '_ms_access_role', 'editor' );
+		$lesson = (object) array( 'content_type' => 'mediashield', 'video_url' => (string) $video );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$denied = Learnomy::add_embed_to_payload( array( 'locked' => false ), $lesson );
+		$this->assertSame( array( 'locked' => false ), $denied, 'A refused member gets the payload unchanged.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$allowed = Learnomy::add_embed_to_payload( array( 'locked' => false ), $lesson );
+		$this->assertArrayHasKey( 'mediashield', $allowed, 'An allowed member gets the block.' );
+		$this->assertNotSame( '', $allowed['mediashield']['embed_url'] );
+	}
+
+	/**
+	 * Same, when the refusal comes from the mediashield_can_watch filter (LMS enrollment).
+	 */
+	public function test_learnomy_payload_respects_the_can_watch_filter(): void {
+		$video  = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$lesson = (object) array( 'content_type' => 'mediashield', 'video_url' => (string) $video );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$deny = static fn() => array( 'allowed' => false, 'reason' => 'Not enrolled.' );
+
+		add_filter( 'mediashield_can_watch', $deny );
+		$payload = Learnomy::add_embed_to_payload( array( 'locked' => false ), $lesson );
+		remove_filter( 'mediashield_can_watch', $deny );
+
+		$this->assertArrayNotHasKey( 'mediashield', $payload );
+	}
+
+	/**
 	 * Fails before the fix: the playlist block or shortcode showed a protected playlist's videos.
 	 */
 	public function test_playlist_block_asks_for_the_password(): void {

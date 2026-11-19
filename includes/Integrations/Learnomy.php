@@ -108,12 +108,14 @@ class Learnomy {
 		}
 
 		// Minted for the CALLER, not for the lesson: the link carries who may
-		// watch, and the embed page re-checks that when it renders. A guest
-		// gets a link only when they may watch now (a free preview under
-		// Require Login, for one); otherwise the link would only fail later,
-		// further from the cause.
+		// watch, and the embed page re-checks that when it renders. Every
+		// caller, guest or logged in, gets a link only when they may watch now
+		// (Require Login, roles, domains, enrollment through mediashield_can_watch).
+		// A refused viewer gets the payload unchanged: a signed link would tell
+		// the client there is something to play, and only fail later, further
+		// from the cause.
 		$user_id = get_current_user_id();
-		if ( ! $user_id && ! AccessControl::can_watch( $video_id, 0 )['allowed'] ) {
+		if ( ! AccessControl::can_watch( $video_id, $user_id )['allowed'] ) {
 			return $payload;
 		}
 
