@@ -28,6 +28,13 @@
       "guard": "audit/journeys/customer/protection-levels.md (card:10526229932)",
       "added": "2026-11-20",
       "proven_failing_on": "5dd4bfc (labels read Free preview / No protection)"
+    },
+    {
+      "card": "10527059554",
+      "title": "Basic level promised right-click disabled, but only the global Block Right-Click toggle blocked it",
+      "guard": "audit/journeys/customer/protection-levels.md (card:10527059554)",
+      "added": "2026-11-20",
+      "proven_failing_on": "e2ad6c5 (protection.js read only the global toggle)"
     }
   ]
 }

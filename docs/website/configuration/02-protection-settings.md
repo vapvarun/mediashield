@@ -9,7 +9,7 @@ Before tuning individual controls, set the right protection level. The levels ar
 | Level | What happens |
 |-------|-------------|
 | None | No extra protection for this video: no watermark, no session tracking. The site-wide **Require Login** setting still applies, so while it is on a guest is asked to log in. For a public preview, turn Require Login off. Player features (speed, resume, sticky, end screen) still work. |
-| Basic | Login gate plus the protection controls below. No watermark, and no session tracking or milestones, because no watch session is started. |
+| Basic | Login gate plus the protection controls below. Right-click is always blocked on a Basic player, even with Block Right-Click off. No watermark, and no session tracking or milestones, because no watch session is started. |
 | Standard | Login gate, watermark, session tracking, and milestones. |
 | Strict | Everything in Standard, and forces developer-tools detection, pause-on-detection, and source-URL hiding on for that video even when those toggles are off globally. |
 
@@ -21,7 +21,7 @@ Set the default level under General. Override it per video on the video edit scr
 
 These apply to every player except those set to None.
 
-**Block Right-Click** - Disables the browser context menu over the player so viewers can't use "Save video as". On by default.
+**Block Right-Click** - Disables the browser context menu over the player so viewers can't use "Save video as". On by default. A video at the Basic level blocks it whatever this toggle says.
 
 **Block Save Shortcut (Ctrl+S / Cmd+S)** - Intercepts the save shortcut when the keypress happens inside a protected player. Off by default. This is the only shortcut it blocks; it does not intercept View Source, print, or developer-tools shortcuts, because browsers do not let a page do that reliably.
 

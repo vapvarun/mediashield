@@ -96,8 +96,10 @@
 		// `hide_source` toggle is off (the tier's documented behaviour).
 		var isStrict = el.dataset.protectionLevel === 'strict';
 
-		// Block right-click.
-		if (protConfig.block_right_click !== false) {
+		// Block right-click. The Basic tier promises it ("Login required,
+		// right-click disabled"), so a Basic player blocks it even when the
+		// global toggle is off; other levels follow the toggle.
+		if (protConfig.block_right_click !== false || el.dataset.protectionLevel === 'basic') {
 			el.addEventListener('contextmenu', function (e) {
 				e.preventDefault();
 				return false;
