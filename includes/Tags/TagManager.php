@@ -176,6 +176,16 @@ class TagManager {
 		}
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
+		// How many videos carry each tag on this page: one grouped count, on idx_tag_id.
+		if ( ! empty( $items ) ) {
+			$ids = array_map( static fn( $tag ) => (int) $tag->id, $items );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Custom table; one %d per id.
+			$counts = $wpdb->get_results( $wpdb->prepare( "SELECT tag_id, COUNT(*) AS n FROM {$wpdb->prefix}ms_video_tags WHERE tag_id IN (" . implode( ',', array_fill( 0, count( $ids ), '%d' ) ) . ') GROUP BY tag_id', ...$ids ), OBJECT_K );
+			foreach ( $items as $tag ) {
+				$tag->video_count = isset( $counts[ $tag->id ] ) ? (int) $counts[ $tag->id ]->n : 0;
+			}
+		}
+
 		return array(
 			'items' => ! empty( $items ) ? $items : array(),
 			'total' => $total,

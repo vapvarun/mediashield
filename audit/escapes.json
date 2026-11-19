@@ -14,6 +14,13 @@
       "guard": "tests/unit/HeartbeatPositionTest.php",
       "added": "2026-11-20",
       "proven_failing_on": "e9b90ce (401 instead of 400; completion_pct -50)"
+    },
+    {
+      "card": "10526725655",
+      "title": "Tags screen Videos column always showed 0: GET /tags returned no video_count",
+      "guard": "tests/unit/TagVideoCountTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "d709ca8 (video_count missing)"
     }
   ]
 }
