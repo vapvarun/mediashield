@@ -167,5 +167,22 @@ class AllowedDomainsTest extends WP_UnitTestCase {
 		$this->assertTrue( $this->domain_allows( home_url( '/lesson/' ) ), 'This site is allowed.' );
 		$this->assertFalse( $this->domain_allows( 'https://hotlinker.example/page/' ), 'An unlisted site is refused.' );
 	}
-}
 
+	/**
+	 * A student following a link from another site to their lesson is a top-level visit, not an embed.
+	 *
+	 * Fails on 1.4.2 (Basecamp 10501816150): any foreign Referer was refused.
+	 */
+	public function test_top_level_visit_from_a_link_on_another_site_is_allowed(): void {
+		$_SERVER['HTTP_SEC_FETCH_DEST'] = 'document';
+		$_SERVER['HTTP_SEC_FETCH_SITE'] = 'cross-site';
+		$linked = $this->domain_allows( 'https://newsletter.example/issue-12/' );
+		$_SERVER['HTTP_SEC_FETCH_DEST'] = 'iframe';
+		$framed = $this->domain_allows( 'https://newsletter.example/issue-12/' );
+		unset( $_SERVER['HTTP_SEC_FETCH_DEST'], $_SERVER['HTTP_SEC_FETCH_SITE'] );
+
+		$this->assertTrue( $linked, 'Following a link is allowed.' );
+		$this->assertFalse( $framed, 'Framing on that site is still refused.' );
+		$this->assertFalse( $this->domain_allows( 'https://newsletter.example/issue-12/' ), 'Without Sec-Fetch-Dest the Referer still decides.' );
+	}
+}

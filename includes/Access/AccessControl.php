@@ -162,6 +162,10 @@ class AccessControl {
 		// referer". `wp_get_raw_referer()` returns the actual header so we can
 		// match against the whitelist.
 		$referer = wp_get_raw_referer();
+		// Sec-Fetch-* are set by the browser and cannot be removed by the page
+		// doing the framing. A browser too old to send them sends neither.
+		$dest    = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ) ) : '';
+		$is_rest = defined( 'REST_REQUEST' ) && REST_REQUEST;
 
 		if ( empty( $referer ) ) {
 			// The whitelist is about where the player is EMBEDDED. A page this
@@ -172,15 +176,12 @@ class AccessControl {
 			// own students are never blocked (Basecamp 10499053739). A page
 			// framed elsewhere, and a guest's player request with no Referer,
 			// are still refused unless the filter opts in.
-			// Sec-Fetch-* are set by the browser and cannot be removed by the
-			// page doing the framing, so a lesson framed on another site with
-			// referrerpolicy=no-referrer is still told apart from a direct
-			// visit. A browser too old to send them is treated as a direct
-			// visit, so students are never blocked.
-			$dest    = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ) ) : '';
-			$site    = isset( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ) ) : '';
-			$framed  = in_array( $dest, array( 'iframe', 'frame', 'embed', 'object' ), true );
-			$is_rest = defined( 'REST_REQUEST' ) && REST_REQUEST;
+			// A lesson framed on another site with referrerpolicy=no-referrer
+			// is still told apart from a direct visit by Sec-Fetch-Dest. A
+			// browser too old to send it is treated as a direct visit, so
+			// students are never blocked.
+			$site   = isset( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ) ) : '';
+			$framed = in_array( $dest, array( 'iframe', 'frame', 'embed', 'object' ), true );
 			if ( ! $framed && ! $is_rest && ! wp_doing_ajax() ) {
 				return self::allow();
 			}
@@ -214,6 +215,14 @@ class AccessControl {
 			if ( $referer_host === $domain || str_ends_with( $referer_host, '.' . $domain ) ) {
 				return self::allow();
 			}
+		}
+
+		// A top-level visit is this site's own page, whatever site linked to
+		// it: a student clicking their lesson link in a newsletter or forum
+		// is not an embed (Basecamp 10501816150). Only the browser's own
+		// Sec-Fetch-Dest: document says so; without it the Referer decides.
+		if ( 'document' === $dest && ! $is_rest && ! wp_doing_ajax() ) {
+			return self::allow();
 		}
 
 		return self::deny( Settings::get( 'ms_access_denied_text' ) );

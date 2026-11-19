@@ -42,6 +42,13 @@
       "guard": "tests/unit/StrictHidesSourceTest.php",
       "added": "2026-11-20",
       "proven_failing_on": "32a9059 (source_url printed)"
+    },
+    {
+      "card": "10501816150",
+      "title": "Allowed Domains refused a signed-in student who followed a link to their lesson from another site",
+      "guard": "tests/unit/AllowedDomainsTest.php::test_top_level_visit_from_a_link_on_another_site_is_allowed",
+      "added": "2026-11-20",
+      "proven_failing_on": "cefdc6d (foreign Referer refused for a top-level visit)"
     }
   ]
 }
