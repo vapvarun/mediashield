@@ -35,6 +35,13 @@
       "guard": "audit/journeys/customer/protection-levels.md (card:10527059554)",
       "added": "2026-11-20",
       "proven_failing_on": "e2ad6c5 (protection.js read only the global toggle)"
+    },
+    {
+      "card": "10526281691",
+      "title": "Strict level did not force source hiding: with Hide Video Source off a Strict video printed its file URL",
+      "guard": "tests/unit/StrictHidesSourceTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "32a9059 (source_url printed)"
     }
   ]
 }

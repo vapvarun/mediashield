@@ -142,6 +142,7 @@ class Protection {
 	 *
 	 * @since 1.3.0
 	 * @since 1.4.3 A file MediaShield holds is always signed, whatever Hide Video Source says.
+	 * @since 1.4.3 A Strict video hides its source whatever Hide Video Source says.
 	 *
 	 * @param int    $video_id   Video CPT post ID.
 	 * @param string $platform   Platform slug (self, bunny, youtube…).
@@ -184,11 +185,12 @@ class Protection {
 		}
 
 		// Anything else (a URL pasted into this site's uploads, outside our
-		// folder) follows the setting. Only route through /stream/ when it can
-		// serve the file: an explicit stream URL, or one we can find on disk. An
-		// external direct URL has no local file, and routing it there was a
-		// guaranteed 404 (BC#10258678064).
-		if ( ! get_option( 'ms_hide_source', true )
+		// folder) follows the setting, and a Strict video always hides it: the
+		// level promises source hiding (BC#10526281691). Only route through
+		// /stream/ when it can serve the file: an explicit stream URL, or one we
+		// can find on disk. An external direct URL has no local file, and
+		// routing it there was a guaranteed 404 (BC#10258678064).
+		if ( ( ! get_option( 'ms_hide_source', true ) && 'strict' !== self::resolve_level( $video_id ) )
 			|| ( '' === $stream_url && '' === \MediaShield\REST\StreamController::resolve_file( $video_id ) ) ) {
 			return $unchanged;
 		}
