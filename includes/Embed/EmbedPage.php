@@ -126,17 +126,12 @@ class EmbedPage {
 			// same way they do on any page. Renderer::render() has already run
 			// Assets::enqueue(), so the runtime is queued by this point.
 			wp_head();
+
+			// Printed after wp_head() so the frame rules still win over any theme
+			// stylesheet, as the inline block they replace did.
+			self::register_styles();
+			wp_print_styles( 'mediashield-embed-player' );
 			?>
-			<style>
-				/* The frame IS the player. No theme, no chrome, no scroll: the
-				   app supplies everything around this. */
-				html, body { margin: 0; padding: 0; background: #000; height: 100%; overflow: hidden; }
-				.ms-embed-stage { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-				.ms-embed-stage > * { width: 100%; }
-				.ms-embed-message { color: #fff; font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-align: center; padding: 24px; }
-				.ms-embed-message p { margin: 0 0 8px; }
-				.ms-embed-message .ms-embed-message__detail { opacity: .7; font-size: 14px; }
-			</style>
 		</head>
 		<body <?php body_class( 'ms-embed' ); ?>>
 			<div class="ms-embed-stage">
@@ -176,13 +171,11 @@ class EmbedPage {
 			<meta name="viewport" content="width=device-width, initial-scale=1">
 			<meta name="robots" content="noindex, nofollow">
 			<title><?php echo esc_html( $title ); ?></title>
-			<style>
-				html, body { margin: 0; padding: 0; background: #000; height: 100%; }
-				.ms-embed-stage { display: flex; align-items: center; justify-content: center; height: 100%; }
-				.ms-embed-message { color: #fff; font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-align: center; padding: 24px; }
-				.ms-embed-message p { margin: 0 0 8px; }
-				.ms-embed-message .ms-embed-message__detail { opacity: .7; font-size: 14px; }
-			</style>
+			<?php
+			// No wp_head() here: a refusal needs no theme or player assets, only the frame.
+			self::register_styles();
+			wp_print_styles( 'mediashield-embed' );
+			?>
 		</head>
 		<body>
 			<div class="ms-embed-stage">
@@ -197,5 +190,16 @@ class EmbedPage {
 		</html>
 		<?php
 		exit;
+	}
+
+	/**
+	 * Register the embed page stylesheets.
+	 *
+	 * The page is a full HTML document of its own, so the sheets are printed
+	 * directly with wp_print_styles() rather than queued for a theme's head.
+	 */
+	private static function register_styles(): void {
+		wp_register_style( 'mediashield-embed', MEDIASHIELD_URL . 'assets/css/embed.css', array(), MEDIASHIELD_VERSION );
+		wp_register_style( 'mediashield-embed-player', MEDIASHIELD_URL . 'assets/css/embed-player.css', array( 'mediashield-embed' ), MEDIASHIELD_VERSION );
 	}
 }
