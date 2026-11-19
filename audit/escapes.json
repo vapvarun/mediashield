@@ -63,6 +63,13 @@
       "guard": "tests/unit/VideoTagPickerTest.php",
       "added": "2026-11-20",
       "proven_failing_on": "ce7c177 (no Tags field; save changed nothing)"
+    },
+    {
+      "card": "10526098472",
+      "title": "Featured image was not shown as the poster on YouTube, Vimeo, Wistia and Bunny iframe players",
+      "guard": "audit/journeys/customer/protection-levels.md (card:10526098472)",
+      "added": "2026-11-20",
+      "proven_failing_on": "488e5ab (poster applied to native <video> only)"
     }
   ]
 }

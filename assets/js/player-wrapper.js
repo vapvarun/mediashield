@@ -656,13 +656,51 @@
 	// and turned into a DOM event on the player so any number of listeners
 	// (the end screen, a playlist queue) can react on every platform.
 	function createAdapter( el ) {
+		var target = el.querySelector( '.ms-player-target' );
+		var poster = target ? ( target.dataset.poster || '' ) : '';
 		var adapter = buildAdapter( el );
 		if ( adapter ) {
 			adapter.onEnded( function () {
 				el.dispatchEvent( new CustomEvent( 'mediashield:ended', { bubbles: true } ) );
 			} );
+			// A <video> shows its own poster. A platform iframe shows the
+			// platform's thumbnail, so the owner's Featured Image goes on top
+			// until the viewer clicks play (Basecamp 10526098472).
+			var isNative = adapter._video instanceof HTMLVideoElement;
+			if ( poster && ! isNative && ! ( target && target.dataset.autoplay === '1' ) ) {
+				addIframePoster( el, adapter, poster );
+			}
 		}
 		return adapter;
+	}
+
+	/**
+	 * Cover a platform iframe with the video's poster; a click removes it and starts playback.
+	 *
+	 * The platform player may not be ready at the click, so play() is retried
+	 * for a few seconds until it reports playing. If a browser refuses to start
+	 * it (iPhone needs a tap inside the iframe), the platform's own play button
+	 * is now uncovered.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {Object}      adapter Platform adapter.
+	 * @param {string}      poster  Poster image URL.
+	 */
+	function addIframePoster( el, adapter, poster ) {
+		var cover = document.createElement( 'button' );
+		cover.type = 'button';
+		cover.className = 'ms-iframe-poster';
+		cover.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
+		cover.style.backgroundImage = 'url("' + poster.replace( /"/g, '%22' ) + '")';
+		cover.addEventListener( 'click', function () {
+			cover.remove();
+			var tries = 0;
+			( function start() {
+				adapter.play();
+				if ( ! adapter.isPlaying() && ++tries < 20 ) setTimeout( start, 250 );
+			} )();
+		} );
+		el.appendChild( cover );
 	}
 
 	function buildAdapter( el ) {

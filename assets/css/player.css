@@ -130,6 +130,63 @@ iframe.ms-player-target {
 	display: block;
 }
 
+/* Featured Image over a platform iframe until the viewer clicks play. */
+.ms-iframe-poster {
+	position: absolute;
+	inset: 0;
+	z-index: 8;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 0;
+	background-color: var(--ms-player-bg);
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+	cursor: pointer;
+}
+
+.ms-iframe-poster::before {
+	content: "";
+	width: 72px;
+	height: 72px;
+	border-radius: 50%;
+	background: var(--ms-accent);
+	box-shadow: 0 2px 12px rgb(0 0 0 / 35%);
+}
+
+.ms-iframe-poster::after {
+	content: "";
+	position: absolute;
+	/* A play icon points right in every language, so physical sides here. */
+	margin-left: 6px;
+	border-top: 14px solid transparent;
+	border-bottom: 14px solid transparent;
+	border-left: 22px solid var(--ms-on-overlay);
+}
+
+.ms-iframe-poster:focus-visible {
+	outline: 3px solid var(--ms-accent);
+	outline-offset: -3px;
+}
+
+@media (max-width: 480px) {
+	.ms-iframe-poster::before {
+		width: 56px;
+		height: 56px;
+	}
+
+	.ms-iframe-poster::after {
+		margin-left: 4px;
+		border-top-width: 11px;
+		border-bottom-width: 11px;
+		border-left-width: 17px;
+	}
+}
+
 /* Watermark canvas overlay */
 .ms-watermark-canvas {
 	position: absolute;

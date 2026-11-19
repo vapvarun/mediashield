@@ -474,6 +474,7 @@ class Settings {
 				'endscreen'       => __( 'Thanks for watching!', 'mediashield' ),
 				'continue'        => __( 'Continue', 'mediashield' ),
 				'replay'          => __( 'Replay', 'mediashield' ),
+				'playVideo'       => __( 'Play video', 'mediashield' ),
 				/* translators: %s: playback position, for example 12:34. */
 				'resumePrompt'    => __( 'Resume from %s?', 'mediashield' ),
 				'resume'          => __( 'Resume', 'mediashield' ),
