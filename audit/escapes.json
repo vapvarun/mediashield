@@ -7,6 +7,13 @@
       "guard": "tests/unit/AdBreakMarkersTest.php",
       "added": "2026-11-20",
       "proven_failing_on": "5bea286 (showMarkers arrived as \"\")"
+    },
+    {
+      "card": "10526150191",
+      "title": "Session heartbeat accepted a negative position and stored a negative completion",
+      "guard": "tests/unit/HeartbeatPositionTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "e9b90ce (401 instead of 400; completion_pct -50)"
     }
   ]
 }

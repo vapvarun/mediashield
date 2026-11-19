@@ -347,6 +347,10 @@ class SessionManager {
 			return false;
 		}
 
+		// A place or length below zero is not a place in the video (Basecamp 10526150191).
+		$position = max( 0.0, $position );
+		$duration = max( 0.0, $duration );
+
 		global $wpdb;
 		$table = "{$wpdb->prefix}ms_watch_sessions";
 		$now   = current_time( 'mysql', true );

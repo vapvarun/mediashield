@@ -80,12 +80,16 @@ class SessionController extends WP_REST_Controller {
 					'position' => array(
 						'type'              => 'number',
 						'required'          => true,
+						'minimum'           => 0,
+						'validate_callback' => 'rest_validate_request_arg',
 						'sanitize_callback' => function ( $value ) {
 							return (float) $value; },
 					),
 					'duration' => array(
 						'type'              => 'number',
 						'required'          => true,
+						'minimum'           => 0,
+						'validate_callback' => 'rest_validate_request_arg',
 						'sanitize_callback' => function ( $value ) {
 							return (float) $value; },
 					),
