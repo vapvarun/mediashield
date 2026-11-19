@@ -3,7 +3,7 @@ journey: watch-protected-video
 plugin: mediashield
 priority: critical
 roles: [subscriber, customer]
-covers: [player-wrapper, watermark, heartbeat, milestone-tracking]
+covers: [player-wrapper, watermark, heartbeat, milestone-tracking, devtools-detection, card:10528792946]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "MediaShield activated; ms_enabled = 1"
@@ -72,6 +72,11 @@ getting "did this user actually watch it?" data.
   ```
 - **On fail**: `includes/Milestones/MilestoneTracker.php::record` (insert/idempotency) OR thresholds filter (`mediashield_milestone_thresholds`) overrode to non-default.
 
+### 6. DevTools detection stays off pages with no protected player
+- **Action**: with Detect DevTools and Pause on DevTools on, open a page whose content links to `vimeo.com/...` (or any other embed hint) but carries no MediaShield player, as `journey-subscriber`, on a desktop viewport >= 1024px. Open DevTools and wait 10s. Then repeat on the page from step 1.
+- **Expect**: no-player page: `assets/js/protection.js` may load, but no `.ms-devtools-overlay` appears and no `POST /protection/devtools-event` is sent. Step-1 page: the overlay appears and playback pauses. A player set to protection level `none` alone on a page behaves like the no-player page.
+- **On fail**: `assets/js/protection.js` (`init()` / `startDevtoolsDetection()` started without a protected player, or `showOverlay()` lost its guard).
+
 ## Pass criteria
 
 ALL of the following hold:
@@ -80,6 +85,7 @@ ALL of the following hold:
 3. `/session/start` returns 200 with a session token.
 4. `/session/heartbeat` updates `last_heartbeat` and `total_seconds`.
 5. A `wp_ms_milestones` row exists for `(VIDEO_ID, USER_ID, 25)`.
+6. A page with no protected player never shows the DevTools overlay; the protected video page still does.
 
 ## Fail diagnostics
 

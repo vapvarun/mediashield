@@ -13,16 +13,35 @@
 
 	var config = window.mediashieldConfig || {};
 	var protConfig = config.protection || {};
-	var devtoolsState = { detected: false, reportedSession: false };
+	var devtoolsState = { started: false, detected: false, reportedSession: false };
+
+	/**
+	 * Is this element a player with real protection (any level but `none`)?
+	 *
+	 * @param {HTMLElement} el Candidate element.
+	 * @return {boolean} True for a protected player.
+	 */
+	function isProtectedPlayer(el) {
+		return !!(el && el.classList && el.classList.contains('ms-protected-player') &&
+			el.dataset.protectionLevel !== 'none');
+	}
 
 	/**
 	 * Initialize protection on all players.
+	 *
+	 * The script can be enqueued on a page with no protected player at all
+	 * (the server enqueues on a hint such as a vimeo.com link that turns out
+	 * not to be a MediaShield video). DevTools detection and its overlay are
+	 * for protected video only, so they start only once a protected player is
+	 * on the page: now, or later from `mediashield:player-ready`.
 	 */
 	function init() {
 		var players = document.querySelectorAll('.ms-protected-player');
+		var hasProtected = false;
 		var hasStrict = false;
 		players.forEach(function (el) {
-			if (el.dataset.protectionLevel === 'none') return;
+			if (!isProtectedPlayer(el)) return;
+			hasProtected = true;
 			if (el.dataset.protectionLevel === 'strict') hasStrict = true;
 			initProtection(el);
 		});
@@ -31,18 +50,35 @@
 		window.addEventListener('mediashield:player-ready', function (e) {
 			if (e.detail && e.detail.el) {
 				initProtection(e.detail.el);
+				if (isProtectedPlayer(e.detail.el)) {
+					startDevtoolsDetection(e.detail.el.dataset.protectionLevel === 'strict');
+				}
 			}
 		});
 
-		// DevTools detection runs when the global toggle is on OR any player on
-		// the page is set to the per-video `strict` tier (which forces it on
-		// regardless of the global setting). Likewise `strict` forces the
-		// pause-on-devtools response so the tier's promise ("source hiding +
-		// devtools detection") holds even when the operator left the globals off.
-		if (hasStrict) {
+		if (hasProtected) {
+			startDevtoolsDetection(hasStrict);
+		}
+	}
+
+	/**
+	 * Start DevTools detection once a protected player is on the page.
+	 *
+	 * Runs when the global toggle is on OR a player is set to the per-video
+	 * `strict` tier (which forces it on regardless of the global setting).
+	 * Likewise `strict` forces the pause-on-devtools response so the tier's
+	 * promise ("source hiding + devtools detection") holds even when the
+	 * operator left the globals off. Safe to call repeatedly; it starts once.
+	 *
+	 * @param {boolean} strict A strict-tier player is on the page.
+	 */
+	function startDevtoolsDetection(strict) {
+		if (strict) {
 			protConfig.pause_on_devtools = true;
 		}
-		if (protConfig.detect_devtools !== false || hasStrict) {
+		if (devtoolsState.started) return;
+		if (protConfig.detect_devtools !== false || strict) {
+			devtoolsState.started = true;
 			initDevtoolsDetection();
 		}
 	}
@@ -230,6 +266,9 @@
 	 */
 	function showOverlay() {
 		if (document.querySelector('.ms-devtools-overlay')) return;
+		// Nothing to protect, nothing to cover: never black out a page that
+		// carries no protected player.
+		if (!Array.prototype.some.call(document.querySelectorAll('.ms-protected-player'), isProtectedPlayer)) return;
 
 		var overlay = document.createElement('div');
 		overlay.className = 'ms-devtools-overlay';
