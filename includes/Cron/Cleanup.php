@@ -479,7 +479,7 @@ class Cleanup {
 			)
 		);
 
-		$remaining = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$archive}" );
+		$remaining = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $archive ) );
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		if ( $remaining > 0 ) {

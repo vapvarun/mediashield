@@ -256,12 +256,12 @@ final class ScaleCommand {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
 		foreach ( array( 'ms_watch_sessions', 'ms_watch_sessions_archive', 'ms_milestones' ) as $tbl ) {
 			$full = $wpdb->prefix . $tbl;
-			if ( ! $wpdb->get_var( "SHOW TABLES LIKE '{$full}'" ) ) {
+			if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $full ) ) ) {
 				continue;
 			}
 			// Seeded rows use ids from BASE_UID up without creating WordPress users,
 			// so a row whose user exists belongs to a real member on a large site.
-			$deleted += (int) $wpdb->query( "DELETE t FROM {$full} t WHERE t.user_id >= {$base} AND NOT EXISTS ( SELECT 1 FROM {$wpdb->users} u WHERE u.ID = t.user_id )" );
+			$deleted += (int) $wpdb->query( $wpdb->prepare( 'DELETE t FROM %i t WHERE t.user_id >= %d AND NOT EXISTS ( SELECT 1 FROM %i u WHERE u.ID = t.user_id )', $full, $base, $wpdb->users ) );
 		}
 
 		// Drop the synthetic CPT used as the FK target if it has the canonical title.
