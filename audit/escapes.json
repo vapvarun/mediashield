@@ -1,0 +1,12 @@
+{
+  "note": "Every bug that reached QA or a customer, and the guard that replays it. A row is added with the fix; the guard must fail on the pre-fix code. Guards are PHPUnit tests or journey check lines tagged card:<id>.",
+  "escapes": [
+    {
+      "card": "10502007194",
+      "title": "Show Break Markers off had no effect: wp_localize_script sent false as an empty string and the engine tested === false",
+      "guard": "tests/unit/AdBreakMarkersTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "5bea286 (showMarkers arrived as \"\")"
+    }
+  ]
+}
