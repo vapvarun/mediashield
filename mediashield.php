@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Plugin constants.
 define( 'MEDIASHIELD_VERSION', '1.4.2' );
-define( 'MEDIASHIELD_DB_VERSION', 10 ); // v10: rename posters named after the platform video ID.
+define( 'MEDIASHIELD_DB_VERSION', 11 ); // v11: move back files 1.4.2 took from other plugins.
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );

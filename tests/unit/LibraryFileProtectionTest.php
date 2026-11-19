@@ -506,4 +506,168 @@ class LibraryFileProtectionTest extends WP_UnitTestCase {
 
 		$this->assertFileExists( $this->path );
 	}
+
+	/**
+	 * A file at uploads/<folder>/<name> with no Media Library item, as another plugin stores it.
+	 *
+	 * @param string $relative Path below uploads.
+	 * @return string Absolute path.
+	 */
+	private function plugin_file( string $relative ): string {
+		$path = trailingslashit( wp_upload_dir()['basedir'] ) . $relative;
+		wp_mkdir_p( dirname( $path ) );
+		file_put_contents( $path, str_repeat( 'w', 64 ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		return $path;
+	}
+
+	/**
+	 * A self-hosted video playing a file by URL, saved as an admin.
+	 *
+	 * @param string $relative Path below uploads.
+	 * @return int Video ID.
+	 */
+	private function video_for( string $relative ): int {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		return self::factory()->post->create(
+			array(
+				'post_type'   => 'mediashield_video',
+				'post_status' => 'publish',
+				'meta_input'  => array(
+					'_ms_platform'   => 'self',
+					'_ms_source_url' => trailingslashit( wp_upload_dir()['baseurl'] ) . $relative,
+				),
+			)
+		);
+	}
+
+	/**
+	 * Only a file with a Media Library item moves. Another plugin's file stays and is reported.
+	 *
+	 * Fails on 1.4.2 (Basecamp 10517640742): a WPMediaVerse upload at
+	 * uploads/wpmediaverse/ was moved into the protected folder, breaking the
+	 * WPMediaVerse item that still pointed at it.
+	 */
+	public function test_file_without_media_library_item_stays_and_is_reported(): void {
+		$relative = 'wpmediaverse/x-' . wp_generate_password( 6, false ) . '.mp4';
+		$path     = $this->plugin_file( $relative );
+		$video    = $this->video_for( $relative );
+
+		$this->assertFileExists( $path, 'Another plugin\'s file stays where it is.' );
+		$this->assertSame( '', (string) get_post_meta( $video, '_ms_platform_video_id', true ) );
+		$this->assertSame( 'not_in_library', get_post_meta( $video, '_ms_library_file', true ) );
+		$report = get_option( 'ms_library_files_report' );
+		$this->assertArrayHasKey( $video, $report['left'], 'Listed in the owner notice.' );
+		$this->assertNotContains( $video, $report['moved'] );
+
+		// The notice names it and says why.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		ob_start();
+		LibraryFiles::render_notice();
+		$this->assertStringContainsString( 'not in your Media Library', (string) ob_get_clean() );
+
+		// An attachment-backed file in uploads/YYYY/MM still moves.
+		$this->assertMatchesRegularExpression( '#/\d{4}/\d{2}/[^/]+$#', $this->path, 'Fixture: the Media Library file sits in YYYY/MM.' );
+		$this->video();
+		$this->assertFileDoesNotExist( $this->path );
+		$this->assertSame( 'private', get_post_field( 'post_status', $this->attachment ) );
+		wp_delete_file( $path );
+	}
+
+	/**
+	 * What 1.4.2 left behind when it moved a file with no Media Library item.
+	 *
+	 * @param string $relative Path below uploads the file came from.
+	 * @return array{0: int, 1: string} Video ID and the original absolute path.
+	 */
+	private function moved_by_142( string $relative ): array {
+		$path  = $this->plugin_file( $relative );
+		$video = self::factory()->post->create(
+			array(
+				'post_type'   => 'mediashield_video',
+				'post_status' => 'draft',
+			)
+		);
+		$url   = trailingslashit( wp_upload_dir()['baseurl'] ) . $relative;
+		$name  = ( new \MediaShield\Upload\Drivers\SelfHosted() )->adopt( $path );
+		$this->assertNotSame( '', $name, 'Fixture: the file moved.' );
+		update_post_meta( $video, '_ms_platform', 'self' );
+		update_post_meta(
+			$video,
+			'_ms_library_restore',
+			array(
+				'url'        => $url,
+				'file'       => $relative,
+				'attachment' => 0,
+				'name'       => $name,
+			)
+		);
+		update_post_meta( $video, '_ms_platform_video_id', $name );
+		update_post_meta( $video, '_ms_owned_file', $name );
+		update_post_meta( $video, '_ms_source_url', rest_url( 'mediashield/v1/stream/' . $video ) );
+		update_post_meta( $video, '_ms_library_file', 'moved' );
+		return array( $video, $path );
+	}
+
+	/**
+	 * Run the upgrade from 1.4.2 and its background job to the end.
+	 */
+	private function upgrade_from_142(): void {
+		update_option( 'ms_db_version', 10 );
+		\MediaShield\Core\Migrator::run();
+		for ( $i = 0; $i < 10 && false !== get_option( 'ms_library_files_repair_pending', false ); $i++ ) {
+			do_action( 'ms_repair_library_files' );
+		}
+	}
+
+	/**
+	 * The 1.4.3 repair moves back what 1.4.2 took from other plugins, and nothing else.
+	 *
+	 * Fails on 1.4.2 (Basecamp 10517640742): nothing gives the WPMediaVerse
+	 * file back.
+	 */
+	public function test_upgrade_moves_back_files_taken_from_other_plugins(): void {
+		$tag = wp_generate_password( 6, false );
+		list( $theirs, $theirs_path ) = $this->moved_by_142( 'wpmediaverse/x-' . $tag . '.mp4' );
+		list( $dated, $dated_path )   = $this->moved_by_142( '2026/01/loose-' . $tag . '.mp4' );
+		$ours                         = $this->video();
+		$this->assertFileDoesNotExist( $theirs_path );
+		$this->assertFileDoesNotExist( $this->path );
+
+		$this->upgrade_from_142();
+
+		$this->assertFileExists( $theirs_path, 'The other plugin\'s file is back where it was.' );
+		$this->assertSame( trailingslashit( wp_upload_dir()['baseurl'] ) . 'wpmediaverse/x-' . $tag . '.mp4', get_post_meta( $theirs, '_ms_source_url', true ) );
+		$this->assertSame( '', (string) get_post_meta( $theirs, '_ms_platform_video_id', true ) );
+		$this->assertArrayHasKey( $theirs, get_option( 'ms_library_files_report' )['left'], 'Listed in the owner notice.' );
+
+		$this->assertFileDoesNotExist( $this->path, 'A Media Library file stays protected.' );
+		$this->assertSame( 'private', get_post_field( 'post_status', $this->attachment ) );
+		$this->assertSame( 'moved', get_post_meta( $ours, '_ms_library_file', true ) );
+		$this->assertFileDoesNotExist( $dated_path, 'A file in the YYYY/MM layout stays protected.' );
+		$this->assertSame( 'moved', get_post_meta( $dated, '_ms_library_file', true ) );
+
+		// A second run changes nothing.
+		$before = array(
+			get_post_meta( $theirs ),
+			get_post_meta( $dated ),
+			get_post_meta( $ours ),
+			get_attached_file( $this->attachment ),
+		);
+		update_option( 'ms_library_files_repair_pending', 0, false );
+		$this->upgrade_from_142();
+		$this->assertSame(
+			$before,
+			array(
+				get_post_meta( $theirs ),
+				get_post_meta( $dated ),
+				get_post_meta( $ours ),
+				get_attached_file( $this->attachment ),
+			)
+		);
+		$this->assertFileExists( $theirs_path );
+		$this->assertFileDoesNotExist( $this->path );
+
+		wp_delete_file( $theirs_path );
+		wp_delete_file( trailingslashit( wp_upload_dir()['basedir'] ) . 'mediashield/' . get_post_meta( $dated, '_ms_owned_file', true ) );
+	}
 }

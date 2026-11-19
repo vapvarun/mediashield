@@ -26,6 +26,8 @@ You can host a video yourself with no outside account. It suits short clips and 
 
 The file is stored in `wp-content/uploads/mediashield/`, outside the media library. The file name carries a random token so addresses cannot be guessed. Visitors watch it through a permission-checked address, so the real file path is never printed in the page while Hide Video Source URL is on.
 
+If you paste the address of a file that is already on your site instead of uploading one, MediaShield moves it into the protected folder only when it is in your Media Library. A file another plugin keeps in its own folder (for example `wp-content/uploads/wpmediaverse/`) stays where it is so that plugin keeps working, and a notice lists the video as not protected. Upload the file under **Or upload a file** to protect that video.
+
 ## Check your server blocks direct downloads
 
 On Apache, MediaShield writes an `.htaccess` rule that blocks direct access. nginx ignores `.htaccess`, so on nginx the file can be downloaded by anyone who has its address until you add a rule.

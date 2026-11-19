@@ -58,7 +58,7 @@ MediaShield makes screen recording traceable, not impossible. No web software ca
 
 On Apache, yes: MediaShield writes an `.htaccess` deny rule into `wp-content/uploads/mediashield/`, so the files can only be watched through the permission-checked player.
 
-A video whose source is a file from your Media Library gets the same protection since 1.4.2: MediaShield moves that file into its protected folder and keeps its Media Library entry, visible to editors only. If the same file is also used elsewhere on your site, for example embedded in a post or a lesson, it is left where it is so that page keeps working, and a notice lists those videos. Upload the file on the video's edit screen to give it a private copy.
+A video whose source is a file from your Media Library gets the same protection since 1.4.2: MediaShield moves that file into its protected folder and keeps its Media Library entry, visible to editors only. If the same file is also used elsewhere on your site, for example embedded in a post or a lesson, it is left where it is so that page keeps working, and a notice lists those videos. A file that is not in your Media Library, such as one another plugin keeps in its own folder, is never moved. Upload the file on the video's edit screen to give it a private copy.
 
 On nginx, `.htaccess` is ignored and those files are directly downloadable until you add a rule to your server config. MediaShield does not assume - it asks your own server for one of your video files and reports the result under **Tools > Site Health**, with the exact nginx rule to add if the answer is bad. Adding it does not affect playback, because the player streams through MediaShield rather than requesting that path.
 

@@ -72,7 +72,28 @@ class Migrator {
 		// Background job, queued by Thumbnail::ensure_rename_job().
 		self::rename_id_posters( $installed );
 
+		// v11 - move back the files 1.4.2 took that had no Media Library item
+		// and sat outside the uploads YYYY/MM folders (another plugin's files).
+		// Background job, queued by LibraryFiles::ensure_job().
+		self::repair_library_files( $installed );
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+	}
+
+	/**
+	 * Queue the one-off move back of files 1.4.2 took from other plugins.
+	 *
+	 * Only installs that ran the v8 move (DB version 8 to 10) can have such a
+	 * file. Only the cursor is set here, for the same reason as the library-file
+	 * job: this runs on plugins_loaded, before Action Scheduler is ready.
+	 *
+	 * @param int $installed DB version before this run.
+	 */
+	private static function repair_library_files( int $installed ): void {
+		if ( $installed < 8 || $installed >= 11 ) {
+			return;
+		}
+		update_option( \MediaShield\Upload\LibraryFiles::REPAIR_PENDING, 0, false );
 	}
 
 	/**

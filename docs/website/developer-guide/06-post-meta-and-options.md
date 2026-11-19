@@ -30,7 +30,7 @@ Saved from the video edit screen. Not registered for REST.
 | `_ms_player_endscreen_text`, `_ms_player_endscreen_url` | string | Per-video end screen message and link. |
 | `_ms_library_id` | string | Bunny library ID, read from the pasted URL. |
 | `_ms_owned_file` | string | File name this video owns in `uploads/mediashield/`. An empty string means "claimed, no file". The stream endpoint serves only the owner's file. |
-| `_ms_library_file` | `moved`, `in_use`, `none`, `restored` | Since 1.4.2. Whether this video's Media Library file was moved into `uploads/mediashield/`, left because the file is used elsewhere, needed nothing, or was moved back. Its presence marks the video as checked. |
+| `_ms_library_file` | `moved`, `in_use`, `not_in_library`, `none`, `restored` | Since 1.4.2. Whether this video's Media Library file was moved into `uploads/mediashield/`, left because the file is used elsewhere, left because it has no Media Library item (1.4.3), needed nothing, or was moved back. Its presence marks the video as checked. |
 | `_ms_library_kept` | string | Since 1.4.2. The source URL the owner moved back with restore. While the video still plays it, saving does not move it again. |
 | `_ms_library_restore` | array | Since 1.4.2. On a video and on its Media Library item: the old path, source URL and status, so the move can be undone. |
 | `_ms_access_type` | string | Not written by Free. An extension sets it to declare its own gate; a non-empty value lets anonymous visitors reach `POST /session/start`. |
@@ -102,10 +102,11 @@ Options in the schema are deleted on uninstall automatically. Do not add your ow
 
 | Option | Written by | Purpose |
 |--------|-----------|---------|
-| `ms_db_version` | Activator, Migrator | Installed database version (7 at 1.4.1). |
+| `ms_db_version` | Activator, Migrator | Installed database version (11 at 1.4.3). |
 | `ms_wizard_completed` | `POST /wizard/complete` | Setup wizard finished. |
 | `ms_activated_at` | Activator, admin notice | Activation time (Unix), used to delay the Pro notice by 7 days. |
 | `ms_pro_notice_dismissed` | `ms_dismiss_pro_notice` AJAX | Pro upsell notice dismissed. |
+| `ms_library_files_repair_pending` | Migrator, repair job | Since 1.4.3. Last video ID the one-off `ms_repair_library_files` job checked; deleted when the job finishes. |
 | `ms_file_claims_pending` | Migrator, cleanup job | Highest video ID the 1.4.0 ownership backfill must still cover; deleted when the job finishes. |
 | `ms_default_upload_target` | Pro (settings filter) | `auto`, `self`, or a driver name. Free reads it in `UploadManager::resolve_default_driver()`; without Pro it is unset and behaves as `auto`. |
 

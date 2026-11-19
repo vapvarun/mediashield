@@ -31,17 +31,22 @@ use MediaShield\Upload\Drivers\SelfHosted;
  * /wp/v2/media, attachment pages and search for anyone who cannot read private
  * media. Nothing is copied and nothing is deleted.
  *
- * WHEN IT DOES NOT. A file also used elsewhere on the site (embedded in a post,
- * named by another video, a widget, a Learnomy lesson or course) is left where
- * it is, because moving it would break that other page. The owner is told
- * which videos those are and how to protect them.
+ * WHEN IT DOES NOT. Only a file with a Media Library item moves. A file with
+ * none belongs to another plugin or to something the site does not track
+ * (WPMediaVerse keeps uploads under uploads/wpmediaverse/), so it stays where
+ * it is (Basecamp 10517640742). A Media Library file also used elsewhere on
+ * the site (embedded in a post, named by another video, a widget, a Learnomy
+ * lesson or course) is left too, because moving it would break that other
+ * page. The owner is told which videos those are and how to protect them.
  *
  * UNDO. restore() puts a moved file back at its old path and the Media Library
  * entry back to its old status. It runs when the video is deleted, on
  * uninstall, and from `wp mediashield repair restore-library-files`.
  *
  * Existing videos are handled once by a background job after the 1.4.2 update
- * (Migrator v8); new and edited videos on save. Playback never breaks: the
+ * (Migrator v8); new and edited videos on save. Files 1.4.2 moved that had no
+ * Media Library item and sat outside the uploads YYYY/MM folders go back once
+ * after the 1.4.3 update (Migrator v11, repair_batch()). Playback never breaks: the
  * stream route serves the file from its old path until the move, and from the
  * protected folder after it, at the same URL.
  *
@@ -55,12 +60,17 @@ class LibraryFiles {
 	public const PENDING = 'ms_library_files_pending';
 
 	/**
+	 * Option: set while the 1.4.3 repair still has videos to check; holds the last video ID checked.
+	 */
+	public const REPAIR_PENDING = 'ms_library_files_repair_pending';
+
+	/**
 	 * Option: what moved and what was left, for the owner notice.
 	 */
 	private const REPORT = 'ms_library_files_report';
 
 	/**
-	 * Video meta: moved | in_use | none | restored. Its presence marks a video checked.
+	 * Video meta: moved | in_use | not_in_library | none | restored. Its presence marks a video checked.
 	 */
 	private const STATE = '_ms_library_file';
 
@@ -85,9 +95,19 @@ class LibraryFiles {
 	private const NOT_EDITABLE = '#not_editable';
 
 	/**
+	 * Report reason, and video state, for a file with no Media Library item: not ours to move.
+	 */
+	private const NOT_IN_LIBRARY = 'not_in_library';
+
+	/**
 	 * Background job hook.
 	 */
 	private const JOB = 'ms_protect_library_files';
+
+	/**
+	 * 1.4.3 repair job hook.
+	 */
+	private const REPAIR_JOB = 'ms_repair_library_files';
 
 	/**
 	 * Register hooks.
@@ -95,6 +115,7 @@ class LibraryFiles {
 	public static function register(): void {
 		add_action( self::JOB, array( __CLASS__, 'run_batch' ) );
 		add_action( 'init', array( __CLASS__, 'ensure_job' ), 20 );
+		add_action( self::REPAIR_JOB, array( __CLASS__, 'repair_batch' ) );
 		// After VideoPostType::normalize_platform() (20) has settled the platform.
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'on_save' ), 30 );
 		add_action(
@@ -186,6 +207,72 @@ class LibraryFiles {
 		if ( get_option( self::PENDING ) ) {
 			Cleanup::schedule_single( self::JOB, time() + MINUTE_IN_SECONDS );
 		}
+		if ( false !== get_option( self::REPAIR_PENDING, false ) ) {
+			Cleanup::schedule_single( self::REPAIR_JOB, time() + MINUTE_IN_SECONDS );
+		}
+	}
+
+	/**
+	 * One pass of the 1.4.3 repair: give back files 1.4.2 took from other plugins.
+	 *
+	 * 1.4.2 moved any video file under uploads, including files with no Media
+	 * Library item that another plugin keeps in its own folder (Basecamp
+	 * 10517640742). Such a file moved by 1.4.2 is recorded on its video as
+	 * `_ms_library_restore` with `attachment` 0 and its old path in `file`;
+	 * when that path is outside the uploads YYYY/MM folders, restore() moves it
+	 * back there and the video plays it from there again, listed in the owner
+	 * notice as not protected. Media Library files, and files in the YYYY/MM
+	 * folders, stay protected.
+	 *
+	 * Walks videos with a restore record in ID order after the stored cursor,
+	 * so a pass interrupted half way resumes, a large library is done in small
+	 * background pages, and a second run finds nothing left to move back. The
+	 * option is removed when none are left.
+	 */
+	public static function repair_batch(): void {
+		global $wpdb;
+
+		$batch  = max( 10, min( 200, (int) apply_filters( 'mediashield_library_files_batch_size', 50 ) ) );
+		$cursor = (int) get_option( self::REPAIR_PENDING, 0 );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off background walk; ID > cursor paging is not expressible in WP_Query.
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->posts} p
+				 INNER JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = %s
+				 WHERE p.post_type = 'mediashield_video' AND p.ID > %d
+				 ORDER BY p.ID ASC LIMIT %d",
+				self::RESTORE,
+				$cursor,
+				$batch
+			)
+		);
+
+		if ( empty( $ids ) ) {
+			delete_option( self::REPAIR_PENDING );
+			return;
+		}
+
+		$failed = array();
+		foreach ( $ids as $id ) {
+			$id     = (int) $id;
+			$record = get_post_meta( $id, self::RESTORE, true );
+			if ( ! is_array( $record ) || ! empty( $record['attachment'] ) || preg_match( '#^\d{4}/\d{2}/[^/]+$#', ltrim( (string) ( $record['file'] ?? '' ), '/' ) ) ) {
+				continue;
+			}
+			if ( self::restore( $id ) ) {
+				self::report( $id, self::NOT_IN_LIBRARY );
+				self::mark( $id, self::NOT_IN_LIBRARY );
+			} else {
+				$failed[] = $id;
+			}
+		}
+		if ( $failed ) {
+			error_log( 'MediaShield library file repair could not move back the files of videos ' . implode( ', ', $failed ) . '; run wp mediashield repair restore-library-files --video=<id> to retry.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
+
+		update_option( self::REPAIR_PENDING, (int) end( $ids ), false );
+		Cleanup::schedule_single( self::REPAIR_JOB, time() + MINUTE_IN_SECONDS );
 	}
 
 	/**
@@ -234,16 +321,17 @@ class LibraryFiles {
 	/**
 	 * Move this video's Media Library file into the protected folder, when it has one.
 	 *
-	 * From a save, the file moves only when the person saving may edit its
-	 * Media Library item (a file with no item: may edit others' posts). Anyone
-	 * who may edit a video can type any upload's address into it, and must
-	 * not take someone else's file that way. The
-	 * background job runs as nobody and checks the videos that were already
-	 * there.
+	 * Only a file with a Media Library item moves: a file with none is left
+	 * where it is and listed in the owner notice, because another plugin may
+	 * keep it (Basecamp 10517640742). From a save, the file moves only when the
+	 * person saving may edit its Media Library item. Anyone who may edit a
+	 * video can type any upload's address into it, and must not take someone
+	 * else's file that way. The background job runs as nobody and checks the
+	 * videos that were already there.
 	 *
 	 * @param int  $video_id Video post ID.
 	 * @param bool $on_save  Whether the current user's save asked for it.
-	 * @return string moved | in_use | none
+	 * @return string moved | in_use | not_in_library | none
 	 */
 	public static function protect( int $video_id, bool $on_save = false ): string {
 		// Only a self-hosted video playing a file it does not already own. An
@@ -264,10 +352,13 @@ class LibraryFiles {
 		$relative   = substr( $path, strlen( $root ) );
 		$attachment = attachment_url_to_postid( trailingslashit( $uploads['baseurl'] ) . $relative );
 
-		// A file with no Media Library item belongs to nobody in particular:
-		// only someone who manages other people's content may take it.
-		$may_take = $attachment ? current_user_can( 'edit_post', $attachment ) : current_user_can( 'edit_others_posts' );
-		if ( $on_save && ! $may_take ) {
+		// No Media Library item: another plugin's file (or one nothing tracks). Not ours to move.
+		if ( ! $attachment ) {
+			self::report( $video_id, self::NOT_IN_LIBRARY );
+			return self::mark( $video_id, self::NOT_IN_LIBRARY );
+		}
+
+		if ( $on_save && ! current_user_can( 'edit_post', $attachment ) ) {
 			self::report( $video_id, self::NOT_EDITABLE );
 			return self::mark( $video_id, 'in_use' );
 		}
@@ -285,23 +376,21 @@ class LibraryFiles {
 		}
 		$stored = trailingslashit( $uploads['basedir'] ) . 'mediashield/' . $name;
 
-		if ( $attachment ) {
-			update_post_meta(
-				$attachment,
-				self::RESTORE,
-				array(
-					'file'   => (string) get_post_meta( $attachment, '_wp_attached_file', true ),
-					'status' => (string) get_post_field( 'post_status', $attachment ),
-				)
-			);
-			update_attached_file( $attachment, $stored );
-			wp_update_post(
-				array(
-					'ID'          => $attachment,
-					'post_status' => 'private',
-				)
-			);
-		}
+		update_post_meta(
+			$attachment,
+			self::RESTORE,
+			array(
+				'file'   => (string) get_post_meta( $attachment, '_wp_attached_file', true ),
+				'status' => (string) get_post_field( 'post_status', $attachment ),
+			)
+		);
+		update_attached_file( $attachment, $stored );
+		wp_update_post(
+			array(
+				'ID'          => $attachment,
+				'post_status' => 'private',
+			)
+		);
 
 		update_post_meta(
 			$video_id,
@@ -340,7 +429,7 @@ class LibraryFiles {
 	 *
 	 * @param int    $video_id   Video being protected.
 	 * @param string $relative   File path relative to the uploads folder.
-	 * @param int    $attachment Media Library item for the file, or 0.
+	 * @param int    $attachment Media Library item for the file.
 	 * @return string Where it is used, for the owner notice, or ''.
 	 */
 	private static function used_elsewhere( int $video_id, string $relative, int $attachment ): string {
@@ -354,14 +443,10 @@ class LibraryFiles {
 		$limit    = 50;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Reference scan; results must be live. Interpolated parts are fixed SQL fragments; arguments are spread.
-		$by_id = $attachment ? ' OR post_content LIKE %s OR post_content LIKE %s' : '';
-		$args  = array( $like, $like_esc );
-		if ( $attachment ) {
-			array_push( $args, '%' . $wpdb->esc_like( '"id":' . $id ) . '%', '%' . $wpdb->esc_like( '"mediaId":' . $id ) . '%' );
-		}
+		$args  = array( $like, $like_esc, '%' . $wpdb->esc_like( '"id":' . $id ) . '%', '%' . $wpdb->esc_like( '"mediaId":' . $id ) . '%' );
 		$posts = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT ID, post_content FROM {$wpdb->posts} WHERE ( post_content LIKE %s OR post_content LIKE %s{$by_id} ) AND post_type <> 'revision' AND post_status NOT IN ('trash', 'auto-draft') AND ID NOT IN (%d, %d) LIMIT {$limit}",
+				"SELECT ID, post_content FROM {$wpdb->posts} WHERE ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s ) AND post_type <> 'revision' AND post_status NOT IN ('trash', 'auto-draft') AND ID NOT IN (%d, %d) LIMIT {$limit}",
 				...array_merge( $args, array( $video_id, $attachment ) )
 			)
 		);
@@ -375,7 +460,7 @@ class LibraryFiles {
 			$content = (string) preg_replace( '#<!--\s+wp:mediashield/video\s.*?-->#s', '', (string) $post->post_content );
 			$names   = false !== strpos( $content, $paths[0] ) || false !== strpos( $content, $paths[1] );
 			// A block naming the item by id: core Video/File {"id":N}, Media & Text {"mediaId":N}.
-			if ( $names || ( $attachment && preg_match( '#<!--\s+wp:\S+\s+\{[^>]*?"(?:id|mediaId)":' . $attachment . '(?![0-9])#', $content ) ) ) {
+			if ( $names || preg_match( '#<!--\s+wp:\S+\s+\{[^>]*?"(?:id|mediaId)":' . $attachment . '(?![0-9])#', $content ) ) {
 				/* translators: %s: post title */
 				return sprintf( __( 'the content of "%s"', 'mediashield' ), get_the_title( (int) $post->ID ) );
 			}
@@ -386,18 +471,13 @@ class LibraryFiles {
 
 		// The path in any meta value, plain or JSON-escaped; and the id where
 		// a meta row is known to hold one.
-		$id_meta = $attachment
-			? " OR ( meta_key = '_thumbnail_id' AND meta_value = %s )
-				OR ( meta_key = '_elementor_data' AND ( meta_value LIKE %s OR meta_value LIKE %s ) )
-				OR ( ( meta_value = %s OR meta_value LIKE %s ) AND EXISTS ( SELECT 1 FROM {$wpdb->postmeta} f WHERE f.post_id = m.post_id AND f.meta_key = CONCAT( '_', m.meta_key ) AND f.meta_value LIKE %s ) )"
-			: '';
-		$args    = array( $like, $like_esc );
-		if ( $attachment ) {
-			array_push( $args, $id, '%' . $wpdb->esc_like( '"id":' . $id . ',' ) . '%', '%' . $wpdb->esc_like( '"id":' . $id . '}' ) . '%', $id, '%' . $wpdb->esc_like( '"' . $id . '"' ) . '%', $acf );
-		}
+		$args       = array( $like, $like_esc, $id, '%' . $wpdb->esc_like( '"id":' . $id . ',' ) . '%', '%' . $wpdb->esc_like( '"id":' . $id . '}' ) . '%', $id, '%' . $wpdb->esc_like( '"' . $id . '"' ) . '%', $acf );
 		$meta_owner = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT m.post_id FROM {$wpdb->postmeta} m WHERE ( meta_value LIKE %s OR meta_value LIKE %s{$id_meta} ) AND meta_key <> %s AND post_id NOT IN (%d, %d) LIMIT 1",
+				"SELECT m.post_id FROM {$wpdb->postmeta} m WHERE ( meta_value LIKE %s OR meta_value LIKE %s
+					OR ( meta_key = '_thumbnail_id' AND meta_value = %s )
+					OR ( meta_key = '_elementor_data' AND ( meta_value LIKE %s OR meta_value LIKE %s ) )
+					OR ( ( meta_value = %s OR meta_value LIKE %s ) AND EXISTS ( SELECT 1 FROM {$wpdb->postmeta} f WHERE f.post_id = m.post_id AND f.meta_key = CONCAT( '_', m.meta_key ) AND f.meta_value LIKE %s ) ) ) AND meta_key <> %s AND post_id NOT IN (%d, %d) LIMIT 1",
 				...array_merge(
 					$args,
 					array(
@@ -421,15 +501,14 @@ class LibraryFiles {
 
 		// Widgets and settings: the path, the core Video widget's
 		// attachment_id, or an ACF options-page field holding the id.
-		$id_option = $attachment
-			? " OR option_value LIKE %s
-				OR ( ( option_value = %s OR option_value LIKE %s ) AND EXISTS ( SELECT 1 FROM {$wpdb->options} f WHERE f.option_name = CONCAT( '_', o.option_name ) AND f.option_value LIKE %s ) )"
-			: '';
-		$args      = array( $like, $like_esc );
-		if ( $attachment ) {
-			array_push( $args, '%' . $wpdb->esc_like( '"attachment_id";i:' . $id . ';' ) . '%', $id, '%' . $wpdb->esc_like( '"' . $id . '"' ) . '%', $acf );
-		}
-		$option = $wpdb->get_var( $wpdb->prepare( "SELECT o.option_id FROM {$wpdb->options} o WHERE option_value LIKE %s OR option_value LIKE %s{$id_option} LIMIT 1", ...$args ) );
+		$args   = array( $like, $like_esc, '%' . $wpdb->esc_like( '"attachment_id";i:' . $id . ';' ) . '%', $id, '%' . $wpdb->esc_like( '"' . $id . '"' ) . '%', $acf );
+		$option = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT o.option_id FROM {$wpdb->options} o WHERE option_value LIKE %s OR option_value LIKE %s OR option_value LIKE %s
+					OR ( ( option_value = %s OR option_value LIKE %s ) AND EXISTS ( SELECT 1 FROM {$wpdb->options} f WHERE f.option_name = CONCAT( '_', o.option_name ) AND f.option_value LIKE %s ) ) LIMIT 1",
+				...$args
+			)
+		);
 		if ( self::query_failed() ) {
 			return $unsure;
 		}
@@ -448,7 +527,7 @@ class LibraryFiles {
 		 *
 		 * @param string $where      '' when unused so far, else where it is used.
 		 * @param string $relative   File path relative to the uploads folder.
-		 * @param int    $attachment Media Library item, or 0.
+		 * @param int    $attachment Media Library item (always set since 1.4.3: a file with none is never moved).
 		 * @param int    $video_id   Video being protected.
 		 */
 		return (string) apply_filters( 'mediashield_library_file_in_use', '', $relative, $attachment, $video_id );
@@ -630,6 +709,8 @@ class LibraryFiles {
 				echo '<li>' . ( $link ? '<a href="' . esc_url( $link ) . '">' . esc_html( get_the_title( (int) $id ) ) . '</a>' : esc_html( get_the_title( (int) $id ) ) );
 				if ( self::MOVE_FAILED === $where ) {
 					echo ' ' . esc_html__( '(the file could not be moved; check that wp-content/uploads is writable, then save the video again)', 'mediashield' );
+				} elseif ( self::NOT_IN_LIBRARY === $where ) {
+					echo ' ' . esc_html__( '(its file is not in your Media Library, so it may belong to another plugin and was left where it is)', 'mediashield' );
 				} elseif ( self::NOT_EDITABLE === $where ) {
 					echo ' ' . esc_html__( '(it was saved by someone who cannot edit its Media Library file; save the video yourself to protect it)', 'mediashield' );
 				} elseif ( is_string( $where ) && '' !== $where ) {
@@ -673,8 +754,8 @@ class LibraryFiles {
 						sprintf(
 							/* translators: %d: number of videos */
 							_n(
-								'%d video still plays from a public Media Library file, because the same file is used elsewhere on your site. It was left where it is so that page keeps working. To protect the video, open it and upload the file under "Or upload a file"; MediaShield then plays a private copy.',
-								'%d videos still play from public Media Library files, because the same files are used elsewhere on your site. They were left where they are so those pages keep working. To protect a video, open it and upload the file under "Or upload a file"; MediaShield then plays a private copy.',
+								'%d video still plays from a public file, because the file is used elsewhere on your site or is not in your Media Library. It was left where it is so nothing else breaks. To protect the video, open it and upload the file under "Or upload a file"; MediaShield then plays a private copy.',
+								'%d videos still play from public files, because the files are used elsewhere on your site or are not in your Media Library. They were left where they are so nothing else breaks. To protect a video, open it and upload the file under "Or upload a file"; MediaShield then plays a private copy.',
 								count( $left ),
 								'mediashield'
 							),

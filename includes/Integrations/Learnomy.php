@@ -58,7 +58,7 @@ class Learnomy {
 	 *
 	 * @param string $where      Where it is used so far, '' when nowhere.
 	 * @param string $relative   File path relative to the uploads folder.
-	 * @param int    $attachment Media Library item, or 0.
+	 * @param int    $attachment Media Library item.
 	 * @return string
 	 */
 	public static function library_file_in_use( $where, $relative, $attachment ): string {
@@ -69,7 +69,7 @@ class Learnomy {
 		$lessons  = \Learnomy\table( 'lessons' );
 		// Older Learnomy schemas have no media_id; that query's error is ignored, the URL check stands.
 		if ( LibraryFiles::table_mentions_file( $lessons, array( 'video_url', 'content' ), $relative )
-			|| ( (int) $attachment > 0 && LibraryFiles::table_has_value( $lessons, 'media_id', (int) $attachment ) ) ) {
+			|| LibraryFiles::table_has_value( $lessons, 'media_id', (int) $attachment ) ) {
 			return __( 'a Learnomy lesson', 'mediashield' );
 		}
 		return LibraryFiles::table_mentions_file( \Learnomy\table( 'courses' ), array( 'video_url', 'content', 'description' ), $relative )
