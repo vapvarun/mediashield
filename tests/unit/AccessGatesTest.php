@@ -124,14 +124,92 @@ class AccessGatesTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Turning the setting off must give the plain URL back.
+	 * Turning the setting off must give the plain URL back, for a URL the
+	 * setting governs: a pasted address on a video that holds no file of ours.
+	 * A video that owns a file is always gated (see the tests below).
 	 */
 	public function test_hide_source_off_returns_the_url_unchanged(): void {
 		update_option( 'ms_hide_source', false );
+		delete_post_meta( $this->video_id, '_ms_platform_video_id' );
+		delete_post_meta( $this->video_id, '_ms_owned_file' );
 
 		$urls = Protection::filter_player_urls( $this->video_id, 'self', 'https://example.test/f.mp4', '' );
 
 		$this->assertSame( 'https://example.test/f.mp4', $urls['source_url'] );
+	}
+
+	/**
+	 * A legacy self-hosted video whose source is the raw protected-folder URL.
+	 *
+	 * No `_ms_platform_video_id`, no `_ms_owned_file`: only the address, the
+	 * shape a video saved before the gated source URL existed can have.
+	 *
+	 * @return array{0:int,1:string} Video id and its raw folder URL.
+	 */
+	private function legacy_folder_video(): array {
+		$raw   = trailingslashit( wp_upload_dir()['baseurl'] ) . 'mediashield/test.mp4';
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		update_post_meta( $video, '_ms_platform', 'self' );
+		update_post_meta( $video, '_ms_source_url', $raw );
+		return array( $video, $raw );
+	}
+
+	/**
+	 * BC#10501905898. Fails before the fix: with Hide Video Source off, a
+	 * source inside the protected folder came back raw, withhold_addresses()
+	 * then blanked it, and the player had no address at all. A refused
+	 * viewer still gets nothing.
+	 */
+	public function test_hide_source_off_still_signs_a_protected_folder_source(): void {
+		update_option( 'ms_hide_source', false );
+		update_option( 'ms_require_login', false );
+		list( $video, $raw ) = $this->legacy_folder_video();
+
+		$urls = Protection::filter_player_urls( $video, 'self', $raw, '' );
+		$this->assertSame( '', $urls['source_url'], 'The raw folder URL is never handed back.' );
+		$this->assertStringContainsString( 'mediashield/v1/stream/' . $video, urldecode( $urls['stream_url'] ) );
+		$this->assertStringContainsString( 'ms_token=', $urls['stream_url'] );
+
+		$html = \MediaShield\Player\Renderer::render( $video );
+		$this->assertStringNotContainsString( 'uploads/mediashield/', $html, 'The raw folder URL is never printed.' );
+		$this->assertStringContainsString( 'ms_token=', $html, 'The player gets the signed /stream/ address.' );
+
+		// A viewer who may not watch gets no address at all, raw or signed.
+		update_option( 'ms_require_login', true );
+		wp_set_current_user( 0 );
+		$addresses = \MediaShield\Player\Renderer::protect_addresses( $video, \MediaShield\Player\Renderer::addresses( $video ) );
+		$this->assertTrue( $addresses['access_denied'] );
+		$this->assertSame( '', $addresses['source_url'] );
+		$this->assertSame( '', $addresses['stream_url'] );
+
+		$html = \MediaShield\Player\Renderer::render( $video );
+		$this->assertStringNotContainsString( 'uploads/mediashield/', $html );
+		$this->assertStringNotContainsString( 'ms_token=', $html );
+	}
+
+	/**
+	 * Same fix, for a video that owns its file but whose source was saved as
+	 * some other address: owning a file means /stream/ is the only way out.
+	 */
+	public function test_hide_source_off_still_signs_an_owned_file(): void {
+		update_option( 'ms_hide_source', false );
+
+		$urls = Protection::filter_player_urls( $this->video_id, 'self', 'https://example.test/f.mp4', '' );
+
+		$this->assertSame( '', $urls['source_url'] );
+		$this->assertStringContainsString( 'ms_token=', $urls['stream_url'] );
+	}
+
+	/**
+	 * The one protected-folder test, shared by Protection and Renderer.
+	 */
+	public function test_in_protected_folder_ignores_scheme_and_case(): void {
+		$base = preg_replace( '#^https?:#i', '', trailingslashit( wp_upload_dir()['baseurl'] ) );
+
+		$this->assertTrue( Protection::in_protected_folder( 'http:' . $base . 'mediashield/a.mp4' ) );
+		$this->assertTrue( Protection::in_protected_folder( 'https:' . $base . 'MediaShield/a.mp4' ) );
+		$this->assertFalse( Protection::in_protected_folder( 'https:' . $base . '2026/01/a.mp4' ) );
+		$this->assertFalse( Protection::in_protected_folder( '' ) );
 	}
 
 	/**

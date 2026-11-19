@@ -141,6 +141,7 @@ class Protection {
 	 * Claiming otherwise would be the same lie in a new place.
 	 *
 	 * @since 1.3.0
+	 * @since 1.4.3 A file MediaShield holds is always signed, whatever Hide Video Source says.
 	 *
 	 * @param int    $video_id   Video CPT post ID.
 	 * @param string $platform   Platform slug (self, bunny, youtube…).
@@ -149,30 +150,51 @@ class Protection {
 	 * @return array{source_url:string, stream_url:string} URLs safe to print.
 	 */
 	public static function filter_player_urls( int $video_id, string $platform, string $source_url, string $stream_url ): array {
-		// Only route through /stream/ when it can serve the file: an explicit
-		// stream URL, or one we can find on disk. An external direct URL has
-		// no local file, and routing it there was a guaranteed 404
-		// (BC#10258678064).
-		//
-		// An uploaded file is the exception to the setting: its only address
-		// IS the gated endpoint, and a <video> cannot send a login cookie the
-		// REST API will accept. With Hide Source off it went out unsigned and
-		// every logged-in viewer was refused (BC#10370649456), so it is always
-		// signed.
-		$is_gated_source = false !== strpos( $source_url, 'mediashield/v1/stream/' . $video_id );
+		$unchanged = array(
+			'source_url' => $source_url,
+			'stream_url' => $stream_url,
+		);
 
-		if ( 'self' !== $platform
-			|| ( ! $is_gated_source && ! get_option( 'ms_hide_source', true ) )
-			|| ( '' === $stream_url && '' === \MediaShield\REST\StreamController::resolve_file( $video_id ) ) ) {
+		if ( 'self' !== $platform ) {
+			return $unchanged;
+		}
+
+		// A file MediaShield holds is always played through the gated endpoint,
+		// whatever Hide Video Source says. Its raw address cannot play: the
+		// protected folder denies direct requests, and withhold_addresses()
+		// blanks any URL into it for every viewer. With Hide Source off this
+		// used to hand back the raw folder URL, which was then blanked, so an
+		// uploaded video rendered with no address at all (BC#10501905898).
+		// An uploaded file's own address IS the gated endpoint, and a <video>
+		// cannot send a login cookie the REST API will accept, so it is always
+		// signed too (BC#10370649456).
+		if ( self::must_gate( $video_id, $source_url, $stream_url ) ) {
+			// An explicit stream URL outside the folder (a CDN playlist, say) is
+			// what the operator deliberately pointed the player at; keep it. One
+			// into the folder is just another raw file address.
+			if ( '' === $stream_url || self::in_protected_folder( $stream_url ) ) {
+				$stream_url = \MediaShield\REST\StreamController::signed_url( $video_id, get_current_user_id() );
+				self::skip_page_cache();
+			}
+
 			return array(
-				'source_url' => $source_url,
+				'source_url' => '',
 				'stream_url' => $stream_url,
 			);
 		}
 
+		// Anything else (a URL pasted into this site's uploads, outside our
+		// folder) follows the setting. Only route through /stream/ when it can
+		// serve the file: an explicit stream URL, or one we can find on disk. An
+		// external direct URL has no local file, and routing it there was a
+		// guaranteed 404 (BC#10258678064).
+		if ( ! get_option( 'ms_hide_source', true )
+			|| ( '' === $stream_url && '' === \MediaShield\REST\StreamController::resolve_file( $video_id ) ) ) {
+			return $unchanged;
+		}
+
 		// Route playback through the gated endpoint and stop printing the raw
-		// file URL. An explicit stream URL (a CDN playlist, say) is left alone:
-		// it is what the operator deliberately pointed the player at.
+		// file URL. An explicit stream URL is left alone, as above.
 		//
 		// The URL carries a signed viewer token because the browser will not
 		// send an auth header for a <video src>: WordPress ignores the session
@@ -188,6 +210,55 @@ class Protection {
 			'source_url' => '',
 			'stream_url' => $stream_url,
 		);
+	}
+
+	/**
+	 * Must this self-hosted video play only through the signed /stream/ URL?
+	 *
+	 * Yes when MediaShield holds its file: the source is already the gated
+	 * endpoint, an address sits inside the protected folder, or the video
+	 * names a file it owns (`_ms_owned_file`). Hide Video Source does not
+	 * apply to these; it only decides about URLs outside the folder.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param int    $video_id   Video CPT post ID.
+	 * @param string $source_url Resolved source URL.
+	 * @param string $stream_url Resolved stream URL (may be empty).
+	 * @return bool
+	 */
+	private static function must_gate( int $video_id, string $source_url, string $stream_url ): bool {
+		return false !== strpos( $source_url, 'mediashield/v1/stream/' . $video_id )
+			|| self::in_protected_folder( $source_url )
+			|| self::in_protected_folder( $stream_url )
+			|| '' !== (string) get_post_meta( $video_id, '_ms_owned_file', true );
+	}
+
+	/**
+	 * Does this URL point into MediaShield's protected folder (uploads/mediashield/)?
+	 *
+	 * The one test for it: Protection uses it to decide a video must play
+	 * through /stream/, Renderer::withhold_addresses() to blank raw folder
+	 * URLs for every viewer. The scheme is ignored (a URL pasted as http on an
+	 * https site is the same file) and so is case, because over-matching only
+	 * ever routes a URL through the gated endpoint.
+	 *
+	 * For a file path on disk use StreamController::resolve_file(); this
+	 * answers about URLs only.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param string $url Any URL.
+	 * @return bool
+	 */
+	public static function in_protected_folder( string $url ): bool {
+		if ( '' === $url ) {
+			return false;
+		}
+
+		$folder = preg_replace( '#^https?:#i', '', trailingslashit( wp_upload_dir()['baseurl'] ) . 'mediashield/' );
+
+		return false !== stripos( (string) preg_replace( '#^https?:#i', '', $url ), (string) $folder );
 	}
 
 	/**
