@@ -49,6 +49,13 @@
       "guard": "tests/unit/AllowedDomainsTest.php::test_top_level_visit_from_a_link_on_another_site_is_allowed",
       "added": "2026-11-20",
       "proven_failing_on": "cefdc6d (foreign Referer refused for a top-level visit)"
+    },
+    {
+      "card": "10526587425",
+      "title": "Playlists admin screen showed only the first 10 playlists: no per_page and no pager",
+      "guard": "audit/journeys/admin/admin-lists.md (card:10526587425)",
+      "added": "2026-11-20",
+      "proven_failing_on": "fa5d8fd (request had no per_page/page; no pager)"
     }
   ]
 }
