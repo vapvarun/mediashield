@@ -64,7 +64,7 @@ On nginx, `.htaccess` is ignored and those files are directly downloadable until
 
 **What does developer-tools detection do?**
 
-When a viewer opens browser developer tools while watching, MediaShield detects it, records the event, and can optionally pause the video. In the free plugin the event is exposed as an action for your own logging - nothing is stored and there is no report screen. Pro records it as a suspicious-activity entry. Events are rate limited to one per viewer per hour, and detection is skipped on mobile and small screens.
+When a viewer opens browser developer tools while watching, MediaShield detects it, records the event, and can optionally pause the video. In the free plugin the event is exposed as an action for your own logging - nothing is stored and there is no report screen. Pro records it as a suspicious-activity entry. Events are rate limited to one per viewer per hour, and detection is skipped on mobile and small screens. It runs only on pages that carry a protected player.
 
 **Can I disable protection for a specific video?**
 

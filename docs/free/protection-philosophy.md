@@ -52,10 +52,10 @@ anyone who knows or guesses a file's address can download the video without
 logging in, and none of your access rules apply. Not the login requirement, not
 per-video role restrictions, not the allowed-domain list. The player itself is
 unaffected either way, because it never uses that address; it streams through
-MediaShield, which checks permissions on every request. That last part depends on
-**Hide Video Source URL** being on, which it is by default -- turn it off and the
-player goes back to using the plain file address, putting it in your page markup
-for anyone to copy.
+MediaShield, which checks permissions on every request. Files in the protected
+folder always play that way. **Hide Video Source URL** only decides for a file
+pasted from elsewhere in your Media Library -- turn it off and that file's plain
+address goes into your page markup for anyone to copy.
 
 Two things reduce the risk, and neither is a fix:
 

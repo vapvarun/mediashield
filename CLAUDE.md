@@ -76,7 +76,7 @@ includes/
     Shortcode.php            [mediashield id=X] shortcode
   Player/
     PlayerWrapper.php        Output buffer video detection + wrapping. Sticky-player observer watches a 1px sentinel placed before the player (not the player itself) to avoid the position:fixed feedback flicker.
-    Protection.php           Right-click disable, devtools detection
+    Protection.php           Right-click disable, devtools detection config, filter_player_urls() (Hide Source routing; a file MediaShield holds is always signed) and in_protected_folder(), the one 'URL is in uploads/mediashield/' test (also used by Renderer::withhold_addresses())
     Watermark.php            Dynamic watermark overlay
     Renderer.php             Shared .ms-protected-player container output for a single video (used by [mediashield] shortcode, video block, single template). Validates the CPT + source URLs and enqueues assets only when output will be produced. Emits per-video playback options (`data-autoplay`/`data-loop`/`data-muted`/`data-controls`) from `_ms_autoplay`/`_ms_loop`/`_ms_muted`/`_ms_show_controls` meta.
     PlaylistRenderer.php     Shared playlist output (used by [mediashield_playlist] shortcode and the playlist Gutenberg block): the queue markup around ONE Renderer::render() player. It never builds a player of its own - the playlist script swaps in /playlists/{id}/player/{video_id} markup and player-wrapper.js initialises it like any other player.
@@ -144,7 +144,7 @@ assets/
     player-wrapper.js        Vanilla JS player detection + wrapping
     watermark.js             Dynamic watermark rendering
     tracker.js               Watch session heartbeat + progress
-    protection.js            Right-click block, devtools detection
+    protection.js            Right-click block, devtools detection (starts only with a protected player on the page)
     ad-breaks.js             In-video ad break playback engine
     admin-video.js           Add New Video screen — file uploader + URL detection (1.3.0)
     admin-notice.js          Pro upsell notice dismissal

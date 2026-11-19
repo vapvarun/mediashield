@@ -29,9 +29,11 @@ These apply to every player except those set to None.
 
 When on, MediaShield stops printing the file's own address in the page and points the player at `/wp-json/mediashield/v1/stream/<id>` instead. That endpoint runs the same access check as the player on every request, including every seek, so a URL copied out of the page is useless to somebody without access. The URL carries a signed token naming the viewer, because a `<video>` element cannot send an authentication header.
 
+Videos you upload to MediaShield, and files it moved into its protected folder, always play through that signed address, whether this setting is on or off. Their raw address is never printed, because the protected folder refuses direct requests anyway. The setting decides only for a file you pasted from elsewhere in your Media Library: off, the page uses that file's own address.
+
 It does nothing for YouTube, Vimeo, Wistia, or Bunny embeds, and the setting says so in the admin. Those play in the provider's iframe, whose address has to contain the provider's video ID for playback to work at all. Blanking it would break the video and protect nothing.
 
-**Detect Developer Tools** - Detects when a viewer opens browser developer tools while watching, using a debugger-timing check, which browser zoom does not affect. On by default.
+**Detect Developer Tools** - Detects when a viewer opens browser developer tools while watching, using a debugger-timing check, which browser zoom does not affect. On by default. Detection runs only on pages with a protected player (any level except None), so other pages on your site never show the overlay.
 
 **Pause Video When Detected** - Pauses playback and shows an overlay when developer tools are detected. Off by default; detection is recorded either way. Videos set to Strict force this on.
 

@@ -40,7 +40,7 @@ Controls for the browser-level protection layer that runs while the video is pla
 | Block Right-Click | On | Disables the browser context menu inside the player, so viewers can't reach "Save video as". Right-clicking elsewhere on the page still works, by design. |
 | Block Save Shortcut (Ctrl+S / Cmd+S) | Off | Intercepts the save shortcut while the keyboard focus is inside the player. This is the save shortcut only - it does not block View Source, Print, or anything else. |
 | Hide Video Source URL | On | Self-hosted videos only. See below. |
-| Detect Developer Tools | On | Detects when a viewer opens browser developer tools while watching, and records it. Skipped on mobile and touch devices, where the detection produces too many false alarms. |
+| Detect Developer Tools | On | Detects when a viewer opens browser developer tools while watching, and records it. Runs only on pages with a protected player. Skipped on mobile and touch devices, where the detection produces too many false alarms. |
 | Pause Video When Detected | Off | Also pauses playback and shows an overlay when developer tools are detected. Detection is recorded either way. |
 | Overlay Title | "Developer Tools Detected" | The heading on that overlay. Edit to match your site's tone. |
 | Overlay Message | "Please close developer tools to continue watching this video." | The body text below the heading. |
@@ -48,6 +48,8 @@ Controls for the browser-level protection layer that runs while the video is pla
 ### Hide Video Source URL
 
 **This applies to self-hosted videos only.** When on, the video plays through a permission-checked address and the real file path never appears in the page at all - not in View Source, not in developer tools. Permission is re-checked on every request, so access you revoke stops working straight away.
+
+Videos uploaded to MediaShield, and files it moved into its protected folder, always play through the permission-checked address, whether this setting is on or off. The setting decides only for a file you pasted from elsewhere in your Media Library.
 
 It does **not** apply to YouTube, Vimeo, Wistia or Bunny videos. Those play in the provider's own iframe, whose address necessarily contains their video ID, so there is nothing MediaShield can hide there. The setting says so on screen.
 

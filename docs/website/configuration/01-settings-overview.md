@@ -35,8 +35,8 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Require Login | On | Visitors must be logged in to watch. Off lets guests watch, and their sessions are recorded. |
 | Block Right-Click | On | Hides the browser menu over the player so "Save video as" is not offered. |
 | Block Save Shortcut (Ctrl+S / Cmd+S) | Off | Stops the save shortcut while the player has focus. |
-| Hide Video Source URL | On | Self-hosted video only. The page no longer prints the file address. |
-| Detect Developer Tools | On | Notices when a viewer opens browser developer tools. Skipped on touch devices and narrow screens. |
+| Hide Video Source URL | On | Self-hosted video only. The page no longer prints the file address. Videos uploaded to MediaShield always play through the protected address, on or off. |
+| Detect Developer Tools | On | Notices when a viewer opens browser developer tools. Runs only on pages with a protected player. Skipped on touch devices and narrow screens. |
 | Pause Video When Detected | Off | Pauses and shows the message below when developer tools are found. Appears only while detection is on. |
 | Overlay Title | Developer Tools Detected | Heading of that message. Appears only while Pause Video When Detected is on. |
 | Overlay Message | Please close developer tools to continue watching this video. | Body of that message. Appears only while Pause Video When Detected is on. |

@@ -97,8 +97,8 @@ Server-side toggles consumed by `assets/js/protection.js` and `Player\Protection
 |-----------|------|---------|-------------|
 | `ms_block_right_click` | bool | `true` | Disable the browser context menu over protected players. |
 | `ms_block_keyboard` | bool | `false` | Disable Ctrl/Cmd+S, Ctrl+U, F12 and similar capture shortcuts on player pages. |
-| `ms_hide_source` | bool | `true` | Strip `src=` attributes from rendered video elements; the JS adapter reads them via `dataset` instead. |
-| `ms_detect_devtools` | bool | `true` | Detect open browser devtools and dispatch a beacon to `/protection/devtools-event`. |
+| `ms_hide_source` | bool | `true` | Self-hosted only. For a file pasted from elsewhere in uploads, serve it through the signed `/stream/{id}` URL instead of printing its address. A file MediaShield holds (source is the `/stream/` URL, sits in `uploads/mediashield/`, or the video has `_ms_owned_file`) always plays through the signed `/stream/` URL whatever this says, since its raw address is never printed (`Protection::filter_player_urls()`, `Protection::in_protected_folder()`). |
+| `ms_detect_devtools` | bool | `true` | Detect open browser devtools and dispatch a beacon to `/protection/devtools-event`. Runs only on pages with a protected player (any level but `none`), so a page that merely loads `protection.js` never shows the overlay. |
 | `ms_pause_on_devtools` | bool | `false` | When devtools open, pause playback in addition to showing the overlay. |
 | `ms_devtools_title` | string | `"Developer Tools Detected"` | Heading shown on the devtools overlay. |
 | `ms_devtools_message` | string | `"Please close developer tools to continue watching this video."` | Body copy below the heading. |
