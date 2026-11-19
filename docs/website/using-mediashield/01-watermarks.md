@@ -36,7 +36,7 @@ Go to **MediaShield > Settings > Watermark**:
 The watermark is a canvas element rendered on top of the video player container. It:
 
 - Cycles through five positions - the four corners and the center - at the interval you set, or the four corners only with Keep the watermark at the edges on
-- Sits clear of the player's badge, speed button, fullscreen button and control bar, and wraps onto more lines when it is wider than the player
+- Sits clear of the player's badge, speed button, fullscreen button and control bar, and of the title bar and controls YouTube, Vimeo and Wistia draw inside their own players, and wraps onto more lines when it is wider than the player
 - Redraws when the player is resized, and stays visible in fullscreen
 - Watches its own element, and reacts if the page tries to remove or hide it
 

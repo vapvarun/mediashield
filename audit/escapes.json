@@ -70,6 +70,13 @@
       "guard": "audit/journeys/customer/protection-levels.md (card:10526098472)",
       "added": "2026-11-20",
       "proven_failing_on": "488e5ab (poster applied to native <video> only)"
+    },
+    {
+      "card": "10516698451",
+      "title": "Watermark overlapped the YouTube title and control bars: only native controls were kept clear",
+      "guard": "audit/journeys/customer/protection-levels.md (card:10516698451)",
+      "added": "2026-11-20",
+      "proven_failing_on": "3c6de6b (insets() reserved native controls only)"
     }
   ]
 }

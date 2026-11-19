@@ -51,6 +51,12 @@
 		var currentPos = 0;
 		var SEP = ' · ';
 		var GAP = 8;
+		// ponytail: bands measured on the 2026 players; re-measure if a platform redesigns.
+		var PLATFORM_CHROME = {
+			youtube: { top: 60, bottom: 52 },
+			vimeo: { top: 60, bottom: 52 },
+			wistia: { top: 0, bottom: 48 },
+		};
 
 		// Player chrome sitting in the corners (badge top-left, speed top-right,
 		// fullscreen button bottom-right) and the browser's own control bar,
@@ -71,6 +77,14 @@
 			var video = el.querySelector('video');
 			if (video && video.controls) {
 				bottom = Math.max(bottom, 64);
+			}
+			// Platform players draw their own chrome inside the iframe, which
+			// the DOM cannot measure either: YouTube and Vimeo a title bar on
+			// top, all three a control bar below (Basecamp 10516698451).
+			var chrome = PLATFORM_CHROME[el.dataset.platform];
+			if (chrome && el.querySelector('iframe')) {
+				top = Math.max(top, chrome.top);
+				bottom = Math.max(bottom, chrome.bottom);
 			}
 			return { top: top + GAP, bottom: bottom + GAP };
 		}
