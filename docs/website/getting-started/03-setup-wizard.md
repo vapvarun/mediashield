@@ -15,7 +15,7 @@ Three site-wide switches:
 **Default protection level** - The baseline for videos that have no per-video setting. The wizard offers the two ends of the range:
 
 - **Standard (Watermark + Tracking)** - recommended for gated content.
-- **None (No protection)** - plays as a normal embed.
+- **None (No extra protection)** - plays as a normal embed with no extra per-video protection. The site-wide Require Login setting still applies.
 
 The full set of four levels (None, Basic, Standard, Strict) is available under **MediaShield > Settings** and on each video's edit screen. See [Protection Settings](../configuration/02-protection-settings.md) for what each level does.
 

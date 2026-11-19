@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -150,6 +150,28 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 6. Session tracking with concurrent stream management
 
 == Changelog ==
+
+= 1.4.3 - November 2026 =
+
+Uploaded videos play again with Hide Video Source URL off, and other plugins' video files are left where they are.
+
+* New      - A Tags field on the video edit screen: pick existing tags or type a new one.
+* New      - A video's featured image shows as a click-to-play cover on YouTube, Vimeo, Wistia and Bunny embeds.
+* Improve  - The Playlists screen pages through every playlist instead of stopping at 10.
+* Improve  - The Tags list shows how many videos use each tag.
+* Improve  - The watermark keeps clear of the YouTube, Vimeo and Wistia title and control bars.
+* Improve  - The protection level descriptions say that the site-wide Require Login setting still applies at None.
+* Fix      - Uploaded videos play again when Hide Video Source URL is off.
+* Fix      - Developer tools detection and its full-page message run only on pages that show a protected video.
+* Fix      - A video set to Any role plays for every allowed viewer.
+* Fix      - Only Media Library files are moved into the protected folder. Files from other plugins, such as WPMediaVerse, stay where they are, and files 1.4.2 moved are put back after the update.
+* Fix      - Turning off Show Break Markers hides the ad-break markers on the timeline.
+* Fix      - The Basic protection level blocks right-click on its videos, as its label says.
+* Fix      - The Strict protection level always keeps the video file address out of the page.
+* Fix      - Allowed Domains lets a signed-in student in when they open a lesson from a link on another site. Embeds on other sites are still refused.
+* Fix      - Watch progress can no longer be sent below zero.
+* Security - A Learnomy lesson gives a logged-in viewer a playback link only when that viewer may watch the video.
+* Compat   - Aligned with MediaShield Pro 1.4.3. Install both updates together.
 
 = 1.4.2 - November 2026 =
 
@@ -410,6 +432,9 @@ Bug fixes, accessibility and UX polish, a complete documentation set, and new de
 * 8 actions and 8 filters for developer integrations.
 
 == Upgrade Notice ==
+
+= 1.4.3 =
+Uploaded videos play again with Hide Video Source URL off, and other plugins' video files are no longer moved. Update Pro to 1.4.3 at the same time.
 
 = 1.4.2 =
 Security release: self-hosted videos picked from the Media Library move into the protected folder so non-buyers cannot download them. A notice lists what moved. Update Pro to 1.4.2 at the same time.
