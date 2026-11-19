@@ -495,8 +495,82 @@ class VideoPostType {
 					<p class="description"><?php esc_html_e( 'Only users with this role can watch. Leave empty for all logged-in users.', 'mediashield' ); ?></p>
 				</td>
 			</tr>
+			<?php self::render_tags_row( $post->ID ); ?>
 		</table>
 		<?php
+	}
+
+	/**
+	 * The Tags row of the Settings box: the video's tags, and a field to add more.
+	 *
+	 * Tags were managed on MediaShield > Tags but could only be put on a video
+	 * through the REST API (Basecamp 10526725213). Saved with the video by
+	 * save_tags(), through the same TagManager calls the REST routes use.
+	 * Typed names that are new become tags, as in the core Tags box.
+	 *
+	 * @param int $video_id Video post ID.
+	 */
+	private static function render_tags_row( int $video_id ): void {
+		$assigned = \MediaShield\Tags\TagManager::get_for_video( $video_id );
+		// Suggestions only; any name can be typed. Bounded for large tag lists.
+		$known = \MediaShield\Tags\TagManager::list( 200, 1 )['items'];
+		?>
+		<tr>
+			<th><label for="ms-add-tags"><?php esc_html_e( 'Tags', 'mediashield' ); ?></label></th>
+			<td>
+				<input type="hidden" name="_ms_tags_present" value="1" />
+				<?php if ( $assigned ) : ?>
+					<fieldset class="ms-video-tags">
+						<legend class="screen-reader-text"><?php esc_html_e( 'Tags on this video. Untick to remove.', 'mediashield' ); ?></legend>
+						<?php foreach ( $assigned as $tag ) : ?>
+							<label class="ms-video-tags__tag">
+								<input type="checkbox" name="_ms_tag_ids[]" value="<?php echo esc_attr( (string) $tag->id ); ?>" checked />
+								<?php echo esc_html( $tag->name ); ?>
+							</label>
+						<?php endforeach; ?>
+					</fieldset>
+				<?php endif; ?>
+				<input type="text" id="ms-add-tags" name="_ms_add_tags" class="regular-text" list="ms-tag-names" autocomplete="off" />
+				<datalist id="ms-tag-names">
+					<?php foreach ( $known as $tag ) : ?>
+						<option value="<?php echo esc_attr( $tag->name ); ?>"></option>
+					<?php endforeach; ?>
+				</datalist>
+				<p class="description"><?php esc_html_e( 'Add tags, separated by commas. Untick a tag to remove it. Saved with the video.', 'mediashield' ); ?></p>
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
+	 * Save the Tags row: remove unticked tags, add typed ones.
+	 *
+	 * Only runs when the row was on the form, so a save from anywhere else
+	 * (REST, quick edit) never clears a video's tags. Nonce and edit_post are
+	 * checked by save_meta_box().
+	 *
+	 * @param int $video_id Video post ID.
+	 */
+	private static function save_tags( int $video_id ): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Verified in save_meta_box().
+		if ( empty( $_POST['_ms_tags_present'] ) ) {
+			return;
+		}
+		$keep  = array_map( 'absint', (array) wp_unslash( $_POST['_ms_tag_ids'] ?? array() ) );
+		$typed = sanitize_text_field( wp_unslash( $_POST['_ms_add_tags'] ?? '' ) );
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		foreach ( \MediaShield\Tags\TagManager::get_for_video( $video_id ) as $tag ) {
+			if ( ! in_array( (int) $tag->id, $keep, true ) ) {
+				\MediaShield\Tags\TagManager::unassign_from_video( $video_id, (int) $tag->id );
+			}
+		}
+		foreach ( explode( ',', $typed ) as $name ) {
+			$tag_id = \MediaShield\Tags\TagManager::ensure( $name, get_current_user_id() );
+			if ( $tag_id ) {
+				\MediaShield\Tags\TagManager::assign_to_video( $video_id, $tag_id, get_current_user_id() );
+			}
+		}
 	}
 
 	/**
@@ -863,6 +937,8 @@ class VideoPostType {
 				update_post_meta( $post_id, $key, $value );
 			}
 		}
+
+		self::save_tags( $post_id );
 
 		// Player options (checkboxes — absent means unchecked).
 		$checkboxes = array( '_ms_autoplay', '_ms_loop', '_ms_muted', '_ms_show_controls' );

@@ -56,6 +56,13 @@
       "guard": "audit/journeys/admin/admin-lists.md (card:10526587425)",
       "added": "2026-11-20",
       "proven_failing_on": "fa5d8fd (request had no per_page/page; no pager)"
+    },
+    {
+      "card": "10526725213",
+      "title": "Tags could be created but not put on a video from any admin screen (REST only)",
+      "guard": "tests/unit/VideoTagPickerTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "ce7c177 (no Tags field; save changed nothing)"
     }
   ]
 }
