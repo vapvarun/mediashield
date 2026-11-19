@@ -658,8 +658,7 @@ class AnalyticsController extends WP_REST_Controller {
 		if ( '' === $format ) {
 			$format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 		}
-		$ts = strtotime( $utc_datetime . ' UTC' );
-		return false === $ts ? '' : wp_date( $format, $ts );
+		return \MediaShield\Support\Time::date_label( $utc_datetime, '', $format );
 	}
 
 	/**

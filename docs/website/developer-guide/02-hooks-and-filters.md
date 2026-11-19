@@ -568,6 +568,21 @@ add_filter( 'mediashield_bunny_pull_zones', function( $zones ) {
 
 ---
 
+### mediashield_display_timezone
+
+*Since 1.4.3.* The timezone MediaShield shows times in: analytics activity, the PDF report and the weekly digest (with MediaShield Pro). Times are stored in UTC; only the display moves. Default is the site timezone from Settings > General. Return a person's own timezone to show each viewer their local time. A value that is not a `DateTimeZone` falls back to the site timezone.
+
+**Parameters:** `$timezone` (DateTimeZone), `$user_id` (int, the person the time is shown to; for the weekly digest, the recipient's account when the digest address belongs to one)
+
+```php
+add_filter( 'mediashield_display_timezone', function( $timezone, $user_id ) {
+    $own = get_user_meta( $user_id, 'my_timezone', true );
+    return $own ? new DateTimeZone( $own ) : $timezone;
+}, 10, 2 );
+```
+
+---
+
 ## JavaScript events
 
 The player dispatches browser events (`mediashield:player-ready`, `mediashield:access-denied` and others). They are documented on [JavaScript Events and Player Config](08-javascript-events-and-config.md).
