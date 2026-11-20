@@ -224,6 +224,13 @@
       "guard": "audit/journeys/admin/admin-lists.md (card:10530930295, column widths at 1440/1280/1024)",
       "added": "2026-11-21",
       "proven_failing_on": "722fc16 (ths 193,147,162,139,312,0,0,0 at 1440)"
+    },
+    {
+      "card": "10531602227",
+      "title": "Resume offered the furthest point, not where the member stopped: watched to 8:00, rewound to 3:00, left, came back to 'Resume from 8:20' (owner: exact stop, like YouTube/Netflix)",
+      "guard": "tests/unit/ResumePositionTest.php::test_resume_offers_the_exact_stop_after_a_rewind; audit/journeys/customer/player-owner-audit.md step 8 (card:10531602227)",
+      "added": "2026-11-21",
+      "proven_failing_on": "9da6331 (offered 480 for a 180 stop; resume-stop-1440-light-before.png)"
     }
   ]
 }

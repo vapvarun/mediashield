@@ -56,7 +56,7 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Unavailable Video Text | This video is unavailable. | Shown when YouTube or Vimeo says the video was removed or made private. |
 | Speed Control | On | Speed selector, 0.5x to 2x. Self-hosted, and Bunny with Pro direct playback. |
 | Keyboard Shortcuts | On | Space, arrows, M and F while the player has focus. |
-| Resume Playback | On | Offers to continue where the viewer stopped. |
+| Resume Playback | On | Offers to continue exactly where the viewer stopped, rewinds included. |
 | Prevent Skipping Ahead | Off | Blocks seeking beyond the furthest point watched. |
 | Sticky Player | Off | Keeps the player floating in a corner while the viewer scrolls. |
 | End Screen | Off | Shows a message and button when the video ends. |

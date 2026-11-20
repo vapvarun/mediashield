@@ -22,13 +22,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  * wall-clock time since the previous one (at most 2x speed plus a little
  * slack), so a forged report cannot claim more than was possible to watch.
  *
+ * The same entry keeps where the member last stopped (`p`), the place the
+ * player was at in its latest report, so the resume offer returns them to
+ * that exact point even after rewinding, as YouTube and Netflix do (owner
+ * decision on Basecamp 10531602227).
+ *
  * Stored per member in one user-meta row, `_ms_watched_spans`, an array keyed
- * by video ID: `[ 's' => [ [start, end], ... ], 't' => last report time ]`.
- * No new table. Removed with the member's other MediaShield data (privacy
- * eraser, uninstall).
+ * by video ID: `[ 's' => [ [start, end], ... ], 't' => last report time,
+ * 'p' => stop position ]`. No new table. Exported and removed with the
+ * member's other MediaShield data (privacy exporter and eraser, uninstall).
  *
  * For milestones (25/50/75/100) read `ms_milestones`; for the furthest point,
- * `ms_watch_sessions.max_position`.
+ * `ms_watch_sessions.max_position`; for where to resume, stop().
  *
  * @since 1.4.3
  */
@@ -72,15 +77,20 @@ class WatchedSpans {
 	}
 
 	/**
-	 * Add the stretches the player says it played since its last report.
+	 * Add the stretches the player says it played since its last report, and
+	 * note where the player is now.
+	 *
+	 * A position of 0 is not stored as the stop: a page view that never
+	 * played reports 0, and it must not erase the place from the last viewing.
 	 *
 	 * @param int   $user_id  Member.
 	 * @param int   $video_id Video CPT post ID.
 	 * @param array $spans    [ [start, end], ... ] in seconds of the video.
 	 * @param float $duration Video length in seconds, 0 when unknown.
+	 * @param float $position Where the player is now, in seconds; 0 leaves the stop as it was.
 	 * @return float Seconds accepted from this report (0 when refused).
 	 */
-	public static function record( int $user_id, int $video_id, array $spans, float $duration = 0.0 ): float {
+	public static function record( int $user_id, int $video_id, array $spans, float $duration = 0.0, float $position = 0.0 ): float {
 		if ( $user_id <= 0 || $video_id <= 0 ) {
 			return 0.0;
 		}
@@ -109,6 +119,9 @@ class WatchedSpans {
 		}
 
 		$entry['t'] = $now;
+		if ( $position > 0 ) {
+			$entry['p'] = round( $duration > 0 ? min( $position, $duration ) : $position, 1 );
+		}
 		// More video than could have played since the last report: refuse it all.
 		$accepted = ( $clean && $total <= $since * self::MAX_RATE + self::SLACK ) ? $total : 0.0;
 		if ( $accepted > 0 ) {
@@ -118,6 +131,23 @@ class WatchedSpans {
 		update_user_meta( $user_id, self::META_KEY, $all );
 
 		return $accepted;
+	}
+
+	/**
+	 * Where the member last stopped in this video: the position of the
+	 * player's latest report, rewinds included.
+	 *
+	 * Answers the resume offer. Not the furthest point (that is
+	 * `ms_watch_sessions.max_position`) and not time watched (seconds()).
+	 * The player still offers it only from 10 s and before 95% of the video.
+	 *
+	 * @param int $user_id  Member.
+	 * @param int $video_id Video CPT post ID.
+	 * @return float|null Seconds; null when no stop was recorded (a viewing from before 1.4.3).
+	 */
+	public static function stop( int $user_id, int $video_id ): ?float {
+		$entry = self::all( $user_id )[ $video_id ] ?? array();
+		return isset( $entry['p'] ) ? (float) $entry['p'] : null;
 	}
 
 	/**

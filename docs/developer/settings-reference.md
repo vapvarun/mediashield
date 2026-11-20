@@ -68,7 +68,7 @@ Global defaults for the player UI. Most can be overridden per-video via the vide
 | `ms_player_prevent_forward_seek` | bool | `false` | Block seeking past the furthest point already watched. Emitted to JS as `player.preventForwardSeek`. Overridable per video since 1.3.0 via `_ms_player_prevent_forward_seek`. |
 | `ms_player_sticky` | bool | `false` | Pin the player to a corner when scrolled off-screen during playback. |
 | `ms_player_keyboard` | bool | `true` | Allow Space/Arrow/M/F shortcuts on the player. |
-| `ms_player_resume` | bool | `true` | Resume from the last reached position when re-opening a video. |
+| `ms_player_resume` | bool | `true` | Resume from the exact stop point (the player's last reported position, rewinds included) when re-opening a video. Logged-in members: `WatchedSpans::stop()` (`p` in the `_ms_watched_spans` user meta); viewings from before 1.4.3 and guests fall back to the furthest point of the last session that played. The player offers it only from 10 s and before 95%. |
 | `ms_player_endscreen` | bool | `false` | Render the end-screen CTA when the video ends. |
 | `ms_player_endscreen_text` | string | `''` | CTA text shown on the end-screen card (global fallback when a video doesn't set its own). |
 | `ms_player_endscreen_url` | string | `''` | CTA URL. Empty allowed; otherwise must survive `esc_url_raw` (rejects `javascript:` URLs). |

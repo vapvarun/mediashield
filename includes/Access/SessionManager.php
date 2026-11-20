@@ -366,7 +366,11 @@ class SessionManager {
 		// A guest (nothing to keep spans against) and a player without span
 		// reports (a page cached before 1.4.3) keep the old 30 seconds per
 		// playing heartbeat.
-		$watched = ( null === $spans || (int) $parsed['user_id'] <= 0 ) ? ( $playing ? 30 : 0 ) : (int) round( WatchedSpans::record( (int) $parsed['user_id'], (int) $parsed['video_id'], $spans, $effective_duration ) );
+		// The same write keeps where a member stopped, for the resume offer,
+		// from every report: heartbeat, pause-time beats and the end beacon.
+		$user_id  = (int) $parsed['user_id'];
+		$accepted = $user_id > 0 ? WatchedSpans::record( $user_id, (int) $parsed['video_id'], $spans ?? array(), $effective_duration, $position ) : 0.0;
+		$watched  = ( null === $spans || $user_id <= 0 ) ? ( $playing ? 30 : 0 ) : (int) round( $accepted );
 
 		// Single atomic update with GREATEST for max_position.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table update.
@@ -401,10 +405,13 @@ class SessionManager {
 	}
 
 	/**
-	 * Where this viewer stopped last time they actually watched this video.
+	 * Where this viewer stopped last time they watched this video.
 	 *
-	 * The furthest point of their most recent session that played; a session
-	 * opened by a page view without play (position 0, no seconds) is skipped.
+	 * The exact stop point the player last reported, rewinds included, like
+	 * YouTube and Netflix (owner decision on Basecamp 10531602227; kept in
+	 * WatchedSpans). A member with no recorded stop (viewings from before
+	 * 1.4.3) gets the furthest point of their most recent session that
+	 * played; a session opened by a page view without play is skipped.
 	 * Answers the resume offer; the client still offers it only between 10 s
 	 * and 95%. 0 for a guest or a video never played.
 	 *
@@ -417,6 +424,10 @@ class SessionManager {
 	public static function last_played_position( int $video_id, int $user_id ): float {
 		if ( $video_id <= 0 || $user_id <= 0 ) {
 			return 0.0;
+		}
+		$stop = WatchedSpans::stop( $user_id, $video_id );
+		if ( null !== $stop ) {
+			return $stop;
 		}
 		global $wpdb;
 		$table  = $wpdb->prefix . 'ms_watch_sessions';
