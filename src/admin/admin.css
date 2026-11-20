@@ -1384,7 +1384,88 @@
 	max-width: 100%;
 }
 
+.mediashield-settings__layout {
+	display: grid;
+	grid-template-columns: 200px minmax( 0, 1fr );
+	gap: var( --ms-space-6 );
+	align-items: start;
+}
+
+/* Pro's watermark section renders after Free's settings app: line it up
+   with the section column. */
+.mediashield-settings + .mediashield-settings {
+	padding-inline-start: calc( 200px + var( --ms-space-6 ) );
+}
+
+.mediashield-settings__nav {
+	position: sticky;
+	top: 46px;
+	display: flex;
+	flex-direction: column;
+	gap: var( --ms-space-2 );
+}
+
+.mediashield-settings__search-input {
+	width: 100%;
+	min-height: 40px;
+	padding: 0 var( --ms-space-3 );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-sm );
+	background: var( --ms-color-surface );
+	color: var( --ms-color-text );
+	font-size: 13px;
+}
+
+.mediashield-settings__search-result {
+	display: block;
+	margin-block-start: var( --ms-space-1 );
+	font-size: 12px;
+	color: var( --ms-color-text-secondary );
+}
+
+.mediashield-settings__search-result:empty {
+	display: none;
+}
+
+.mediashield-settings__nav-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.mediashield-settings__nav-link {
+	display: flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0 var( --ms-space-3 );
+	border-radius: var( --ms-radius-sm );
+	color: var( --ms-color-text-secondary );
+	font-size: 13px;
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.mediashield-settings__nav-link:hover,
+.mediashield-settings__nav-link:focus {
+	background: var( --ms-color-bg );
+	color: var( --ms-color-text );
+}
+
+.mediashield-settings__nav-link.is-active {
+	background: var( --ms-color-primary-light );
+	color: var( --ms-color-primary );
+	font-weight: 600;
+}
+
+.mediashield-settings__nav-select {
+	display: none;
+}
+
 .mediashield-settings__section {
+	scroll-margin-top: 46px;
 	background: var( --ms-color-surface );
 	border: 1px solid var( --ms-color-border );
 	border-radius: var( --ms-radius-lg );
@@ -2152,6 +2233,28 @@
 
 	.mediashield-admin__content {
 		padding: var( --ms-space-4 );
+	}
+
+	/* Settings: one column; the section list becomes a select. */
+	.mediashield-settings__layout {
+		grid-template-columns: minmax( 0, 1fr );
+		gap: var( --ms-space-4 );
+	}
+
+	.mediashield-settings + .mediashield-settings {
+		padding-inline-start: 0;
+	}
+
+	.mediashield-settings__nav {
+		position: static;
+	}
+
+	.mediashield-settings__nav-list {
+		display: none;
+	}
+
+	.mediashield-settings__nav-select {
+		display: block;
 	}
 
 	.mediashield-page__header {

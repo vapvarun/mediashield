@@ -140,6 +140,13 @@
       "guard": "audit/journeys/admin/admin-lists.md (card:10530930295)",
       "added": "2026-11-20",
       "proven_failing_on": "b75cb14 (browser walk: 5 columns, Default (Standard)... clipped)"
+    },
+    {
+      "card": "10530930776",
+      "title": "Settings was one long auto-saving page with no section navigation and no search",
+      "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930776)",
+      "added": "2026-11-20",
+      "proven_failing_on": "722fc16 (no nav or search; 13-*-before.png, 5,342 px at 1440)"
     }
   ]
 }

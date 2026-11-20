@@ -18,7 +18,7 @@ import {
 	Spinner,
 	Button,
 } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
@@ -157,8 +157,134 @@ const midrollExampleTimes = ( count ) => {
 	return times.join( ', ' );
 };
 
-const SectionCard = ( { icon, title, description, children } ) => (
-	<div className="mediashield-settings__section">
+/**
+ * The Settings sections in the left-hand navigation (Basecamp 10530930776).
+ * Each card names its group with `group`; the nav jumps to the group's first
+ * card.
+ */
+const SETTINGS_GROUPS = [
+	{ key: 'protection', label: __( 'Protection', 'mediashield' ) },
+	{ key: 'watermark', label: __( 'Watermark', 'mediashield' ) },
+	{ key: 'player', label: __( 'Player', 'mediashield' ) },
+	{ key: 'access', label: __( 'Access & messages', 'mediashield' ) },
+	{ key: 'ads', label: __( 'Video ads', 'mediashield' ) },
+	{ key: 'storage', label: __( 'Upload & storage', 'mediashield' ) },
+	{ key: 'integrations', label: __( 'Integrations', 'mediashield' ) },
+];
+
+/**
+ * Jump to a group's first section and move focus there for keyboard users.
+ *
+ * @param {string} key Group key.
+ */
+const goToGroup = ( key ) => {
+	const card = document.querySelector( `.mediashield-settings__section[data-group="${ key }"]:not([hidden])` );
+	if ( card ) {
+		card.scrollIntoView( { behavior: 'smooth', block: 'start' } );
+		card.focus( { preventScroll: true } );
+	}
+};
+
+/**
+ * Left-hand section navigation and the settings search.
+ *
+ * The search hides every section card (Pro's included) whose words do not
+ * match, so a setting is two steps away: type its name, or pick its section.
+ * On a phone the section list is a select.
+ */
+/**
+ * A card's text with its pieces kept apart ("Email IP Address", not
+ * "EmailIP Address"), so a search can match at the start of a word.
+ *
+ * @param {HTMLElement} el Card.
+ * @return {string} Text.
+ */
+const wordsOf = ( el ) => {
+	const walker = document.createTreeWalker( el, window.NodeFilter.SHOW_TEXT );
+	const parts = [];
+	while ( walker.nextNode() ) {
+		parts.push( walker.currentNode.nodeValue );
+	}
+	return parts.join( ' ' );
+};
+
+const SettingsNav = ( { groups } ) => {
+	const [ query, setQuery ] = useState( '' );
+	const [ active, setActive ] = useState( groups[ 0 ]?.key || '' );
+	const [ shown, setShown ] = useState( -1 );
+
+	useEffect( () => {
+		const q = query.trim();
+		// Match at the start of a word, so "IP" finds "IP address", not "skip".
+		const re = '' === q ? null : new RegExp( '(^|[^\\p{L}\\p{N}])' + q.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' ), 'iu' );
+		let count = 0;
+		document.querySelectorAll( '.mediashield-settings__section' ).forEach( ( card ) => {
+			const match = ! re || re.test( wordsOf( card ) );
+			card.hidden = ! match;
+			count += match ? 1 : 0;
+		} );
+		setShown( '' === q ? -1 : count );
+	}, [ query ] );
+
+	const pick = ( key ) => {
+		setActive( key );
+		goToGroup( key );
+	};
+
+	return (
+		<aside className="mediashield-settings__nav">
+			<div className="mediashield-settings__search">
+				<label htmlFor="mediashield-settings-search" className="screen-reader-text">
+					{ __( 'Search settings', 'mediashield' ) }
+				</label>
+				<input
+					id="mediashield-settings-search"
+					type="search"
+					className="mediashield-settings__search-input"
+					placeholder={ __( 'Search settings', 'mediashield' ) }
+					value={ query }
+					onChange={ ( e ) => setQuery( e.target.value ) }
+				/>
+				<span className="mediashield-settings__search-result" role="status">
+					{ 0 === shown && __( 'No settings match.', 'mediashield' ) }
+					{ /* translators: %d: number of matching sections. */ }
+					{ shown > 0 && sprintf( _n( '%d section matches.', '%d sections match.', shown, 'mediashield' ), shown ) }
+				</span>
+			</div>
+			<nav aria-label={ __( 'Settings sections', 'mediashield' ) }>
+				<ul className="mediashield-settings__nav-list">
+					{ groups.map( ( g ) => (
+						<li key={ g.key }>
+							<a
+								href={ `#/settings` }
+								className={ 'mediashield-settings__nav-link' + ( active === g.key ? ' is-active' : '' ) }
+								aria-current={ active === g.key ? 'true' : undefined }
+								onClick={ ( e ) => {
+									e.preventDefault();
+									pick( g.key );
+								} }
+							>
+								{ g.label }
+							</a>
+						</li>
+					) ) }
+				</ul>
+				<SelectControl
+					className="mediashield-settings__nav-select"
+					label={ __( 'Go to section', 'mediashield' ) }
+					value={ active }
+					options={ groups.map( ( g ) => ( { label: g.label, value: g.key } ) ) }
+					onChange={ pick }
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+			</nav>
+		</aside>
+	);
+};
+
+const SectionCard = ( { icon, title, description, group, children } ) => (
+	<div className="mediashield-settings__section" data-group={ group } tabIndex={ -1 }>
 		<div className="mediashield-settings__section-header">
 			<div className="mediashield-settings__section-icon">
 				<Icon name={ icon } />
@@ -242,7 +368,7 @@ const Settings = () => {
 				keepalive,
 			} )
 				.then( () => {
-					createSuccessNotice( __( 'Settings saved.', 'mediashield' ), notice );
+					createSuccessNotice( __( 'Saved', 'mediashield' ), notice );
 				} )
 				.catch( ( err ) => {
 					// Keep what failed for the next save, unless changed since.
@@ -328,8 +454,13 @@ const Settings = () => {
 				</span>
 			</header>
 
+			<div className="mediashield-settings__layout">
+				<SettingsNav groups={ SETTINGS_GROUPS.filter( ( g ) => 'integrations' !== g.key || config.isLearnomyActive || lmsConfig.isLMSActive ) } />
+				<div className="mediashield-settings__sections">
+
 			<SectionCard
 				icon="admin-settings"
+				group="protection"
 				title={ __( 'General', 'mediashield' ) }
 				description={ __( 'Core plugin behavior and protection defaults.', 'mediashield' ) }
 			>
@@ -380,6 +511,7 @@ const Settings = () => {
 
 			<SectionCard
 				icon="shield"
+				group="protection"
 				title={ __( 'Protection', 'mediashield' ) }
 				description={ __( 'Anti-download behavior applied to the player.', 'mediashield' ) }
 			>
@@ -447,6 +579,7 @@ const Settings = () => {
 
 			<SectionCard
 				icon="art"
+				group="watermark"
 				title={ __( 'Watermark', 'mediashield' ) }
 				description={ __( 'Dynamic overlay that identifies the viewer.', 'mediashield' ) }
 			>
@@ -532,6 +665,7 @@ const Settings = () => {
 
 			<SectionCard
 				icon="admin-site-alt3"
+				group="access"
 				title={ __( 'Allowed Domains', 'mediashield' ) }
 				description={ __( 'Restrict video playback to specific domains.', 'mediashield' ) }
 			>
@@ -547,6 +681,7 @@ const Settings = () => {
 
 			<SectionCard
 				icon="admin-users"
+				group="access"
 				title={ __( 'Concurrent Streams', 'mediashield' ) }
 				description={ __( 'Limit how many videos a user can watch simultaneously.', 'mediashield' ) }
 			>
@@ -565,6 +700,7 @@ const Settings = () => {
 
 			<SectionCard
 				icon="backup"
+				group="storage"
 				title={ __( 'Analytics Retention', 'mediashield' ) }
 				description={ __(
 					'How long to keep watch history in your reports.',
@@ -593,6 +729,7 @@ const Settings = () => {
 
 			<SectionCard
 				icon="lock"
+				group="access"
 				title={ __( 'Login & Access Messages', 'mediashield' ) }
 				description={ __( 'Customize the messages shown when users need to log in or lack access.', 'mediashield' ) }
 			>
@@ -624,6 +761,7 @@ const Settings = () => {
 
 			<SectionCard
 				icon="controls-play"
+				group="player"
 				title={ __( 'Player Controls', 'mediashield' ) }
 				description={ __( 'Customize the video player behavior and features.', 'mediashield' ) }
 			>
@@ -716,6 +854,7 @@ const Settings = () => {
 
 			<SectionCard
 				icon="megaphone"
+				group="ads"
 				title={ __( 'Video Ads', 'mediashield' ) }
 				description={ __( 'Site-wide placement for in-video ad breaks sourced from WB Ad Manager. Individual videos can override this under the video’s "Video Ads" box.', 'mediashield' ) }
 			>
@@ -783,7 +922,8 @@ const Settings = () => {
 			{ settings?.ms_connected_platforms && settings.ms_connected_platforms.length > 0 && (
 				<SectionCard
 					icon="upload"
-					title={ __( 'Upload & Storage', 'mediashield' ) }
+					group="storage"
+				title={ __( 'Upload & Storage', 'mediashield' ) }
 					description={ __( 'Choose where new videos are stored.', 'mediashield' ) }
 				>
 					<SelectControl
@@ -808,7 +948,8 @@ const Settings = () => {
 			{ ( config.isLearnomyActive || lmsConfig.isLMSActive ) && (
 				<SectionCard
 					icon="welcome-learn-more"
-					title={ __( 'Lesson Completion', 'mediashield' ) }
+					group="integrations"
+				title={ __( 'Lesson Completion', 'mediashield' ) }
 					description={ __( 'Make students watch a lesson\'s protected video before they can complete the lesson.', 'mediashield' ) }
 				>
 					<NumberField
@@ -825,7 +966,8 @@ const Settings = () => {
 			{ lmsConfig.isLMSActive && settings?.ms_lms_auto_complete !== undefined && (
 				<SectionCard
 					icon="welcome-learn-more"
-					title={ __( 'LMS Integration', 'mediashield' ) }
+					group="integrations"
+				title={ __( 'LMS Integration', 'mediashield' ) }
 					description={ lmsConfig.lmsLabel
 						? __( 'Settings for', 'mediashield' ) + ' ' + lmsConfig.lmsLabel + ' ' + __( 'integration.', 'mediashield' )
 						: __( 'Automatically complete lessons when students finish watching videos.', 'mediashield' )
@@ -882,6 +1024,8 @@ const Settings = () => {
 					</a>
 				</div>
 			) }
+				</div>
+			</div>
 		</div>
 	);
 };

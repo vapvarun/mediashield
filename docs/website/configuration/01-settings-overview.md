@@ -2,7 +2,7 @@
 
 **Included in Free.** Two cards on this screen only appear with MediaShield Pro (see the end of this page).
 
-All MediaShield settings live under **MediaShield > Settings**. The page is one scrolling screen of cards, not tabs. Every change saves by itself a moment after you make it, and a small "Settings saved." message confirms it. There is no Save button.
+All MediaShield settings live under **MediaShield > Settings**. The cards sit in one column with a section list on the left: Protection, Watermark, Player, Access & messages, Video ads, Upload & storage and, when a course plugin is active, Integrations. Click a section to jump to it. Type in **Search settings** above the list to show only the cards that mention what you typed, for example "IP" or "resume". On a phone the section list is a **Go to section** menu. Every change saves by itself a moment after you make it, and a "Saved" message confirms it at the bottom of the screen. There is no Save button.
 
 ## Before you start
 
