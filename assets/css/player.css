@@ -334,19 +334,25 @@ iframe.ms-player-target {
 	color: var(--ms-on-overlay-muted);
 }
 
-/* Protected by MediaShield badge — moved to top-left so it doesn't sit on
- * top of the native <video> controls bar on self-hosted players (the bottom
- * row is reserved for play/seek/volume/fullscreen). */
+/* "Protected by MediaShield" badge (off by default; the owner turns it on).
+ * A solid pill in the owner's brand colour with full-strength white text,
+ * outlined so it reads on light and dark posters alike. Top-left, clear of
+ * the control bar; the watermark measures it and keeps away. */
 .ms-badge {
 	position: absolute;
 	top: var(--ms-space-3);
-	left: var(--ms-space-3);
+	inset-inline-start: var(--ms-space-3);
 	z-index: 15;
-	background: var(--ms-overlay-surface-soft);
-	color: var(--ms-overlay-text);
-	font-size: var(--ms-font-size-xs);
-	padding: var(--ms-space-1) var(--ms-space-2);
-	border-radius: var(--ms-radius-sm);
+	/* The brand colour, deepened so white text stays readable even when the
+	   theme's primary is a light tint (Reign's dark mode uses one). */
+	background: var(--ms-overlay-surface-strong);
+	background: color-mix(in srgb, var(--ms-accent) 55%, #000);
+	color: var(--ms-on-overlay);
+	font-size: var(--ms-font-size-sm);
+	font-weight: 600;
+	padding: var(--ms-space-1) var(--ms-space-3);
+	border-radius: 999px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
 	pointer-events: none;
 	line-height: 1.4;
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -821,7 +827,8 @@ iframe.ms-player-target {
 	}
 
 	.ms-badge {
-		font-size: 0.5625rem;
+		font-size: var(--ms-font-size-xs);
+		padding-inline: var(--ms-space-2);
 	}
 
 	.ms-sticky-player {

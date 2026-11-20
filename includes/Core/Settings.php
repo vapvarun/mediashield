@@ -149,10 +149,14 @@ class Settings {
 				},
 			),
 
-			// Badge.
+			// Badge. Off for new installs: a vendor credit on the owner's paid
+			// video is the owner's call (wordpress.org guideline 10, credits on
+			// the public site are opt-in). seed_defaults() only adds missing
+			// rows, so a site that already has the option keeps its choice
+			// (Basecamp 10530931001).
 			'ms_show_badge'              => array(
 				'type'    => 'boolean',
-				'default' => true,
+				'default' => false,
 			),
 
 			// Login & access messages.

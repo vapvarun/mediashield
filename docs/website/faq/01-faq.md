@@ -117,7 +117,7 @@ In the free plugin you can adjust opacity, color, and swap interval, and choose 
 
 **How do I remove the "Protected by MediaShield" badge?**
 
-Settings > Watermark > Show MediaShield Badge. Toggle it off. Works in both free and Pro.
+It is off on new installs. If your site shows it, go to Settings > Watermark > Show MediaShield Badge and toggle it off. Works in both free and Pro.
 
 **Does MediaShield encrypt my videos?**
 

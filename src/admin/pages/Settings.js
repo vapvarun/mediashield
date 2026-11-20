@@ -454,7 +454,10 @@ const Settings = () => {
 				     the player, not the player: it needs no video and no session. */ }
 				<div className="mediashield-settings__preview" aria-hidden="true">
 					{ !! settings?.ms_show_badge && (
-						<span className="mediashield-settings__preview-badge">
+						<span
+							className="mediashield-settings__preview-badge"
+							style={ settings?.ms_player_accent_color ? { '--ms-preview-accent': settings.ms_player_accent_color } : undefined }
+						>
 							{ __( 'Protected by MediaShield', 'mediashield' ) }
 						</span>
 					) }
@@ -520,7 +523,7 @@ const Settings = () => {
 				/>
 				<ToggleControl
 					label={ __( 'Show MediaShield Badge', 'mediashield' ) }
-					help={ __( 'Display a small "Protected by MediaShield" badge on the player.', 'mediashield' ) }
+					help={ __( 'Off by default. Shows a small "Protected by MediaShield" label on the player, in your Brand Color, so viewers know the video is protected.', 'mediashield' ) }
 					checked={ !! settings?.ms_show_badge }
 					onChange={ ( val ) => updateSetting( 'ms_show_badge', val ) }
 					__nextHasNoMarginBottom

@@ -112,6 +112,13 @@
       "guard": "tests/unit/HonestUploadTest.php + audit/journeys/admin/upload-and-publish-video.md (card:10530929713)",
       "added": "2026-11-20",
       "proven_failing_on": "b75cb14 (no lock; empty $_FILES answered no_file)"
+    },
+    {
+      "card": "10530931001",
+      "title": "'Protected by MediaShield' vendor badge was on by default over the owner's paid video, in faint white-on-black that vanished on dark posters",
+      "guard": "tests/unit/BadgeDefaultTest.php; Pro tests/unit/BadgeChoiceTest.php; audit/journeys/customer/player-owner-audit.md (card:10530931001)",
+      "added": "2026-11-20",
+      "proven_failing_on": "a24cccc (seed_defaults() added ms_show_badge = true; badge rgba(255,255,255,.6) on rgba(0,0,0,.5); 16-*-before.png)"
     }
   ]
 }

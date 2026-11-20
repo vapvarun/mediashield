@@ -69,7 +69,7 @@ Registered with `show_in_rest`; edited through `/wp/v2/mediashield-playlists/{id
 | `ms_allowed_domains` | string | (empty) | Hosts separated by spaces, commas or new lines; a pasted URL is reduced to its host. |
 | `ms_max_concurrent_streams` | integer | `2` | Minimum 1. Logged-in users only. |
 | `ms_session_retention_months` | integer | `0` | Clamped to 0-120. 0 keeps everything. |
-| `ms_show_badge` | boolean | `true` | "Protected by MediaShield" badge. |
+| `ms_show_badge` | boolean | `false` (1.4.3; `true` before) | "Protected by MediaShield" badge. |
 | `ms_login_overlay_text` | string | `Please log in to watch this video` | Translated while it is still the default. |
 | `ms_login_button_text` | string | `Log In` | Same. |
 | `ms_access_denied_text` | string | `You do not have access to this video` | Same. |
