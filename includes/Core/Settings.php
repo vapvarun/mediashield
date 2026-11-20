@@ -177,6 +177,21 @@ class Settings {
 				'type'    => 'string',
 				'default' => 'You do not have access to this video',
 			),
+			// Shown to a member refused a course video, with %s as the course
+			// name, above a button to the course (Basecamp 10530930631).
+			'ms_course_denied_text'      => array(
+				'type'    => 'string',
+				'default' => 'This video is part of %s. Enroll to watch it.',
+			),
+			'ms_view_course_text'        => array(
+				'type'    => 'string',
+				'default' => 'View course',
+			),
+			// A video its host removed or made private.
+			'ms_unavailable_text'        => array(
+				'type'    => 'string',
+				'default' => 'This video is unavailable.',
+			),
 
 			// Player controls.
 			'ms_player_speed_control'    => array(
@@ -485,6 +500,7 @@ class Settings {
 				'loginOverlay'    => self::message( 'ms_login_overlay_text', __( 'Please log in to watch this video', 'mediashield' ) ),
 				'loginButton'     => self::message( 'ms_login_button_text', __( 'Log In', 'mediashield' ) ),
 				'accessDenied'    => self::message( 'ms_access_denied_text', __( 'You do not have access to this video', 'mediashield' ) ),
+				'unavailable'     => self::message( 'ms_unavailable_text', __( 'This video is unavailable.', 'mediashield' ) ),
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL
 				// produces. Without it the viewer just stares at a dead player.

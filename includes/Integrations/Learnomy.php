@@ -46,6 +46,41 @@ class Learnomy {
 		add_filter( 'learnomy_rest_lesson_payload', array( __CLASS__, 'add_embed_to_payload' ), 10, 3 );
 		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 3 );
 		add_filter( 'learnomy_lesson_completion_rules', array( __CLASS__, 'require_watch' ), 10, 3 );
+		add_filter( 'mediashield_video_access_link', array( __CLASS__, 'course_link' ), 10, 2 );
+	}
+
+	/**
+	 * The Learnomy course a refused viewer can enrol in to watch this video.
+	 *
+	 * The published course whose published "Protected video" lesson plays it,
+	 * so the denied player can say "This video is part of <course>" with a
+	 * View course button (Basecamp 10530930631). Learnomy's own watch link
+	 * (mediashield_video_watch_url) is only for viewers who may open the
+	 * lesson, which a refused viewer cannot, so the course page is the link.
+	 * Another integration's answer is kept.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param array|null $link     Link so far.
+	 * @param int        $video_id Video CPT post ID.
+	 * @return array|null { title, url }.
+	 */
+	public static function course_link( $link, $video_id ) {
+		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\table' ) || ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
+			return $link;
+		}
+		global $wpdb;
+		$lessons = \Learnomy\table( 'lessons' );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Learnomy's table, as in library_file_in_use(); one row, asked only when a viewer was refused.
+		$course_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT course_id FROM {$lessons} WHERE content_type = %s AND video_url = %s AND status = 'published' ORDER BY id ASC LIMIT 1", self::CONTENT_TYPE, (string) (int) $video_id ) );
+		$course    = $course_id ? \Learnomy\Models\Course::find( $course_id ) : null;
+		if ( ! $course || 'published' !== (string) ( $course->status ?? '' ) || empty( $course->slug ) ) {
+			return $link;
+		}
+		return array(
+			'title' => (string) $course->title,
+			'url'   => \Learnomy\route_url( 'course', array( 'slug' => (string) $course->slug ) ),
+		);
 	}
 
 	/**

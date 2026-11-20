@@ -147,6 +147,13 @@
       "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930776)",
       "added": "2026-11-20",
       "proven_failing_on": "722fc16 (no nav or search; 13-*-before.png, 5,342 px at 1440)"
+    },
+    {
+      "card": "10530930631",
+      "title": "A member not enrolled in a course saw 'Enroll in this course to watch this video.' with no course named, no button, and a live fullscreen icon",
+      "guard": "tests/unit/DeniedStateTest.php; Pro tests/unit/LmsAccessLinkTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930631)",
+      "added": "2026-11-20",
+      "proven_failing_on": "e2e4c7c (403 carried only the LMS text; 10-*-before.png)"
     }
   ]
 }

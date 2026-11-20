@@ -280,6 +280,19 @@ class SessionController extends WP_REST_Controller {
 			// back to the legacy 'access_denied' so any integrator listening for
 			// the old code still works.
 			$code = ! empty( $access['reason'] ) ? sanitize_key( $access['reason'] ) : 'access_denied';
+			// A course to enrol in: name it and link to it, in the owner's
+			// words (Basecamp 10530930631).
+			if ( ! empty( $access['link'] ) ) {
+				return new WP_Error(
+					$code,
+					sprintf( Settings::message( 'ms_course_denied_text', __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) ), $access['link']['title'] ),
+					array(
+						'status'       => 403,
+						'access_url'   => $access['link']['url'],
+						'access_label' => Settings::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
+					)
+				);
+			}
 			return new WP_Error( $code, $access['reason'], array( 'status' => 403 ) );
 		}
 

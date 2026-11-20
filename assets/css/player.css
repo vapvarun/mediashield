@@ -252,6 +252,36 @@ iframe.ms-player-target {
 	background: var(--ms-accent-hover);
 }
 
+/* A course to enrol in, offered on a refusal (Basecamp 10530930631). */
+.ms-error-action {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--ms-tap-min);
+	margin-block-start: var(--ms-space-4);
+	padding: 0 var(--ms-space-5);
+	border-radius: var(--ms-radius-sm);
+	background: var(--ms-accent);
+	color: var(--ms-on-overlay) !important;
+	font-size: 1rem;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.ms-error-action:hover,
+.ms-error-action:focus-visible {
+	background: var(--ms-accent-hover);
+}
+
+/* No working controls under a refusal or a dead video: the overlay is the
+   whole player. */
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-controls,
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-bigplay,
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-fullscreen-btn,
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-speed-control,
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-resume-chip {
+	display: none;
+}
+
 /* Login overlay */
 .ms-login-overlay {
 	position: absolute;
@@ -793,6 +823,7 @@ iframe.ms-player-target {
 .ms-sticky-close:focus-visible,
 .ms-login-button:focus-visible,
 .ms-playlist-item:focus-visible,
+.ms-error-action:focus-visible,
 .ms-resume-chip__go:focus-visible,
 .ms-resume-chip__close:focus-visible,
 .ms-endscreen__replay:focus-visible {
@@ -802,6 +833,19 @@ iframe.ms-player-target {
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
+	.ms-error-message {
+		padding: var(--ms-space-4);
+	}
+
+	.ms-error-message p {
+		font-size: var(--ms-font-size-base);
+	}
+
+	.ms-error-action {
+		margin-block-start: var(--ms-space-3);
+		font-size: var(--ms-font-size-base);
+	}
+
 	.ms-controls {
 		gap: 0;
 		padding-inline: var(--ms-space-1);

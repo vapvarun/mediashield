@@ -45,6 +45,8 @@ class DashboardOverviewTest extends WP_UnitTestCase {
 	 */
 	public function test_single_day_and_one_row_per_viewer_and_video(): void {
 		global $wpdb;
+		// session/start commits outside the test transaction; start clean.
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}ms_watch_sessions" ); // phpcs:ignore WordPress.DB
 		$video = $this->video();
 		$user  = self::factory()->user->create( array( 'display_name' => 'Aisha Khan' ) );
 		$now   = current_time( 'mysql', true );

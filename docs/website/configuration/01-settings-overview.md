@@ -51,6 +51,9 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Login Overlay Text | Please log in to watch this video | Message on the video for visitors who are not logged in. |
 | Login Button Text | Log In | Label of the login button. |
 | Access Denied Text | You do not have access to this video | Message for signed-in viewers who lack the role, or whose domain is not allowed. |
+| Course Access Text | This video is part of %s. Enroll to watch it. | Shown to a member not enrolled in the course a video belongs to (Learnomy, or with Pro a linked LearnDash lesson). %s becomes the course name. A button to the course sits under it. |
+| Course Button Text | View course | Label of that button. |
+| Unavailable Video Text | This video is unavailable. | Shown when YouTube or Vimeo says the video was removed or made private. |
 | Speed Control | On | Speed selector, 0.5x to 2x. Self-hosted, and Bunny with Pro direct playback. |
 | Keyboard Shortcuts | On | Space, arrows, M and F while the player has focus. |
 | Resume Playback | On | Offers to continue where the viewer stopped. |

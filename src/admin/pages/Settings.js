@@ -757,6 +757,29 @@ const Settings = () => {
 					placeholder={ __( 'You do not have access to this video', 'mediashield' ) }
 					__nextHasNoMarginBottom
 				/>
+				<TextControl
+					label={ __( 'Course Access Text', 'mediashield' ) }
+					help={ __( 'Shown to a member who is not enrolled in the course a video belongs to, above a button to the course. %s is replaced by the course name.', 'mediashield' ) }
+					value={ settings?.ms_course_denied_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_course_denied_text', val ) }
+					placeholder={ __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Course Button Text', 'mediashield' ) }
+					value={ settings?.ms_view_course_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_view_course_text', val ) }
+					placeholder={ __( 'View course', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Unavailable Video Text', 'mediashield' ) }
+					help={ __( 'Shown when the video host says the video was removed or made private.', 'mediashield' ) }
+					value={ settings?.ms_unavailable_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_unavailable_text', val ) }
+					placeholder={ __( 'This video is unavailable.', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
 			</SectionCard>
 
 			<SectionCard

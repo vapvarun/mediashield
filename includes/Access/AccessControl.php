@@ -74,7 +74,51 @@ class AccessControl {
 		 */
 		$result = apply_filters( 'mediashield_can_watch', $result, $video_id, $user_id );
 
+		// A refusal from an integration (a course the viewer is not enrolled
+		// in) carries where to get access, so the player can name the course
+		// and link to it. Role, domain and login refusals return above and
+		// never get one: their own message is the right answer.
+		if ( is_array( $result ) && empty( $result['allowed'] ) ) {
+			$result['link'] = self::access_link( $video_id, $user_id );
+		}
+
 		return $result;
+	}
+
+	/**
+	 * Where can a viewer who is refused this video get access?
+	 *
+	 * Asked only after an integration refused (see can_watch()). The answer is
+	 * the course that plays the video: its name and the page to enrol from.
+	 * Learnomy is answered by Integrations\Learnomy, LearnDash and other
+	 * linked LMS lessons by Pro. Null when no course is known; the player then
+	 * shows the refusal's own words.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  Viewer, 0 for a guest.
+	 * @return array{title: string, url: string}|null
+	 */
+	public static function access_link( int $video_id, int $user_id = 0 ): ?array {
+		/**
+		 * Where a viewer refused this video can get access: the course playing it.
+		 *
+		 * @since 1.4.3
+		 *
+		 * @param array|null $link     { title: course name, url: course page } or null.
+		 * @param int        $video_id Video CPT post ID.
+		 * @param int        $user_id  Viewer, 0 for a guest.
+		 */
+		$link = apply_filters( 'mediashield_video_access_link', null, $video_id, $user_id );
+		if ( ! is_array( $link ) || empty( $link['url'] ) || empty( $link['title'] ) ) {
+			return null;
+		}
+		$url = esc_url_raw( (string) $link['url'] );
+		return '' === $url ? null : array(
+			'title' => \MediaShield\Support\Text::plain( (string) $link['title'] ),
+			'url'   => $url,
+		);
 	}
 
 	/**
