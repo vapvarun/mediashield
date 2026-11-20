@@ -138,7 +138,13 @@ class VideoListController extends WP_REST_Controller {
 	 * @return array
 	 */
 	public static function filter_query( $args, $request ): array {
-		$args       = (array) $args;
+		$args = (array) $args;
+
+		// The filters read protection settings; only people who edit videos may use them.
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return $args;
+		}
+
 		$meta_query = isset( $args['meta_query'] ) ? (array) $args['meta_query'] : array(); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 
 		$platform = (string) $request->get_param( 'ms_platform' );

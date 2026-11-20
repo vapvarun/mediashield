@@ -153,23 +153,38 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 
 = 1.4.3 - November 2026 =
 
-Uploaded videos play again with Hide Video Source URL off, and other plugins' video files are left where they are.
+Bunny Stream, the player, the admin menu and the dashboard get a round of work, and lesson videos can require a watched percentage before Complete. Released with MediaShield Pro 1.4.3.
 
+* New      - Learnomy lessons can require a percentage of the video to be watched before Complete unlocks. Only time actually spent watching counts, so dragging to the end does not unlock it.
+* New      - The player shows one MediaShield control bar. The browser's own controls and picture-in-picture are off, so there is no second fullscreen icon.
+* New      - A small "Resume from" chip appears above the controls at the exact place the member stopped, even after rewinding. It shows only between 10 seconds and 95 percent of the video.
+* New      - A member who may not watch a video sees why, with the course named and a View course button. Learnomy and other integrations can supply their own wording and link.
+* New      - Settings has a section list, search, a Saved message, and links straight to a section, for example #/settings/integrations.
+* New      - The admin menu groups its screens into six groups instead of 15 flat items.
+* New      - The dashboard shows every day on the chart, one milestone line per viewer, a Protection card and a first-run checklist.
+* New      - The Videos list shows thumbnail, duration, status and where each video is used, with filters, bulk actions and trash.
+* New      - Uploads check the file size before sending, show progress, lock the picker while uploading and name the target.
 * New      - A Tags field on the video edit screen: pick existing tags or type a new one.
 * New      - A video's featured image shows as a click-to-play cover on YouTube, Vimeo, Wistia and Bunny embeds.
-* Improve  - The Playlists screen pages through every playlist instead of stopping at 10.
-* Improve  - The Tags list shows how many videos use each tag.
+* Improve  - The watermark shows name and email by default on new installs. The IP address is opt-in, with a privacy note.
+* Improve  - The "Protected by MediaShield" badge is off on new installs, and is a clear pill when you turn it on.
+* Improve  - Sites updating from 1.4.2 are offered the new watermark and badge defaults once, and nothing changes until you choose.
+* Improve  - A stalled stream reconnects once, then offers Try again, and Safari no longer freezes silently at 0:00.
+* Improve  - The Playlists screen pages through every playlist, and the Tags list shows how many videos use each tag.
 * Improve  - The watermark keeps clear of the YouTube, Vimeo and Wistia title and control bars.
+* Improve  - Times in the admin follow one site timezone and one date format.
 * Improve  - The protection level descriptions say that the site-wide Require Login setting still applies at None.
+* Improve  - Help for Block Save Shortcut and Skip Delay now describes what they really do.
 * Fix      - Uploaded videos play again when Hide Video Source URL is off.
-* Fix      - Developer tools detection and its full-page message run only on pages that show a protected video.
-* Fix      - A video set to Any role plays for every allowed viewer.
 * Fix      - Only Media Library files are moved into the protected folder. Files from other plugins, such as WPMediaVerse, stay where they are, and files 1.4.2 moved are put back after the update.
-* Fix      - Turning off Show Break Markers hides the ad-break markers on the timeline.
-* Fix      - The Basic protection level blocks right-click on its videos, as its label says.
-* Fix      - The Strict protection level always keeps the video file address out of the page.
+* Fix      - A video set to Any role plays for every allowed viewer.
 * Fix      - Allowed Domains lets a signed-in student in when they open a lesson from a link on another site. Embeds on other sites are still refused.
+* Fix      - The Basic protection level blocks right-click on its videos, and the Strict level always keeps the video file address out of the page.
+* Fix      - Turning off Show Break Markers hides the ad-break markers on the timeline.
+* Fix      - Developer tools detection and its full-page message run only on pages that show a protected video.
 * Fix      - Watch progress can no longer be sent below zero.
+* Fix      - A member who left a video without pressing play keeps their resume point.
+* Fix      - Choosing a second file mid-upload no longer starts a second upload.
 * Security - A Learnomy lesson gives a logged-in viewer a playback link only when that viewer may watch the video.
 * Compat   - Aligned with MediaShield Pro 1.4.3. Install both updates together.
 
@@ -434,7 +449,7 @@ Bug fixes, accessibility and UX polish, a complete documentation set, and new de
 == Upgrade Notice ==
 
 = 1.4.3 =
-Uploaded videos play again with Hide Video Source URL off, and other plugins' video files are no longer moved. Update Pro to 1.4.3 at the same time.
+A new player, admin menu, dashboard and watched-percentage rule for lessons, plus fixes so uploaded videos play with Hide Video Source URL off and other plugins' video files are no longer moved. Updated sites are offered the new watermark and badge defaults once. Update Pro to 1.4.3 at the same time.
 
 = 1.4.2 =
 Security release: self-hosted videos picked from the Media Library move into the protected folder so non-buyers cannot download them. A notice lists what moved. Update Pro to 1.4.2 at the same time.
