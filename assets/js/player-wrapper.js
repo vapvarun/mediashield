@@ -460,7 +460,9 @@
 						loadInto( url, resumeAt, wasPlaying, false !== afterError );
 						scheduleRefresh();
 						// A refresh that works clears what an earlier failed one said.
-						var stale = playerEl && playerEl.querySelector( '.ms-error-overlay' );
+						// The stall watchdog's "Reconnecting…" stays until the
+						// video actually moves again.
+						var stale = playerEl && playerEl.querySelector( '.ms-error-overlay:not([data-ms-stall])' );
 						if ( stale ) stale.remove();
 					} )
 					.catch( function ( err ) {
@@ -502,6 +504,15 @@
 
 			if ( ! isAdaptive ) {
 				video.src = url;
+				watchForPlaybackStall( video, playerEl, function () {
+					// A provider address with an expiry gets a freshly signed
+					// one; anything else reloads the same address.
+					if ( refreshVideoId && expiryOf( url ) && -1 === url.indexOf( 'ms_token=' ) ) {
+						refreshStream( true, true );
+					} else {
+						loadInto( url, video.currentTime, true, true );
+					}
+				} );
 				return adapter;
 			}
 
@@ -1598,6 +1609,89 @@
 				clearTimeout( timer );
 			}, { once: true } );
 		} );
+	}
+
+	// ─── Playback stall watchdog (single-file sources) ─────────
+	//
+	// Safari can start a direct MP4 (Bunny's MP4 fallback) and then sit
+	// frozen at 0:00: playing, readyState 1, no error event, play() never
+	// settles (Basecamp 10506484970). Nothing else notices, so the viewer
+	// faces a dead player. After STALL_RECOVER_MS of "playing" with no
+	// progress and no usable data, reset the source once at the same time
+	// with "Reconnecting…" on screen; if it stalls again, say so and offer
+	// Try again. Adaptive streams are left to hls.js, which recovers itself.
+	var STALL_RECOVER_MS = 8000;
+
+	function watchForPlaybackStall( video, playerEl, reset ) {
+		if ( ! playerEl || 'function' !== typeof reset ) return;
+
+		var lastTime  = -1;
+		var stuckFor  = 0;
+		var attempts  = 0;
+		var tick      = 1000;
+		// A new source pauses the element until its metadata arrives; the
+		// viewer still wants it to play, so the watch carries on.
+		var expecting = false;
+
+		var restart = function () {
+			expecting = true;
+			reset();
+			var p = video.play();
+			if ( p && p.catch ) {
+				p.catch( function () {} );
+			}
+		};
+
+		video.addEventListener( 'playing', function () {
+			expecting = false;
+		} );
+
+		var clearNotice = function () {
+			var notice = playerEl.querySelector( '.ms-error-overlay[data-ms-stall]' );
+			if ( notice ) notice.remove();
+		};
+
+		var timer = setInterval( function () {
+			if ( ! document.body.contains( video ) ) {
+				clearInterval( timer );
+				return;
+			}
+
+			var waitingToPlay = ( ! video.paused || expecting ) && ! video.ended;
+			var advanced      = video.currentTime > lastTime + 0.05;
+			lastTime          = video.currentTime;
+
+			// HAVE_FUTURE_DATA or better, or the clock moved: it plays.
+			if ( ! waitingToPlay || advanced || video.readyState >= 3 ) {
+				stuckFor = 0;
+				if ( advanced ) {
+					attempts = 0;
+					clearNotice();
+				}
+				return;
+			}
+
+			stuckFor += tick;
+			if ( stuckFor < STALL_RECOVER_MS ) return;
+			stuckFor = 0;
+
+			if ( 0 === attempts ) {
+				attempts = 1;
+				showErrorOverlay( playerEl, t( 'reconnecting', 'Reconnecting…' ) );
+				var notice = playerEl.querySelector( '.ms-error-overlay' );
+				if ( notice ) notice.setAttribute( 'data-ms-stall', '1' );
+				restart();
+				return;
+			}
+
+			attempts  = 2;
+			expecting = false;
+			video.pause();
+			showErrorOverlay( playerEl, t( 'loadFailed', 'This video could not be loaded.' ), function () {
+				attempts = 0;
+				restart();
+			} );
+		}, tick );
 	}
 
 	// ─── Error Overlay (generic) ────────────────────────────────

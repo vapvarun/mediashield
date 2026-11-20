@@ -87,6 +87,8 @@ ALL of the following hold:
 5. A `wp_ms_milestones` row exists for `(VIDEO_ID, USER_ID, 25)`.
 6. A page with no protected player never shows the DevTools overlay; the protected video page still does.
 
+7. card:10506484970 - Bunny direct play with MP4 (Platforms > Bunny card: Direct, MP4), REAL Safari via safaridriver (drive with JS, clicks do not reach the page): load a 28 s and a 5-min Bunny video 10 times each, muted autoplay. **Expect** every load plays to the end or shows "Reconnecting…" and then plays on; never frozen at 0:00 with no message. Deterministic check in Chromium: hold every `*.b-cdn.net/*.mp4` response; **expect** "Reconnecting…" after about 8 s (a second, freshly signed MP4 request), then "This video could not be loaded." with **Try again**, and Try again plays once the network is back.
+
 ## Fail diagnostics
 
 | Symptom | Likely cause | File to inspect |
@@ -96,3 +98,4 @@ ALL of the following hold:
 | `/session/start` returns 403 | AccessControl denied or capability fallback | `includes/Access/AccessControl.php::can_watch`, `mediashield_can_watch` filter |
 | Heartbeat 200 but no DB write | SessionManager::touch_session no-op | `includes/Access/SessionManager.php` |
 | No milestone row at 25% | Thresholds filter or PK collision | `includes/Milestones/MilestoneTracker.php` |
+| Frozen at 0:00 in Safari, no message | Stall watchdog not running for single-file sources | `assets/js/player-wrapper.js::watchForPlaybackStall` |

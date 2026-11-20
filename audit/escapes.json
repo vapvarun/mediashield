@@ -154,6 +154,13 @@
       "guard": "tests/unit/DeniedStateTest.php; Pro tests/unit/LmsAccessLinkTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930631)",
       "added": "2026-11-20",
       "proven_failing_on": "e2e4c7c (403 carried only the LMS text; 10-*-before.png)"
+    },
+    {
+      "card": "10506484970",
+      "title": "Safari Bunny direct MP4 froze at 0:00 (readyState 1, no error) with no message or retry",
+      "guard": "audit/journeys/customer/watch-protected-video.md (card:10506484970)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b75cb14 (no stall watchdog; held MP4 sat 'playing' forever)"
     }
   ]
 }
