@@ -1,0 +1,158 @@
+/**
+ * Videos list (Basecamp 10530930295): thumbnail, duration, status, used in,
+ * filters and bulk actions. No truncated badges at 1440; stacked cards under
+ * 782px (the shared .mediashield-table pattern).
+ */
+
+.mediashield-videos .ms-videos__header-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --ms-space-2 );
+}
+
+.ms-videos__toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-3 );
+	margin-bottom: var( --ms-space-4 );
+}
+
+.ms-videos__search {
+	flex: 1 1 260px;
+	max-width: 420px;
+}
+
+.ms-videos__views {
+	display: inline-flex;
+	gap: var( --ms-space-1 );
+	margin-inline-start: auto;
+}
+
+.ms-videos__bulk {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-3 );
+	padding: var( --ms-space-3 ) 22px;
+	border-bottom: 1px solid var( --ms-color-border-light );
+}
+
+/* Column widths for this list only; the shared rule sizes five columns. */
+.mediashield-videos .ms-videos__table th:nth-child( n ) {
+	width: auto;
+}
+
+.mediashield-videos .ms-videos__table .ms-videos__col-check {
+	width: 44px;
+	padding-inline: var( --ms-space-3 );
+}
+
+.mediashield-videos .ms-videos__table .ms-videos__col-title {
+	width: 26%;
+}
+
+.mediashield-videos .ms-videos__table .ms-videos__col-actions {
+	width: 250px;
+}
+
+/* Badges and platform names never clip or wrap mid-word. */
+.ms-videos__table td {
+	overflow: visible;
+	text-overflow: clip;
+	vertical-align: middle;
+}
+
+.ms-videos__table .mediashield-badge,
+.ms-videos__table .mediashield-platform {
+	white-space: nowrap;
+}
+
+.ms-videos__table tr.is-selected td {
+	background: var( --ms-color-primary-light );
+}
+
+.ms-videos__title {
+	display: flex;
+	align-items: center;
+	gap: var( --ms-space-3 );
+	min-width: 0;
+}
+
+.ms-videos__thumb {
+	flex-shrink: 0;
+	width: 64px;
+	aspect-ratio: 16 / 9;
+	height: auto;
+	object-fit: cover;
+	border-radius: 4px;
+	background: var( --ms-color-border-light );
+}
+
+.ms-videos__thumb--empty {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var( --ms-color-text-tertiary );
+}
+
+.ms-videos__title-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.ms-videos__num {
+	font-variant-numeric: tabular-nums;
+}
+
+.ms-videos__muted {
+	color: var( --ms-color-text-secondary );
+	font-size: 12px;
+}
+
+.ms-videos__used {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.ms-videos__used li + li {
+	margin-block-start: 2px;
+}
+
+@media ( max-width: 1280px ) {
+	.mediashield-videos .ms-videos__table .ms-videos__col-actions {
+		width: 120px;
+	}
+}
+
+@media ( max-width: 782px ) {
+	.ms-videos__search {
+		max-width: none;
+		flex-basis: 100%;
+	}
+
+	.ms-videos__toolbar .components-base-control {
+		flex: 1 1 140px;
+	}
+
+	.ms-videos__views {
+		margin-inline-start: 0;
+	}
+
+	.ms-videos__bulk {
+		padding-inline: var( --ms-space-4 );
+	}
+
+	.mediashield-videos .ms-videos__table .ms-videos__col-title,
+	.mediashield-videos .ms-videos__table .ms-videos__col-actions,
+	.mediashield-videos .ms-videos__table .ms-videos__col-check {
+		width: 100%;
+	}
+
+	/* The title cell already shows the video: no "Video" label above it. */
+	.ms-videos__table td.ms-videos__col-title::before,
+	.ms-videos__table td.ms-videos__col-check::before {
+		content: none;
+	}
+}

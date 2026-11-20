@@ -133,6 +133,13 @@
       "guard": "tests/unit/DashboardOverviewTest.php; audit/journeys/admin/admin-menu-groups.md (card:10530930901)",
       "added": "2026-11-20",
       "proven_failing_on": "b2b4fa8 (sessions_chart one row; four milestone rows; no protection/first_run keys; 15-*-before.png)"
+    },
+    {
+      "card": "10530930295",
+      "title": "Videos list had no thumbnail, duration, status, used-in, filters, bulk actions or trash; badges truncated",
+      "guard": "audit/journeys/admin/admin-lists.md (card:10530930295)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b75cb14 (browser walk: 5 columns, Default (Standard)... clipped)"
     }
   ]
 }
