@@ -271,8 +271,7 @@ const RevokeSessions = ( { user } ) => {
 							count,
 							name
 						)
-						/* translators: %s: viewer name. */
-						: sprintf( __( '%s had no active session to end.', 'mediashield' ), name ),
+						: sprintf( /* translators: %s: viewer name. */ __( '%s had no active session to end.', 'mediashield' ), name ),
 					{ type: 'snackbar' }
 				);
 			} )
@@ -300,8 +299,7 @@ const RevokeSessions = ( { user } ) => {
 	return (
 		<div className="mediashield-revoke-confirm" role="group" aria-label={ __( 'Confirm revoke', 'mediashield' ) }>
 			<span>
-				{ /* translators: %s: viewer name. */ }
-				{ sprintf( __( 'End every active session for %s?', 'mediashield' ), name ) }
+				{ sprintf( /* translators: %s: viewer name. */ __( 'End every active session for %s?', 'mediashield' ), name ) }
 			</span>
 			<button
 				type="button"

@@ -65,10 +65,8 @@ const NumberField = ( { value, onCommit, min, max, help, ...props } ) => {
 	useEffect( () => () => commitPending(), [] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const rule = undefined === max
-		/* translators: %d: smallest allowed number. */
-		? sprintf( __( 'Enter a whole number, %d or more.', 'mediashield' ), min )
-		/* translators: 1: smallest allowed number, 2: largest allowed number. */
-		: sprintf( __( 'Enter a whole number from %1$d to %2$d.', 'mediashield' ), min, max );
+		? sprintf( /* translators: %d: smallest allowed number. */ __( 'Enter a whole number, %d or more.', 'mediashield' ), min )
+		: sprintf( /* translators: 1: smallest allowed number, 2: largest allowed number. */ __( 'Enter a whole number from %1$d to %2$d.', 'mediashield' ), min, max );
 
 	return (
 		<TextControl
@@ -81,8 +79,7 @@ const NumberField = ( { value, onCommit, min, max, help, ...props } ) => {
 			max={ max }
 			value={ draft ?? value }
 			help={ refused !== null
-				/* translators: 1: the value that was typed, 2: the rule it broke. */
-				? sprintf( __( '%1$s was not saved. %2$s', 'mediashield' ), refused, rule )
+				? sprintf( /* translators: 1: the value that was typed, 2: the rule it broke. */ __( '%1$s was not saved. %2$s', 'mediashield' ), refused, rule )
 				: help }
 			// A dot or comma is let through so "1.5" is refused with the rule
 			// below; swallowing it saved "15".
@@ -307,8 +304,7 @@ const SettingsNav = ( { groups } ) => {
 				/>
 				<span className="mediashield-settings__search-result" role="status">
 					{ 0 === shown && __( 'No settings match.', 'mediashield' ) }
-					{ /* translators: %d: number of matching sections. */ }
-					{ shown > 0 && sprintf( _n( '%d section matches.', '%d sections match.', shown, 'mediashield' ), shown ) }
+					{ shown > 0 && sprintf( /* translators: %d: number of matching sections. */ _n( '%d section matches.', '%d sections match.', shown, 'mediashield' ), shown ) }
 				</span>
 			</div>
 			<nav aria-label={ __( 'Settings sections', 'mediashield' ) }>
@@ -841,7 +837,7 @@ const Settings = () => {
 				/>
 				<TextControl
 					label={ __( 'Course Access Text', 'mediashield' ) }
-					help={ __( 'Shown to a member who is not enrolled in the course a video belongs to, above a button to the course. %s is replaced by the course name.', 'mediashield' ) }
+					help={ /* translators: %s is typed as written; the site replaces it with the course name. */ __( 'Shown to a member who is not enrolled in the course a video belongs to, above a button to the course. %s is replaced by the course name.', 'mediashield' ) }
 					value={ settings?.ms_course_denied_text || '' }
 					onChange={ ( val ) => updateSetting( 'ms_course_denied_text', val ) }
 					placeholder={ __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) }

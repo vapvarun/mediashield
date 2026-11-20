@@ -96,13 +96,7 @@ class PlaylistPostType {
 			'version'      => MEDIASHIELD_VERSION,
 		);
 
-		wp_enqueue_script(
-			'mediashield-playlist-items',
-			$build_url . 'index.js',
-			array_merge( $asset['dependencies'], array( 'mediashield-request' ) ),
-			$asset['version'],
-			true
-		);
+		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-playlist-items', $asset['dependencies'], (string) $asset['version'] );
 		wp_enqueue_style(
 			'mediashield-playlist-items',
 			$build_url . 'index.css',

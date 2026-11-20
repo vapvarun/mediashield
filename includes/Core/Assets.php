@@ -89,6 +89,28 @@ class Assets {
 	}
 
 	/**
+	 * Enqueue the admin app bundle (build/admin/index.js) under a screen's own handle.
+	 *
+	 * Every screen that loads the bundle goes through here, so each handle gets
+	 * its script translations. WordPress loads a translation file per handle; a
+	 * handle enqueued without them shows the bundle in English on a translated site.
+	 *
+	 * @param string   $handle       Script handle of the screen.
+	 * @param string[] $dependencies Dependencies from index.asset.php.
+	 * @param string   $version      Version from index.asset.php.
+	 */
+	public static function enqueue_admin_bundle( string $handle, array $dependencies, string $version ): void {
+		wp_enqueue_script(
+			$handle,
+			MEDIASHIELD_URL . 'build/admin/index.js',
+			array_merge( $dependencies, array( 'mediashield-request' ) ),
+			$version,
+			true
+		);
+		wp_set_script_translations( $handle, 'mediashield', MEDIASHIELD_PATH . 'languages' );
+	}
+
+	/**
 	 * Register (but do not enqueue) frontend scripts and styles.
 	 *
 	 * Scripts are only enqueued when a shortcode, block, or output buffer

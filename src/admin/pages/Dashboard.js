@@ -89,8 +89,7 @@ const FirstRunChecklist = ( { status } ) => {
 			<div className="mediashield-first-run__head">
 				<h2 id="mediashield-first-run-title">{ __( 'Get started', 'mediashield' ) }</h2>
 				<span className="mediashield-first-run__count">
-					{ /* translators: 1: steps done, 2: total steps. */ }
-					{ sprintf( __( '%1$d of %2$d done', 'mediashield' ), done, FIRST_RUN_STEPS.length ) }
+					{ sprintf( /* translators: 1: steps done, 2: total steps. */ __( '%1$d of %2$d done', 'mediashield' ), done, FIRST_RUN_STEPS.length ) }
 				</span>
 			</div>
 			<ol className="mediashield-first-run__steps">
@@ -434,8 +433,7 @@ const Dashboard = () => {
 												<span>
 													{ ( m.user_name || __( 'User', 'mediashield' ) ) + ' \u2013 ' + ( 100 <= m.milestone_pct
 														? __( 'finished', 'mediashield' )
-														/* translators: %d: percent of the video reached. */
-														: sprintf( __( 'reached %d%%', 'mediashield' ), m.milestone_pct ) ) }
+														: sprintf( /* translators: %d: percent of the video reached. */ __( 'reached %d%%', 'mediashield' ), m.milestone_pct ) ) }
 												</span>
 												<span className="mediashield-quick-stat__item-meta">{ m.video_title }</span>
 											</div>

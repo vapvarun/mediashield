@@ -139,13 +139,7 @@ class Menu {
 			'version'      => $ver,
 		);
 
-		wp_enqueue_script(
-			'mediashield-admin',
-			$build_url . 'index.js',
-			array_merge( $asset['dependencies'], array( 'mediashield-request' ) ),
-			$asset['version'],
-			true
-		);
+		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-admin', $asset['dependencies'], (string) $asset['version'] );
 
 		// Pro-notice dismiss handler (replaces the former inline script).
 		wp_enqueue_script(
@@ -186,9 +180,6 @@ class Menu {
 				'isLearnomyActive'  => function_exists( '\\Learnomy\\table' ),
 			)
 		);
-
-		// Load script translations.
-		wp_set_script_translations( 'mediashield-admin', 'mediashield', MEDIASHIELD_PATH . 'languages' );
 	}
 
 	/**

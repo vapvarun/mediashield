@@ -329,8 +329,7 @@ const Videos = () => {
 			{ value: '', label: __( 'Bulk actions', 'mediashield' ) },
 			...PROTECTION_OPTIONS.map( ( o ) => ( {
 				value: `protection:${ o.value }`,
-				/* translators: %s: protection level, e.g. Standard. */
-				label: sprintf( __( 'Set protection: %s', 'mediashield' ), o.label ),
+				label: sprintf( /* translators: %s: protection level, e.g. Standard. */ __( 'Set protection: %s', 'mediashield' ), o.label ),
 			} ) ),
 			{ value: 'trash', label: __( 'Move to Trash', 'mediashield' ) },
 		];
@@ -357,8 +356,7 @@ const Videos = () => {
 							done,
 							skipped
 						)
-						/* translators: %d: number of videos changed. */
-						: sprintf( __( '%d updated.', 'mediashield' ), done ),
+						: sprintf( /* translators: %d: number of videos changed. */ __( '%d updated.', 'mediashield' ), done ),
 					{ type: 'snackbar' }
 				);
 				setBulkAction( '' );
@@ -485,8 +483,7 @@ const Videos = () => {
 							/>
 							<Button variant="secondary" onClick={ applyBulk } isBusy={ applying } disabled={ applying || ! bulkAction || ! selected.length }>
 								{ selected.length
-									/* translators: %d: number of selected videos. */
-									? sprintf( __( 'Apply to %d', 'mediashield' ), selected.length )
+									? sprintf( /* translators: %d: number of selected videos. */ __( 'Apply to %d', 'mediashield' ), selected.length )
 									: __( 'Apply', 'mediashield' ) }
 							</Button>
 						</div>
