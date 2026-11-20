@@ -132,14 +132,7 @@ class Menu {
 		$build_dir = MEDIASHIELD_PATH . 'build/admin/';
 		$build_url = MEDIASHIELD_URL . 'build/admin/';
 
-		// Load asset manifest if available.
-		$asset_file = $build_dir . 'index.asset.php';
-		$asset      = file_exists( $asset_file ) ? require $asset_file : array(
-			'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'wp-hooks', 'wp-notices', 'wp-dom-ready' ),
-			'version'      => $ver,
-		);
-
-		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-admin', $asset['dependencies'], (string) $asset['version'] );
+		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-admin' );
 
 		// Pro-notice dismiss handler (replaces the former inline script).
 		wp_enqueue_script(

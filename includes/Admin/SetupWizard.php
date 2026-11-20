@@ -143,14 +143,8 @@ class SetupWizard {
 		$build_dir = MEDIASHIELD_PATH . 'build/admin/';
 		$build_url = MEDIASHIELD_URL . 'build/admin/';
 
-		// Reuse the admin SPA bundle (wizard is a component within it).
-		$asset_file = $build_dir . 'index.asset.php';
-		$asset      = file_exists( $asset_file ) ? require $asset_file : array(
-			'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n' ),
-			'version'      => $ver,
-		);
-
-		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-wizard', $asset['dependencies'], (string) $asset['version'] );
+		// The wizard is a component within the admin SPA bundle.
+		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-wizard' );
 
 		$css_file = file_exists( $build_dir . 'style-index.css' ) ? 'style-index.css' : 'index.css';
 		wp_enqueue_style(
