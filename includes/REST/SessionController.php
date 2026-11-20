@@ -102,20 +102,7 @@ class SessionController extends WP_REST_Controller {
 						'type'    => 'boolean',
 						'default' => true,
 					),
-					// Stretches played since the last report: [ [start, end], ... ] (1.4.3).
-					'spans'    => array(
-						'type'     => 'array',
-						'maxItems' => 120,
-						'items'    => array(
-							'type'     => 'array',
-							'minItems' => 2,
-							'maxItems' => 2,
-							'items'    => array(
-								'type'    => 'number',
-								'minimum' => 0,
-							),
-						),
-					),
+					'spans'    => self::spans_arg(),
 				),
 			)
 		);
@@ -145,20 +132,7 @@ class SessionController extends WP_REST_Controller {
 						'default' => 0,
 						'minimum' => 0,
 					),
-					// Stretches played since the last report: [ [start, end], ... ] (1.4.3).
-					'spans'    => array(
-						'type'     => 'array',
-						'maxItems' => 120,
-						'items'    => array(
-							'type'     => 'array',
-							'minItems' => 2,
-							'maxItems' => 2,
-							'items'    => array(
-								'type'    => 'number',
-								'minimum' => 0,
-							),
-						),
-					),
+					'spans'    => self::spans_arg(),
 				),
 			)
 		);
@@ -179,6 +153,28 @@ class SessionController extends WP_REST_Controller {
 					),
 				),
 			)
+		);
+	}
+
+	/**
+	 * The `spans` argument of /session/heartbeat and /session/end: the
+	 * stretches played since the last report, [ [start, end], ... ] (1.4.3).
+	 *
+	 * @return array
+	 */
+	private static function spans_arg(): array {
+		return array(
+			'type'     => 'array',
+			'maxItems' => 120,
+			'items'    => array(
+				'type'     => 'array',
+				'minItems' => 2,
+				'maxItems' => 2,
+				'items'    => array(
+					'type'    => 'number',
+					'minimum' => 0,
+				),
+			),
 		);
 	}
 
