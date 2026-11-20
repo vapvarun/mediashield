@@ -27,7 +27,7 @@ class AccessControl {
 	 *
 	 * @param int $video_id Video CPT post ID.
 	 * @param int $user_id  User ID (0 for guests).
-	 * @return array{allowed: bool, reason: string, link?: array{title: string, url: string}|null} `link` only on a refusal from mediashield_can_watch.
+	 * @return array{allowed: bool, reason: string, link?: array{title: string, url: string, label: string}|null} `link` only on a refusal from mediashield_can_watch.
 	 */
 	public static function can_watch( int $video_id, int $user_id = 0 ): array {
 		// Admins always pass.
