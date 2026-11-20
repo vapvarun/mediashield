@@ -512,11 +512,11 @@ const Videos = () => {
 							<tr>
 								<th className="ms-videos__col-check"><span className="screen-reader-text">{ __( 'Select', 'mediashield' ) }</span></th>
 								<th className="ms-videos__col-title">{ __( 'Video', 'mediashield' ) }</th>
-								<th>{ __( 'Platform', 'mediashield' ) }</th>
-								<th>{ __( 'Duration', 'mediashield' ) }</th>
-								<th>{ __( 'Status', 'mediashield' ) }</th>
-								<th>{ __( 'Protection', 'mediashield' ) }</th>
-								<th>{ __( 'Used in', 'mediashield' ) }</th>
+								<th className="ms-videos__col-platform">{ __( 'Platform', 'mediashield' ) }</th>
+								<th className="ms-videos__col-duration">{ __( 'Duration', 'mediashield' ) }</th>
+								<th className="ms-videos__col-status">{ __( 'Status', 'mediashield' ) }</th>
+								<th className="ms-videos__col-protection">{ __( 'Protection', 'mediashield' ) }</th>
+								<th className="ms-videos__col-used">{ __( 'Used in', 'mediashield' ) }</th>
 								<th className="ms-videos__col-actions">{ __( 'Actions', 'mediashield' ) }</th>
 							</tr>
 						</thead>
@@ -568,19 +568,19 @@ const Videos = () => {
 												</span>
 											</div>
 										</td>
-										<td data-label={ __( 'Platform', 'mediashield' ) }>
+										<td data-label={ __( 'Platform', 'mediashield' ) } className="ms-videos__col-platform">
 											<PlatformLabel platform={ video.meta?._ms_platform } />
 										</td>
-										<td data-label={ __( 'Duration', 'mediashield' ) } className="ms-videos__num">
+										<td data-label={ __( 'Duration', 'mediashield' ) } className="ms-videos__num ms-videos__col-duration">
 											{ formatDuration( list.duration ?? video.meta?._ms_duration ) }
 										</td>
-										<td data-label={ __( 'Status', 'mediashield' ) }>
+										<td data-label={ __( 'Status', 'mediashield' ) } className="ms-videos__col-status">
 											<StatusBadge status={ list.status } />
 										</td>
-										<td data-label={ __( 'Protection', 'mediashield' ) }>
+										<td data-label={ __( 'Protection', 'mediashield' ) } className="ms-videos__col-protection">
 											<ProtectionBadge level={ video.meta?._ms_protection_level } />
 										</td>
-										<td data-label={ __( 'Used in', 'mediashield' ) }>
+										<td data-label={ __( 'Used in', 'mediashield' ) } className="ms-videos__col-used">
 											<UsedIn places={ list.used_in } />
 										</td>
 										<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions ms-videos__col-actions">
@@ -605,7 +605,7 @@ const Videos = () => {
 												aria-label={ __( 'Copy shortcode to clipboard', 'mediashield' ) }
 											>
 												<Icon name="clipboard" className="mediashield-action-btn__icon" />
-												{ __( 'Copy shortcode', 'mediashield' ) }
+												{ __( 'Shortcode', 'mediashield' ) }
 											</button>
 										</td>
 									</tr>

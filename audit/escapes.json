@@ -217,6 +217,13 @@
       "guard": "tests/unit/SettingsHelpScopeTest.php::test_skip_delay_explains_a_creatives_zero",
       "added": "2026-11-20",
       "proven_failing_on": "8944051 (help 'Seconds before the Skip button unlocks on each ad. 0 = skippable immediately.'; resolver: global 5 + per-ad 0 => 5)"
+    },
+    {
+      "card": "10530930295",
+      "title": "Videos list at 1440 collapsed: shared five-column nth-child widths gave Protection, Used in and Actions 0px and the title 14%",
+      "guard": "audit/journeys/admin/admin-lists.md (card:10530930295, column widths at 1440/1280/1024)",
+      "added": "2026-11-21",
+      "proven_failing_on": "722fc16 (ths 193,147,162,139,312,0,0,0 at 1440)"
     }
   ]
 }
