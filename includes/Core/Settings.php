@@ -501,6 +501,7 @@ class Settings {
 				'loginButton'     => self::message( 'ms_login_button_text', __( 'Log In', 'mediashield' ) ),
 				'accessDenied'    => self::message( 'ms_access_denied_text', __( 'You do not have access to this video', 'mediashield' ) ),
 				'unavailable'     => self::message( 'ms_unavailable_text', __( 'This video is unavailable.', 'mediashield' ) ),
+				'viewCourse'      => self::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL
 				// produces. Without it the viewer just stares at a dead player.

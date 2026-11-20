@@ -66,7 +66,7 @@ class Learnomy {
 	 * @return array|null { title, url }.
 	 */
 	public static function course_link( $link, $video_id ) {
-		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\route_url' ) || ! is_callable( array( '\\Learnomy\\Models\\Lesson', 'for_mediashield_video' ) ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
+		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Lesson' ) || ! is_callable( '\\Learnomy\\Models\\Lesson::for_mediashield_video' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
 			return $link;
 		}
 		// Learnomy's own lookup (published lessons playing the video, cached).

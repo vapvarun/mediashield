@@ -252,6 +252,11 @@ iframe.ms-player-target {
 	background: var(--ms-accent-hover);
 }
 
+/* A video the host removed: cover the host's own error page completely. */
+.ms-error-overlay--solid {
+	background: var(--ms-player-bg);
+}
+
 /* A course to enrol in, offered on a refusal (Basecamp 10530930631). */
 .ms-error-action {
 	display: inline-flex;

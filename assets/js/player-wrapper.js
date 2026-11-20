@@ -60,6 +60,9 @@
 				},
 			};
 
+			// The YouTube API swaps the target for its iframe; keep the player.
+			var playerEl = target.closest( '.ms-protected-player' );
+
 			function initPlayer() {
 				var pv = { modestbranding: 1, rel: 0, fs: 0 };
 				if ( options.autoplay === true ) pv.autoplay = 1;
@@ -79,6 +82,13 @@
 								}
 							}, 500 );
 							if ( adapter._readyCb ) adapter._readyCb();
+						},
+						// 100: removed or private; 101 / 150: the owner
+						// turned embedding off. Either way it will not play here.
+						onError: function ( e ) {
+							if ( playerEl && [ 100, 101, 150 ].indexOf( e.data ) > -1 ) {
+								showUnavailable( playerEl );
+							}
 						},
 						onStateChange: function ( e ) {
 							adapter._playing = ( e.data === YT.PlayerState.PLAYING );
@@ -166,6 +176,10 @@
 							adapter._duration = d;
 						} );
 						if ( adapter._readyCb ) adapter._readyCb();
+					} ).catch( function () {
+						// Vimeo refuses a removed or private video here.
+						var vimeoEl = target.closest( '.ms-protected-player' );
+						if ( vimeoEl ) showUnavailable( vimeoEl );
 					} );
 				} )
 				.catch( function ( err ) {
@@ -1468,6 +1482,11 @@
 					if ( ! handled ) {
 						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
 						showErrorOverlay( el, msg );
+						// The course to enrol in, when the server named one.
+						var access = data.data || {};
+						if ( access.access_url ) {
+							addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
+						}
 					}
 					return;
 				}
@@ -1733,6 +1752,35 @@
 
 		overlay.appendChild( inner );
 		el.appendChild( overlay );
+	}
+
+	/**
+	 * Add a link button under the message of the error overlay on screen.
+	 *
+	 * @param {HTMLElement} el    Player container.
+	 * @param {string}      url   Where it goes.
+	 * @param {string}      label Button text.
+	 */
+	function addOverlayAction( el, url, label ) {
+		var inner = el.querySelector( '.ms-error-overlay .ms-error-message' );
+		if ( ! inner ) return;
+		var link = document.createElement( 'a' );
+		link.className = 'ms-error-action';
+		link.href = url;
+		link.textContent = label;
+		inner.appendChild( link );
+	}
+
+	/**
+	 * The host removed the video or made it private (Basecamp 10530930631).
+	 *
+	 * @param {HTMLElement} el Player container.
+	 */
+	function showUnavailable( el ) {
+		showErrorOverlay( el, t( 'unavailable', 'This video is unavailable.' ) );
+		// Opaque, so the host's own error text does not show through.
+		var overlay = el.querySelector( '.ms-error-overlay' );
+		if ( overlay ) overlay.classList.add( 'ms-error-overlay--solid' );
 	}
 
 	// ─── Login Overlay ───────────────────────────────────────────
