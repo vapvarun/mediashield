@@ -1654,6 +1654,9 @@
 
 		var restart = function () {
 			expecting = true;
+			// Recovery under way: other failure paths hold their error until
+			// it succeeds or this watchdog gives up (showErrorOverlay).
+			playerEl.dataset.msRecovering = '1';
 			reset();
 			var p = video.play();
 			if ( p && p.catch ) {
@@ -1663,6 +1666,7 @@
 
 		video.addEventListener( 'playing', function () {
 			expecting = false;
+			delete playerEl.dataset.msRecovering;
 		} );
 
 		var clearNotice = function () {
@@ -1705,6 +1709,7 @@
 
 			attempts  = 2;
 			expecting = false;
+			delete playerEl.dataset.msRecovering;
 			video.pause();
 			showErrorOverlay( playerEl, t( 'loadFailed', 'This video could not be loaded.' ), function () {
 				attempts = 0;
@@ -1720,6 +1725,13 @@
 	// on top of the player container so the viewer can read why the player
 	// isn't loading. Single instance per container — repeated calls replace.
 	function showErrorOverlay( el, message, onRetry ) {
+		// The stall watchdog is reconnecting: a load or refresh failure seen in
+		// the meantime is part of that attempt, not a verdict. Keep showing
+		// "Reconnecting…"; the watchdog shows the error itself if it gives up.
+		if ( el.dataset && '1' === el.dataset.msRecovering ) {
+			return;
+		}
+
 		var existing = el.querySelector( '.ms-error-overlay' );
 		if ( existing ) existing.remove();
 
