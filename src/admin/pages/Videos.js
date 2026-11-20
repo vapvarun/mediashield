@@ -16,6 +16,7 @@ import { decodeEntities } from '@wordpress/html-entities';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import Icon from '../components/Icon';
+import { formatDuration } from '../utils/time';
 import './videos.css';
 
 const config = window.mediashieldAdmin || {};
@@ -170,23 +171,6 @@ const PROTECTION_OPTIONS = [
 	{ value: 'standard', label: __( 'Standard', 'mediashield' ) },
 	{ value: 'strict', label: __( 'Strict', 'mediashield' ) },
 ];
-
-/**
- * Seconds as m:ss (or h:mm:ss); an em dash when unknown.
- *
- * @param {number} secs Seconds.
- * @return {string} Label.
- */
-const formatDuration = ( secs ) => {
-	const s = parseInt( secs, 10 ) || 0;
-	if ( s <= 0 ) {
-		return '—';
-	}
-	const h = Math.floor( s / 3600 );
-	const m = Math.floor( ( s % 3600 ) / 60 );
-	const r = String( s % 60 ).padStart( 2, '0' );
-	return h ? `${ h }:${ String( m ).padStart( 2, '0' ) }:${ r }` : `${ m }:${ r }`;
-};
 
 const StatusBadge = ( { status } ) => {
 	const s = STATUS_LABELS[ status ] ? status : 'ready';
