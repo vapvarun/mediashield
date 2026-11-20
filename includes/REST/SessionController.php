@@ -285,7 +285,11 @@ class SessionController extends WP_REST_Controller {
 			if ( ! empty( $access['link'] ) ) {
 				return new WP_Error(
 					$code,
-					sprintf( Settings::message( 'ms_course_denied_text', __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) ), $access['link']['title'] ),
+					// An integration that says the viewer is already in the
+					// course (keep_reason) gets its own words, not "Enroll".
+					! empty( $access['keep_reason'] ) && '' !== (string) ( $access['reason'] ?? '' )
+						? (string) $access['reason']
+						: sprintf( Settings::message( 'ms_course_denied_text', __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) ), $access['link']['title'] ),
 					array(
 						'status'       => 403,
 						'access_url'   => $access['link']['url'],

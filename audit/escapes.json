@@ -161,6 +161,13 @@
       "guard": "audit/journeys/customer/watch-protected-video.md (card:10506484970)",
       "added": "2026-11-20",
       "proven_failing_on": "b75cb14 (no stall watchdog; held MP4 sat 'playing' forever)"
+    },
+    {
+      "card": "10530930631",
+      "title": "Denied player always wrapped an integration refusal in 'This video is part of <course>. Enroll to watch it.' and replaced the integration's own link, so an enrolled student of a withdrawn Learnomy lesson was told to enrol; an integration can now pass link + keep_reason",
+      "guard": "learnomy tests/audit/mediashield-withdrawn-lesson-keeps-video.php#case-1b (browser walk on the Learnomy+MediaShield lab)",
+      "added": "2026-11-20",
+      "proven_failing_on": "MediaShield 6d56821 (QA browser note on this card)"
     }
   ]
 }

@@ -68,7 +68,12 @@ class AccessControl {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param array $result   {allowed: bool, reason: string}
+		 * @param array $result   {allowed: bool, reason: string}. A refusal may add
+		 *                        link {title, url} (where to go) and keep_reason
+		 *                        (true: show reason as written, with that link,
+		 *                        instead of "This video is part of <course>.
+		 *                        Enroll to watch it.").
+		 *                        Since 1.4.3.
 		 * @param int   $video_id Video CPT post ID.
 		 * @param int   $user_id  User ID.
 		 */
@@ -77,9 +82,13 @@ class AccessControl {
 		// A refusal from an integration (a course the viewer is not enrolled
 		// in) carries where to get access, so the player can name the course
 		// and link to it. Role, domain and login refusals return above and
-		// never get one: their own message is the right answer.
+		// never get one: their own message is the right answer. An integration
+		// that already knows the right link (an enrolled student whose lesson
+		// is withdrawn goes back to their course) keeps it.
 		if ( is_array( $result ) && empty( $result['allowed'] ) ) {
-			$result['link'] = self::access_link( $video_id, $user_id );
+			$result['link'] = empty( $result['link'] )
+				? self::access_link( $video_id, $user_id )
+				: self::clean_link( $result['link'] );
 		}
 
 		return $result;
@@ -110,7 +119,19 @@ class AccessControl {
 		 * @param int        $video_id Video CPT post ID.
 		 * @param int        $user_id  Viewer, 0 for a guest.
 		 */
-		$link = apply_filters( 'mediashield_video_access_link', null, $video_id, $user_id );
+		return self::clean_link( apply_filters( 'mediashield_video_access_link', null, $video_id, $user_id ) );
+	}
+
+	/**
+	 * A refusal link made safe to hand to the player: a plain-text title and
+	 * a URL that survives esc_url_raw(), or null when either is missing.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param mixed $link { title, url } from an integration.
+	 * @return array{title: string, url: string}|null
+	 */
+	private static function clean_link( $link ): ?array {
 		if ( ! is_array( $link ) || empty( $link['url'] ) || empty( $link['title'] ) ) {
 			return null;
 		}
