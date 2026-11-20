@@ -84,12 +84,12 @@ Registered with `show_in_rest`; edited through `/wp/v2/mediashield-playlists/{id
 | `ms_player_endscreen_url` | string | (empty) | URL or empty; an invalid URL is rejected. |
 | `ms_ads_enabled` | boolean | `true` | Master switch for ad breaks. |
 | `ms_ads_require_full_view` | boolean | `false` | Hides Skip; overrides the skip delay. |
-| `ms_ads_skip_after` | integer | `5` | Seconds, clamped to 0-60. |
+| `ms_ads_skip_after` | integer | `5` | Seconds, clamped to 0-60. Used for ads whose own `skip_after` is 0 or missing. |
 | `ms_ads_preroll` | boolean | `true` | Pre-roll break. |
 | `ms_ads_midroll_count` | integer | `3` | Clamped to 0-10. |
 | `ms_ads_show_markers` | boolean | `true` | Break markers on the seek bar. |
 | `ms_block_right_click` | boolean | `true` | Block the context menu. |
-| `ms_block_keyboard` | boolean | `false` | Block Ctrl+S / Cmd+S. |
+| `ms_block_keyboard` | boolean | `false` | Block Ctrl+S / Cmd+S inside the player only. Ctrl+U and F12 are not blocked. |
 | `ms_hide_source` | boolean | `true` | Self-hosted only: serve through the signed stream endpoint. |
 | `ms_detect_devtools` | boolean | `true` | Devtools detection beacon. |
 | `ms_pause_on_devtools` | boolean | `false` | Pause and show the overlay. |

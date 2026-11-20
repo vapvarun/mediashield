@@ -203,6 +203,20 @@
       "guard": "tests/unit/NewDefaultsNoticeTest.php; Pro tests/unit/NewWatermarkDefaultTest.php; audit/journeys/customer/player-owner-audit.md",
       "added": "2026-11-20",
       "proven_failing_on": "63c9ede (no notice; stored badge and IP kept with no way to know; 11-16-notice-1440-light-before.png)"
+    },
+    {
+      "card": "10531502283",
+      "title": "Block Save Shortcut was documented as also blocking Ctrl+U and F12; only Ctrl/Cmd+S inside the player is blocked",
+      "guard": "tests/unit/SettingsHelpScopeTest.php::test_block_keyboard_is_described_as_the_save_shortcut_only",
+      "added": "2026-11-20",
+      "proven_failing_on": "8944051 (settings-reference row claimed Ctrl+U/F12; browser: ctrl+u and f12 defaultPrevented false)"
+    },
+    {
+      "card": "10531502288",
+      "title": "Skip Delay help said 0 = immediate without saying a creative's own 0 or blank uses the site value",
+      "guard": "tests/unit/SettingsHelpScopeTest.php::test_skip_delay_explains_a_creatives_zero",
+      "added": "2026-11-20",
+      "proven_failing_on": "8944051 (help 'Seconds before the Skip button unlocks on each ad. 0 = skippable immediately.'; resolver: global 5 + per-ad 0 => 5)"
     }
   ]
 }

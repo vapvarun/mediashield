@@ -547,7 +547,7 @@ const Settings = () => {
 				/>
 				<ToggleControl
 					label={ __( 'Block Save Shortcut (Ctrl+S / Cmd+S)', 'mediashield' ) }
-					help={ __( 'Intercept the save keyboard shortcut when the player is focused.', 'mediashield' ) }
+					help={ __( 'Intercept Ctrl+S / Cmd+S while the player has focus. Only the save shortcut: View Source (Ctrl+U), developer tools (F12) and other shortcuts are not blocked.', 'mediashield' ) }
 					checked={ settings?.ms_block_keyboard !== false }
 					onChange={ ( val ) => updateSetting( 'ms_block_keyboard', val ) }
 					__nextHasNoMarginBottom
@@ -949,7 +949,7 @@ const Settings = () => {
 						{ ! settings?.ms_ads_require_full_view && (
 							<NumberField
 								label={ __( 'Skip Delay (seconds)', 'mediashield' ) }
-								help={ __( 'Seconds before the Skip button unlocks on each ad. 0 = skippable immediately. Clamped 0–60. Default: 5.', 'mediashield' ) }
+								help={ __( 'Seconds before the Skip button unlocks on each ad. 0 = skippable immediately. An ad that sets its own skip delay in WB Ad Manager keeps it; an ad whose own delay is blank or 0 uses this value. Clamped 0–60. Default: 5.', 'mediashield' ) }
 								min={ 0 }
 								max={ 60 }
 								value={ settings?.ms_ads_skip_after ?? 5 }

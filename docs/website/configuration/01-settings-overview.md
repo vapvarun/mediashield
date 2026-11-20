@@ -67,7 +67,7 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Pre-roll | On | One ad before the video starts. |
 | Mid-roll Count | 3 | Ads spaced across the middle of the video. 0 to 10. |
 | Require Full View | Off | Hides the Skip button so every ad must be watched. |
-| Skip Delay (seconds) | 5 | Seconds before Skip unlocks. 0 to 60. Ignored when Require Full View is on. |
+| Skip Delay (seconds) | 5 | Seconds before Skip unlocks. 0 to 60; 0 means skippable at once. An ad with its own skip delay in WB Ad Manager keeps it; an ad left blank or at 0 uses this value. Ignored when Require Full View is on. |
 | Show Break Markers | On | Marks on the seek bar for upcoming ad breaks. |
 
 The ad rows only appear while Enable In-Video Ads is on. The end screen rows only appear while End Screen is on.
