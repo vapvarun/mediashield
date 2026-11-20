@@ -143,22 +143,92 @@
 	var fileField = document.getElementById( 'ms-video-file' );
 	var uploadBtn = document.getElementById( 'ms-upload-btn' );
 	var uploadBar = document.getElementById( 'ms-upload-progress' );
+	var uploadWrap = document.getElementById( 'ms-upload-progress-wrap' );
+	var uploadPct = document.getElementById( 'ms-upload-pct' );
 	var uploadMsg = document.getElementById( 'ms-upload-status' );
 
 	if ( fileField && uploadBtn && uploadBar && uploadMsg ) {
+		// True from the moment a request starts until it finishes or fails.
+		// Every control checks it: in Chrome a disabled file input still
+		// takes a file dropped or set on it and fires `change`, which used to
+		// re-enable Upload mid-upload, and a second click then created a
+		// second (orphaned, billed) Bunny video (Basecamp 10530929713).
+		var busy = false;
+
+		var fill = function ( template, values ) {
+			var i = 0;
+			return String( template || '' ).replace( /%(\d+\$)?s/g, function ( m, pos ) {
+				var idx = pos ? parseInt( pos, 10 ) - 1 : i++;
+				return values[ idx ] !== undefined ? values[ idx ] : '';
+			} );
+		};
+
+		var sizeLabel = function ( bytes ) {
+			var mb = bytes / ( 1024 * 1024 );
+			return ( mb >= 10 ? Math.round( mb ) : Math.round( mb * 10 ) / 10 ) + ' MB';
+		};
+
+		// The file is over the server's limit: say so with both numbers and
+		// what to do, and send nothing.
+		var tooLarge = function ( file ) {
+			var max = parseInt( data.maxUploadBytes, 10 ) || 0;
+			if ( ! max || file.size <= max ) {
+				return false;
+			}
+			uploadMsg.textContent = fill( labels.tooLarge, [ sizeLabel( file.size ), data.maxUploadLabel || sizeLabel( max ) ] ) + ' ';
+			if ( 'bunny' === data.uploadDriver && data.browseUrl ) {
+				var link = document.createElement( 'a' );
+				link.href = data.browseUrl;
+				link.textContent = labels.tooLargeBunny || '';
+				uploadMsg.appendChild( link );
+			} else {
+				uploadMsg.appendChild( document.createTextNode( labels.tooLargeOther || '' ) );
+			}
+			return true;
+		};
+
+		var showProgress = function ( pct ) {
+			if ( uploadWrap ) {
+				uploadWrap.hidden = false;
+			}
+			if ( null === pct ) {
+				// Indeterminate: the site is handing the file to the platform
+				// and cannot report how far that has got.
+				uploadBar.removeAttribute( 'value' );
+				if ( uploadPct ) {
+					uploadPct.textContent = '';
+				}
+				return;
+			}
+			uploadBar.value = pct;
+			if ( uploadPct ) {
+				uploadPct.textContent = pct + '%';
+			}
+		};
+
 		fileField.addEventListener( 'change', function () {
-			uploadBtn.disabled = ! this.files.length;
+			if ( busy ) {
+				return;
+			}
 			uploadMsg.textContent = '';
+			var file = this.files.length ? this.files[ 0 ] : null;
+			uploadBtn.disabled = ! file || tooLarge( file );
 		} );
 
 		// done (optional) runs only after a successful upload.
 		var startUpload = function ( done ) {
-			if ( ! fileField.files.length ) {
+			if ( busy || ! fileField.files.length ) {
+				return;
+			}
+
+			var file = fileField.files[ 0 ];
+			if ( tooLarge( file ) ) {
+				uploadBtn.disabled = true;
 				return;
 			}
 
 			var form = new FormData();
-			form.append( 'file', fileField.files[ 0 ] );
+			form.append( 'file', file );
 			// Fill in the video being edited instead of creating a second one.
 			form.append( 'video_id', String( data.postId || 0 ) );
 
@@ -171,22 +241,38 @@
 			xhr.open( 'POST', ( data.restUrl || '/wp-json/mediashield/v1/' ) + 'upload/init' );
 			xhr.setRequestHeader( 'X-WP-Nonce', data.nonce || '' );
 
+			busy = true;
 			uploadBtn.disabled = true;
 			fileField.disabled = true;
-			uploadBar.value = 0;
-			uploadBar.style.display = '';
-			uploadMsg.textContent = labels.uploading || 'Uploading…';
+			showProgress( 0 );
+			uploadMsg.textContent = fill( labels.uploadSending, [ '0%' ] );
 
 			xhr.upload.addEventListener( 'progress', function ( e ) {
-				if ( e.lengthComputable ) {
-					uploadBar.value = ( e.loaded / e.total ) * 100;
+				if ( ! e.lengthComputable ) {
+					return;
 				}
+				var pct = Math.min( 100, Math.floor( ( e.loaded / e.total ) * 100 ) );
+				showProgress( pct );
+				uploadMsg.textContent = fill( labels.uploadSending, [ pct + '%' ] );
+			} );
+
+			// Every byte reached the site; the server now sends it on to the
+			// target, which on a large file takes minutes. Say where it is.
+			xhr.upload.addEventListener( 'load', function () {
+				if ( 'self_hosted' === data.uploadDriver ) {
+					return;
+				}
+				showProgress( null );
+				uploadMsg.textContent = fill( labels.uploadHandoff, [ data.uploadTarget || '' ] );
 			} );
 
 			var finish = function () {
-				uploadBtn.disabled = false;
+				busy = false;
+				uploadBtn.disabled = ! fileField.files.length;
 				fileField.disabled = false;
-				uploadBar.style.display = 'none';
+				if ( uploadWrap ) {
+					uploadWrap.hidden = true;
+				}
 			};
 
 			xhr.addEventListener( 'load', function () {
@@ -250,10 +336,13 @@
 				}
 			} );
 
-			xhr.addEventListener( 'error', function () {
+			var failed = function () {
 				finish();
 				uploadMsg.textContent = ( labels.uploadFailed || 'Upload failed:' ) + ' ' + window.mediashieldRequest.message( { code: 'network' } );
-			} );
+			};
+			xhr.addEventListener( 'error', failed );
+			xhr.addEventListener( 'abort', failed );
+			xhr.addEventListener( 'timeout', failed );
 
 			xhr.send( form );
 		};
@@ -268,14 +357,15 @@
 		var postForm = fileField.form;
 		if ( postForm ) {
 			postForm.addEventListener( 'submit', function ( e ) {
+				if ( busy ) {
+					// Already uploading; saving now would store an empty video.
+					e.preventDefault();
+					return;
+				}
 				if ( ! fileField.files.length ) {
 					return;
 				}
 				e.preventDefault();
-				if ( fileField.disabled ) {
-					// Already uploading; saving now would store an empty video.
-					return;
-				}
 				var submitter = e.submitter || null;
 				startUpload( function () {
 					if ( postForm.requestSubmit ) {

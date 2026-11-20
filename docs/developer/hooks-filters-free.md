@@ -305,6 +305,20 @@ add_action( 'mediashield_privacy_before_erase', function( $email, $user, $page, 
 
 ## Filters
 
+
+### mediashield_upload_target_label
+
+Since 1.4.3. The name of the upload target shown above the editor's uploader ("Uploads to: ...").
+
+| Arg | Type | Notes |
+|-----|------|-------|
+| `$label` | string | Default `This site (protected uploads folder)` for `self_hosted`, else the driver name |
+| `$driver` | string | Driver the next upload uses (`UploadManager::resolve_default_driver()`) |
+
+Pro returns "Bunny Stream - <connection name>" for the Bunny driver.
+
+---
+
 ### mediashield_can_watch
 
 The primary access control gate. Return the `$result` array unchanged to pass through, modify `allowed` to `false` with a `reason` string to deny, or return `array( 'allowed' => false, 'reason' => '...' )` to deny with a custom message.

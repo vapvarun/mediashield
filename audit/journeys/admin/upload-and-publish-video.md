@@ -62,6 +62,13 @@ the whole free-tier funnel stalls.
 - **Expect**: same `.ms-protected-player` DOM with the same source URL.
 - **On fail**: `includes/Block/VideoBlock.php::render_callback` OR `src/blocks/video/index.js` → `view.js` mismatch.
 
+### 6. Honest upload: size check, progress, locked picker (card:10530929713)
+- **Action**: with PHP `upload_max_filesize` at 2M, open Add New Video, choose a 25 MB file under **Or upload a file**.
+- **Expect**: the status line reads "This file is 24 MB; your server allows 2 MB." with a next step, **Upload** stays disabled, and the network panel shows NO request to `/upload/init`.
+- **Action**: raise the limit, choose the file again, click **Upload**; while it sends, set another file on the picker and click **Upload** and **Publish**.
+- **Expect**: the bar and "Sending to your site: N%" rise to 100, then "Sending to <target>..." (indeterminate); **Upload** stays disabled throughout; exactly ONE `/upload/init` request; afterwards the platform holds exactly one video for this upload and `wp_ms_upload_queue` one row for the post.
+- **On fail**: `assets/js/admin-video.js` (`busy` guard), `includes/Upload/UploadManager.php::acquire_lock`, `includes/REST/UploadController.php::too_large_error`.
+
 ## Pass criteria
 
 ALL of the following hold:

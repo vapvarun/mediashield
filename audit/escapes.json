@@ -105,6 +105,13 @@
       "guard": "tests/unit/WatermarkDefaultsTest.php::test_default_watermark_is_name_and_email_and_ip_is_opt_in; audit/journeys/customer/player-owner-audit.md (card:10530930695)",
       "added": "2026-11-20",
       "proven_failing_on": "e688b5b (text 'Aisha Khan', ip sent; 11-*-before.png shows 'Aisha Khan · 192.168.80.1')"
+    },
+    {
+      "card": "10530929713",
+      "title": "Over-limit upload said No file provided; re-picking mid-upload re-enabled Upload and made a second (orphaned) Bunny video",
+      "guard": "tests/unit/HonestUploadTest.php + audit/journeys/admin/upload-and-publish-video.md (card:10530929713)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b75cb14 (no lock; empty $_FILES answered no_file)"
     }
   ]
 }

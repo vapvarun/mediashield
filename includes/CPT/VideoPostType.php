@@ -201,11 +201,27 @@ class VideoPostType {
 					'unrecognised'    => __( 'This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. It will be saved as self-hosted, which only works if the URL serves the video file itself.', 'mediashield' ),
 					'bunnyStreamFile' => __( 'This is a Bunny stream file from a library this site is not connected to, so it will be saved as a direct stream. That only plays if token authentication is off for the library. To use Bunny\'s player instead, paste the video\'s embed URL.', 'mediashield' ),
 					'uploading'       => __( 'Uploading…', 'mediashield' ),
+					/* translators: %s: percentage sent so far, e.g. "42%". */
+					'uploadSending'   => __( 'Sending to your site: %s', 'mediashield' ),
+					/* translators: %s: upload target, e.g. "Bunny Stream - Course videos". */
+					'uploadHandoff'   => __( 'Sending to %s. A large file can take a few minutes; keep this page open.', 'mediashield' ),
+					/* translators: 1: size of the chosen file, e.g. "27 MB"; 2: largest upload this server accepts, e.g. "2 MB". */
+					'tooLarge'        => __( 'This file is %1$s; your server allows %2$s.', 'mediashield' ),
+					'tooLargeBunny'   => __( 'Upload it in Bunny, then use Browse & Import.', 'mediashield' ),
+					'tooLargeOther'   => __( 'Ask your host to raise the upload limit, or upload the file to your video platform and paste its URL above.', 'mediashield' ),
 					'uploadDone'      => __( 'Uploaded. Save the video to keep this file.', 'mediashield' ),
 					'uploadFailed'    => __( 'Upload failed:', 'mediashield' ),
 					'uploadNetwork'   => __( 'Upload failed: the connection dropped or the file is larger than this server accepts.', 'mediashield' ),
 				),
 				'restUrl'        => esc_url_raw( rest_url( 'mediashield/v1/' ) ),
+				// Checked in the browser before anything is sent, so an
+				// over-limit file never starts a request (Basecamp 10530929713).
+				'maxUploadBytes' => (int) wp_max_upload_size(),
+				'maxUploadLabel' => size_format( wp_max_upload_size() ),
+				'uploadTarget'   => \MediaShield\Upload\UploadManager::target_label(),
+				'uploadDriver'   => \MediaShield\Upload\UploadManager::resolve_default_driver(),
+				// Pro's Bunny library browser, for the "too large" hint.
+				'browseUrl'      => esc_url_raw( admin_url( 'admin.php?page=mediashield#/bunny-browser' ) ),
 				// Object, not array: an empty PHP array would reach JS as [].
 				'bunnyPullZones' => (object) \MediaShield\Support\Platforms::bunny_pull_zones(),
 				'nonce'          => wp_create_nonce( 'wp_rest' ),
@@ -343,15 +359,19 @@ class VideoPostType {
 						<button type="button" class="button" id="ms-upload-btn" disabled>
 							<?php esc_html_e( 'Upload', 'mediashield' ); ?>
 						</button>
-						<progress id="ms-upload-progress" max="100" value="0" style="display:none;vertical-align:middle;"></progress>
+						<div class="ms-upload-progress" id="ms-upload-progress-wrap" hidden>
+							<progress id="ms-upload-progress" max="100" value="0" aria-labelledby="ms-upload-status"></progress>
+							<span class="ms-upload-progress__pct" id="ms-upload-pct" aria-hidden="true"></span>
+						</div>
 						<p id="ms-upload-status" class="description" role="status" aria-live="polite"></p>
-						<p class="description">
+						<p class="description ms-upload-target">
 							<?php
-							if ( 'self_hosted' === \MediaShield\Upload\UploadManager::resolve_default_driver() ) {
-								esc_html_e( 'The file is stored on this site and played through a permission-checked URL, so the file path is never exposed. Large files are limited by your server’s upload size.', 'mediashield' );
-							} else {
-								esc_html_e( 'The file is sent to the Default Upload Target chosen in Settings and plays from there. Large files are limited by your server’s upload size.', 'mediashield' );
-							}
+							printf(
+								/* translators: 1: upload target, e.g. "Bunny Stream - Course videos"; 2: largest upload this server accepts, e.g. "64 MB". */
+								esc_html__( 'Uploads to: %1$s. Largest file this server accepts: %2$s.', 'mediashield' ),
+								'<strong>' . esc_html( \MediaShield\Upload\UploadManager::target_label() ) . '</strong>',
+								esc_html( size_format( wp_max_upload_size() ) )
+							);
 							?>
 						</p>
 					</td>
