@@ -53,6 +53,31 @@ class DeniedStateTest extends WP_UnitTestCase {
 		remove_filter( 'mediashield_video_access_link', $link );
 	}
 
+	/**
+	 * An integration that knows better keeps its own words, link and button
+	 * label: a site that renamed Course to Program reads 'View Program', and an
+	 * enrolled student of a withdrawn lesson is not told to enrol (Basecamp
+	 * 10530930631, 10531635064). Fails on 9da6331 (label ignored).
+	 */
+	public function test_integration_keeps_its_own_words_link_and_button_label(): void {
+		$deny = static fn() => array(
+			'allowed'     => false,
+			'reason'      => 'This Module is not available right now.',
+			'keep_reason' => true,
+			'link'        => array( 'title' => 'Portrait Photography', 'url' => 'https://example.org/programs/portrait/', 'label' => 'View Program' ),
+		);
+		add_filter( 'mediashield_can_watch', $deny );
+
+		$error = $this->start()->as_error();
+		$data  = $error->get_error_data();
+
+		$this->assertSame( 'This Module is not available right now.', $error->get_error_message() );
+		$this->assertSame( 'https://example.org/programs/portrait/', $data['access_url'] );
+		$this->assertSame( 'View Program', $data['access_label'] );
+
+		remove_filter( 'mediashield_can_watch', $deny );
+	}
+
 	public function test_role_refusal_stays_neutral_and_has_no_link(): void {
 		update_post_meta( $this->video, '_ms_access_role', 'editor' );
 		$link = static fn() => array( 'title' => 'Some course', 'url' => 'https://example.org/c/' );

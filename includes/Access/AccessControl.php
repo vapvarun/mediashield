@@ -69,7 +69,8 @@ class AccessControl {
 		 * @since 1.0.0
 		 *
 		 * @param array $result   {allowed: bool, reason: string}. A refusal may add
-		 *                        link {title, url} (where to go) and keep_reason
+		 *                        link {title, url, label?} (where to go; label is
+		 *                        the button text) and keep_reason
 		 *                        (true: show reason as written, with that link,
 		 *                        instead of "This video is part of <course>.
 		 *                        Enroll to watch it.").
@@ -107,7 +108,7 @@ class AccessControl {
 	 *
 	 * @param int $video_id Video CPT post ID.
 	 * @param int $user_id  Viewer, 0 for a guest.
-	 * @return array{title: string, url: string}|null
+	 * @return array{title: string, url: string, label: string}|null
 	 */
 	public static function access_link( int $video_id, int $user_id = 0 ): ?array {
 		/**
@@ -129,7 +130,7 @@ class AccessControl {
 	 * @since 1.4.3
 	 *
 	 * @param mixed $link { title, url } from an integration.
-	 * @return array{title: string, url: string}|null
+	 * @return array{title: string, url: string, label: string}|null
 	 */
 	private static function clean_link( $link ): ?array {
 		if ( ! is_array( $link ) || empty( $link['url'] ) || empty( $link['title'] ) ) {
@@ -139,6 +140,9 @@ class AccessControl {
 		return '' === $url ? null : array(
 			'title' => \MediaShield\Support\Text::plain( (string) $link['title'] ),
 			'url'   => $url,
+			// The integration's own button words (a site that renamed
+			// "Course" says "View Program"); empty falls back to the setting.
+			'label' => isset( $link['label'] ) ? \MediaShield\Support\Text::plain( (string) $link['label'] ) : '',
 		);
 	}
 

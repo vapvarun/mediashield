@@ -321,7 +321,7 @@ class SessionController extends WP_REST_Controller {
 					array(
 						'status'       => 403,
 						'access_url'   => $access['link']['url'],
-						'access_label' => Settings::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
+						'access_label' => '' !== (string) ( $access['link']['label'] ?? '' ) ? (string) $access['link']['label'] : Settings::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
 					)
 				);
 			}
