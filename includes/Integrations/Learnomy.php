@@ -66,15 +66,19 @@ class Learnomy {
 	 * @return array|null { title, url }.
 	 */
 	public static function course_link( $link, $video_id ) {
-		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\table' ) || ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
+		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\route_url' ) || ! is_callable( array( '\\Learnomy\\Models\\Lesson', 'for_mediashield_video' ) ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
 			return $link;
 		}
-		global $wpdb;
-		$lessons = \Learnomy\table( 'lessons' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Learnomy's table, as in library_file_in_use(); one row, asked only when a viewer was refused.
-		$course_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT course_id FROM {$lessons} WHERE content_type = %s AND video_url = %s AND status = 'published' ORDER BY id ASC LIMIT 1", self::CONTENT_TYPE, (string) (int) $video_id ) );
-		$course    = $course_id ? \Learnomy\Models\Course::find( $course_id ) : null;
-		if ( ! $course || 'published' !== (string) ( $course->status ?? '' ) || empty( $course->slug ) ) {
+		// Learnomy's own lookup (published lessons playing the video, cached).
+		$course = null;
+		foreach ( \Learnomy\Models\Lesson::for_mediashield_video( (int) $video_id ) as $lesson ) {
+			$candidate = \Learnomy\Models\Course::find( (int) ( $lesson->course_id ?? 0 ) );
+			if ( $candidate && 'published' === (string) ( $candidate->status ?? '' ) && ! empty( $candidate->slug ) ) {
+				$course = $candidate;
+				break;
+			}
+		}
+		if ( ! $course ) {
 			return $link;
 		}
 		return array(
