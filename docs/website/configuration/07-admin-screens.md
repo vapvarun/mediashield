@@ -4,6 +4,21 @@
 
 Everything lives under one **MediaShield** menu in the WordPress sidebar. It opens a single app with its own left-hand menu. The address changes after a `#`, so you can bookmark any screen, for example `wp-admin/admin.php?page=mediashield#/settings`.
 
+## The menu: six groups
+
+The app's left-hand menu has six items. Click one to open its first screen; the group's other screens are listed under it while you are in that group.
+
+| Menu item | Screens in it |
+|-----------|---------------|
+| Dashboard | Dashboard |
+| Videos | Videos, Playlists, Tags, Upload Queue (Pro) |
+| Analytics | Viewers, Heatmaps (Pro), Realtime (Pro), Milestones, Export (Pro) |
+| Security | Alerts (Pro) |
+| Platforms | Platforms and the library browsers (Pro) |
+| Settings | Settings, License (Pro), Milestone Actions (Pro) |
+
+Without Pro, the Pro screens show as locked entries with a PRO label. Every screen keeps its own address, so bookmarks and links from before 1.4.3 still open the same screen. On a phone the six items are a row of icons and the open group's screens are a second row.
+
 ## Before you start
 
 - Only administrators can open these screens.

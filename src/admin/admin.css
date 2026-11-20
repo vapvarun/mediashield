@@ -353,6 +353,37 @@
 	opacity: 1;
 }
 
+/* ── Sidebar groups: six top items, the open group's screens below ── */
+.mediashield-sidebar__group,
+.mediashield-sidebar__sub > li {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.mediashield-sidebar__item.is-open {
+	color: var( --ms-color-text );
+	font-weight: 600;
+}
+
+.mediashield-sidebar__item.is-open .ms-icon {
+	opacity: 1;
+}
+
+.mediashield-sidebar__sub {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 2px 0 var( --ms-space-2 );
+	padding-inline: var( --ms-space-5 ) 0;
+	border-inline-start: 0;
+}
+
+.mediashield-sidebar__subitem {
+	padding-block: var( --ms-space-2 );
+	font-size: 13px;
+}
+
 /* ── Sidebar Locked Pro Items ─────────────────────── */
 .mediashield-sidebar__item--locked {
 	opacity: 0.5;
@@ -1995,6 +2026,7 @@
 @media ( max-width: 1280px ) {
 	.mediashield-sidebar__item {
 		justify-content: center;
+		gap: 0;
 	}
 
 	.mediashield-sidebar__label {
@@ -2034,6 +2066,12 @@
 	.mediashield-sidebar__item {
 		padding-inline: 0;
 		min-height: 40px;
+	}
+
+	.mediashield-sidebar__sub {
+		padding-inline: 0;
+		border-block: 1px solid var( --ms-color-border );
+		padding-block: 2px;
 	}
 
 	.mediashield-table-card {
@@ -2084,6 +2122,28 @@
 		font-size: 12px;
 		min-width: 40px;
 		min-height: 40px;
+	}
+
+	/* The six group icons in one row, the open group's screens in a row
+	   underneath. */
+	.mediashield-sidebar__group {
+		display: contents;
+	}
+
+	.mediashield-sidebar__menu:has( > .mediashield-sidebar__group ) {
+		display: grid;
+		grid-template-columns: repeat( 6, minmax( 0, 1fr ) );
+	}
+
+	.mediashield-sidebar__sub {
+		order: 1;
+		grid-column: 1 / -1;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: var( --ms-space-1 );
+		margin: 0;
+		padding: var( --ms-space-1 ) 0 0;
+		border-top: 1px solid var( --ms-color-border );
 	}
 
 	.mediashield-sidebar__pro-badge {

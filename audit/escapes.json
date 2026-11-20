@@ -119,6 +119,13 @@
       "guard": "tests/unit/BadgeDefaultTest.php; Pro tests/unit/BadgeChoiceTest.php; audit/journeys/customer/player-owner-audit.md (card:10530931001)",
       "added": "2026-11-20",
       "proven_failing_on": "a24cccc (seed_defaults() added ms_show_badge = true; badge rgba(255,255,255,.6) on rgba(0,0,0,.5); 16-*-before.png)"
+    },
+    {
+      "card": "10530930846",
+      "title": "Admin app menu was 15 flat items: Upload Queue, Milestone Actions, Tags and License sat as peers of Videos",
+      "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930846)",
+      "added": "2026-11-20",
+      "proven_failing_on": "0f2d9f1 (15 flat sidebar items; 14-*-before.png)"
     }
   ]
 }
