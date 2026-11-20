@@ -54,7 +54,11 @@ Use it in add-on screens so a dropped connection never shows "Failed to fetch" o
 
 ## Admin SPA filter
 
-The admin app is a React app with hash routing. Add pages with the JavaScript filter `mediashield_admin_routes` (`wp.hooks`, not PHP). Route objects use `hash`, `label`, `icon`, `component`; see [Extension Architecture](05-extension-architecture.md).
+The admin app is a React app with hash routing. Add pages with the JavaScript filter `mediashield_admin_routes` (`wp.hooks`, not PHP). Route objects use `hash`, `label`, `icon`, `component`; see [Extension Architecture](05-extension-architecture.md). A route also answers its own sub-paths (`#/my-page/anything` renders `#/my-page`), so a page can read the rest of the hash for its own deep links.
+
+### Linking to a settings section
+
+Link straight to one section of **MediaShield > Settings** with `admin.php?page=mediashield#/settings/<section>`. For example, the Lesson Completion setting is at `admin.php?page=mediashield#/settings/integrations`. The page opens at that section, the same as clicking it in the section list, on first load and when the hash changes. Sections: `protection`, `watermark`, `player`, `access`, `ads`, `storage`, `integrations` (shown when Learnomy or a supported LMS is active), plus any section added with the `mediashield_settings_sections` filter, by its `key` (Pro: `pro-watermark`). A section that is not in the list (unknown, or Integrations with no course plugin active) opens Settings at the top. Clicking a section in the list puts its link in the address bar, so it can be copied.
 
 ## Block editor slot
 

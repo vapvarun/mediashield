@@ -231,6 +231,13 @@
       "guard": "tests/unit/ResumePositionTest.php::test_resume_offers_the_exact_stop_after_a_rewind; audit/journeys/customer/player-owner-audit.md step 8 (card:10531602227)",
       "added": "2026-11-21",
       "proven_failing_on": "9da6331 (offered 480 for a 180 stop; resume-stop-1440-light-before.png)"
+    },
+    {
+      "card": "10533275569",
+      "title": "Settings could not be deep-linked: #/settings/integrations (Learnomy's link to Lesson Completion) opened the Dashboard, because the router matched the hash exactly and the section nav only scrolled on click",
+      "guard": "tests/unit/SettingsDeepLinkTest.php; audit/journeys/admin/admin-menu-groups.md step 4 (card:10533275569)",
+      "added": "2026-11-21",
+      "proven_failing_on": "bfb96ac (Dashboard shown for #/settings/integrations; deeplink-1440-light-before.png)"
     }
   ]
 }

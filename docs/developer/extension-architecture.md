@@ -78,7 +78,7 @@ Built-in adapters register their own `mediashield_can_watch` callback at 25 and 
 
 The admin SPA is a React app with hash routing under `wp-admin/admin.php?page=mediashield`. `src/admin/App.js` runs `applyFilters( 'mediashield_admin_routes', defaultRoutes )` and `Sidebar` renders whatever comes back.
 
-A route object is `{ hash, label, icon, component }`. The key is **`hash`** (a full `#/slug` string), not `path`, and `App` matches on it directly - a route with a `path` key will render in the sidebar and never activate. `icon` is a Dashicons-derived name token **without** the `dashicons-` prefix (`'dashboard'`, `'format-video'`, `'cloud'`); `components/Icon.js` maps those tokens onto Lucide icons, and an unmapped token renders nothing.
+A route object is `{ hash, label, icon, component }`. The key is **`hash`** (a full `#/slug` string), not `path`, and `App` matches on it directly - a route with a `path` key will render in the sidebar and never activate. Since 1.4.3 a route also answers its own sub-paths: `#/my-page/x` renders the `#/my-page` route (the exact hash wins first), and the page stays mounted when only the sub-path changes, so a page can read the rest of the hash for deep links. `icon` is a Dashicons-derived name token **without** the `dashicons-` prefix (`'dashboard'`, `'format-video'`, `'cloud'`); `components/Icon.js` maps those tokens onto Lucide icons, and an unmapped token renders nothing.
 
 ```js
 // In your plugin's admin JS bundle (loaded after MediaShield's admin bundle):
@@ -97,6 +97,10 @@ wp.hooks.addFilter( 'mediashield_admin_routes', 'my-addon', function ( routes ) 
 ```
 
 Your component receives no props. Use `wp.apiFetch` with the `mediashield/v1` REST endpoints to load data. Because the filter hands you the whole array, you can also wrap an existing route's `component` to inject UI into a free page - that is exactly how Pro adds its watermark section to Settings.
+
+### Settings section deep links - `#/settings/<section>`
+
+`admin.php?page=mediashield#/settings/<section>` opens Settings scrolled to that section's first card (same as the section nav; `Settings.js` `linkedGroup()` + `goToGroup()`), on first load and on `hashchange`, and holds it in place for 2 s while sections above finish loading (stops on wheel, touch, key or mouse down). Sections: `protection`, `watermark`, `player`, `access`, `ads`, `storage`, `integrations` (shown when Learnomy or a supported LMS is active), plus any section added with the `mediashield_settings_sections` filter, by its `key` (Pro: `pro-watermark`). Unknown or hidden section: the hash is rewritten to `#/settings` and the page opens at the top. Lesson Completion (`ms_lms_require_watch_pct`) is `#/settings/integrations`.
 
 ---
 

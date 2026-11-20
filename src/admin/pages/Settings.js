@@ -176,14 +176,27 @@ const SETTINGS_GROUPS = [
 /**
  * Jump to a group's first section and move focus there for keyboard users.
  *
- * @param {string} key Group key.
+ * @param {string}  key    Group key.
+ * @param {boolean} smooth Animate the scroll (a click) or jump (a link opened).
  */
-const goToGroup = ( key ) => {
+const goToGroup = ( key, smooth = true ) => {
 	const card = document.querySelector( `[data-group="${ key }"]:not([hidden])` );
 	if ( card ) {
-		card.scrollIntoView( { behavior: 'smooth', block: 'start' } );
+		card.scrollIntoView( { behavior: smooth ? 'smooth' : 'auto', block: 'start' } );
 		card.focus( { preventScroll: true } );
 	}
+};
+
+/**
+ * The section a deep link names: `#/settings/<group>`, for example
+ * `#/settings/integrations` (Lesson Completion). Any group in the section
+ * list works, Pro's sections from `mediashield_settings_sections` included.
+ *
+ * @return {string} Group key, or '' for plain `#/settings`.
+ */
+const linkedGroup = () => {
+	const m = window.location.hash.match( /^#\/settings\/([\w-]+)/ );
+	return m ? m[ 1 ] : '';
 };
 
 /**
@@ -230,7 +243,53 @@ const SettingsNav = ( { groups } ) => {
 	const pick = ( key ) => {
 		setActive( key );
 		goToGroup( key );
+		// The address names the section, so it can be copied and shared.
+		window.history.replaceState( null, '', '#/settings/' + key );
 	};
+
+	// Deep link (#/settings/<group>): open at that section on first load and
+	// whenever the hash changes; a group not in the list opens at the top.
+	// Sections above may still be loading their own data (Pro's Watermark
+	// fields), so for two seconds the section is kept in place as they grow,
+	// unless the owner scrolls or types first.
+	useEffect( () => {
+		let stopHold = () => {};
+		const hold = ( key ) => {
+			stopHold();
+			const column = document.querySelector( '.mediashield-settings__sections' );
+			if ( ! column || ! window.ResizeObserver ) {
+				return;
+			}
+			const observer = new window.ResizeObserver( () => goToGroup( key, false ) );
+			const events = [ 'wheel', 'touchstart', 'keydown', 'mousedown' ];
+			const timer = setTimeout( () => stopHold(), 2000 );
+			stopHold = () => {
+				observer.disconnect();
+				clearTimeout( timer );
+				events.forEach( ( ev ) => window.removeEventListener( ev, stopHold ) );
+				stopHold = () => {};
+			};
+			observer.observe( column );
+			events.forEach( ( ev ) => window.addEventListener( ev, stopHold, { passive: true } ) );
+		};
+		const follow = () => {
+			const key = linkedGroup();
+			if ( key && groups.some( ( g ) => g.key === key ) ) {
+				setActive( key );
+				goToGroup( key, false );
+				hold( key );
+			} else if ( key ) {
+				window.history.replaceState( null, '', '#/settings' );
+				window.scrollTo( 0, 0 );
+			}
+		};
+		follow();
+		window.addEventListener( 'hashchange', follow );
+		return () => {
+			stopHold();
+			window.removeEventListener( 'hashchange', follow );
+		};
+	}, [ groups.map( ( g ) => g.key ).join() ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	return (
 		<aside className="mediashield-settings__nav">
@@ -257,7 +316,7 @@ const SettingsNav = ( { groups } ) => {
 					{ groups.map( ( g ) => (
 						<li key={ g.key }>
 							<a
-								href={ `#/settings` }
+								href={ `#/settings/${ g.key }` }
 								className={ 'mediashield-settings__nav-link' + ( active === g.key ? ' is-active' : '' ) }
 								aria-current={ active === g.key ? 'true' : undefined }
 								onClick={ ( e ) => {
