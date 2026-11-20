@@ -453,26 +453,35 @@ class SessionManager {
 	}
 
 	/**
-	 * How much of this video has this member watched, as a whole percent?
+	 * Has this member watched enough of this video to complete its lesson?
 	 *
-	 * Time spent watching, not the furthest point: the parts of the video
-	 * played at least once, merged across sittings, so skipping ahead earns
-	 * nothing and a rewatch counts once (WatchedSpans; owner decision on
-	 * Basecamp 10530930729). Answers "may this member complete the lesson
-	 * yet?" for Settings `ms_lms_require_watch_pct`; for milestones read
-	 * `ms_milestones`, for the furthest point `max_position`.
+	 * The one place the "Require X% watched" rule (Settings
+	 * `ms_lms_require_watch_pct`) is worked out, for the player, Learnomy and
+	 * Pro's LearnDash adapter. Watched is time spent watching, not the
+	 * furthest point: the parts played at least once, merged across sittings,
+	 * so skipping ahead earns nothing and a rewatch counts once (WatchedSpans;
+	 * owner decision on Basecamp 10530930729). Who is exempt is the caller's
+	 * call: LearnDash skips site admins, Learnomy follows its own enforcement
+	 * mode. For milestones read `ms_milestones`, for the furthest point
+	 * `max_position`.
 	 *
 	 * @since 1.4.3
 	 *
 	 * @param int $video_id Video CPT post ID.
-	 * @param int $user_id  Member.
-	 * @return int 0-100.
+	 * @param int $user_id  Member; 0 (a guest) has watched nothing.
+	 * @return array{required: int, watched: int, met: bool}|null Null when the rule is off or there is no video.
 	 */
-	public static function watched_percent( int $video_id, int $user_id ): int {
-		if ( $video_id <= 0 || $user_id <= 0 ) {
-			return 0;
+	public static function watch_requirement( int $video_id, int $user_id ): ?array {
+		$required = (int) \MediaShield\Core\Settings::get( 'ms_lms_require_watch_pct' );
+		if ( $required <= 0 || $video_id <= 0 ) {
+			return null;
 		}
-		return WatchedSpans::percent( $user_id, $video_id );
+		$watched = $user_id > 0 ? WatchedSpans::percent( $user_id, $video_id ) : 0;
+		return array(
+			'required' => $required,
+			'watched'  => $watched,
+			'met'      => $watched >= $required,
+		);
 	}
 
 	/**

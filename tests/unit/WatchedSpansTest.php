@@ -54,8 +54,27 @@ class WatchedSpansTest extends WP_UnitTestCase {
 		$this->elapsed( 30 );
 		SessionManager::heartbeat( $session['session_token'], 268, 300, true, true, array( array( 0, 2 ), array( 248, 268 ) ) );
 
-		$this->assertSame( 7, SessionManager::watched_percent( $this->video, $this->user ), '22 s of 300 s' );
+		$this->assertSame( 7, WatchedSpans::percent( $this->user, $this->video ), '22 s of 300 s' );
 		$this->assertSame( 22, (int) $wpdb->get_var( $wpdb->prepare( "SELECT total_seconds FROM {$wpdb->prefix}ms_watch_sessions WHERE id = %d", $session['session_id'] ) ) ); // phpcs:ignore WordPress.DB
+	}
+
+	/**
+	 * The one requirement helper every caller reads (player, Learnomy,
+	 * LearnDash): off answers null, a guest has watched nothing.
+	 */
+	public function test_watch_requirement_is_the_shared_answer(): void {
+		update_option( 'ms_lms_require_watch_pct', 0 );
+		$this->assertNull( SessionManager::watch_requirement( $this->video, $this->user ) );
+
+		update_option( 'ms_lms_require_watch_pct', 10 );
+		$this->assertNull( SessionManager::watch_requirement( 0, $this->user ) );
+		$this->assertSame( array( 'required' => 10, 'watched' => 0, 'met' => false ), SessionManager::watch_requirement( $this->video, 0 ) );
+
+		WatchedSpans::start( $this->user, $this->video );
+		$this->elapsed( 40 );
+		WatchedSpans::record( $this->user, $this->video, array( array( 0, 30 ) ), 300 );
+		$this->assertSame( array( 'required' => 10, 'watched' => 10, 'met' => true ), SessionManager::watch_requirement( $this->video, $this->user ) );
+		delete_option( 'ms_lms_require_watch_pct' );
 	}
 
 	public function test_rewatch_counts_once_and_sittings_add_up(): void {

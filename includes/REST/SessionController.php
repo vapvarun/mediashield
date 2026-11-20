@@ -369,15 +369,15 @@ class SessionController extends WP_REST_Controller {
 		 */
 		$watermark_config = apply_filters( 'mediashield_watermark_config', $watermark_config, $video_id, $user_id );
 
-		$required = (int) Settings::get( 'ms_lms_require_watch_pct' );
+		$watch = $user_id > 0 ? SessionManager::watch_requirement( $video_id, $user_id ) : null;
 
 		return rest_ensure_response(
 			array(
 				// The member's watched share, so the player can report the
 				// moment they reach "Require X% watched" (null when off).
-				'watch'            => $required > 0 && $user_id > 0 ? array(
-					'watched_pct'  => SessionManager::watched_percent( $video_id, $user_id ),
-					'required_pct' => $required,
+				'watch'            => $watch ? array(
+					'watched_pct'  => $watch['watched'],
+					'required_pct' => $watch['required'],
 				) : null,
 				'session_token'    => $result['session_token'],
 				'resume_position'  => $result['resume_position'],
@@ -478,11 +478,11 @@ class SessionController extends WP_REST_Controller {
 		);
 		// With "Require X% watched" on, tell the player the member's share so
 		// it can report the moment they reach it, not up to 30 s later.
-		$required = (int) Settings::get( 'ms_lms_require_watch_pct' );
-		$parsed   = SessionManager::validate_token( $token );
-		if ( $required > 0 && $parsed && (int) $parsed['user_id'] > 0 ) {
-			$response['watched_pct']  = SessionManager::watched_percent( (int) $parsed['video_id'], (int) $parsed['user_id'] );
-			$response['required_pct'] = $required;
+		$parsed = SessionManager::validate_token( $token );
+		$watch  = $parsed && (int) $parsed['user_id'] > 0 ? SessionManager::watch_requirement( (int) $parsed['video_id'], (int) $parsed['user_id'] ) : null;
+		if ( $watch ) {
+			$response['watched_pct']  = $watch['watched'];
+			$response['required_pct'] = $watch['required'];
 		}
 
 		return rest_ensure_response( $response );

@@ -23,7 +23,6 @@ namespace MediaShield\Integrations;
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
-use MediaShield\Core\Settings;
 use MediaShield\Embed\EmbedLink;
 use MediaShield\Upload\LibraryFiles;
 
@@ -116,16 +115,18 @@ class Learnomy {
 	 * @return array
 	 */
 	public static function require_watch( $status, $user_id, $lesson ): array {
-		$status   = (array) $status;
-		$required = (int) Settings::get( 'ms_lms_require_watch_pct' );
-		$video_id = absint( $lesson->video_url ?? 0 );
-		if ( $required <= 0 || ! $video_id || self::CONTENT_TYPE !== (string) ( $lesson->content_type ?? '' )
+		$status = (array) $status;
+		if ( self::CONTENT_TYPE !== (string) ( $lesson->content_type ?? '' )
 			|| ! empty( $status['is_completed'] ) || 'off' === ( $status['enforcement'] ?? 'strict' ) ) {
 			return $status;
 		}
-
-		$watched = SessionManager::watched_percent( $video_id, (int) $user_id );
-		$met     = $watched >= $required;
+		$watch = SessionManager::watch_requirement( absint( $lesson->video_url ?? 0 ), (int) $user_id );
+		if ( ! $watch ) {
+			return $status;
+		}
+		$required = $watch['required'];
+		$watched  = $watch['watched'];
+		$met      = $watch['met'];
 
 		$status['requirements']   = (array) ( $status['requirements'] ?? array() );
 		$status['requirements'][] = array(
