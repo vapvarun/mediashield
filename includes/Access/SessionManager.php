@@ -119,7 +119,9 @@ class SessionManager {
 			return array(
 				'session_token'   => self::generate_token( (int) $existing->id, $video_id, $user_id, $existing->started_at ),
 				'session_id'      => (int) $existing->id,
-				'resume_position' => (float) $existing->max_position,
+				// The place from the last viewing that played, not this
+				// session's own (a reload without play left it at 0).
+				'resume_position' => self::resume_enabled( $video_id ) ? self::last_played_position( $video_id, $user_id ) : 0.0,
 				'is_resumed'      => true,
 			);
 		}
@@ -144,25 +146,12 @@ class SessionManager {
 			return false;
 		}
 
-		// Get resume position from most recent session (active or not), but only
-		// when Resume Playback is enabled. The per-video override (`_ms_player_resume`
-		// meta: 'on'/'off') wins; an empty override falls back to the global
-		// `ms_player_resume` setting. When disabled, skip the query entirely so the
-		// client never receives a position to prompt with (and we save a DB read).
-		$resume_position = 0.0;
-		if ( self::resume_enabled( $video_id ) ) {
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
-			$resume_position = (float) $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT max_position FROM {$table}
-				 WHERE video_id = %d AND user_id = %d
-				 ORDER BY last_heartbeat DESC LIMIT 1",
-					$video_id,
-					$user_id
-				)
-			);
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		}
+		// Only when Resume Playback is enabled (per-video override, then the
+		// global setting); otherwise no query and no position to prompt with.
+		// Resume from the last viewing that actually played. Every page view
+		// opens a session at 0, so "the newest session" lost the place after
+		// one visit without pressing play (Basecamp 10531602227).
+		$resume_position = self::resume_enabled( $video_id ) ? self::last_played_position( $video_id, $user_id ) : 0.0;
 
 		// Parse device info from user agent.
 		$device_type = self::parse_device_type( $ua );
@@ -397,6 +386,31 @@ class SessionManager {
 		}
 
 		return $rows > 0;
+	}
+
+	/**
+	 * Where this viewer stopped last time they actually watched this video.
+	 *
+	 * The furthest point of their most recent session that played; a session
+	 * opened by a page view without play (position 0, no seconds) is skipped.
+	 * Answers the resume offer; the client still offers it only between 10 s
+	 * and 95%. 0 for a guest or a video never played.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  Viewer.
+	 * @return float Seconds.
+	 */
+	public static function last_played_position( int $video_id, int $user_id ): float {
+		if ( $video_id <= 0 || $user_id <= 0 ) {
+			return 0.0;
+		}
+		global $wpdb;
+		$table  = $wpdb->prefix . 'ms_watch_sessions';
+		$played = self::played_sql();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table, idx_video_user; live read.
+		return (float) $wpdb->get_var( $wpdb->prepare( "SELECT max_position FROM {$table} WHERE video_id = %d AND user_id = %d AND {$played} ORDER BY last_heartbeat DESC LIMIT 1", $video_id, $user_id ) );
 	}
 
 	/**

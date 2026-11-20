@@ -168,6 +168,13 @@
       "guard": "learnomy tests/audit/mediashield-withdrawn-lesson-keeps-video.php#case-1b (browser walk on the Learnomy+MediaShield lab)",
       "added": "2026-11-20",
       "proven_failing_on": "MediaShield 6d56821 (QA browser note on this card)"
+    },
+    {
+      "card": "10531602227",
+      "title": "Resume point was lost after one visit without pressing play: the newest session (a page view at 0) was read",
+      "guard": "tests/unit/ResumePositionTest.php; audit/journeys/customer/player-owner-audit.md (card:10531602227)",
+      "added": "2026-11-20",
+      "proven_failing_on": "6744d4a (visit 2 and 3 offered nothing; 09-lost-1440-light-before.png)"
     }
   ]
 }
