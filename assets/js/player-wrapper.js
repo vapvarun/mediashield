@@ -1517,6 +1517,7 @@
 							videoId: videoId,
 							token: data.session_token,
 							resumePosition: data.resume_position,
+							watch: data.watch || null,
 							watermarkConfig: data.watermark_config,
 							video: data.video,
 							adapter: adapter,

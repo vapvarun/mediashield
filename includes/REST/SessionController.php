@@ -102,6 +102,20 @@ class SessionController extends WP_REST_Controller {
 						'type'    => 'boolean',
 						'default' => true,
 					),
+					// Stretches played since the last report: [ [start, end], ... ] (1.4.3).
+					'spans'    => array(
+						'type'     => 'array',
+						'maxItems' => 120,
+						'items'    => array(
+							'type'     => 'array',
+							'minItems' => 2,
+							'maxItems' => 2,
+							'items'    => array(
+								'type'    => 'number',
+								'minimum' => 0,
+							),
+						),
+					),
 				),
 			)
 		);
@@ -130,6 +144,20 @@ class SessionController extends WP_REST_Controller {
 						'type'    => 'number',
 						'default' => 0,
 						'minimum' => 0,
+					),
+					// Stretches played since the last report: [ [start, end], ... ] (1.4.3).
+					'spans'    => array(
+						'type'     => 'array',
+						'maxItems' => 120,
+						'items'    => array(
+							'type'     => 'array',
+							'minItems' => 2,
+							'maxItems' => 2,
+							'items'    => array(
+								'type'    => 'number',
+								'minimum' => 0,
+							),
+						),
 					),
 				),
 			)
@@ -341,8 +369,16 @@ class SessionController extends WP_REST_Controller {
 		 */
 		$watermark_config = apply_filters( 'mediashield_watermark_config', $watermark_config, $video_id, $user_id );
 
+		$required = (int) Settings::get( 'ms_lms_require_watch_pct' );
+
 		return rest_ensure_response(
 			array(
+				// The member's watched share, so the player can report the
+				// moment they reach "Require X% watched" (null when off).
+				'watch'            => $required > 0 && $user_id > 0 ? array(
+					'watched_pct'  => SessionManager::watched_percent( $video_id, $user_id ),
+					'required_pct' => $required,
+				) : null,
 				'session_token'    => $result['session_token'],
 				'resume_position'  => $result['resume_position'],
 				'is_resumed'       => $result['is_resumed'],
@@ -428,19 +464,28 @@ class SessionController extends WP_REST_Controller {
 			(float) $request->get_param( 'position' ),
 			(float) $request->get_param( 'duration' ),
 			(bool) $request->get_param( 'playing' ),
-			(bool) $request->get_param( 'focused' )
+			(bool) $request->get_param( 'focused' ),
+			is_array( $request->get_param( 'spans' ) ) ? $request->get_param( 'spans' ) : null
 		);
 
 		if ( ! $success ) {
 			return new WP_Error( 'invalid_token', __( 'Invalid session token.', 'mediashield' ), array( 'status' => 401 ) );
 		}
 
-		return rest_ensure_response(
-			array(
-				'success' => true,
-				'status'  => 'recorded',
-			)
+		$response = array(
+			'success' => true,
+			'status'  => 'recorded',
 		);
+		// With "Require X% watched" on, tell the player the member's share so
+		// it can report the moment they reach it, not up to 30 s later.
+		$required = (int) Settings::get( 'ms_lms_require_watch_pct' );
+		$parsed   = SessionManager::validate_token( $token );
+		if ( $required > 0 && $parsed && (int) $parsed['user_id'] > 0 ) {
+			$response['watched_pct']  = SessionManager::watched_percent( (int) $parsed['video_id'], (int) $parsed['user_id'] );
+			$response['required_pct'] = $required;
+		}
+
+		return rest_ensure_response( $response );
 	}
 
 	/**
@@ -453,7 +498,8 @@ class SessionController extends WP_REST_Controller {
 		$success = SessionManager::end(
 			(string) $request->get_param( 'token' ),
 			(float) $request->get_param( 'position' ),
-			(float) $request->get_param( 'duration' )
+			(float) $request->get_param( 'duration' ),
+			is_array( $request->get_param( 'spans' ) ) ? $request->get_param( 'spans' ) : null
 		);
 
 		if ( ! $success ) {

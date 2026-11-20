@@ -116,6 +116,8 @@ class SessionManager {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
 			$wpdb->query( 'COMMIT' );
 
+			WatchedSpans::start( $user_id, $video_id );
+
 			return array(
 				'session_token'   => self::generate_token( (int) $existing->id, $video_id, $user_id, $existing->started_at ),
 				'session_id'      => (int) $existing->id,
@@ -191,6 +193,7 @@ class SessionManager {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
 		$wpdb->query( 'COMMIT' );
+		WatchedSpans::start( $user_id, $video_id );
 
 		$token = self::generate_token( $session_id, $video_id, $user_id, $now );
 
@@ -325,11 +328,13 @@ class SessionManager {
 	 * @param string $token    HMAC session token.
 	 * @param float  $position Current playback position in seconds.
 	 * @param float  $duration Total video duration in seconds.
-	 * @param bool   $playing  Whether video is currently playing.
-	 * @param bool   $focused  Whether browser tab is focused.
+	 * @param bool       $playing  Whether video is currently playing.
+	 * @param bool       $focused  Whether browser tab is focused.
+	 * @param array|null $spans    Stretches played since the last report, [ [start, end], ... ];
+	 *                             null from a player that does not report them.
 	 * @return bool Success.
 	 */
-	public static function heartbeat( string $token, float $position, float $duration, bool $playing = true, bool $focused = true ): bool {
+	public static function heartbeat( string $token, float $position, float $duration, bool $playing = true, bool $focused = true, ?array $spans = null ): bool {
 		$parsed = self::validate_token( $token );
 
 		if ( ! $parsed ) {
@@ -356,6 +361,13 @@ class SessionManager {
 
 		$completion_pct = $effective_duration > 0 ? min( 100, ( $position / $effective_duration ) * 100 ) : 0;
 
+		// Seconds really watched (Basecamp 10530930729): the stretches the
+		// player reports, checked against the time since its last report.
+		// A guest (nothing to keep spans against) and a player without span
+		// reports (a page cached before 1.4.3) keep the old 30 seconds per
+		// playing heartbeat.
+		$watched = ( null === $spans || (int) $parsed['user_id'] <= 0 ) ? ( $playing ? 30 : 0 ) : (int) round( WatchedSpans::record( (int) $parsed['user_id'], (int) $parsed['video_id'], $spans, $effective_duration ) );
+
 		// Single atomic update with GREATEST for max_position.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table update.
 		$rows = $wpdb->query(
@@ -367,7 +379,7 @@ class SessionManager {
 				completion_pct = %f
 			WHERE id = %d AND is_active = 1",
 				$now,
-				$playing ? 30 : 0,
+				$watched,
 				$position,
 				$completion_pct,
 				$parsed['session_id']
@@ -432,11 +444,12 @@ class SessionManager {
 	/**
 	 * How much of this video has this member watched, as a whole percent?
 	 *
-	 * The furthest point any of their sessions reached (the completion each
-	 * heartbeat stores), so a lesson watched over two sittings counts in full.
-	 * Answers "may this member complete the lesson yet?" for the LMS
-	 * watch-requirement (Settings `ms_lms_require_watch_pct`); for the
-	 * milestones a member earned, read `ms_milestones` instead.
+	 * Time spent watching, not the furthest point: the parts of the video
+	 * played at least once, merged across sittings, so skipping ahead earns
+	 * nothing and a rewatch counts once (WatchedSpans; owner decision on
+	 * Basecamp 10530930729). Answers "may this member complete the lesson
+	 * yet?" for Settings `ms_lms_require_watch_pct`; for milestones read
+	 * `ms_milestones`, for the furthest point `max_position`.
 	 *
 	 * @since 1.4.3
 	 *
@@ -448,12 +461,7 @@ class SessionManager {
 		if ( $video_id <= 0 || $user_id <= 0 ) {
 			return 0;
 		}
-		global $wpdb;
-		$table = $wpdb->prefix . 'ms_watch_sessions';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table, idx_video_user; must be live, never cached.
-		$pct = $wpdb->get_var( $wpdb->prepare( "SELECT MAX(completion_pct) FROM {$table} WHERE video_id = %d AND user_id = %d", $video_id, $user_id ) );
-
-		return (int) min( 100, max( 0, floor( (float) $pct ) ) );
+		return WatchedSpans::percent( $user_id, $video_id );
 	}
 
 	/**
@@ -465,17 +473,18 @@ class SessionManager {
 	 * @param string $token    HMAC session token.
 	 * @param float  $position Last playback position in seconds, 0 when unknown.
 	 * @param float  $duration Video length in seconds, 0 when unknown.
+	 * @param array|null $spans Stretches played since the last report.
 	 * @return bool Success.
 	 */
-	public static function end( string $token, float $position = 0.0, float $duration = 0.0 ): bool {
+	public static function end( string $token, float $position = 0.0, float $duration = 0.0, ?array $spans = null ): bool {
 		$parsed = self::validate_token( $token );
 
 		if ( ! $parsed ) {
 			return false;
 		}
 
-		if ( $position > 0 ) {
-			self::heartbeat( $token, $position, $duration, false );
+		if ( $position > 0 || $spans ) {
+			self::heartbeat( $token, $position, $duration, false, true, $spans ?? array() );
 		}
 
 		global $wpdb;

@@ -33,6 +33,9 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 	foreach ( $tables as $table ) {
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall drop tables.
 	}
+
+	// Watched-time record, part of the same viewing history (1.4.3).
+	delete_metadata( 'user', 0, '_ms_watched_spans', '', true );
 }
 
 // Delete free plugin options — derived from the settings schema, never a

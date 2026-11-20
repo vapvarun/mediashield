@@ -1,5 +1,6 @@
 /**
- * MediaShield Tracker — 30-second heartbeat session tracking.
+ * MediaShield Tracker — 30-second heartbeat session tracking, reporting the
+ * stretches of video actually played so "watched" is time spent watching.
  *
  * Reads position/duration from el._msAdapter (platform adapter) instead
  * of DOM queries. Works with YouTube, Vimeo, Wistia, Bunny, and self-hosted.
@@ -16,13 +17,13 @@
 		var detail = e.detail;
 		if ( ! detail.token || ! detail.el ) return;
 
-		startTracking( detail.el, detail.token, detail.video, detail.adapter );
+		startTracking( detail.el, detail.token, detail.video, detail.adapter, detail.watch );
 	} );
 
 	/**
 	 * Start heartbeat tracking for a player.
 	 */
-	function startTracking( el, token, video, adapter ) {
+	function startTracking( el, token, video, adapter, watch ) {
 		var duration = ( video && video.duration ) || 0;
 		var intervalMs = config.interval || 30000;
 
@@ -32,13 +33,87 @@
 			duration: duration,
 			adapter: adapter || el._msAdapter || null,
 			intervalId: null,
+			// Stretches of the video played since the last report (Basecamp
+			// 10530930729): "watched" is time watched, so a jump ahead starts
+			// a new stretch and the skipped part is never reported.
+			spans: [],
+			open: null,
+			lastPos: null,
+			watchedPct: watch ? watch.watched_pct : null,
+			requiredPct: watch ? watch.required_pct : 0,
+			earlySent: false,
 		};
+
+		session.sampleId = setInterval( function () {
+			sample( session );
+		}, 1000 );
 
 		session.intervalId = setInterval( function () {
 			sendHeartbeat( session );
 		}, intervalMs );
 
 		activeSessions.push( session );
+	}
+
+	/**
+	 * Once a second: extend the stretch being played, or close it on a pause
+	 * or a jump. A step of more than 2.5 s in one second is a seek, not play.
+	 */
+	function sample( session ) {
+		var pos = getPlayerPosition( session.el, session.adapter ) || 0;
+		var playing = isPlaying( session.el, session.adapter );
+		var last = session.lastPos;
+		session.lastPos = pos;
+		if ( ! playing || null === last || pos <= last || pos - last > 2.5 ) {
+			// Paused since the last sample: keep the part played before it.
+			if ( ! playing && session.open && pos > last && pos - last <= 2.5 ) {
+				session.open[ 1 ] = pos;
+			}
+			closeSpan( session );
+			if ( playing ) session.open = [ pos, pos ];
+			return;
+		}
+		if ( ! session.open ) session.open = [ last, pos ];
+		session.open[ 1 ] = pos;
+
+		// With "Require X% watched" on, report as soon as the member gets
+		// there, so the lesson's Complete turns on without waiting for the
+		// next 30-second beat. Once per session.
+		if ( session.requiredPct && null !== session.watchedPct && ! session.earlySent && session.duration > 0 ) {
+			var pending = pendingSeconds( session );
+			if ( session.watchedPct + ( pending / session.duration ) * 100 >= session.requiredPct ) {
+				session.earlySent = true;
+				sendHeartbeat( session );
+			}
+		}
+	}
+
+	function closeSpan( session ) {
+		if ( session.open && session.open[ 1 ] > session.open[ 0 ] ) {
+			session.spans.push( [ session.open[ 0 ], session.open[ 1 ] ] );
+		}
+		session.open = null;
+	}
+
+	function pendingSeconds( session ) {
+		var total = session.open ? session.open[ 1 ] - session.open[ 0 ] : 0;
+		session.spans.forEach( function ( s ) { total += s[ 1 ] - s[ 0 ]; } );
+		return total;
+	}
+
+	/**
+	 * The stretches to report now; the one still playing carries on from here.
+	 */
+	function takeSpans( session ) {
+		var out = session.spans.slice();
+		if ( session.open && session.open[ 1 ] > session.open[ 0 ] ) {
+			out.push( [ session.open[ 0 ], session.open[ 1 ] ] );
+			session.open = [ session.open[ 1 ], session.open[ 1 ] ];
+		}
+		session.spans = [];
+		return out.map( function ( s ) {
+			return [ Math.round( s[ 0 ] * 10 ) / 10, Math.round( s[ 1 ] * 10 ) / 10 ];
+		} );
 	}
 
 	/**
@@ -54,6 +129,12 @@
 			session.duration = duration;
 		}
 
+		var sent = takeSpans( session );
+		// Not stored (dropped connection, 5xx, rate limit): report them next time.
+		var requeue = function () {
+			session.spans = sent.concat( session.spans );
+		};
+
 		fetch( config.restUrl + 'session/heartbeat', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
@@ -63,17 +144,28 @@
 				duration: duration,
 				playing: playing,
 				focused: focused,
+				spans: sent,
 			} ),
 		} )
 			.then( function ( res ) {
 				if ( res.ok ) {
 					session.failCount = 0;
+					res.clone().json().then( function ( data ) {
+						if ( data && 'number' === typeof data.watched_pct ) {
+							session.watchedPct = data.watched_pct;
+							session.requiredPct = data.required_pct || 0;
+							// Still short after the early beat: allow another.
+							session.earlySent = session.watchedPct >= session.requiredPct;
+						}
+					// ms-silent-ok: the share is only a hint for an early beat.
+					} ).catch( function () {} );
 					return;
 				}
 				// A 5xx is the server having a moment, like a dropped
 				// connection: keep the 30 s beat so progress is recorded once
 				// it answers again. Only refusals count towards stopping.
-				if ( res.status >= 500 ) {
+				if ( res.status >= 500 || 429 === res.status ) {
+					requeue();
 					console.warn( 'MediaShield: heartbeat not answered (' + res.status + '), will retry' );
 					return;
 				}
@@ -90,6 +182,7 @@
 			.catch( function ( err ) {
 				// Dropped connection: transient, the next beat tries again.
 				// Stopping here lost every later position of the viewing.
+				requeue();
 				console.warn( 'MediaShield: heartbeat failed, will retry', err );
 			} );
 	}
@@ -134,6 +227,7 @@
 			token: session.token,
 			position: getPlayerPosition( session.el, session.adapter ) || 0,
 			duration: duration,
+			spans: takeSpans( session ),
 		};
 	}
 
@@ -143,6 +237,7 @@
 	function endAllSessions() {
 		activeSessions.forEach( function ( session ) {
 			if ( session.intervalId ) clearInterval( session.intervalId );
+			if ( session.sampleId ) clearInterval( session.sampleId );
 
 			var data = JSON.stringify( finalBeat( session ) );
 
@@ -193,6 +288,7 @@
 			if ( session.el !== el ) return true;
 
 			if ( session.intervalId ) clearInterval( session.intervalId );
+			if ( session.sampleId ) clearInterval( session.sampleId );
 			fetch( config.restUrl + 'session/end', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },

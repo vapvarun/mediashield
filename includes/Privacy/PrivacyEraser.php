@@ -163,6 +163,9 @@ class PrivacyEraser {
 			$user_tags_deleted = (int) delete_user_meta( $user->ID, '_ms_video_tags' );
 			$items_removed    += $user_tags_deleted;
 
+			// The watched-time record (WatchedSpans), one user meta row.
+			$items_removed += (int) delete_user_meta( $user->ID, \MediaShield\Access\WatchedSpans::META_KEY );
+
 			// Remove activity alerts for this user (Pro table). Pro 1.4.2 and
 			// later exports and erases its own table; this stays only for an
 			// older Pro running next to this Free version.

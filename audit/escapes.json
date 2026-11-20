@@ -175,6 +175,13 @@
       "guard": "tests/unit/ResumePositionTest.php; audit/journeys/customer/player-owner-audit.md (card:10531602227)",
       "added": "2026-11-20",
       "proven_failing_on": "6744d4a (visit 2 and 3 offered nothing; 09-lost-1440-light-before.png)"
+    },
+    {
+      "card": "10530930729",
+      "title": "QA bounce: 'watched' was the furthest point, so dragging to 4:08 and playing 20 s unlocked Complete; unlock lagged about 14 s",
+      "guard": "tests/unit/WatchedSpansTest.php; tests/unit/LessonWatchRequirementTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930729)",
+      "added": "2026-11-20",
+      "proven_failing_on": "f9275e6 (watched_percent() = MAX(completion_pct) = 89 after a drag; 12-skip-1440-light-before.png)"
     }
   ]
 }

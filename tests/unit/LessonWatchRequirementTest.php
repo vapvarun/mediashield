@@ -61,19 +61,16 @@ class LessonWatchRequirementTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * Give the member $pct of a 100-second video as watched time (WatchedSpans).
+	 */
 	private function watched( float $pct ): void {
-		global $wpdb;
-		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prefix . 'ms_watch_sessions',
-			array(
-				'video_id'       => $this->video,
-				'user_id'        => $this->member,
-				'session_token'  => 'test-' . wp_generate_password( 8, false ),
-				'completion_pct' => $pct,
-				'max_position'   => $pct,
-				'is_active'      => 0,
-			)
-		);
+		update_post_meta( $this->video, '_ms_duration', 100 );
+		$all                 = (array) get_user_meta( $this->member, '_ms_watched_spans', true );
+		$spans               = (array) ( $all[ $this->video ]['s'] ?? array() );
+		$spans[]             = array( 0, $pct );
+		$all[ $this->video ] = array( 's' => \MediaShield\Access\WatchedSpans::merge( $spans ) );
+		update_user_meta( $this->member, '_ms_watched_spans', $all );
 	}
 
 	private function ask( array $status, string $type = 'mediashield' ): array {
@@ -112,7 +109,7 @@ class LessonWatchRequirementTest extends WP_UnitTestCase {
 	public function test_watched_share_allows_complete(): void {
 		update_option( 'ms_lms_require_watch_pct', 80 );
 		$this->watched( 30 );
-		$this->watched( 85.4 ); // A second sitting: the furthest point counts.
+		$this->watched( 85.4 ); // A second sitting overlapping the first: counted once.
 
 		$status = $this->ask( $this->status() );
 
