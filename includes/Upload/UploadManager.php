@@ -269,20 +269,23 @@ class UploadManager {
 	}
 
 	/**
-	 * Take a named lock without waiting.
+	 * Take a named lock: can this request go ahead alone?
 	 *
 	 * A MySQL named lock belongs to the database connection, so it is released
 	 * when the request ends even if PHP dies mid-upload: nothing to clean up,
-	 * no stale row. The same mechanism Pro's Bunny import uses per GUID.
+	 * no stale row. Public because it is the one lock helper for the plugin
+	 * pair: uploads use it per video (no wait), Pro's Bunny import per GUID
+	 * (waits for a parallel webhook). Always pair with release_lock().
 	 *
-	 * @param string $name Lock name.
-	 * @return bool False when another request holds it.
+	 * @param string $name Lock name (64 characters at most).
+	 * @param int    $wait Seconds to wait for another holder; 0 answers at once.
+	 * @return bool False when another request still holds it.
 	 */
-	public static function acquire_lock( string $name ): bool {
+	public static function acquire_lock( string $name, int $wait = 0 ): bool {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
-		return '1' === (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 0)', $name ) );
+		return '1' === (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $name, max( 0, $wait ) ) );
 	}
 
 	/**
