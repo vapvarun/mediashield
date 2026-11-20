@@ -278,8 +278,15 @@
 			};
 
 			var video = document.createElement( 'video' );
-			// Per-video overrides. `controls` defaults true; the others default false.
-			video.controls = options.controls === false ? false : true;
+			// The browser's own controls stay off: MediaShield draws one control
+			// bar (buildControlBar) once the video is ready, so a viewer never
+			// sees two sets of buttons, a second fullscreen icon or the
+			// picture-in-picture menu (Basecamp 10530930409). `controls` = false
+			// on the video (per-video override) means no bar at all.
+			video.controls = false;
+			adapter._wantsControls = options.controls !== false;
+			video.disablePictureInPicture = true;
+			video.setAttribute( 'disablepictureinpicture', '' );
 			video.autoplay = options.autoplay === true;
 			video.loop     = options.loop === true;
 			video.muted    = options.muted === true;
@@ -779,52 +786,282 @@
 	}
 
 	/**
-	 * Build a speed control menu using safe DOM methods.
+	 * A small pop-up menu button (speed, quality): one button, a list of
+	 * choices, the current one marked. Safe DOM methods only.
+	 *
+	 * @param {HTMLElement} parent   Where the control goes (the control bar).
+	 * @param {string}      cls      Class of the wrapper, e.g. 'ms-speed-control'.
+	 * @param {string}      label    Accessible name of the button.
+	 * @param {Array}       choices  [ { label, value } ].
+	 * @param {*}           current  Value marked as chosen.
+	 * @param {Function}    onPick   Called with the chosen value.
 	 */
-	function buildSpeedControl( el, container ) {
-		var speedControl = document.createElement( 'div' );
-		speedControl.className = 'ms-speed-control';
+	function buildMenuControl( parent, cls, label, choices, current, onPick ) {
+		var control = document.createElement( 'div' );
+		control.className = cls + ' ms-menu-control';
 
-		var speedBtn = document.createElement( 'button' );
-		speedBtn.className = 'ms-speed-btn';
-		speedBtn.setAttribute( 'aria-label', t( 'speed', 'Playback speed' ) );
-		speedBtn.textContent = '1x';
-		speedControl.appendChild( speedBtn );
+		var btn = document.createElement( 'button' );
+		btn.type = 'button';
+		btn.className = cls.replace( '-control', '-btn' ) + ' ms-menu-control__btn';
+		btn.setAttribute( 'aria-label', label );
+		btn.setAttribute( 'aria-haspopup', 'true' );
+		btn.setAttribute( 'aria-expanded', 'false' );
+		control.appendChild( btn );
 
 		var menu = document.createElement( 'div' );
-		menu.className = 'ms-speed-menu';
+		menu.className = cls.replace( '-control', '-menu' ) + ' ms-menu-control__menu';
+		menu.setAttribute( 'role', 'menu' );
 
-		var speeds = [ 0.5, 0.75, 1, 1.25, 1.5, 2 ];
-		speeds.forEach( function ( s ) {
+		var close = function () {
+			control.classList.remove( 'is-open' );
+			btn.setAttribute( 'aria-expanded', 'false' );
+		};
+
+		choices.forEach( function ( c ) {
 			var opt = document.createElement( 'button' );
-			opt.className = 'ms-speed-option' + ( s === 1 ? ' is-active' : '' );
-			opt.dataset.speed = s;
-			opt.textContent = s + 'x';
+			opt.type = 'button';
+			opt.setAttribute( 'role', 'menuitemradio' );
+			opt.className = cls.replace( '-control', '-option' ) + ' ms-menu-control__option';
+			opt.textContent = c.label;
+			var mark = function ( on ) {
+				opt.classList.toggle( 'is-active', on );
+				opt.setAttribute( 'aria-checked', on ? 'true' : 'false' );
+				if ( on ) btn.textContent = c.short || c.label;
+			};
+			mark( c.value === current );
 			opt.addEventListener( 'click', function ( e ) {
 				e.stopPropagation();
-				if ( el._msAdapter && el._msAdapter._video ) {
-					el._msAdapter._video.playbackRate = s;
-				}
-				speedBtn.textContent = s + 'x';
-				menu.querySelectorAll( '.ms-speed-option' ).forEach( function ( o ) { o.classList.remove( 'is-active' ); } );
-				opt.classList.add( 'is-active' );
-				speedControl.classList.remove( 'is-open' );
+				menu.querySelectorAll( '.ms-menu-control__option' ).forEach( function ( o ) {
+					o.classList.remove( 'is-active' );
+					o.setAttribute( 'aria-checked', 'false' );
+				} );
+				mark( true );
+				onPick( c.value );
+				close();
+				btn.focus();
 			} );
 			menu.appendChild( opt );
 		} );
+		control.appendChild( menu );
 
-		speedControl.appendChild( menu );
-
-		speedBtn.addEventListener( 'click', function ( e ) {
+		btn.addEventListener( 'click', function ( e ) {
 			e.stopPropagation();
-			speedControl.classList.toggle( 'is-open' );
+			var open = ! control.classList.contains( 'is-open' );
+			control.classList.toggle( 'is-open', open );
+			btn.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
 		} );
-
-		document.addEventListener( 'click', function () {
-			speedControl.classList.remove( 'is-open' );
+		control.addEventListener( 'keydown', function ( e ) {
+			if ( 'Escape' === e.key && control.classList.contains( 'is-open' ) ) {
+				e.stopPropagation();
+				close();
+				btn.focus();
+			}
 		} );
+		document.addEventListener( 'click', close );
 
-		container.appendChild( speedControl );
+		parent.appendChild( control );
+		return control;
+	}
+
+	/**
+	 * Playback-speed menu for a native <video>.
+	 */
+	function buildSpeedControl( el, parent ) {
+		buildMenuControl(
+			parent,
+			'ms-speed-control',
+			t( 'speed', 'Playback speed' ),
+			[ 0.5, 0.75, 1, 1.25, 1.5, 2 ].map( function ( s ) { return { label: s + 'x', value: s }; } ),
+			1,
+			function ( s ) {
+				if ( el._msAdapter && el._msAdapter._video ) {
+					el._msAdapter._video.playbackRate = s;
+				}
+			}
+		);
+	}
+
+	// Lucide icons (stroke 1.75) for the control bar. Constant markup, never
+	// built from data.
+	var ICONS = {
+		play: '<polygon points="6 3 20 12 6 21 6 3"/>',
+		pause: '<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>',
+		volume: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>',
+		muted: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
+		captions: '<rect width="18" height="14" x="3" y="5" rx="2" ry="2"/><path d="M7 15h4M15 15h2M7 11h2M13 11h4"/>',
+	};
+
+	function setIcon( btn, name, size ) {
+		var px = size || 20;
+		btn.innerHTML = '<svg class="ms-icon" width="' + px + '" height="' + px + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + ICONS[ name ] + '</svg>';
+	}
+
+	function clock( s ) {
+		s = Math.max( 0, Math.floor( s || 0 ) );
+		var h = Math.floor( s / 3600 );
+		var m = Math.floor( ( s % 3600 ) / 60 );
+		var sec = s % 60;
+		return ( h ? h + ':' + ( m < 10 ? '0' : '' ) : '' ) + m + ':' + ( sec < 10 ? '0' : '' ) + sec;
+	}
+
+	/**
+	 * One MediaShield control bar for a native <video> (self-hosted, Bunny
+	 * direct stream): play, scrubber, time, mute, captions and quality when
+	 * the video has them, speed, and the one fullscreen button. The browser's
+	 * controls stay off (NativeAdapter), so there is one set of controls and
+	 * no picture-in-picture menu (Basecamp 10530930409). The bar hides while
+	 * the video plays and nobody touches the player, and comes back on any
+	 * pointer move, focus or pause.
+	 *
+	 * @param {HTMLElement} el        Player container.
+	 * @param {Object}      adapter   Native adapter.
+	 * @param {boolean}     withSpeed Owner's Speed Control setting.
+	 */
+	function buildControlBar( el, adapter, withSpeed ) {
+		var video = adapter._video;
+		if ( ! video || el.querySelector( '.ms-controls' ) ) return;
+		el.classList.add( 'ms-has-controls' );
+
+		var bar = document.createElement( 'div' );
+		bar.className = 'ms-controls';
+		bar.setAttribute( 'role', 'group' );
+		bar.setAttribute( 'aria-label', t( 'videoControls', 'Video controls' ) );
+
+		// Central play button, shown while the video is paused.
+		var big = document.createElement( 'button' );
+		big.type = 'button';
+		big.className = 'ms-bigplay';
+		big.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
+		setIcon( big, 'play', 32 );
+		big.addEventListener( 'click', function () { adapter.play(); } );
+		el.appendChild( big );
+
+		var play = document.createElement( 'button' );
+		play.type = 'button';
+		play.className = 'ms-controls__btn ms-controls__play';
+		play.addEventListener( 'click', function () {
+			adapter.isPlaying() ? adapter.pause() : adapter.play();
+		} );
+		bar.appendChild( play );
+
+		var time = document.createElement( 'span' );
+		time.className = 'ms-controls__time';
+		time.setAttribute( 'aria-hidden', 'true' );
+		bar.appendChild( time );
+
+		var seek = document.createElement( 'input' );
+		seek.type = 'range';
+		seek.className = 'ms-controls__seek';
+		seek.min = '0';
+		seek.step = '0.1';
+		seek.value = '0';
+		seek.setAttribute( 'aria-label', t( 'seek', 'Seek' ) );
+		seek.addEventListener( 'input', function () {
+			video.currentTime = parseFloat( seek.value ) || 0;
+		} );
+		bar.appendChild( seek );
+
+		var mute = document.createElement( 'button' );
+		mute.type = 'button';
+		mute.className = 'ms-controls__btn ms-controls__mute';
+		mute.addEventListener( 'click', function () { video.muted = ! video.muted; } );
+		bar.appendChild( mute );
+
+		// Captions, when the video carries a text track.
+		var tracks = Array.prototype.filter.call( video.textTracks || [], function ( tr ) {
+			return 'subtitles' === tr.kind || 'captions' === tr.kind;
+		} );
+		if ( tracks.length ) {
+			var cc = document.createElement( 'button' );
+			cc.type = 'button';
+			cc.className = 'ms-controls__btn ms-controls__captions';
+			cc.setAttribute( 'aria-label', t( 'captions', 'Captions' ) );
+			setIcon( cc, 'captions' );
+			var syncCc = function () {
+				cc.setAttribute( 'aria-pressed', 'showing' === tracks[ 0 ].mode ? 'true' : 'false' );
+			};
+			cc.addEventListener( 'click', function () {
+				tracks[ 0 ].mode = 'showing' === tracks[ 0 ].mode ? 'hidden' : 'showing';
+				syncCc();
+			} );
+			syncCc();
+			bar.appendChild( cc );
+		}
+
+		// Quality, when an HLS stream offers more than one rendition.
+		var hls = adapter._hls;
+		if ( hls && hls.levels && hls.levels.length > 1 ) {
+			var levels = hls.levels.map( function ( l, i ) {
+				return { label: l.height ? l.height + 'p' : String( i + 1 ), value: i };
+			} );
+			levels.unshift( { label: t( 'auto', 'Auto' ), value: -1 } );
+			buildMenuControl( bar, 'ms-quality-control', t( 'quality', 'Quality' ), levels, -1, function ( v ) {
+				hls.currentLevel = v;
+			} );
+		}
+
+		if ( withSpeed ) {
+			buildSpeedControl( el, bar );
+		}
+
+		// The one fullscreen button (rendered by the server so the player has
+		// it before scripts run) moves into the bar.
+		var fs = el.querySelector( '.ms-fullscreen-btn' );
+		if ( fs ) {
+			fs.classList.add( 'ms-controls__btn' );
+			bar.appendChild( fs );
+		}
+
+		el.appendChild( bar );
+
+		var sync = function () {
+			var playing = adapter.isPlaying();
+			el.classList.toggle( 'ms-is-playing', playing );
+			setIcon( play, playing ? 'pause' : 'play' );
+			play.setAttribute( 'aria-label', playing ? t( 'pause', 'Pause' ) : t( 'play', 'Play' ) );
+		};
+		var syncTime = function () {
+			var d = adapter.getDuration();
+			var p = video.currentTime || 0;
+			if ( d ) seek.max = String( d );
+			seek.value = String( p );
+			seek.setAttribute( 'aria-valuetext', clock( p ) + ' / ' + clock( d ) );
+			time.textContent = clock( p ) + ' / ' + clock( d );
+		};
+		var syncMute = function () {
+			setIcon( mute, video.muted || 0 === video.volume ? 'muted' : 'volume' );
+			mute.setAttribute( 'aria-label', video.muted ? t( 'unmute', 'Unmute' ) : t( 'mute', 'Mute' ) );
+		};
+
+		// Hide the bar while playing and idle; any touch brings it back.
+		var idle = null;
+		var wake = function () {
+			el.classList.remove( 'ms-controls-idle' );
+			clearTimeout( idle );
+			idle = setTimeout( function () {
+				if ( adapter.isPlaying() && ! bar.contains( document.activeElement ) ) {
+					el.classList.add( 'ms-controls-idle' );
+				}
+			}, 2500 );
+		};
+
+		[ 'play', 'pause', 'ended' ].forEach( function ( ev ) {
+			video.addEventListener( ev, function () { sync(); wake(); } );
+		} );
+		[ 'timeupdate', 'durationchange', 'seeked' ].forEach( function ( ev ) {
+			video.addEventListener( ev, syncTime );
+		} );
+		video.addEventListener( 'volumechange', syncMute );
+		// A click on the picture plays or pauses, as on every video site.
+		video.addEventListener( 'click', function () {
+			adapter.isPlaying() ? adapter.pause() : adapter.play();
+		} );
+		el.addEventListener( 'pointermove', wake );
+		el.addEventListener( 'focusin', wake );
+
+		sync();
+		syncTime();
+		syncMute();
 	}
 
 	/**
@@ -895,8 +1132,12 @@
 		var container = el;
 		var platform = el.dataset.platform || '';
 
-		// ── Speed control (native video only — YouTube/Vimeo/Wistia have their own) ──
-		if ( feat( 'speedControl' ) && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
+		// ── Control bar (native video only — YouTube/Vimeo/Wistia draw their own) ──
+		// Speed sits in the bar. A video whose owner switched controls off
+		// gets no bar, as before.
+		if ( adapter._video && adapter._wantsControls ) {
+			buildControlBar( el, adapter, feat( 'speedControl' ) );
+		} else if ( feat( 'speedControl' ) && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
 			buildSpeedControl( el, container );
 		}
 

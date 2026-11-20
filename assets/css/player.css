@@ -486,7 +486,8 @@ iframe.ms-player-target {
 	background: rgba(0, 0, 0, 0.8);
 }
 
-.ms-speed-menu {
+.ms-speed-menu,
+.ms-menu-control__menu {
 	display: none;
 	position: absolute;
 	top: 100%;
@@ -497,11 +498,13 @@ iframe.ms-player-target {
 	margin-top: 4px;
 }
 
-.ms-speed-control.is-open .ms-speed-menu {
+.ms-speed-control.is-open .ms-speed-menu,
+.ms-menu-control.is-open .ms-menu-control__menu {
 	display: block;
 }
 
-.ms-speed-option {
+.ms-speed-option,
+.ms-menu-control__option {
 	display: block;
 	width: 100%;
 	background: none;
@@ -510,17 +513,132 @@ iframe.ms-player-target {
 	padding: 6px 16px;
 	font-size: 13px;
 	cursor: pointer;
-	text-align: left;
+	text-align: start;
 	white-space: nowrap;
 }
 
-.ms-speed-option:hover {
+.ms-speed-option:hover,
+.ms-menu-control__option:hover {
 	background: rgba(255, 255, 255, 0.1);
 }
 
-.ms-speed-option.is-active {
+.ms-speed-option.is-active,
+.ms-menu-control__option.is-active {
 	color: var(--ms-accent);
 	font-weight: 600;
+}
+
+/* One control bar for a native <video> (self-hosted, Bunny direct stream).
+ * The browser's own controls are off, so this is the only set of controls:
+ * play, scrubber, time, mute, captions / quality when available, speed and
+ * the one fullscreen button. */
+.ms-controls {
+	position: absolute;
+	inset-inline: 0;
+	bottom: 0;
+	z-index: 15;
+	display: flex;
+	align-items: center;
+	gap: var(--ms-space-1);
+	padding: var(--ms-space-6) var(--ms-space-2) var(--ms-space-1);
+	background: linear-gradient(transparent, var(--ms-overlay-surface-strong));
+	line-height: 1;
+	transition: opacity 0.2s;
+}
+
+.ms-controls-idle .ms-controls {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.ms-controls__btn,
+.ms-controls .ms-menu-control__btn {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--ms-tap-min);
+	height: var(--ms-tap-min);
+	padding: 0 var(--ms-space-2);
+	border: 0;
+	border-radius: var(--ms-radius-sm);
+	background: transparent;
+	color: var(--ms-on-overlay);
+	font-size: var(--ms-font-size-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.ms-controls__captions[aria-pressed="true"] {
+	color: var(--ms-accent);
+}
+
+/* The server-rendered fullscreen button, moved into the bar. */
+.ms-controls .ms-fullscreen-btn {
+	position: static;
+	width: var(--ms-tap-min);
+	background: transparent;
+}
+
+.ms-controls .ms-menu-control {
+	position: relative;
+	inset: auto;
+}
+
+/* Menus in the bar open upwards. */
+.ms-controls .ms-menu-control__menu {
+	top: auto;
+	bottom: 100%;
+	right: auto;
+	inset-inline-end: 0;
+	margin-block: 0 var(--ms-space-1);
+}
+
+.ms-controls__time {
+	flex: 0 0 auto;
+	padding-inline: var(--ms-space-1);
+	color: var(--ms-on-overlay);
+	font-size: var(--ms-font-size-sm);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.ms-controls__seek {
+	flex: 1 1 auto;
+	min-width: 48px;
+	height: var(--ms-tap-min);
+	margin: 0;
+	background: transparent;
+	accent-color: var(--ms-accent);
+	cursor: pointer;
+}
+
+/* Central play button while the video is paused. */
+.ms-bigplay {
+	position: absolute;
+	inset: 0;
+	z-index: 14;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 64px;
+	margin: auto;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: var(--ms-accent);
+	color: var(--ms-on-overlay);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+	cursor: pointer;
+}
+
+.ms-bigplay .ms-icon {
+	margin-inline-start: 4px;
+}
+
+.ms-is-playing .ms-bigplay {
+	display: none;
 }
 
 /* Sticky / floating player */
@@ -579,6 +697,17 @@ iframe.ms-player-target {
 /* Touch / coarse-pointer devices: restore the 40px tap-target minimum so
    thumb taps land comfortably (WCAG 2.5.5). Pointer-feature query is
    widely supported and falls back gracefully where unsupported. */
+@media (hover: hover) {
+	.ms-controls__btn:hover,
+	.ms-controls .ms-menu-control__btn:hover {
+		background: rgba(255, 255, 255, 0.15);
+	}
+
+	.ms-bigplay:hover {
+		background: var(--ms-accent-hover);
+	}
+}
+
 @media (pointer: coarse) {
 	.ms-sticky-close {
 		width: var(--ms-tap-min);
@@ -656,6 +785,11 @@ iframe.ms-player-target {
 
 /* Keyboard focus ring for every interactive player control (Rule 14). */
 .ms-fullscreen-btn:focus-visible,
+.ms-controls__btn:focus-visible,
+.ms-controls__seek:focus-visible,
+.ms-menu-control__btn:focus-visible,
+.ms-menu-control__option:focus-visible,
+.ms-bigplay:focus-visible,
 .ms-speed-btn:focus-visible,
 .ms-speed-option:focus-visible,
 .ms-sticky-close:focus-visible,
@@ -670,6 +804,20 @@ iframe.ms-player-target {
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
+	.ms-controls {
+		gap: 0;
+		padding-inline: var(--ms-space-1);
+	}
+
+	.ms-controls__time {
+		font-size: var(--ms-font-size-xs);
+	}
+
+	.ms-bigplay {
+		width: 52px;
+		height: 52px;
+	}
+
 	.ms-resume-toast {
 		font-size: 0.75rem;
 		padding: 0.5rem 1rem;

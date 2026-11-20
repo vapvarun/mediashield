@@ -475,6 +475,16 @@ class Settings {
 				'continue'        => __( 'Continue', 'mediashield' ),
 				'replay'          => __( 'Replay', 'mediashield' ),
 				'playVideo'       => __( 'Play video', 'mediashield' ),
+				// The player's own control bar (native video).
+				'videoControls'   => __( 'Video controls', 'mediashield' ),
+				'play'            => __( 'Play', 'mediashield' ),
+				'pause'           => __( 'Pause', 'mediashield' ),
+				'seek'            => __( 'Seek', 'mediashield' ),
+				'mute'            => __( 'Mute', 'mediashield' ),
+				'unmute'          => __( 'Unmute', 'mediashield' ),
+				'captions'        => __( 'Captions', 'mediashield' ),
+				'quality'         => __( 'Quality', 'mediashield' ),
+				'auto'            => __( 'Auto', 'mediashield' ),
 				/* translators: %s: playback position, for example 12:34. */
 				'resumePrompt'    => __( 'Resume from %s?', 'mediashield' ),
 				'resume'          => __( 'Resume', 'mediashield' ),

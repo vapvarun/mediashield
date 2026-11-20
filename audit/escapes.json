@@ -77,6 +77,13 @@
       "guard": "audit/journeys/customer/protection-levels.md (card:10516698451)",
       "added": "2026-11-20",
       "proven_failing_on": "3c6de6b (insets() reserved native controls only)"
+    },
+    {
+      "card": "10530930409",
+      "title": "Native player showed the browser's controls under MediaShield's speed and fullscreen buttons: two fullscreen icons and a picture-in-picture menu",
+      "guard": "audit/journeys/customer/player-owner-audit.md (card:10530930409)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b75cb14 (video.controls true, disablePictureInPicture false; browser walk 1440/390, 08-*-before.png)"
     }
   ]
 }

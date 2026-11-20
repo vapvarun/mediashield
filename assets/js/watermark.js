@@ -59,13 +59,14 @@
 		};
 
 		// Player chrome sitting in the corners (badge top-left, speed top-right,
-		// fullscreen button bottom-right) and the browser's own control bar,
+		// fullscreen button bottom-right), MediaShield's control bar on a
+		// native video, and the browser's own control bar,
 		// which the DOM cannot measure. The watermark is drawn clear of them.
 		// ponytail: 64px covers the Chrome, Firefox and Safari bars; measure if one grows.
 		function insets(rect) {
 			var top = 0;
 			var bottom = 0;
-			el.querySelectorAll('.ms-badge, .ms-speed-control, .ms-fullscreen-btn').forEach(function (node) {
+			el.querySelectorAll('.ms-badge, .ms-speed-control, .ms-fullscreen-btn, .ms-controls').forEach(function (node) {
 				var r = node.getBoundingClientRect();
 				if (!r.height) return;
 				if (r.top - rect.top < rect.height / 2) {
