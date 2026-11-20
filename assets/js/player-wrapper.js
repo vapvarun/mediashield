@@ -1710,37 +1710,75 @@
 
 	// ─── Resume Prompt ───────────────────────────────────────────
 
+	/**
+	 * Is a stopping point worth offering to resume from?
+	 *
+	 * Only between 10 seconds in and 95% of the length: a viewer who stopped
+	 * 3 seconds in, or who finished, starts from the top (Basecamp
+	 * 10530930523). With no known length only the 10 second floor applies.
+	 *
+	 * @param {number} position Seconds where the viewer stopped.
+	 * @param {number} duration Video length in seconds, 0 when unknown.
+	 * @return {boolean}
+	 */
+	function resumeWorthOffering( position, duration ) {
+		if ( ! ( position >= 10 ) ) return false;
+		return ! ( duration > 0 ) || position < duration * 0.95;
+	}
+
+	/**
+	 * A small "Resume from 2:00" chip just above the control bar, never on
+	 * it. It goes away on its own after about 8 seconds, as soon as the video
+	 * plays, or with its close button.
+	 */
 	function showResumePrompt( el, position, adapter ) {
-		var mins = Math.floor( position / 60 );
-		var secs = Math.floor( position % 60 );
-		var timeStr = mins + ':' + ( secs < 10 ? '0' : '' ) + secs;
+		var target = el.querySelector( '.ms-player-target' );
+		var duration = adapter.getDuration() || parseFloat( target ? target.dataset.duration : 0 ) || 0;
+		if ( ! resumeWorthOffering( position, duration ) ) return;
 
-		var toast = document.createElement( 'div' );
-		toast.className = 'ms-resume-toast';
+		var chip = document.createElement( 'div' );
+		chip.className = 'ms-resume-chip';
 
-		var span = document.createElement( 'span' );
-		span.textContent = t( 'resumePrompt', 'Resume from %s?' ).replace( '%s', timeStr );
+		var go = document.createElement( 'button' );
+		go.type = 'button';
+		go.className = 'ms-resume-chip__go';
+		go.textContent = t( 'resumeFrom', 'Resume from %s' ).replace( '%s', clock( position ) );
 
-		var yesBtn = document.createElement( 'button' );
-		yesBtn.className = 'ms-resume-yes';
-		yesBtn.textContent = t( 'resume', 'Resume' );
-		yesBtn.addEventListener( 'click', function () {
+		var close = document.createElement( 'button' );
+		close.type = 'button';
+		close.className = 'ms-resume-chip__close';
+		close.setAttribute( 'aria-label', t( 'dismiss', 'Dismiss' ) );
+		close.textContent = '×';
+
+		var watch = null;
+		var done = function () {
+			clearInterval( watch );
+			el.classList.remove( 'ms-has-resume' );
+			if ( chip.parentNode ) chip.remove();
+		};
+		go.addEventListener( 'click', function () {
+			done();
 			adapter.seekTo( position );
 			adapter.play();
-			toast.remove();
 		} );
+		close.addEventListener( 'click', done );
 
-		var noBtn = document.createElement( 'button' );
-		noBtn.className = 'ms-resume-no';
-		noBtn.textContent = t( 'startOver', 'Start Over' );
-		noBtn.addEventListener( 'click', function () { toast.remove(); } );
+		chip.appendChild( go );
+		chip.appendChild( close );
 
-		toast.appendChild( span );
-		toast.appendChild( yesBtn );
-		toast.appendChild( noBtn );
-		el.appendChild( toast );
+		// Above MediaShield's control bar when there is one; platform players
+		// keep their own bar in the bottom 52px, which the CSS default clears.
+		var bar = el.querySelector( '.ms-controls' );
+		if ( bar && bar.offsetHeight ) {
+			chip.style.bottom = ( bar.offsetHeight + 8 ) + 'px';
+		}
+		el.appendChild( chip );
+		el.classList.add( 'ms-has-resume' );
 
-		setTimeout( function () { if ( toast.parentNode ) toast.remove(); }, 10000 );
+		var started = Date.now();
+		watch = setInterval( function () {
+			if ( adapter.isPlaying() || Date.now() - started > 8000 ) done();
+		}, 250 );
 	}
 
 	// ─── Custom Fullscreen ───────────────────────────────────────

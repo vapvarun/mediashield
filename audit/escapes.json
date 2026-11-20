@@ -84,6 +84,13 @@
       "guard": "audit/journeys/customer/player-owner-audit.md (card:10530930409)",
       "added": "2026-11-20",
       "proven_failing_on": "b75cb14 (video.controls true, disablePictureInPicture false; browser walk 1440/390, 08-*-before.png)"
+    },
+    {
+      "card": "10530930523",
+      "title": "Resume prompt offered a finished video (Resume from 5:00?) and a 3-second start, and its bar covered the player controls, hiding them at 390px",
+      "guard": "audit/journeys/customer/player-owner-audit.md (card:10530930523)",
+      "added": "2026-11-20",
+      "proven_failing_on": "a26aa92 (toast at 300 s and 3 s; toast bottom 446 over controls at 390; 09-*-before.png)"
     }
   ]
 }

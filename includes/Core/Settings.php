@@ -486,9 +486,8 @@ class Settings {
 				'quality'         => __( 'Quality', 'mediashield' ),
 				'auto'            => __( 'Auto', 'mediashield' ),
 				/* translators: %s: playback position, for example 12:34. */
-				'resumePrompt'    => __( 'Resume from %s?', 'mediashield' ),
-				'resume'          => __( 'Resume', 'mediashield' ),
-				'startOver'       => __( 'Start Over', 'mediashield' ),
+				'resumeFrom'      => __( 'Resume from %s', 'mediashield' ),
+				'dismiss'         => __( 'Dismiss', 'mediashield' ),
 				'adBreaks'        => __( 'Ad breaks', 'mediashield' ),
 				'ad'              => __( 'Ad', 'mediashield' ),
 				'advertisement'   => __( 'Advertisement', 'mediashield' ),

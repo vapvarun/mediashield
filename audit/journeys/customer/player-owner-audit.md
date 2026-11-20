@@ -3,7 +3,7 @@ journey: player-owner-audit
 plugin: mediashield
 priority: high
 roles: [subscriber, guest]
-covers: [player-wrapper, watermark, card:10530930409]
+covers: [player-wrapper, watermark, card:10530930409, card:10530930523]
 prerequisites:
   - "Site reachable at $SITE_URL with the Reign theme (light and dark mode)"
   - "SELF: a published self-hosted mediashield_video at least 3 minutes long, Standard protection, on a page"
@@ -22,3 +22,4 @@ in the theme's light and dark mode.
 ## Check lines
 
 1. card:10530930409 - As a subscriber open SELF. **Expect** one control bar (play, scrubber, time, mute, speed, one fullscreen button) and a round play button in the middle; no browser control bar, no second fullscreen icon, no "⋮" menu, and right-clicking the video offers no Picture in picture. Focus the player and press Space: **Expect** it plays; ArrowRight and ArrowLeft move 5 seconds; Tab reaches the play button, scrubber, mute, speed and fullscreen, and Enter on the play button pauses. Repeat in LESSON. **On fail**: `assets/js/player-wrapper.js` (`NativeAdapter` must leave `video.controls` false; `buildControlBar()`).
+2. card:10530930523 - Resume Playback on. Give the subscriber a last session on SELF stopped at the end (max_position = length), open SELF: **Expect** no resume offer. Stopped at 3 s: **Expect** no offer. Stopped at 2:00: **Expect** a small "Resume from 2:00" chip whose bottom edge sits above the control bar, with the bar fully visible at 390px; it disappears after about 8 seconds, or at once on play; clicking it plays from 2:00. **On fail**: `assets/js/player-wrapper.js` (`resumeWorthOffering()`, `showResumePrompt()`).

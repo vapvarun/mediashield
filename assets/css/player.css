@@ -294,57 +294,44 @@ iframe.ms-player-target {
 	background: var(--ms-accent-hover);
 }
 
-/* Resume toast */
-.ms-resume-toast {
+/* Resume chip: small, above the control bar, never on it. */
+.ms-resume-chip {
 	position: absolute;
-	bottom: 60px;
-	left: 50%;
-	transform: translateX(-50%);
-	z-index: 25;
-	background: rgba(0, 0, 0, 0.9);
-	color: var(--ms-on-overlay);
-	padding: 0.75rem 1.25rem;
-	border-radius: 8px;
+	bottom: 64px;
+	inset-inline-start: var(--ms-space-3);
+	z-index: 16;
 	display: flex;
 	align-items: center;
-	gap: 0.75rem;
-	font-size: 0.875rem;
-	line-height: 1.4;
-	white-space: nowrap;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	max-width: calc(100% - 2 * var(--ms-space-3));
+	border-radius: 999px;
+	background: var(--ms-overlay-surface-strong);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	line-height: 1;
 }
 
-.ms-resume-toast span {
-	color: var(--ms-on-overlay);
-}
-
-.ms-resume-yes,
-.ms-resume-no {
-	border: none;
-	padding: 0.375rem 0.75rem;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 0.8125rem;
-	font-weight: 600;
-}
-
-.ms-resume-yes {
-	background: var(--ms-accent);
-	color: var(--ms-on-overlay);
-}
-
-.ms-resume-yes:hover {
-	background: var(--ms-accent-hover);
-}
-
-.ms-resume-no {
+.ms-resume-chip__go,
+.ms-resume-chip__close {
+	min-height: var(--ms-tap-min);
+	border: 0;
 	background: transparent;
-	color: var(--ms-on-overlay-muted);
-	text-decoration: underline;
+	color: var(--ms-on-overlay);
+	font-size: var(--ms-font-size-sm);
+	font-weight: 600;
+	cursor: pointer;
 }
 
-.ms-resume-no:hover {
-	color: var(--ms-on-overlay);
+.ms-resume-chip__go {
+	padding-inline: var(--ms-space-4) var(--ms-space-2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.ms-resume-chip__close {
+	min-width: var(--ms-tap-min);
+	padding: 0;
+	font-size: var(--ms-font-size-md);
+	color: var(--ms-on-overlay-muted);
 }
 
 /* Protected by MediaShield badge — moved to top-left so it doesn't sit on
@@ -706,6 +693,11 @@ iframe.ms-player-target {
 	.ms-bigplay:hover {
 		background: var(--ms-accent-hover);
 	}
+
+	.ms-resume-chip__go:hover,
+	.ms-resume-chip__close:hover {
+		color: var(--ms-accent);
+	}
 }
 
 @media (pointer: coarse) {
@@ -795,8 +787,8 @@ iframe.ms-player-target {
 .ms-sticky-close:focus-visible,
 .ms-login-button:focus-visible,
 .ms-playlist-item:focus-visible,
-.ms-resume-yes:focus-visible,
-.ms-resume-no:focus-visible,
+.ms-resume-chip__go:focus-visible,
+.ms-resume-chip__close:focus-visible,
 .ms-endscreen__replay:focus-visible {
 	outline: 2px solid var(--ms-accent);
 	outline-offset: 2px;
@@ -818,13 +810,13 @@ iframe.ms-player-target {
 		height: 52px;
 	}
 
-	.ms-resume-toast {
-		font-size: 0.75rem;
-		padding: 0.5rem 1rem;
-		bottom: 40px;
+	/* A short phone player has no room for both: the chip is the play
+	   choice while it shows, and the bar keeps its own play button. */
+	.ms-has-resume .ms-bigplay {
+		display: none;
 	}
 
-	.ms-login-message p {
+		.ms-login-message p {
 		font-size: 1rem;
 	}
 
