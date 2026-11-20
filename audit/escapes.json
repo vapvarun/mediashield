@@ -182,6 +182,13 @@
       "guard": "tests/unit/WatchedSpansTest.php; tests/unit/LessonWatchRequirementTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930729)",
       "added": "2026-11-20",
       "proven_failing_on": "f9275e6 (watched_percent() = MAX(completion_pct) = 89 after a drag; 12-skip-1440-light-before.png)"
+    },
+    {
+      "card": "10530930776",
+      "title": "QA bounce: the settings nav did not stay in view (it filled the column, and the content column's overflow-x made it the sticky box); Pro Watermark rendered outside the layout, 194 px off-screen at 1440",
+      "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930776)",
+      "added": "2026-11-20",
+      "proven_failing_on": "2866f11 (nav top -5095 after a jump; Pro card outside .mediashield-settings__sections, right edge past the viewport; 13-sticky/13-prowm-*-before.png)"
     }
   ]
 }

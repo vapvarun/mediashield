@@ -22,6 +22,7 @@ import { __, _n, sprintf } from '@wordpress/i18n';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
+import { applyFilters } from '@wordpress/hooks';
 import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
@@ -178,7 +179,7 @@ const SETTINGS_GROUPS = [
  * @param {string} key Group key.
  */
 const goToGroup = ( key ) => {
-	const card = document.querySelector( `.mediashield-settings__section[data-group="${ key }"]:not([hidden])` );
+	const card = document.querySelector( `[data-group="${ key }"]:not([hidden])` );
 	if ( card ) {
 		card.scrollIntoView( { behavior: 'smooth', block: 'start' } );
 		card.focus( { preventScroll: true } );
@@ -438,6 +439,28 @@ const Settings = () => {
 		);
 	}
 
+	// Sections other plugins add (Pro's Watermark Fields) render inside the
+	// settings column, get a nav entry after the group they follow, and are
+	// covered by the search (Basecamp 10530930776).
+	const extras = applyFilters( 'mediashield_settings_sections', [] ).filter( ( x ) => x && x.key && x.component );
+	const known = SETTINGS_GROUPS.map( ( g ) => g.key );
+	const navGroups = [];
+	SETTINGS_GROUPS.filter( ( g ) => 'integrations' !== g.key || config.isLearnomyActive || lmsConfig.isLMSActive ).forEach( ( g ) => {
+		navGroups.push( g );
+		extras.filter( ( x ) => x.after === g.key ).forEach( ( x ) => navGroups.push( { key: x.key, label: x.label } ) );
+	} );
+	extras.filter( ( x ) => ! known.includes( x.after ) ).forEach( ( x ) => navGroups.push( { key: x.key, label: x.label } ) );
+	const renderExtras = ( after ) => extras
+		.filter( ( x ) => ( null === after ? ! known.includes( x.after ) : x.after === after ) )
+		.map( ( x ) => {
+			const Extra = x.component;
+			return (
+				<div key={ x.key } className="mediashield-settings__extra" data-group={ x.key }>
+					<Extra />
+				</div>
+			);
+		} );
+
 	return (
 		<div className="mediashield-page mediashield-settings">
 			<header className="mediashield-page__header">
@@ -455,7 +478,7 @@ const Settings = () => {
 			</header>
 
 			<div className="mediashield-settings__layout">
-				<SettingsNav groups={ SETTINGS_GROUPS.filter( ( g ) => 'integrations' !== g.key || config.isLearnomyActive || lmsConfig.isLMSActive ) } />
+				<SettingsNav groups={ navGroups } />
 				<div className="mediashield-settings__sections">
 
 			<SectionCard
@@ -662,6 +685,8 @@ const Settings = () => {
 					__nextHasNoMarginBottom
 				/>
 			</SectionCard>
+
+			{ renderExtras( 'watermark' ) }
 
 			<SectionCard
 				icon="admin-site-alt3"
@@ -1047,6 +1072,7 @@ const Settings = () => {
 					</a>
 				</div>
 			) }
+				{ renderExtras( null ) }
 				</div>
 			</div>
 		</div>

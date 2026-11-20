@@ -1384,6 +1384,14 @@
 	max-width: 100%;
 }
 
+/* The content column scrolls sideways for wide tables (overflow-x: auto),
+   which also makes it the sticky nav's scroll box, one that never scrolls
+   vertically. Settings has no wide table, so clip instead: the nav then
+   sticks to the window (Basecamp 10530930776). */
+.mediashield-admin__content:has( .mediashield-settings__layout ) {
+	overflow-x: clip;
+}
+
 .mediashield-settings__layout {
 	display: grid;
 	grid-template-columns: 200px minmax( 0, 1fr );
@@ -1391,15 +1399,11 @@
 	align-items: start;
 }
 
-/* Pro's watermark section renders after Free's settings app: line it up
-   with the section column. */
-.mediashield-settings + .mediashield-settings {
-	padding-inline-start: calc( 200px + var( --ms-space-6 ) );
-}
-
 .mediashield-settings__nav {
 	position: sticky;
 	top: 46px;
+	/* Its own height, not the column's, or sticky has nowhere to move. */
+	align-self: start;
 	display: flex;
 	flex-direction: column;
 	gap: var( --ms-space-2 );
@@ -1462,6 +1466,10 @@
 
 .mediashield-settings__nav-select {
 	display: none;
+}
+
+.mediashield-settings__extra {
+	scroll-margin-top: 46px;
 }
 
 .mediashield-settings__section {
@@ -2239,10 +2247,6 @@
 	.mediashield-settings__layout {
 		grid-template-columns: minmax( 0, 1fr );
 		gap: var( --ms-space-4 );
-	}
-
-	.mediashield-settings + .mediashield-settings {
-		padding-inline-start: 0;
 	}
 
 	.mediashield-settings__nav {
