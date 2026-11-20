@@ -190,7 +190,7 @@
 }
 
 /* ── Suppress ALL Admin Notices ───────────────────── */
-.toplevel_page_mediashield #wpbody-content > .notice,
+.toplevel_page_mediashield #wpbody-content > .notice:not(.ms-notice),
 .toplevel_page_mediashield #wpbody-content > .update-nag,
 .toplevel_page_mediashield #wpbody-content > div.error,
 .toplevel_page_mediashield #wpbody-content > div.updated,
@@ -200,6 +200,12 @@
 .toplevel_page_mediashield .notice:not(.ms-notice):not(.mediashield-notice),
 .toplevel_page_mediashield .update-nag {
 	display: none !important;
+}
+
+/* MediaShield's own notices (the one-time new-defaults offer) stay, inset
+   from the full-width app. */
+.toplevel_page_mediashield #wpbody-content > .ms-notice {
+	margin: var( --ms-space-4 ) var( --ms-space-5 ) 0;
 }
 
 /* ── Full-Width Layout (remove WP chrome margins) ─── */

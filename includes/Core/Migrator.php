@@ -77,7 +77,29 @@ class Migrator {
 		// Background job, queued by LibraryFiles::ensure_job().
 		self::repair_library_files( $installed );
 
+		// v12 - an existing site keeps the defaults it stored; offer it the
+		// 1.4.3 ones once (Admin\NewDefaultsNotice). A fresh install has
+		// them already.
+		self::offer_new_defaults( $installed );
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+	}
+
+	/**
+	 * Mark a site that updated from before v12 to be offered the 1.4.3 defaults.
+	 *
+	 * 1.4.2 stored its defaults on activation, so the new ones never reach an
+	 * existing site by themselves. The flag only lets the notice appear; the
+	 * notice still shows only while a stored value differs, and nothing
+	 * changes until the owner chooses. A fresh install (version 0) is skipped.
+	 *
+	 * @param int $installed DB version before this run.
+	 */
+	private static function offer_new_defaults( int $installed ): void {
+		if ( $installed < 1 || $installed >= 12 || get_option( \MediaShield\Admin\NewDefaultsNotice::DECIDED ) ) {
+			return;
+		}
+		update_option( \MediaShield\Admin\NewDefaultsNotice::DECIDED, 'pending', false );
 	}
 
 	/**

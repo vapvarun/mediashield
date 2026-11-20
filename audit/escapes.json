@@ -189,6 +189,20 @@
       "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930776)",
       "added": "2026-11-20",
       "proven_failing_on": "2866f11 (nav top -5095 after a jump; Pro card outside .mediashield-settings__sections, right edge past the viewport; 13-sticky/13-prowm-*-before.png)"
+    },
+    {
+      "card": "10530930695",
+      "title": "Owner decision: sites updated from 1.4.2 kept the stored old defaults (badge on; Pro Username + IP) and were never offered the 1.4.3 ones",
+      "guard": "tests/unit/NewDefaultsNoticeTest.php; Pro tests/unit/NewWatermarkDefaultTest.php; audit/journeys/customer/player-owner-audit.md",
+      "added": "2026-11-20",
+      "proven_failing_on": "63c9ede (no notice; stored badge and IP kept with no way to know; 11-16-notice-1440-light-before.png)"
+    },
+    {
+      "card": "10530931001",
+      "title": "Owner decision: sites updated from 1.4.2 kept the stored old defaults (badge on; Pro Username + IP) and were never offered the 1.4.3 ones",
+      "guard": "tests/unit/NewDefaultsNoticeTest.php; Pro tests/unit/NewWatermarkDefaultTest.php; audit/journeys/customer/player-owner-audit.md",
+      "added": "2026-11-20",
+      "proven_failing_on": "63c9ede (no notice; stored badge and IP kept with no way to know; 11-16-notice-1440-light-before.png)"
     }
   ]
 }

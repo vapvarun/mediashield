@@ -44,7 +44,7 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Watermark Color | #ffffff | Colour of the watermark text, as a hex code. |
 | Position Swap Interval | 30 | Seconds before the watermark moves. Minimum 1. |
 | Keep the watermark at the edges | Off | Keeps the watermark in the corners, off the centre of the video. |
-| Show MediaShield Badge | Off | Small "Protected by MediaShield" label on the player, a pill in your Brand Color. Off on new installs; a site that already had it keeps its choice. |
+| Show MediaShield Badge | Off | Small "Protected by MediaShield" label on the player, a pill in your Brand Color. Off on new installs. A site updated from an earlier version keeps its setting and sees one notice on the MediaShield screens offering the new defaults (badge off; watermark name and email, IP opt-in): **Apply new defaults** or **Keep my settings**, and the notice is gone for good. **Not now** hides it for a week. |
 | Allowed Domains | Empty | Sites allowed to embed your videos. Separate entries with commas, spaces or new lines, in any mix. A pasted web address is reduced to its domain. Empty allows any. See [Access Control](04-access-control.md). |
 | Max Concurrent Streams | 2 | Videos one account may watch at the same time. Minimum 1. |
 | Keep watch history for (months) | 0 | 0 keeps everything. 1 to 120 moves older sessions out of reports. See below. |

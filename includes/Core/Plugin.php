@@ -96,6 +96,7 @@ class Plugin {
 
 		// Admin menu + SPA assets.
 		Menu::register();
+		\MediaShield\Admin\NewDefaultsNotice::register();
 
 		// Setup wizard (first activation redirect).
 		SetupWizard::register();
