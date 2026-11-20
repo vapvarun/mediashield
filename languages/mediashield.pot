@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-20T20:37:17+00:00\n"
+"POT-Creation-Date: 2026-11-20T20:39:58+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -199,7 +199,7 @@ msgid "This video is unavailable."
 msgstr ""
 
 #: includes/Core/Settings.php:510
-#: includes/REST/SessionController.php:320
+#: includes/REST/SessionController.php:321
 #: src/admin/pages/Settings.js:854
 msgid "View course"
 msgstr ""
@@ -220,7 +220,7 @@ msgid "This video could not be loaded. If you are the site owner, check the vide
 msgstr ""
 
 #: includes/Core/Settings.php:518
-#: includes/REST/SessionController.php:335
+#: includes/REST/SessionController.php:336
 msgid "Too many active streams. Please close another video first."
 msgstr ""
 
@@ -1162,18 +1162,19 @@ msgstr ""
 msgid "Invalid video ID."
 msgstr ""
 
-#: includes/REST/SessionController.php:316
+#. translators: %s: course title.
+#: includes/REST/SessionController.php:317
 #: src/admin/pages/Settings.js:847
 #, php-format,js-format
 msgid "This video is part of %s. Enroll to watch it."
 msgstr ""
 
-#: includes/REST/SessionController.php:453
+#: includes/REST/SessionController.php:454
 msgid "Too many requests."
 msgstr ""
 
-#: includes/REST/SessionController.php:468
-#: includes/REST/SessionController.php:502
+#: includes/REST/SessionController.php:469
+#: includes/REST/SessionController.php:503
 msgid "Invalid session token."
 msgstr ""
 

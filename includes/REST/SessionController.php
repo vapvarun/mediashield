@@ -313,6 +313,7 @@ class SessionController extends WP_REST_Controller {
 					// course (keep_reason) gets its own words, not "Enroll".
 					! empty( $access['keep_reason'] ) && '' !== (string) ( $access['reason'] ?? '' )
 						? (string) $access['reason']
+						/* translators: %s: course title. */
 						: sprintf( Settings::message( 'ms_course_denied_text', __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) ), $access['link']['title'] ),
 					array(
 						'status'       => 403,
