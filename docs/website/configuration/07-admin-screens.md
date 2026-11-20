@@ -28,7 +28,7 @@ Without Pro, the Pro screens show as locked entries with a PRO label. Every scre
 
 | Screen | Address ending | What you do there |
 |--------|----------------|-------------------|
-| Dashboard | `#/dashboard` | See total videos, sessions, average completion and live viewers, an activity chart, Top Videos and Recent Milestones. Pick Today, 7, 30 or 90 days. A first-time welcome panel walks through adding a video. |
+| Dashboard | `#/dashboard` | See total videos, sessions, average completion and live viewers; a Protection card (videos protected, and with Pro the blocked DevTools attempts and alerts in the period); an activity chart with every day of the period, so one busy day still shows; Top Videos; and Recent Milestones, one line per viewer and video ("Aisha Khan - finished"). Pick Today, 7, 30 or 90 days. Until a video is added, protected and opened on a page, a three-step Get started checklist sits at the top. |
 | Videos | `#/videos` | Search by title, page through the library, see platform, duration and protection level, preview a video, copy its shortcode, edit it, or add a new one. |
 | Playlists | `#/playlists` | List playlists with badges for Autoplay, Loop and Shuffle. Create one, open **Manage items** to add, reorder and set playback options, view or edit it. |
 | Viewers | `#/viewers` | Search by name or email. See videos watched, average completion and last active. Click a viewer for their watch history. The old address `#/students` still works. |

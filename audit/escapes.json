@@ -126,6 +126,13 @@
       "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930846)",
       "added": "2026-11-20",
       "proven_failing_on": "0f2d9f1 (15 flat sidebar items; 14-*-before.png)"
+    },
+    {
+      "card": "10530930901",
+      "title": "Dashboard chart was empty when a week's sessions fell on one day, said '1 views', listed four milestone rows for one viewer and video, showed no protection status and no first-run steps",
+      "guard": "tests/unit/DashboardOverviewTest.php; audit/journeys/admin/admin-menu-groups.md (card:10530930901)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b2b4fa8 (sessions_chart one row; four milestone rows; no protection/first_run keys; 15-*-before.png)"
     }
   ]
 }

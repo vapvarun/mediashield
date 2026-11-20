@@ -105,7 +105,7 @@ const Sidebar = ( { routes, currentHash } ) => {
 			<ul className="mediashield-sidebar__menu">
 				{ groups.map( ( group ) => {
 					const first = group.children[ 0 ];
-					const showSub = group.active && ( group.children.length > 1 || ( group.children.length && group.locked.length ) );
+					const showSub = group.active && ( group.children.length > 1 || ( group.children.length > 0 && group.locked.length > 0 ) );
 					return (
 						<li key={ group.key } className="mediashield-sidebar__group">
 							{ first ? (

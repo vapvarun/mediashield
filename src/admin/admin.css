@@ -2807,104 +2807,162 @@
 	}
 }
 
-/* Onboarding hero — shown on Dashboard when total_videos === 0 */
-.mediashield-onboarding-hero {
-	background: linear-gradient(135deg, var( --ms-color-surface ) 0%, var( --ms-palette-indigo-35 ) 100%);
-	border: 1px solid var( --ms-palette-gray-200 );
-	border-radius: 16px;
-	padding: var( --ms-space-12 ) var( --ms-space-10 );
-	text-align: center;
-	max-width: 780px;
-	margin: var( --ms-space-6 ) auto;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+/* First-run checklist: three steps, shown on the Dashboard until all are
+   done (Basecamp 10530930901). */
+.mediashield-first-run,
+.mediashield-protection-card {
+	background: var( --ms-color-surface );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-md );
+	padding: var( --ms-space-5 ) var( --ms-space-6 );
+	margin-block-end: var( --ms-space-6 );
 }
 
-.mediashield-onboarding-hero__icon {
-	width: 72px;
-	height: 72px;
-	border-radius: 16px;
-	background: linear-gradient(135deg, var( --ms-color-primary ) 0%, var( --ms-palette-violet-700 ) 100%);
+.mediashield-first-run__head,
+.mediashield-protection-card__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var( --ms-space-3 );
+	margin-block-end: var( --ms-space-4 );
+}
+
+.mediashield-first-run__head h2,
+.mediashield-protection-card__head h2 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+	color: var( --ms-color-text );
+}
+
+.mediashield-first-run__count {
+	font-size: 12px;
+	font-weight: 600;
+	color: var( --ms-color-text-secondary );
+}
+
+.mediashield-first-run__steps {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var( --ms-space-2 );
+}
+
+.mediashield-first-run__step {
+	display: flex;
+	align-items: center;
+	gap: var( --ms-space-4 );
+	padding: var( --ms-space-3 ) var( --ms-space-4 );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-sm );
+}
+
+.mediashield-first-run__mark {
+	flex: 0 0 auto;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	margin-bottom: var( --ms-space-6 );
-	box-shadow: 0 8px 24px rgba(56, 88, 233, 0.25);
-}
-
-.mediashield-onboarding-hero__icon .ms-icon {
-	font-size: 36px;
-	width: 36px;
-	height: 36px;
-	color: var( --ms-color-surface );
-}
-
-.mediashield-onboarding-hero__title {
-	font-size: 28px;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: var( --ms-color-primary-light );
+	color: var( --ms-color-primary );
 	font-weight: 700;
-	color: var( --ms-palette-slate-900 );
-	margin: 0 0 var( --ms-space-3 );
-	line-height: 1.2;
+	font-size: 13px;
 }
 
-.mediashield-onboarding-hero__lede {
-	font-size: 15px;
-	color: var( --ms-palette-slate-600 );
-	line-height: 1.6;
-	margin: 0 auto var( --ms-space-8 );
-	max-width: 560px;
+.mediashield-first-run__step.is-done .mediashield-first-run__mark {
+	background: var( --ms-color-success-light );
+	color: var( --ms-color-success );
 }
 
-.mediashield-onboarding-hero__steps {
-	list-style: none;
-	padding: 0;
-	margin: 0 auto var( --ms-space-8 );
-	max-width: 560px;
-	counter-reset: ms-onboard-step;
-	text-align: left;
-}
-
-.mediashield-onboarding-hero__steps li {
+.mediashield-first-run__text {
+	flex: 1 1 auto;
 	display: flex;
 	flex-direction: column;
-	padding: 14px var( --ms-space-4 );
-	margin: 0 0 var( --ms-space-2 );
-	background: var( --ms-color-surface );
-	border: 1px solid var( --ms-palette-gray-200 );
-	border-radius: 10px;
-	gap: var( --ms-space-1 );
+	gap: 2px;
+	min-width: 0;
 }
 
-.mediashield-onboarding-hero__steps li strong {
+.mediashield-first-run__text strong {
 	font-size: 14px;
-	font-weight: 600;
-	color: var( --ms-palette-slate-900 );
+	color: var( --ms-color-text );
 }
 
-.mediashield-onboarding-hero__steps li span {
+.mediashield-first-run__step.is-done .mediashield-first-run__text strong {
+	color: var( --ms-color-text-secondary );
+	text-decoration: line-through;
+}
+
+.mediashield-first-run__text span {
 	font-size: 13px;
-	color: var( --ms-palette-slate-500 );
+	color: var( --ms-color-text-secondary );
 	line-height: 1.5;
 }
 
-.mediashield-onboarding-hero__actions {
-	display: flex;
-	gap: var( --ms-space-3 );
-	justify-content: center;
-	flex-wrap: wrap;
+.mediashield-first-run__cta.components-button {
+	flex: 0 0 auto;
+	min-height: 40px;
 }
 
-.mediashield-onboarding-hero__actions .components-button {
-	min-height: 44px;
-	padding: 0 var( --ms-space-6 );
+/* Protection card: videos protected, blocked attempts, alerts. */
+.mediashield-protection-card__head {
+	justify-content: flex-start;
+}
+
+.mediashield-protection-card__icon {
+	display: inline-flex;
+	color: var( --ms-color-success );
+}
+
+.mediashield-protection-card__list {
+	display: grid;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) );
+	gap: var( --ms-space-4 );
+	margin: 0;
+}
+
+.mediashield-protection-card__item dt {
+	font-size: 11px;
 	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var( --ms-color-text-secondary );
+	margin-block-end: var( --ms-space-1 );
+}
+
+.mediashield-protection-card__item dd {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 700;
+	color: var( --ms-color-text );
+}
+
+.mediashield-protection-card__pro {
+	font-size: 13px;
+	font-weight: 500;
+	color: var( --ms-color-text-secondary );
 }
 
 @media (max-width: 640px) {
-	.mediashield-onboarding-hero {
-		padding: var( --ms-space-8 ) var( --ms-space-5 );
+	.mediashield-first-run,
+	.mediashield-protection-card {
+		padding: var( --ms-space-4 );
 	}
-	.mediashield-onboarding-hero__title {
-		font-size: 22px;
+
+	.mediashield-first-run__step {
+		flex-wrap: wrap;
+	}
+
+	.mediashield-first-run__cta.components-button {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.mediashield-protection-card__list {
+		grid-template-columns: minmax( 0, 1fr );
 	}
 }
 
