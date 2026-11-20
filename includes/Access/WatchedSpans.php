@@ -175,15 +175,17 @@ class WatchedSpans {
 		}
 		// Too many fragments: close the smallest gaps, which only ever rounds
 		// a little unwatched time in, never a long skip.
-		while ( count( $out ) > self::MAX_SPANS ) {
+		$n = count( $out );
+		while ( $n > self::MAX_SPANS ) {
 			$best = 1;
-			for ( $i = 2, $n = count( $out ); $i < $n; $i++ ) {
+			for ( $i = 2; $i < $n; $i++ ) {
 				if ( $out[ $i ][0] - $out[ $i - 1 ][1] < $out[ $best ][0] - $out[ $best - 1 ][1] ) {
 					$best = $i;
 				}
 			}
 			$out[ $best - 1 ][1] = $out[ $best ][1];
 			array_splice( $out, $best, 1 );
+			--$n;
 		}
 		return $out;
 	}
