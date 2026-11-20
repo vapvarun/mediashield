@@ -1554,7 +1554,7 @@
 	padding: var( --ms-space-1 ) var( --ms-space-3 );
 	border-radius: 999px;
 	background: var( --ms-color-text );
-	background: color-mix( in srgb, var( --ms-preview-accent, var( --ms-color-primary ) ) 55%, #000 );
+	background: color-mix( in srgb, var( --ms-preview-accent, var( --ms-color-primary ) ) 55%, var( --ms-color-text ) );
 	color: var( --ms-palette-white );
 	font-size: 11px;
 	font-weight: 600;
