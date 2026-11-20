@@ -1666,7 +1666,46 @@
 
 		video.addEventListener( 'playing', function () {
 			expecting = false;
-			delete playerEl.dataset.msRecovering;
+		} );
+
+		// A source reset (a refreshed address, a reload) pauses the element
+		// without a 'pause' event, and the play() queued for after it can be
+		// refused, leaving a stopped player with no message. When the video
+		// was playing - not paused by the viewer - keep wanting it to play,
+		// so the watch below picks it up.
+		// Some browsers fire 'pause' as part of the reset itself, just before
+		// 'emptied', so a pause only counts as the viewer's once the same
+		// task has passed without a reset.
+		var playingIntent = false;
+		var resetAt       = 0;
+		var hasPlayed     = false;
+		video.addEventListener( 'play', function () {
+			playingIntent = true;
+			// Until the first frame moves, a refused or stalled start is
+			// this watch's to recover (Safari can refuse twice in a row at
+			// 0:00 and then play); hold the generic load error meanwhile.
+			if ( ! hasPlayed ) {
+				playerEl.dataset.msRecovering = '1';
+			}
+		} );
+		video.addEventListener( 'pause', function () {
+			var pausedAt = Date.now();
+			setTimeout( function () {
+				if ( resetAt < pausedAt ) {
+					playingIntent = false;
+					// Paused before it ever played (autoplay refused, or the
+					// viewer): nothing is being recovered any more.
+					if ( ! hasPlayed && ! expecting ) {
+						delete playerEl.dataset.msRecovering;
+					}
+				}
+			}, 0 );
+		} );
+		video.addEventListener( 'emptied', function () {
+			resetAt = Date.now();
+			if ( playingIntent ) {
+				expecting = true;
+			}
 		} );
 
 		var clearNotice = function () {
@@ -1684,11 +1723,25 @@
 			var advanced      = video.currentTime > lastTime + 0.05;
 			lastTime          = video.currentTime;
 
-			// HAVE_FUTURE_DATA or better, or the clock moved: it plays.
-			if ( ! waitingToPlay || advanced || video.readyState >= 3 ) {
+			// A reset left it paused with data ready: just carry on playing.
+			// If the browser keeps refusing, the count below runs on.
+			if ( waitingToPlay && video.paused && video.readyState >= 2 ) {
+				var resumed = video.play();
+				if ( resumed && resumed.catch ) {
+					resumed.catch( function () {} );
+				}
+			}
+
+			// HAVE_FUTURE_DATA or better while playing, or the clock moved: it plays.
+			if ( ! waitingToPlay || advanced || ( video.readyState >= 3 && ! video.paused ) ) {
 				stuckFor = 0;
 				if ( advanced ) {
-					attempts = 0;
+					// Recovered only once the clock moves: Safari reports
+					// 'playing' before any frame plays, and a refusal in that
+					// gap is still part of this reconnect.
+					attempts  = 0;
+					hasPlayed = true;
+					delete playerEl.dataset.msRecovering;
 					clearNotice();
 				}
 				return;
@@ -1728,7 +1781,9 @@
 		// The stall watchdog is reconnecting: a load or refresh failure seen in
 		// the meantime is part of that attempt, not a verdict. Keep showing
 		// "Reconnecting…"; the watchdog shows the error itself if it gives up.
-		if ( el.dataset && '1' === el.dataset.msRecovering ) {
+		// Only the generic load failure is held: any other message (access
+		// denied, unavailable, stream limit) always shows.
+		if ( el.dataset && '1' === el.dataset.msRecovering && String( message ) === t( 'loadFailed', 'This video could not be loaded.' ) ) {
 			return;
 		}
 
