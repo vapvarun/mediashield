@@ -22,6 +22,8 @@
 namespace MediaShield\Integrations;
 
 use MediaShield\Access\AccessControl;
+use MediaShield\Access\SessionManager;
+use MediaShield\Core\Settings;
 use MediaShield\Embed\EmbedLink;
 use MediaShield\Upload\LibraryFiles;
 
@@ -43,6 +45,66 @@ class Learnomy {
 	public static function register(): void {
 		add_filter( 'learnomy_rest_lesson_payload', array( __CLASS__, 'add_embed_to_payload' ), 10, 3 );
 		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 3 );
+		add_filter( 'learnomy_lesson_completion_rules', array( __CLASS__, 'require_watch' ), 10, 3 );
+	}
+
+	/**
+	 * Completion mode reported for a lesson this rule gates, when the lesson
+	 * itself is Manual. Learnomy shows its requirement strip and keeps
+	 * Complete disabled for any mode other than 'manual', and auto-completes
+	 * only its own auto_* modes, so the member still clicks Complete.
+	 */
+	public const WATCH_MODE = 'mediashield_watch';
+
+	/**
+	 * Add "Watch X% to complete" to a protected video lesson.
+	 *
+	 * With Settings > LMS "Require X% watched" above 0, a member cannot
+	 * complete a Learnomy lesson that plays a MediaShield video (content type
+	 * Protected video) until they have watched that share of it. The rule is
+	 * enforced where Learnomy decides: this filter feeds the status that
+	 * Progress_Service::mark_lesson_complete() checks, so a REST
+	 * /lessons/{id}/complete call before the share is refused (422), not only
+	 * the button. Learnomy's own enforcement modes still apply: 'off'
+	 * (admins, the course's instructor) is untouched, 'advisory' shows the
+	 * requirement without blocking. A completed lesson stays completed.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param array  $status  Learnomy completion status.
+	 * @param int    $user_id Member.
+	 * @param object $lesson  Lesson row.
+	 * @return array
+	 */
+	public static function require_watch( $status, $user_id, $lesson ): array {
+		$status   = (array) $status;
+		$required = (int) Settings::get( 'ms_lms_require_watch_pct' );
+		$video_id = absint( $lesson->video_url ?? 0 );
+		if ( $required <= 0 || ! $video_id || self::CONTENT_TYPE !== (string) ( $lesson->content_type ?? '' )
+			|| ! empty( $status['is_completed'] ) || 'off' === ( $status['enforcement'] ?? 'strict' ) ) {
+			return $status;
+		}
+
+		$watched = SessionManager::watched_percent( $video_id, (int) $user_id );
+		$met     = $watched >= $required;
+
+		$status['requirements']   = (array) ( $status['requirements'] ?? array() );
+		$status['requirements'][] = array(
+			'kind'        => 'video',
+			'min_pct'     => $required,
+			'current_pct' => $watched,
+			'met'         => $met,
+			/* translators: %d: percent of the video to watch, for example 80. */
+			'label'       => sprintf( __( 'Watch %d%% to complete', 'mediashield' ), $required ),
+		);
+		if ( 'manual' === ( $status['completion_mode'] ?? 'manual' ) ) {
+			$status['completion_mode'] = self::WATCH_MODE;
+		}
+		if ( ! $met && 'advisory' !== ( $status['enforcement'] ?? 'strict' ) ) {
+			$status['all_met'] = false;
+		}
+
+		return $status;
 	}
 
 	/**

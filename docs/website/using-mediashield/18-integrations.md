@@ -61,7 +61,7 @@ What it does for you: a lesson in Learnomy plays its video in the protected play
 3. In **Protected video**, pick the video.
 4. Save the lesson.
 
-Limit: Learnomy's minimum watch percentage rule does not apply to these lessons. MediaShield still records the session and milestones. The full guide is [Courses with Learnomy](15-courses-with-learnomy.md).
+Learnomy's own minimum watch percentage rule does not apply to these lessons; MediaShield's **Settings > Lesson Completion** setting does the same job, enforced on the server. MediaShield still records the session and milestones. The full guide is [Courses with Learnomy](15-courses-with-learnomy.md).
 
 ## LearnDash, Tutor LMS and LifterLMS
 

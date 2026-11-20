@@ -129,6 +129,19 @@ class Settings {
 				},
 			),
 
+			// LMS: share of a lesson's protected video a member must watch
+			// before the LMS lets them complete the lesson. 0 = off (default),
+			// so nothing changes for a site that has not chosen a share.
+			// Enforced server-side for Learnomy (Integrations\Learnomy) and
+			// LearnDash (Pro LearnDashAdapter).
+			'ms_lms_require_watch_pct'   => array(
+				'type'     => 'integer',
+				'default'  => 0,
+				'validate' => static function ( $v ) {
+					return max( 0, min( 100, (int) $v ) );
+				},
+			),
+
 			// Badge.
 			'ms_show_badge'              => array(
 				'type'    => 'boolean',

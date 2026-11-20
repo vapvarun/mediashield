@@ -793,6 +793,23 @@ const Settings = () => {
 				</SectionCard>
 			) }
 
+			{ ( config.isLearnomyActive || lmsConfig.isLMSActive ) && (
+				<SectionCard
+					icon="welcome-learn-more"
+					title={ __( 'Lesson Completion', 'mediashield' ) }
+					description={ __( 'Make students watch a lesson\'s protected video before they can complete the lesson.', 'mediashield' ) }
+				>
+					<NumberField
+						label={ __( 'Require this % of the video watched before Complete', 'mediashield' ) }
+						help={ __( '0 turns this off. With 80, the lesson\'s Complete button stays disabled with "Watch 80% to complete" until the student has watched 80% of the lesson video, and a completion sent any other way is refused. Works with Learnomy lessons that play a protected video and, with Pro, LearnDash lessons linked to a video. Site administrators are not held back.', 'mediashield' ) }
+						value={ settings?.ms_lms_require_watch_pct ?? 0 }
+						onCommit={ ( val ) => updateSetting( 'ms_lms_require_watch_pct', val ) }
+						min={ 0 }
+						max={ 100 }
+					/>
+				</SectionCard>
+			) }
+
 			{ lmsConfig.isLMSActive && settings?.ms_lms_auto_complete !== undefined && (
 				<SectionCard
 					icon="welcome-learn-more"

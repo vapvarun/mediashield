@@ -416,6 +416,33 @@ class SessionManager {
 	}
 
 	/**
+	 * How much of this video has this member watched, as a whole percent?
+	 *
+	 * The furthest point any of their sessions reached (the completion each
+	 * heartbeat stores), so a lesson watched over two sittings counts in full.
+	 * Answers "may this member complete the lesson yet?" for the LMS
+	 * watch-requirement (Settings `ms_lms_require_watch_pct`); for the
+	 * milestones a member earned, read `ms_milestones` instead.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  Member.
+	 * @return int 0-100.
+	 */
+	public static function watched_percent( int $video_id, int $user_id ): int {
+		if ( $video_id <= 0 || $user_id <= 0 ) {
+			return 0;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'ms_watch_sessions';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table, idx_video_user; must be live, never cached.
+		$pct = $wpdb->get_var( $wpdb->prepare( "SELECT MAX(completion_pct) FROM {$table} WHERE video_id = %d AND user_id = %d", $video_id, $user_id ) );
+
+		return (int) min( 100, max( 0, floor( (float) $pct ) ) );
+	}
+
+	/**
 	 * End a watch session.
 	 *
 	 * A position sent with the end (the page is closing) is recorded first,

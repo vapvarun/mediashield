@@ -91,6 +91,13 @@
       "guard": "audit/journeys/customer/player-owner-audit.md (card:10530930523)",
       "added": "2026-11-20",
       "proven_failing_on": "a26aa92 (toast at 300 s and 3 s; toast bottom 446 over controls at 390; 09-*-before.png)"
+    },
+    {
+      "card": "10530930729",
+      "title": "A protected video lesson's Complete button worked at 0:00; there was no 'watch X% before Complete' rule for Learnomy or LearnDash",
+      "guard": "tests/unit/LessonWatchRequirementTest.php; Pro tests/unit/LearnDashWatchRequirementTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930729)",
+      "added": "2026-11-20",
+      "proven_failing_on": "9653eb8 (learnomy_lesson_completion_rules unanswered: all_met true, Complete enabled at 0:00, 12-*-before.png)"
     }
   ]
 }

@@ -181,6 +181,9 @@ class Menu {
 				'isProActive'       => defined( 'MEDIASHIELD_PRO_VERSION' ),
 				// The Videos list labels a video with no level of its own.
 				'defaultProtection' => \MediaShield\Player\Protection::default_level(),
+				// Settings shows "Require X% watched" when an LMS that enforces
+				// it is active: Learnomy (Free) or LearnDash (Pro).
+				'isLearnomyActive'  => function_exists( '\\Learnomy\\table' ),
 			)
 		);
 
