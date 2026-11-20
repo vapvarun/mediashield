@@ -502,15 +502,13 @@ const Settings = () => {
 	// settings column, get a nav entry after the group they follow, and are
 	// covered by the search (Basecamp 10530930776).
 	const extras = applyFilters( 'mediashield_settings_sections', [] ).filter( ( x ) => x && x.key && x.component );
-	const known = SETTINGS_GROUPS.map( ( g ) => g.key );
 	const navGroups = [];
 	SETTINGS_GROUPS.filter( ( g ) => 'integrations' !== g.key || config.isLearnomyActive || lmsConfig.isLMSActive ).forEach( ( g ) => {
 		navGroups.push( g );
 		extras.filter( ( x ) => x.after === g.key ).forEach( ( x ) => navGroups.push( { key: x.key, label: x.label } ) );
 	} );
-	extras.filter( ( x ) => ! known.includes( x.after ) ).forEach( ( x ) => navGroups.push( { key: x.key, label: x.label } ) );
 	const renderExtras = ( after ) => extras
-		.filter( ( x ) => ( null === after ? ! known.includes( x.after ) : x.after === after ) )
+		.filter( ( x ) => x.after === after )
 		.map( ( x ) => {
 			const Extra = x.component;
 			return (
@@ -1131,7 +1129,6 @@ const Settings = () => {
 					</a>
 				</div>
 			) }
-				{ renderExtras( null ) }
 				</div>
 			</div>
 		</div>

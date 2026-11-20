@@ -50,7 +50,7 @@ class VideoListController extends WP_REST_Controller {
 	/**
 	 * Protection levels a filter or bulk action may name ('default' = follows the site setting).
 	 */
-	const LEVELS = array( 'default', 'none', 'basic', 'standard', 'strict' );
+	const LEVELS = array( 'default', ...\MediaShield\Core\Settings::PROTECTION_LEVELS );
 
 	/**
 	 * Register everything.

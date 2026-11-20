@@ -18,6 +18,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Settings {
 
 	/**
+	 * The protection levels, weakest first: the site default
+	 * (`ms_default_protection`) and every video's own level are one of these.
+	 */
+	public const PROTECTION_LEVELS = array( 'none', 'basic', 'standard', 'strict' );
+
+	/**
 	 * Schema for every free-plugin option.
 	 *
 	 * Each entry: `array( 'type' => <scalar>, 'default' => <value>, 'validate' => ?callable )`.
@@ -69,7 +75,7 @@ class Settings {
 			'ms_default_protection'      => array(
 				'type'     => 'string',
 				'default'  => 'standard',
-				'validate' => $enum( array( 'none', 'basic', 'standard', 'strict' ) ),
+				'validate' => $enum( self::PROTECTION_LEVELS ),
 			),
 			'ms_require_login'           => array(
 				'type'    => 'boolean',

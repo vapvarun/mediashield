@@ -40,17 +40,14 @@ const LOCKED_PRO_ITEMS = [
 const UPSELL_URL = 'https://wbcomdesigns.com/downloads/mediashield-pro/';
 
 /**
- * Which group a route belongs to.
+ * Which group a route belongs to; a route not listed in GROUPS sits under Settings.
  *
  * @param {Object} route Route definition.
  * @return {string} Group key.
  */
 const groupOf = ( route ) => {
 	const found = GROUPS.find( ( g ) => g.hashes.includes( route.hash ) );
-	if ( found ) {
-		return found.key;
-	}
-	return GROUPS.some( ( g ) => g.key === route.group ) ? route.group : 'settings';
+	return found ? found.key : 'settings';
 };
 
 const LockedLink = ( { item, className } ) => (
