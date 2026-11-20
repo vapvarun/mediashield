@@ -25,6 +25,7 @@ use MediaShield\CPT\VideoUsage;
 use WP_Error;
 use WP_Post;
 use WP_Query;
+use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -32,7 +33,7 @@ use WP_REST_Server;
 /**
  * Videos list fields, filters and bulk actions.
  */
-class VideoListController {
+class VideoListController extends WP_REST_Controller {
 
 	/**
 	 * REST namespace.
