@@ -17,6 +17,22 @@ use WP_UnitTestCase;
 class VideoListFilterAccessTest extends WP_UnitTestCase {
 
 	/**
+	 * A server another test built keeps hooks this test has since rolled back; start a fresh one.
+	 */
+	public function set_up(): void {
+		parent::set_up();
+		$GLOBALS['wp_rest_server'] = null;
+	}
+
+	/**
+	 * Leave no server built with this test's hooks behind.
+	 */
+	public function tear_down(): void {
+		$GLOBALS['wp_rest_server'] = null;
+		parent::tear_down();
+	}
+
+	/**
 	 * Ids a request returns.
 	 *
 	 * @param array<string,string> $params Query params.
@@ -47,6 +63,7 @@ class VideoListFilterAccessTest extends WP_UnitTestCase {
 				'post_status' => 'publish',
 			)
 		);
+		update_post_meta( $open, '_ms_protection_level', 'basic' );
 
 		wp_set_current_user( 0 );
 		$this->assertEqualsCanonicalizing(
