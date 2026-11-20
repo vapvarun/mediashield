@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
+use MediaShield\Core\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -299,16 +300,14 @@ class SessionController extends WP_REST_Controller {
 		// (one source of settings and defaults), plus the viewer's own text
 		// and IP. Key is `text` (not `username`) to match what
 		// assets/js/watermark.js reads. Pro's AdvancedConfig filter overwrites
-		// `text` when active. This response is the only place a viewer's name
-		// and IP are sent: the page config must stay cacheable.
+		// `text` when active. This response is the only place a viewer's name,
+		// email and IP are sent: the page config must stay cacheable.
 		$watermark_config = array_merge(
 			\MediaShield\Player\Watermark::get_config(),
 			array(
-				// WordPress stores the display name HTML-escaped ("Tom &amp; Jerry"),
-				// and the canvas paints text as is, so decode it (card 10497708826).
-				// A guest has no name; the docs promise "Guest" plus the IP.
-				'text' => is_user_logged_in() ? \MediaShield\Support\Text::plain( wp_get_current_user()->display_name ) : __( 'Guest', 'mediashield' ),
-				'ip'   => $ip,
+				'text' => \MediaShield\Player\Watermark::viewer_text( wp_get_current_user() ),
+				// Personal data: only when the owner chose to show it.
+				'ip'   => Settings::get( 'ms_watermark_show_ip' ) ? $ip : '',
 			)
 		);
 
@@ -471,10 +470,12 @@ class SessionController extends WP_REST_Controller {
 	 *
 	 * Only trusts REMOTE_ADDR by default. Sites behind a reverse proxy
 	 * can add trusted headers via the mediashield_trusted_ip_headers filter.
+	 * Public since 1.4.3 so Pro's Watermark Fields read the same IP when the
+	 * owner ticks IP Address (Free sends `ip` only with its own opt-in on).
 	 *
 	 * @return string IP address.
 	 */
-	private static function get_client_ip(): string {
+	public static function get_client_ip(): string {
 		/**
 		 * Filter the trusted IP headers for client IP detection.
 		 *

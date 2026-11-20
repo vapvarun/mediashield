@@ -92,6 +92,13 @@ class Settings {
 				'default'  => 30,
 				'validate' => $min_int( 1 ),
 			),
+			// The viewer's IP address in the watermark. Off by default: an IP
+			// is personal data (GDPR), so showing it is the owner's choice,
+			// made next to a privacy note (Basecamp 10530930695).
+			'ms_watermark_show_ip'       => array(
+				'type'    => 'boolean',
+				'default' => false,
+			),
 			// Off by default so existing sites keep the centre position.
 			'ms_watermark_edges_only'    => array(
 				'type'    => 'boolean',

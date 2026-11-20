@@ -10,7 +10,7 @@ Paid video stays for paying members, and a leaked copy can be traced to an accou
 
 ## What you get, and what you do not
 
-MediaShield puts a protected player around videos in your library. It checks who may watch, overlays the viewer's name and IP address, stops casual saving, and records who watched how much. It does not stop a determined person recording their screen, and it is not forensic watermarking. The overlay is drawn on top of the picture, not into the file.
+MediaShield puts a protected player around videos in your library. It checks who may watch, overlays the viewer's name and email, stops casual saving, and records who watched how much. It does not stop a determined person recording their screen, and it is not forensic watermarking. The overlay is drawn on top of the picture, not into the file.
 
 ## Before you start
 
@@ -50,7 +50,7 @@ If you want analytics, use Standard or Strict. Basic protects the player but rec
 
 ## What viewers see
 
-Signed-in members see the player with their name and IP address over it. Visitors who are signed out see the login prompt, not the video.
+Signed-in members see the player with their name and email over it. Visitors who are signed out see the login prompt, not the video.
 
 ## Check it worked
 

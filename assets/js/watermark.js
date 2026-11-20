@@ -1,7 +1,9 @@
 /**
  * MediaShield Watermark — Canvas overlay rendering.
  *
- * Renders username + IP as semi-transparent text on a canvas overlay.
+ * Renders the viewer's name and email (the IP only when the owner opts in) as
+ * semi-transparent text on a canvas overlay, clear of the badge, the control
+ * bar and the paused play button.
  * Swaps position at configurable intervals. Mobile-responsive sizing.
  * Re-renders on container resize. Pauses video if canvas is removed.
  *
@@ -186,6 +188,23 @@
 			// A player too short for the block even at 8px (a ~270px player with
 			// every Pro field and a long email) keeps the text on canvas; it can
 			// then touch the chrome. ponytail: drop to fewer fields if that matters.
+			// The round play button sits in the middle while the video is
+			// paused: step the text above or below it, never across it.
+			var big = el.querySelector('.ms-bigplay');
+			var br = big && big.offsetParent ? big.getBoundingClientRect() : null;
+			if (br && br.height) {
+				var bTop = br.top - rect.top - GAP;
+				var bBottom = br.bottom - rect.top + GAP;
+				var bx = Math.max(padding, x);
+				var overlapsX = bx < br.right - rect.left && bx + block.width > br.left - rect.left;
+				if (overlapsX && y < bBottom && y + blockH > bTop) {
+					if (bTop - blockH >= top) {
+						y = bTop - blockH;
+					} else if (bBottom + blockH <= bottom) {
+						y = bBottom;
+					}
+				}
+			}
 			y = Math.max(0, Math.min(y, canvas.height - blockH));
 			ctx.textBaseline = 'top';
 			block.lines.forEach(function (l, i) {

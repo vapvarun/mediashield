@@ -35,7 +35,7 @@ On first activation MediaShield redirects you to a setup wizard. The wizard has 
 1. **General** -- toggle Enable video protection, decide whether playback requires login, and pick a default protection level. The wizard offers only the two levels most people want here: **Standard** (watermark + tracking) and **None**. Basic and Strict are available afterwards on the Settings page and per video.
 2. **Platform** -- an overview of the video hosts MediaShield works with (YouTube, Vimeo, Bunny Stream, Wistia). This step is informational only: there is nothing to pick and nothing is saved. Actual API connections to those platforms are Pro-only. Self-hosted files need no setup here.
 3. **First Video** -- optionally paste a video URL right now. The wizard auto-detects the platform from the URL and creates a video library entry for you. This step takes a URL only; to upload a file, use **Videos > Add New** afterwards.
-4. **Watermark** -- set the overlay opacity (0.1 to 1), colour, and swap interval (5 to 120 seconds). The free watermark renders the viewer's display name and IP address.
+4. **Watermark** -- set the overlay opacity (0.1 to 1), colour, and swap interval (5 to 120 seconds). The free watermark renders the viewer's display name and email; their IP address only if you turn it on under Settings > Watermark.
 
 Each step saves when you click **Save & Continue**; **Skip this step** moves on without saving that step.
 

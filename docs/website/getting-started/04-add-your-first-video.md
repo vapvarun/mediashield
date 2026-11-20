@@ -70,7 +70,7 @@ This renders a grid of every video the current logged-in user has watched, with 
 Open the page in a browser where you are logged in. You should see:
 
 - The video player with the protection layer
-- A watermark overlay showing your display name and IP address (protection level Standard or Strict only)
+- A watermark overlay showing your display name and email (protection level Standard or Strict only)
 - The "Protected by MediaShield" badge (if enabled in Settings)
 
 Watch the video for at least 30 seconds, then check **MediaShield > Dashboard**. You'll see the session counted and the activity chart updated. If the video is set to Basic or None, no session is recorded by design - only Standard and Strict track watch sessions.

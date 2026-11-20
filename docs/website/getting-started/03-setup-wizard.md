@@ -48,7 +48,7 @@ Configure the identity overlay drawn on top of the video while it plays:
 
 **Position swap interval** - How many seconds the watermark stays in one position before moving to the next. Shorter intervals make it harder to crop out of a recording.
 
-The preview panel shows the shape of the overlay: display name, then IP address. The free watermark shows exactly those two fields. Pro adds 7 configurable fields including email, user ID, timestamp, site name, and custom text.
+The free watermark shows the viewer's display name and email. Their IP address is shown only if you turn on **Show the viewer's IP address** under Settings > Watermark. Pro adds 7 configurable fields including email, user ID, timestamp, site name, and custom text.
 
 ## After the wizard
 

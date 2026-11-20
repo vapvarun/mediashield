@@ -48,7 +48,7 @@ Yes. Admin and REST endpoints use WordPress authentication and are not cached by
 
 **How does the watermark work?**
 
-MediaShield draws a canvas overlay on top of the video showing the viewer's display name and IP address. It cycles through five positions - four corners and the center - at an interval you choose, stays visible in fullscreen, and pauses playback if the overlay is removed or hidden.
+MediaShield draws a canvas overlay on top of the video showing the viewer's display name and email (and their IP address, if you turn that on). It cycles through five positions - four corners and the center - at an interval you choose, stays visible in fullscreen, and pauses playback if the overlay is removed or hidden.
 
 **Can viewers still screen-record my videos?**
 
@@ -113,7 +113,7 @@ Your Pro features keep working. License status in MediaShield Pro controls updat
 
 **Can I white-label the watermark?**
 
-In the free plugin you can adjust opacity, color, and swap interval, but the watermark always shows display name and IP. Pro lets you choose from 7 fields (display name, email, IP, user ID, timestamp, site name, custom text) and set the font size.
+In the free plugin you can adjust opacity, color, and swap interval, and choose whether the viewer's IP address is shown next to their display name and email (off by default). Pro lets you choose from 7 fields (display name, email, IP, user ID, timestamp, site name, custom text) and set the font size.
 
 **How do I remove the "Protected by MediaShield" badge?**
 

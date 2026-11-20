@@ -98,6 +98,13 @@
       "guard": "tests/unit/LessonWatchRequirementTest.php; Pro tests/unit/LearnDashWatchRequirementTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930729)",
       "added": "2026-11-20",
       "proven_failing_on": "9653eb8 (learnomy_lesson_completion_rules unanswered: all_met true, Complete enabled at 0:00, 12-*-before.png)"
+    },
+    {
+      "card": "10530930695",
+      "title": "Watermark showed every member their own IP address by default (personal data) and no email; Free had no way to leave the IP out",
+      "guard": "tests/unit/WatermarkDefaultsTest.php::test_default_watermark_is_name_and_email_and_ip_is_opt_in; audit/journeys/customer/player-owner-audit.md (card:10530930695)",
+      "added": "2026-11-20",
+      "proven_failing_on": "e688b5b (text 'Aisha Khan', ip sent; 11-*-before.png shows 'Aisha Khan · 192.168.80.1')"
     }
   ]
 }

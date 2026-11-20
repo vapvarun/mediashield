@@ -465,7 +465,7 @@ const Settings = () => {
 							opacity: settings?.ms_watermark_opacity ?? 0.5,
 						} }
 					>
-						{ previewWords?.text || __( 'Viewer Name', 'mediashield' ) + ' · 203.0.113.7' }
+						{ previewWords?.text || [ __( 'Viewer Name', 'mediashield' ), 'viewer@example.com', settings?.ms_watermark_show_ip ? '203.0.113.7' : '' ].filter( Boolean ).join( ' · ' ) }
 					</span>
 					<span
 						className="mediashield-settings__preview-button"
@@ -475,7 +475,7 @@ const Settings = () => {
 					</span>
 				</div>
 				<p className="mediashield-settings__preview-caption">
-					{ previewWords?.caption || __( 'Preview. The watermark shows each viewer\'s own name and IP address and moves around the video.', 'mediashield' ) }
+					{ previewWords?.caption || __( 'Preview. The watermark shows each viewer\'s own name and email and moves around the video.', 'mediashield' ) }
 				</p>
 				<RangeControl
 					label={ __( 'Opacity', 'mediashield' ) }
@@ -502,6 +502,15 @@ const Settings = () => {
 					onCommit={ ( val ) => updateSetting( 'ms_watermark_swap_interval', val ) }
 					min={ 1 }
 				/>
+				{ ! config.isProActive && (
+					<ToggleControl
+						label={ __( 'Show the viewer\'s IP address', 'mediashield' ) }
+						help={ __( 'Off by default. An IP address is personal data under privacy laws such as the GDPR, and each viewer sees their own on screen. Turn this on only if your privacy policy says you show it.', 'mediashield' ) }
+						checked={ !! settings?.ms_watermark_show_ip }
+						onChange={ ( val ) => updateSetting( 'ms_watermark_show_ip', val ) }
+						__nextHasNoMarginBottom
+					/>
+				) }
 				<ToggleControl
 					label={ __( 'Keep the watermark at the edges', 'mediashield' ) }
 					help={ __( 'Keeps the watermark in the corners, off the centre of the video.', 'mediashield' ) }
