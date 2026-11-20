@@ -92,19 +92,24 @@ class Assets {
 	 * Enqueue the admin app bundle (build/admin/index.js) under a screen's own handle.
 	 *
 	 * Every screen that loads the bundle goes through here, so each handle gets
-	 * its script translations. WordPress loads a translation file per handle; a
-	 * handle enqueued without them shows the bundle in English on a translated site.
+	 * the same dependencies (from index.asset.php) and its script translations.
+	 * WordPress loads a translation file per handle; a handle enqueued without
+	 * them shows the bundle in English on a translated site.
 	 *
-	 * @param string   $handle       Script handle of the screen.
-	 * @param string[] $dependencies Dependencies from index.asset.php.
-	 * @param string   $version      Version from index.asset.php.
+	 * @param string $handle Script handle of the screen.
 	 */
-	public static function enqueue_admin_bundle( string $handle, array $dependencies, string $version ): void {
+	public static function enqueue_admin_bundle( string $handle ): void {
+		$asset_file = MEDIASHIELD_PATH . 'build/admin/index.asset.php';
+		$asset      = file_exists( $asset_file ) ? require $asset_file : array(
+			'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'wp-data', 'wp-hooks', 'wp-notices', 'wp-dom-ready' ),
+			'version'      => MEDIASHIELD_VERSION,
+		);
+
 		wp_enqueue_script(
 			$handle,
 			MEDIASHIELD_URL . 'build/admin/index.js',
-			array_merge( $dependencies, array( 'mediashield-request' ) ),
-			$version,
+			array_merge( $asset['dependencies'], array( 'mediashield-request' ) ),
+			(string) $asset['version'],
 			true
 		);
 		wp_set_script_translations( $handle, 'mediashield', MEDIASHIELD_PATH . 'languages' );

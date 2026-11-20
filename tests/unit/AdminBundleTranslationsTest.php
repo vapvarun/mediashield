@@ -22,7 +22,7 @@ class AdminBundleTranslationsTest extends WP_UnitTestCase {
 	 */
 	public function test_helper_sets_script_translations(): void {
 		Assets::register_request_reader();
-		Assets::enqueue_admin_bundle( 'mediashield-test-screen', array( 'wp-i18n' ), '1' );
+		Assets::enqueue_admin_bundle( 'mediashield-test-screen' );
 
 		$scripts = wp_scripts();
 		$this->assertTrue( $scripts->query( 'mediashield-test-screen', 'enqueued' ) );

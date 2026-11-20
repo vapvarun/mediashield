@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-20T20:52:45+00:00\n"
+"POT-Creation-Date: 2026-11-20T21:08:15+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -119,20 +119,20 @@ msgstr ""
 msgid "JavaScript is required for the MediaShield admin dashboard."
 msgstr ""
 
-#: includes/Admin/Menu.php:220
+#: includes/Admin/Menu.php:213
 msgid "Unlock the full power of MediaShield"
 msgstr ""
 
-#: includes/Admin/Menu.php:221
+#: includes/Admin/Menu.php:214
 msgid "Heatmap analytics, LMS integration, platform imports, and more."
 msgstr ""
 
-#: includes/Admin/Menu.php:222
+#: includes/Admin/Menu.php:215
 #: src/admin/pages/Settings.js:1124
 msgid "Get MediaShield Pro"
 msgstr ""
 
-#: includes/Admin/Menu.php:238
+#: includes/Admin/Menu.php:231
 msgid "Insufficient permissions."
 msgstr ""
 
@@ -348,68 +348,68 @@ msgstr ""
 msgid "JavaScript is required to manage playlist items."
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:123
+#: includes/CPT/PlaylistPostType.php:117
 msgctxt "Post type general name"
 msgid "Playlists"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:124
+#: includes/CPT/PlaylistPostType.php:118
 msgctxt "Post type singular name"
 msgid "Playlist"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:125
+#: includes/CPT/PlaylistPostType.php:119
 msgctxt "Admin Menu text"
 msgid "Playlists"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:126
-#: includes/CPT/PlaylistPostType.php:127
+#: includes/CPT/PlaylistPostType.php:120
+#: includes/CPT/PlaylistPostType.php:121
 #: src/admin/pages/Playlists.js:75
 msgid "Add New Playlist"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:128
+#: includes/CPT/PlaylistPostType.php:122
 msgid "Edit Playlist"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:129
+#: includes/CPT/PlaylistPostType.php:123
 msgid "New Playlist"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:130
+#: includes/CPT/PlaylistPostType.php:124
 msgid "View Playlist"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:131
+#: includes/CPT/PlaylistPostType.php:125
 msgid "Search Playlists"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:132
+#: includes/CPT/PlaylistPostType.php:126
 msgid "No playlists found."
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:133
+#: includes/CPT/PlaylistPostType.php:127
 msgid "No playlists found in Trash."
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:134
+#: includes/CPT/PlaylistPostType.php:128
 msgid "All Playlists"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:135
+#: includes/CPT/PlaylistPostType.php:129
 msgid "Playlist Archives"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:136
+#: includes/CPT/PlaylistPostType.php:130
 msgid "Filter playlists list"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:137
+#: includes/CPT/PlaylistPostType.php:131
 msgid "Playlists list navigation"
 msgstr ""
 
-#: includes/CPT/PlaylistPostType.php:138
+#: includes/CPT/PlaylistPostType.php:132
 msgid "Playlists list"
 msgstr ""
 

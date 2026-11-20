@@ -90,13 +90,7 @@ class PlaylistPostType {
 
 		$build_dir = MEDIASHIELD_PATH . 'build/admin/';
 		$build_url = MEDIASHIELD_URL . 'build/admin/';
-		$asset_file = $build_dir . 'index.asset.php';
-		$asset      = file_exists( $asset_file ) ? require $asset_file : array(
-			'dependencies' => array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'wp-data', 'wp-notices' ),
-			'version'      => MEDIASHIELD_VERSION,
-		);
-
-		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-playlist-items', $asset['dependencies'], (string) $asset['version'] );
+		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-playlist-items' );
 		wp_enqueue_style(
 			'mediashield-playlist-items',
 			$build_url . 'index.css',
