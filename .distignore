@@ -1,0 +1,39 @@
+# Files that never ship in the release zip. This mirrors the copy:dist
+# excludes in Gruntfile.js, which builds the zip; keep the two in step.
+/.git
+/.github
+/.gitignore
+/.gitattributes
+/.editorconfig
+/.distignore
+/node_modules
+/src
+/plan
+/audit
+/dist
+/tests
+/bin
+/docs
+/vendor/bin
+/phpcs.xml
+/phpcs.xml.dist
+/phpunit.xml.dist
+/phpstan.neon
+/phpstan.neon.dist
+/phpstan-baseline.neon
+/phpstan-bootstrap.php
+/webpack.config.js
+/Gruntfile.js
+/package.json
+/package-lock.json
+/composer.json
+/composer.lock
+*.zip
+*.map
+*.sh
+*.md
+/libs/edd-sl-sdk/package.json
+/libs/edd-sl-sdk/webpack.config.js
+# Composer runs with --ignore-platform-req=php in the build, so this check is not
+# generated; the plugin header "Requires PHP: 8.1" keeps older PHP out instead.
+/vendor/composer/platform_check.php

@@ -21,7 +21,7 @@ The title appears in your library, playlists and the My Videos grid. The Feature
 
 | Field | What it does |
 |-------|--------------|
-| Video URL | Paste a YouTube, Vimeo, Wistia or Bunny Stream URL, or the address of a direct video file. The platform is detected from the URL. When the address is a file in your Media Library, saving moves that file into MediaShield's protected folder and the field then shows the video's protected stream address. A file also used elsewhere on the site stays where it is, and a notice says so. The file moves only when the person saving may edit its Media Library entry. |
+| Video URL | Paste a YouTube, Vimeo, Wistia or Bunny Stream URL, or the address of a direct video file. The platform is detected from the URL. When the address is a file in your Media Library, saving moves that file into MediaShield's protected folder and the field then shows the video's protected stream address. A file also used elsewhere on the site, or a file that is not in your Media Library (such as one another plugin stored), stays where it is, and a notice says so. The file moves only when the person saving may edit its Media Library entry. |
 | Or upload a file | Choose a video file and click Upload to store it on this site. Shown only to users with the upload permission. Save the video afterwards to keep the file. |
 | Detected Platform | Read-only. Shows what MediaShield recognised (YouTube, Vimeo, Wistia, Bunny Stream or Self-hosted) and a note when a URL looks wrong. |
 | Duration | Length in seconds. Leave 0 if you do not know it. When it is 0, MediaShield uses the length the player reports. Mid-roll ad breaks need a known length. |
@@ -34,6 +34,7 @@ See [Video Hosts](../using-mediashield/10-video-hosts.md) for what each host sup
 |-------|---------|--------------|
 | Protection Level | Default (your site setting) | None, Basic, Standard or Strict for this video. Saving stores an explicit value. |
 | Restrict to Role | Any logged-in user | Only people holding this exact role can watch. Administrators always pass. |
+| Tags | None | Tags on this video. Type names separated by commas to add (a new name becomes a tag), untick one to remove it. Saved with the video. |
 
 ## Embed This Video
 

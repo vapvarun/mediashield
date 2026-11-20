@@ -45,27 +45,27 @@ class AdManagerBridge {
 		if ( ! wp_script_is( 'mediashield-ad-breaks', 'registered' ) ) {
 			return;
 		}
-		wp_localize_script(
-			'mediashield-ad-breaks',
-			'mediashieldAds',
-			array(
-				'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
-				'action'          => 'wbam_track_event',
-				// Asked immediately before each break: the ad plugin either
-				// grants the impression (and counts it) or refuses because the
-				// creative's total cap or the viewer's session limit is spent,
-				// in which case the engine skips that break. The break plan is
-				// built at page render, so it cannot know what is still
-				// deliverable several minutes into playback.
-				'claimAction'     => 'wbam_claim_video_impression',
-				'nonce'           => wp_create_nonce( 'wbam_track' ),
-				'placement'       => 'mediashield_video',
-				// Mandatory viewing — engine hides the Skip button entirely.
-				'requireFullView' => (bool) \MediaShield\Core\Settings::get( 'ms_ads_require_full_view' ),
-				// Show the ad-break marker ruler under the player.
-				'showMarkers'     => (bool) \MediaShield\Core\Settings::get( 'ms_ads_show_markers' ),
-			)
+		// JSON, not wp_localize_script(): localize turns false into "" and the
+		// engine reads showMarkers === false, so the marker ruler could never be
+		// turned off (Basecamp 10502007194).
+		$config = array(
+			'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+			'action'          => 'wbam_track_event',
+			// Asked immediately before each break: the ad plugin either
+			// grants the impression (and counts it) or refuses because the
+			// creative's total cap or the viewer's session limit is spent,
+			// in which case the engine skips that break. The break plan is
+			// built at page render, so it cannot know what is still
+			// deliverable several minutes into playback.
+			'claimAction'     => 'wbam_claim_video_impression',
+			'nonce'           => wp_create_nonce( 'wbam_track' ),
+			'placement'       => 'mediashield_video',
+			// Mandatory viewing — engine hides the Skip button entirely.
+			'requireFullView' => (bool) \MediaShield\Core\Settings::get( 'ms_ads_require_full_view' ),
+			// Show the ad-break marker ruler under the player.
+			'showMarkers'     => (bool) \MediaShield\Core\Settings::get( 'ms_ads_show_markers' ),
 		);
+		wp_add_inline_script( 'mediashield-ad-breaks', 'window.mediashieldAds = ' . wp_json_encode( $config ) . ';', 'before' );
 	}
 
 	/**

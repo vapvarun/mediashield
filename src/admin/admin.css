@@ -4,6 +4,99 @@
  * Cohesive design system with depth, motion, and visual hierarchy.
  */
 
+/* ── Palette Tokens ─────────────────────────────── */
+/* Fixed colours used across the admin screens. Global (not scoped) so a rule
+   outside the admin root still resolves them. Brand colours stay true to each
+   platform; the rest are the literal values the screens were built with. */
+:root {
+	/* Platform brand colours */
+	--ms-brand-youtube: #ff0000;
+	--ms-brand-vimeo: #1ab7ea;
+	--ms-brand-bunny: #ff8c00;
+	--ms-brand-wistia: #54bbff;
+
+	/* Neutrals */
+	--ms-palette-black: #000;
+	--ms-palette-gray-950: #111;
+	--ms-palette-gray-850: #333;
+	--ms-palette-white: #fff;
+	--ms-palette-gray-25: #fafafa;
+	--ms-palette-gray-75: #f7f7f7;
+	--ms-palette-gray-cool-25: #f8f9fa;
+	--ms-palette-gray-cool-15: #fafbfc;
+
+	/* WordPress admin greys */
+	--ms-palette-wp-gray-900: #1e1e1e;
+	--ms-palette-wp-gray-700: #757575;
+	--ms-palette-wp-gray-60: #50575e;
+	--ms-palette-wp-gray-10: #c3c4c7;
+	--ms-palette-wp-gray-0: #f6f7f7;
+
+	/* Grey and slate scale */
+	--ms-palette-gray-200: #e5e7eb;
+	--ms-palette-gray-400: #9ca3af;
+	--ms-palette-gray-700: #374151;
+	--ms-palette-gray-800: #1f2937;
+	--ms-palette-gray-925: #0b1220;
+	--ms-palette-slate-200: #e2e8f0;
+	--ms-palette-slate-500: #64748b;
+	--ms-palette-slate-600: #475569;
+	--ms-palette-slate-900: #0f172a;
+
+	/* Indigo and violet */
+	--ms-palette-indigo-25: #fafbff;
+	--ms-palette-indigo-35: #f6f7ff;
+	--ms-palette-indigo-50: #eef2ff;
+	--ms-palette-indigo-100: #e0e7ff;
+	--ms-palette-indigo-200: #c7d2fe;
+	--ms-palette-indigo-600: #4f46e5;
+	--ms-palette-indigo-800: #3730a3;
+	--ms-palette-violet-50: #f5f3ff;
+	--ms-palette-violet-500: #8b5cf6;
+	--ms-palette-violet-550: #6c5ce7;
+	--ms-palette-violet-600: #7c3aed;
+	--ms-palette-violet-700: #6d28d9;
+	--ms-palette-purple-500: #a855f7;
+
+	/* Blue and cyan */
+	--ms-palette-blue-100: #dbeafe;
+	--ms-palette-blue-400: #60a5fa;
+	--ms-palette-blue-500: #3b82f6;
+	--ms-palette-blue-700: #1d4ed8;
+	--ms-palette-cyan-100: #cffafe;
+	--ms-palette-cyan-800: #155e75;
+
+	/* Green */
+	--ms-palette-emerald-50: #ecfdf5;
+	--ms-palette-emerald-400: #34d399;
+	--ms-palette-emerald-500: #10b981;
+	--ms-palette-emerald-600: #059669;
+	--ms-palette-emerald-800: #065f46;
+	--ms-palette-green-200: #bbf7d0;
+	--ms-palette-green-border: #b8e6be;
+	--ms-palette-green-text: #1a7c3b;
+
+	/* Amber, orange and yellow */
+	--ms-palette-amber-100: #fef3c7;
+	--ms-palette-amber-400: #fbbf24;
+	--ms-palette-amber-500: #f59e0b;
+	--ms-palette-amber-600: #d97706;
+	--ms-palette-amber-800: #92400e;
+	--ms-palette-orange-400: #fb923c;
+	--ms-palette-orange-500: #f97316;
+	--ms-palette-yellow-border: #f0d97e;
+	--ms-palette-yellow-text: #6e5a00;
+
+	/* Red and pink */
+	--ms-palette-red-50: #fef2f2;
+	--ms-palette-red-100: #fee2e2;
+	--ms-palette-red-200: #fecaca;
+	--ms-palette-red-700: #b91c1c;
+	--ms-palette-red-800: #991b1b;
+	--ms-palette-pink-100: #fce7f3;
+	--ms-palette-pink-600: #db2777;
+}
+
 /* ── Design Tokens ────────────────────────────────── */
 /* Scoped to .mediashield-admin per wbcom-modern-admin standard */
 /* The playlist meta box on the WP edit screen mounts outside .mediashield-admin,
@@ -97,7 +190,7 @@
 }
 
 /* ── Suppress ALL Admin Notices ───────────────────── */
-.toplevel_page_mediashield #wpbody-content > .notice,
+.toplevel_page_mediashield #wpbody-content > .notice:not(.ms-notice),
 .toplevel_page_mediashield #wpbody-content > .update-nag,
 .toplevel_page_mediashield #wpbody-content > div.error,
 .toplevel_page_mediashield #wpbody-content > div.updated,
@@ -107,6 +200,12 @@
 .toplevel_page_mediashield .notice:not(.ms-notice):not(.mediashield-notice),
 .toplevel_page_mediashield .update-nag {
 	display: none !important;
+}
+
+/* MediaShield's own notices (the one-time new-defaults offer) stay, inset
+   from the full-width app. */
+.toplevel_page_mediashield #wpbody-content > .ms-notice {
+	margin: var( --ms-space-4 ) var( --ms-space-5 ) 0;
 }
 
 /* ── Full-Width Layout (remove WP chrome margins) ─── */
@@ -179,7 +278,7 @@
 .mediashield-sidebar__brand .ms-brand-icon {
 	width: 28px;
 	height: 28px;
-	background: linear-gradient( 135deg, var(--ms-color-primary), #7c3aed );
+	background: linear-gradient( 135deg, var(--ms-color-primary), var( --ms-palette-violet-600 ) );
 	border-radius: var( --ms-radius-sm );
 	display: flex;
 	align-items: center;
@@ -260,6 +359,37 @@
 	opacity: 1;
 }
 
+/* ── Sidebar groups: six top items, the open group's screens below ── */
+.mediashield-sidebar__group,
+.mediashield-sidebar__sub > li {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.mediashield-sidebar__item.is-open {
+	color: var( --ms-color-text );
+	font-weight: 600;
+}
+
+.mediashield-sidebar__item.is-open .ms-icon {
+	opacity: 1;
+}
+
+.mediashield-sidebar__sub {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 2px 0 var( --ms-space-2 );
+	padding-inline: var( --ms-space-5 ) 0;
+	border-inline-start: 0;
+}
+
+.mediashield-sidebar__subitem {
+	padding-block: var( --ms-space-2 );
+	font-size: 13px;
+}
+
 /* ── Sidebar Locked Pro Items ─────────────────────── */
 .mediashield-sidebar__item--locked {
 	opacity: 0.5;
@@ -283,7 +413,7 @@
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	background: linear-gradient( 135deg, #7c3aed, #a855f7 );
+	background: linear-gradient( 135deg, var( --ms-palette-violet-600 ), var( --ms-palette-purple-500 ) );
 	color: var( --ms-color-surface );
 	margin-inline-start: auto;
 	line-height: 1.6;
@@ -364,23 +494,23 @@
 }
 
 .mediashield-stat-card__icon--videos {
-	background: #eef2ff;
-	color: #4f46e5;
+	background: var( --ms-palette-indigo-50 );
+	color: var( --ms-palette-indigo-600 );
 }
 
 .mediashield-stat-card__icon--sessions {
-	background: #ecfdf5;
-	color: #059669;
+	background: var( --ms-palette-emerald-50 );
+	color: var( --ms-palette-emerald-600 );
 }
 
 .mediashield-stat-card__icon--completion {
-	background: #fef3c7;
-	color: #d97706;
+	background: var( --ms-palette-amber-100 );
+	color: var( --ms-palette-amber-600 );
 }
 
 .mediashield-stat-card__icon--viewers {
-	background: #fce7f3;
-	color: #db2777;
+	background: var( --ms-palette-pink-100 );
+	color: var( --ms-palette-pink-600 );
 }
 
 .mediashield-stat-card__body {
@@ -538,7 +668,7 @@
 }
 
 .mediashield-table tbody tr:hover {
-	background: #f8f9fa;
+	background: var( --ms-palette-gray-cool-25 );
 }
 
 /* Action buttons wrap instead of being clipped by the fixed-layout table:
@@ -612,49 +742,49 @@
 }
 
 .mediashield-badge--basic {
-	background: #ecfdf5;
-	color: #065f46;
+	background: var( --ms-palette-emerald-50 );
+	color: var( --ms-palette-emerald-800 );
 }
 
 .mediashield-badge--standard {
-	background: #eef2ff;
-	color: #3730a3;
+	background: var( --ms-palette-indigo-50 );
+	color: var( --ms-palette-indigo-800 );
 }
 
 .mediashield-badge--strict {
-	background: #fef2f2;
-	color: #991b1b;
+	background: var( --ms-palette-red-50 );
+	color: var( --ms-palette-red-800 );
 }
 
 /* wbcom-standard semantic badge variants */
 .mediashield-badge--success {
 	background: rgba( 46, 164, 79, 0.1 );
-	color: #1a7c3b;
+	color: var( --ms-palette-green-text );
 }
 
 .mediashield-badge--warn {
 	background: rgba( 217, 119, 6, 0.1 );
-	color: #92400e;
+	color: var( --ms-palette-amber-800 );
 }
 
 .mediashield-badge--danger {
 	background: rgba( 224, 62, 62, 0.1 );
-	color: #991b1b;
+	color: var( --ms-palette-red-800 );
 }
 
 .mediashield-badge--default {
 	background: var( --ms-color-border-light );
-	color: #50575e;
+	color: var( --ms-palette-wp-gray-60 );
 }
 
 .mediashield-badge--muted {
 	background: var( --ms-color-border-light );
-	color: #9ca3af;
+	color: var( --ms-palette-gray-400 );
 }
 
 .mediashield-badge--pro,
 .ms-pro-badge {
-	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), #8b5cf6 );
+	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), var( --ms-palette-violet-500 ) );
 	color: var( --ms-color-surface );
 	font-size: 9px;
 	font-weight: 700;
@@ -681,10 +811,10 @@
 	flex-shrink: 0;
 }
 
-.mediashield-platform--youtube .mediashield-platform__dot { background: #ff0000; }
-.mediashield-platform--vimeo .mediashield-platform__dot { background: #1ab7ea; }
-.mediashield-platform--bunny .mediashield-platform__dot { background: #ff8c00; }
-.mediashield-platform--wistia .mediashield-platform__dot { background: #54bbff; }
+.mediashield-platform--youtube .mediashield-platform__dot { background: var( --ms-brand-youtube ); }
+.mediashield-platform--vimeo .mediashield-platform__dot { background: var( --ms-brand-vimeo ); }
+.mediashield-platform--bunny .mediashield-platform__dot { background: var( --ms-brand-bunny ); }
+.mediashield-platform--wistia .mediashield-platform__dot { background: var( --ms-brand-wistia ); }
 .mediashield-platform--self .mediashield-platform__dot { background: var( --ms-color-pro-accent ); }
 
 /* Milestone badge */
@@ -709,16 +839,16 @@
 }
 
 .mediashield-milestone-badge__ring--25 {
-	background: linear-gradient( 135deg, #60a5fa, #3b82f6 );
+	background: linear-gradient( 135deg, var( --ms-palette-blue-400 ), var( --ms-palette-blue-500 ) );
 }
 .mediashield-milestone-badge__ring--50 {
-	background: linear-gradient( 135deg, #fbbf24, #f59e0b );
+	background: linear-gradient( 135deg, var( --ms-palette-amber-400 ), var( --ms-palette-amber-500 ) );
 }
 .mediashield-milestone-badge__ring--75 {
-	background: linear-gradient( 135deg, #fb923c, #f97316 );
+	background: linear-gradient( 135deg, var( --ms-palette-orange-400 ), var( --ms-palette-orange-500 ) );
 }
 .mediashield-milestone-badge__ring--100 {
-	background: linear-gradient( 135deg, #34d399, #10b981 );
+	background: linear-gradient( 135deg, var( --ms-palette-emerald-400 ), var( --ms-palette-emerald-500 ) );
 }
 
 /* ── Progress Bar ──────────────────────────────────── */
@@ -740,13 +870,13 @@
 .mediashield-progress__fill {
 	height: 100%;
 	border-radius: var( --ms-radius-full );
-	background: linear-gradient( 90deg, var(--ms-color-primary), #7c3aed );
+	background: linear-gradient( 90deg, var(--ms-color-primary), var( --ms-palette-violet-600 ) );
 	transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 	min-width: 2px;
 }
 
 .mediashield-progress__fill--complete {
-	background: linear-gradient( 90deg, #10b981, #059669 );
+	background: linear-gradient( 90deg, var( --ms-palette-emerald-500 ), var( --ms-palette-emerald-600 ) );
 }
 
 .mediashield-progress__label {
@@ -973,7 +1103,7 @@
 	width: 32px;
 	height: 32px;
 	border-radius: 50%;
-	background: linear-gradient( 135deg, var(--ms-color-primary), #7c3aed );
+	background: linear-gradient( 135deg, var(--ms-color-primary), var( --ms-palette-violet-600 ) );
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1074,13 +1204,13 @@
 
 .mediashield-notice--error {
 	background: var( --ms-color-error-light );
-	border: 1px solid #fecaca;
+	border: 1px solid var( --ms-palette-red-200 );
 	color: var( --ms-color-error );
 }
 
 .mediashield-notice--success {
 	background: var( --ms-color-success-light );
-	border: 1px solid #bbf7d0;
+	border: 1px solid var( --ms-palette-green-200 );
 	color: var( --ms-color-success );
 }
 
@@ -1219,7 +1349,7 @@
 	width: 56px;
 	height: 56px;
 	border-radius: 50%;
-	background: linear-gradient( 135deg, var(--ms-color-primary), #7c3aed );
+	background: linear-gradient( 135deg, var(--ms-color-primary), var( --ms-palette-violet-600 ) );
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1260,7 +1390,96 @@
 	max-width: 100%;
 }
 
+/* The content column scrolls sideways for wide tables (overflow-x: auto),
+   which also makes it the sticky nav's scroll box, one that never scrolls
+   vertically. Settings has no wide table, so clip instead: the nav then
+   sticks to the window (Basecamp 10530930776). */
+.mediashield-admin__content:has( .mediashield-settings__layout ) {
+	overflow-x: clip;
+}
+
+.mediashield-settings__layout {
+	display: grid;
+	grid-template-columns: 200px minmax( 0, 1fr );
+	gap: var( --ms-space-6 );
+	align-items: start;
+}
+
+.mediashield-settings__nav {
+	position: sticky;
+	top: 46px;
+	/* Its own height, not the column's, or sticky has nowhere to move. */
+	align-self: start;
+	display: flex;
+	flex-direction: column;
+	gap: var( --ms-space-2 );
+}
+
+.mediashield-settings__search-input {
+	width: 100%;
+	min-height: 40px;
+	padding: 0 var( --ms-space-3 );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-sm );
+	background: var( --ms-color-surface );
+	color: var( --ms-color-text );
+	font-size: 13px;
+}
+
+.mediashield-settings__search-result {
+	display: block;
+	margin-block-start: var( --ms-space-1 );
+	font-size: 12px;
+	color: var( --ms-color-text-secondary );
+}
+
+.mediashield-settings__search-result:empty {
+	display: none;
+}
+
+.mediashield-settings__nav-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.mediashield-settings__nav-link {
+	display: flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0 var( --ms-space-3 );
+	border-radius: var( --ms-radius-sm );
+	color: var( --ms-color-text-secondary );
+	font-size: 13px;
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.mediashield-settings__nav-link:hover,
+.mediashield-settings__nav-link:focus {
+	background: var( --ms-color-bg );
+	color: var( --ms-color-text );
+}
+
+.mediashield-settings__nav-link.is-active {
+	background: var( --ms-color-primary-light );
+	color: var( --ms-color-primary );
+	font-weight: 600;
+}
+
+.mediashield-settings__nav-select {
+	display: none;
+}
+
+.mediashield-settings__extra {
+	scroll-margin-top: 46px;
+}
+
 .mediashield-settings__section {
+	scroll-margin-top: 46px;
 	background: var( --ms-color-surface );
 	border: 1px solid var( --ms-color-border );
 	border-radius: var( --ms-radius-lg );
@@ -1276,7 +1495,7 @@
 	gap: 10px;
 	padding: var( --ms-space-4 ) 22px;
 	border-bottom: 1px solid var( --ms-color-border-light );
-	background: #fafbfc;
+	background: var( --ms-palette-gray-cool-15 );
 }
 
 .mediashield-settings__section-icon {
@@ -1338,7 +1557,7 @@
 	aspect-ratio: 16 / 9;
 	padding: var( --ms-space-4 );
 	border-radius: var( --ms-radius-md, 6px );
-	background: linear-gradient( 135deg, #1f2937, #0b1220 );
+	background: linear-gradient( 135deg, var( --ms-palette-gray-800 ), var( --ms-palette-gray-925 ) );
 	overflow: hidden;
 }
 
@@ -1346,11 +1565,13 @@
 	position: absolute;
 	inset-block-start: var( --ms-space-3 );
 	inset-inline-start: var( --ms-space-3 );
-	padding: var( --ms-space-1 ) var( --ms-space-2 );
-	border-radius: 3px;
-	background: rgba( 0, 0, 0, 0.5 );
-	color: rgba( 255, 255, 255, 0.6 );
-	font-size: 10px;
+	padding: var( --ms-space-1 ) var( --ms-space-3 );
+	border-radius: 999px;
+	background: var( --ms-color-text );
+	background: color-mix( in srgb, var( --ms-preview-accent, var( --ms-color-primary ) ) 55%, var( --ms-color-text ) );
+	color: var( --ms-palette-white );
+	font-size: 11px;
+	font-weight: 600;
 	line-height: 1.4;
 }
 
@@ -1377,7 +1598,7 @@
 	padding: var( --ms-space-2 ) var( --ms-space-5 );
 	border-radius: 4px;
 	background: var( --wp-admin-theme-color, #2271b1 );
-	color: #fff;
+	color: var( --ms-palette-white );
 	font-weight: 600;
 }
 
@@ -1479,7 +1700,7 @@
 .ms-card__head {
 	padding: 14px var( --ms-space-5 ) var( --ms-space-3 );
 	border-bottom: 1px solid var( --ms-color-border );
-	background: #fafafa;
+	background: var( --ms-palette-gray-25 );
 }
 
 .ms-card__title {
@@ -1522,7 +1743,7 @@
 }
 
 .ms-btn:hover {
-	background: #f6f7f7;
+	background: var( --ms-palette-wp-gray-0 );
 	color: var( --ms-color-text );
 	text-decoration: none;
 }
@@ -1650,7 +1871,7 @@
 
 .ms-upsell-card {
 	background: var( --ms-color-surface );
-	border: 1px solid #e2e8f0;
+	border: 1px solid var( --ms-palette-slate-200 );
 	border-radius: 8px;
 	padding: var( --ms-space-5 );
 	text-align: center;
@@ -1668,12 +1889,12 @@
 .ms-upsell-card h3 {
 	font-size: 14px;
 	margin: 0 0 6px;
-	color: #1e1e1e;
+	color: var( --ms-palette-wp-gray-900 );
 }
 
 .ms-upsell-card p {
 	font-size: 12px;
-	color: #757575;
+	color: var( --ms-palette-wp-gray-700 );
 	margin: 0;
 	line-height: 1.5;
 }
@@ -1683,7 +1904,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), #8b5cf6 );
+	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), var( --ms-palette-violet-500 ) );
 	color: var( --ms-color-surface );
 	border-radius: 8px;
 	padding: var( --ms-space-5 ) var( --ms-space-6 );
@@ -1716,15 +1937,15 @@
 }
 
 .ms-upsell-banner__btn:hover {
-	background: #f5f3ff;
-	color: #4f46e5;
+	background: var( --ms-palette-violet-50 );
+	color: var( --ms-palette-indigo-600 );
 	text-decoration: none;
 }
 
 /* ── Upsell Section (Settings page) ───────────────── */
 .ms-upsell-section {
-	background: #fafbff;
-	border: 1px dashed #c7d2fe;
+	background: var( --ms-palette-indigo-25 );
+	border: 1px dashed var( --ms-palette-indigo-200 );
 	border-radius: 8px;
 	padding: var( --ms-space-5 );
 	margin-bottom: var( --ms-space-4 );
@@ -1744,13 +1965,13 @@
 
 .ms-upsell-section__header strong {
 	font-size: 14px;
-	color: #1e1e1e;
+	color: var( --ms-palette-wp-gray-900 );
 	display: block;
 }
 
 .ms-upsell-section__header span {
 	font-size: 12px;
-	color: #757575;
+	color: var( --ms-palette-wp-gray-700 );
 }
 
 .ms-upsell-section__features {
@@ -1762,7 +1983,7 @@
 
 .ms-upsell-feature {
 	font-size: 13px;
-	color: #374151;
+	color: var( --ms-palette-gray-700 );
 	padding-inline-start: var( --ms-space-4 );
 	position: relative;
 }
@@ -1791,7 +2012,7 @@
 }
 
 .ms-upsell-section__btn:hover {
-	background: #4f46e5;
+	background: var( --ms-palette-indigo-600 );
 	color: var( --ms-color-surface );
 	text-decoration: none;
 }
@@ -1802,12 +2023,12 @@
 	align-items: center;
 	gap: var( --ms-space-2 );
 	padding: var( --ms-space-3 ) var( --ms-space-4 );
-	background: #f5f3ff;
-	border: 1px solid #e0e7ff;
+	background: var( --ms-palette-violet-50 );
+	border: 1px solid var( --ms-palette-indigo-100 );
 	border-radius: 6px;
 	margin-top: var( --ms-space-4 );
 	font-size: 13px;
-	color: #374151;
+	color: var( --ms-palette-gray-700 );
 }
 
 .ms-upsell-inline .ms-icon {
@@ -1834,7 +2055,7 @@
 
 .ms-teaser-box li {
 	font-size: 12px;
-	color: #374151;
+	color: var( --ms-palette-gray-700 );
 	margin-bottom: var( --ms-space-1 );
 }
 
@@ -1843,7 +2064,7 @@
 }
 
 .ms-pro-badge-small {
-	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), #8b5cf6 );
+	background: linear-gradient( 135deg, var( --ms-color-pro-accent ), var( --ms-palette-violet-500 ) );
 	color: var( --ms-color-surface );
 	font-size: 9px;
 	font-weight: 700;
@@ -1900,6 +2121,7 @@
 @media ( max-width: 1280px ) {
 	.mediashield-sidebar__item {
 		justify-content: center;
+		gap: 0;
 	}
 
 	.mediashield-sidebar__label {
@@ -1939,6 +2161,12 @@
 	.mediashield-sidebar__item {
 		padding-inline: 0;
 		min-height: 40px;
+	}
+
+	.mediashield-sidebar__sub {
+		padding-inline: 0;
+		border-block: 1px solid var( --ms-color-border );
+		padding-block: 2px;
 	}
 
 	.mediashield-table-card {
@@ -1991,12 +2219,52 @@
 		min-height: 40px;
 	}
 
+	/* The six group icons in one row, the open group's screens in a row
+	   underneath. */
+	.mediashield-sidebar__group {
+		display: contents;
+	}
+
+	.mediashield-sidebar__menu:has( > .mediashield-sidebar__group ) {
+		display: grid;
+		grid-template-columns: repeat( 6, minmax( 0, 1fr ) );
+	}
+
+	.mediashield-sidebar__sub {
+		order: 1;
+		grid-column: 1 / -1;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: var( --ms-space-1 );
+		margin: 0;
+		padding: var( --ms-space-1 ) 0 0;
+		border-top: 1px solid var( --ms-color-border );
+	}
+
 	.mediashield-sidebar__pro-badge {
 		display: none;
 	}
 
 	.mediashield-admin__content {
 		padding: var( --ms-space-4 );
+	}
+
+	/* Settings: one column; the section list becomes a select. */
+	.mediashield-settings__layout {
+		grid-template-columns: minmax( 0, 1fr );
+		gap: var( --ms-space-4 );
+	}
+
+	.mediashield-settings__nav {
+		position: static;
+	}
+
+	.mediashield-settings__nav-list {
+		display: none;
+	}
+
+	.mediashield-settings__nav-select {
+		display: block;
 	}
 
 	.mediashield-page__header {
@@ -2113,16 +2381,16 @@
 	position: relative;
 	width: 100%;
 	padding-bottom: 56.25%; /* 16:9 */
-	background: #000;
+	background: var( --ms-palette-black );
 }
 .ms-preview-modal__info {
 	display: flex;
 	gap: var( --ms-space-5 );
 	padding: var( --ms-space-3 ) var( --ms-space-5 );
 	font-size: 13px;
-	color: #757575;
+	color: var( --ms-palette-wp-gray-700 );
 	border-top: 1px solid var( --ms-color-border, #e2e8f0 );
-	background: #fafbfc;
+	background: var( --ms-palette-gray-cool-15 );
 }
 .ms-preview-modal__info strong {
 	margin-inline-end: var( --ms-space-1 );
@@ -2170,7 +2438,7 @@
 	width: 56px;
 	height: 56px;
 	border-radius: 16px;
-	background: linear-gradient( 135deg, var( --ms-color-primary ) 0%, #6c5ce7 100% );
+	background: linear-gradient( 135deg, var( --ms-color-primary ) 0%, var( --ms-palette-violet-550 ) 100% );
 	box-shadow: 0 4px 12px rgba( 56, 88, 233, 0.3 );
 	margin-bottom: var( --ms-space-5 );
 }
@@ -2357,7 +2625,7 @@
 	padding: var( --ms-space-5 ) var( --ms-space-3 );
 	border: 1px solid var( --ms-color-border );
 	border-radius: 10px;
-	background: #fafbfc;
+	background: var( --ms-palette-gray-cool-15 );
 	text-align: center;
 	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -2391,9 +2659,9 @@
 	padding: 10px 14px;
 	border-radius: 8px;
 	background: var( --ms-color-warning-light );
-	border: 1px solid #f0d97e;
+	border: 1px solid var( --ms-palette-yellow-border );
 	font-size: 13px;
-	color: #6e5a00;
+	color: var( --ms-palette-yellow-text );
 	margin-bottom: var( --ms-space-3 );
 }
 
@@ -2449,7 +2717,7 @@
 	gap: var( --ms-space-3 );
 	padding: var( --ms-space-4 );
 	background: var( --ms-color-success-light );
-	border: 1px solid #b8e6be;
+	border: 1px solid var( --ms-palette-green-border );
 	border-radius: 10px;
 }
 
@@ -2502,7 +2770,7 @@
 }
 
 .ms-wizard__watermark-preview-box {
-	background: #111;
+	background: var( --ms-palette-gray-950 );
 	border-radius: 10px;
 	padding: var( --ms-space-8 ) var( --ms-space-6 );
 	position: relative;
@@ -2515,7 +2783,7 @@
 	left: 0;
 	right: 0;
 	height: 4px;
-	background: linear-gradient( 90deg, var( --wp-admin-theme-color, var( --ms-color-primary ) ) 40%, #333 40% );
+	background: linear-gradient( 90deg, var( --wp-admin-theme-color, var( --ms-color-primary ) ) 40%, var( --ms-palette-gray-850 ) 40% );
 	border-radius: 0 0 10px 10px;
 }
 
@@ -2566,8 +2834,8 @@
 }
 
 .ms-wizard__btn--back:hover {
-	background: #f7f7f7 !important;
-	border-color: #c3c4c7 !important;
+	background: var( --ms-palette-gray-75 ) !important;
+	border-color: var( --ms-palette-wp-gray-10 ) !important;
 	color: var( --ms-color-text ) !important;
 }
 
@@ -2652,104 +2920,162 @@
 	}
 }
 
-/* Onboarding hero — shown on Dashboard when total_videos === 0 */
-.mediashield-onboarding-hero {
-	background: linear-gradient(135deg, var( --ms-color-surface ) 0%, #f6f7ff 100%);
-	border: 1px solid #e5e7eb;
-	border-radius: 16px;
-	padding: var( --ms-space-12 ) var( --ms-space-10 );
-	text-align: center;
-	max-width: 780px;
-	margin: var( --ms-space-6 ) auto;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+/* First-run checklist: three steps, shown on the Dashboard until all are
+   done (Basecamp 10530930901). */
+.mediashield-first-run,
+.mediashield-protection-card {
+	background: var( --ms-color-surface );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-md );
+	padding: var( --ms-space-5 ) var( --ms-space-6 );
+	margin-block-end: var( --ms-space-6 );
 }
 
-.mediashield-onboarding-hero__icon {
-	width: 72px;
-	height: 72px;
-	border-radius: 16px;
-	background: linear-gradient(135deg, var( --ms-color-primary ) 0%, #6d28d9 100%);
+.mediashield-first-run__head,
+.mediashield-protection-card__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var( --ms-space-3 );
+	margin-block-end: var( --ms-space-4 );
+}
+
+.mediashield-first-run__head h2,
+.mediashield-protection-card__head h2 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+	color: var( --ms-color-text );
+}
+
+.mediashield-first-run__count {
+	font-size: 12px;
+	font-weight: 600;
+	color: var( --ms-color-text-secondary );
+}
+
+.mediashield-first-run__steps {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var( --ms-space-2 );
+}
+
+.mediashield-first-run__step {
+	display: flex;
+	align-items: center;
+	gap: var( --ms-space-4 );
+	padding: var( --ms-space-3 ) var( --ms-space-4 );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-sm );
+}
+
+.mediashield-first-run__mark {
+	flex: 0 0 auto;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	margin-bottom: var( --ms-space-6 );
-	box-shadow: 0 8px 24px rgba(56, 88, 233, 0.25);
-}
-
-.mediashield-onboarding-hero__icon .ms-icon {
-	font-size: 36px;
-	width: 36px;
-	height: 36px;
-	color: var( --ms-color-surface );
-}
-
-.mediashield-onboarding-hero__title {
-	font-size: 28px;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: var( --ms-color-primary-light );
+	color: var( --ms-color-primary );
 	font-weight: 700;
-	color: #0f172a;
-	margin: 0 0 var( --ms-space-3 );
-	line-height: 1.2;
+	font-size: 13px;
 }
 
-.mediashield-onboarding-hero__lede {
-	font-size: 15px;
-	color: #475569;
-	line-height: 1.6;
-	margin: 0 auto var( --ms-space-8 );
-	max-width: 560px;
+.mediashield-first-run__step.is-done .mediashield-first-run__mark {
+	background: var( --ms-color-success-light );
+	color: var( --ms-color-success );
 }
 
-.mediashield-onboarding-hero__steps {
-	list-style: none;
-	padding: 0;
-	margin: 0 auto var( --ms-space-8 );
-	max-width: 560px;
-	counter-reset: ms-onboard-step;
-	text-align: left;
-}
-
-.mediashield-onboarding-hero__steps li {
+.mediashield-first-run__text {
+	flex: 1 1 auto;
 	display: flex;
 	flex-direction: column;
-	padding: 14px var( --ms-space-4 );
-	margin: 0 0 var( --ms-space-2 );
-	background: var( --ms-color-surface );
-	border: 1px solid #e5e7eb;
-	border-radius: 10px;
-	gap: var( --ms-space-1 );
+	gap: 2px;
+	min-width: 0;
 }
 
-.mediashield-onboarding-hero__steps li strong {
+.mediashield-first-run__text strong {
 	font-size: 14px;
-	font-weight: 600;
-	color: #0f172a;
+	color: var( --ms-color-text );
 }
 
-.mediashield-onboarding-hero__steps li span {
+.mediashield-first-run__step.is-done .mediashield-first-run__text strong {
+	color: var( --ms-color-text-secondary );
+	text-decoration: line-through;
+}
+
+.mediashield-first-run__text span {
 	font-size: 13px;
-	color: #64748b;
+	color: var( --ms-color-text-secondary );
 	line-height: 1.5;
 }
 
-.mediashield-onboarding-hero__actions {
-	display: flex;
-	gap: var( --ms-space-3 );
-	justify-content: center;
-	flex-wrap: wrap;
+.mediashield-first-run__cta.components-button {
+	flex: 0 0 auto;
+	min-height: 40px;
 }
 
-.mediashield-onboarding-hero__actions .components-button {
-	min-height: 44px;
-	padding: 0 var( --ms-space-6 );
+/* Protection card: videos protected, blocked attempts, alerts. */
+.mediashield-protection-card__head {
+	justify-content: flex-start;
+}
+
+.mediashield-protection-card__icon {
+	display: inline-flex;
+	color: var( --ms-color-success );
+}
+
+.mediashield-protection-card__list {
+	display: grid;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) );
+	gap: var( --ms-space-4 );
+	margin: 0;
+}
+
+.mediashield-protection-card__item dt {
+	font-size: 11px;
 	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var( --ms-color-text-secondary );
+	margin-block-end: var( --ms-space-1 );
+}
+
+.mediashield-protection-card__item dd {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 700;
+	color: var( --ms-color-text );
+}
+
+.mediashield-protection-card__pro {
+	font-size: 13px;
+	font-weight: 500;
+	color: var( --ms-color-text-secondary );
 }
 
 @media (max-width: 640px) {
-	.mediashield-onboarding-hero {
-		padding: var( --ms-space-8 ) var( --ms-space-5 );
+	.mediashield-first-run,
+	.mediashield-protection-card {
+		padding: var( --ms-space-4 );
 	}
-	.mediashield-onboarding-hero__title {
-		font-size: 22px;
+
+	.mediashield-first-run__step {
+		flex-wrap: wrap;
+	}
+
+	.mediashield-first-run__cta.components-button {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.mediashield-protection-card__list {
+		grid-template-columns: minmax( 0, 1fr );
 	}
 }
 
@@ -2914,11 +3240,11 @@
 	color: var( --ms-color-text-secondary );
 }
 
-.ms-playlist-items__platform--youtube { background: #fee2e2; color: #b91c1c; }
-.ms-playlist-items__platform--vimeo   { background: #dbeafe; color: #1d4ed8; }
-.ms-playlist-items__platform--bunny   { background: #fef3c7; color: #92400e; }
-.ms-playlist-items__platform--wistia  { background: #cffafe; color: #155e75; }
-.ms-playlist-items__platform--self    { background: #ecfdf5; color: #065f46; }
+.ms-playlist-items__platform--youtube { background: var( --ms-palette-red-100 ); color: var( --ms-palette-red-700 ); }
+.ms-playlist-items__platform--vimeo   { background: var( --ms-palette-blue-100 ); color: var( --ms-palette-blue-700 ); }
+.ms-playlist-items__platform--bunny   { background: var( --ms-palette-amber-100 ); color: var( --ms-palette-amber-800 ); }
+.ms-playlist-items__platform--wistia  { background: var( --ms-palette-cyan-100 ); color: var( --ms-palette-cyan-800 ); }
+.ms-playlist-items__platform--self    { background: var( --ms-palette-emerald-50 ); color: var( --ms-palette-emerald-800 ); }
 
 .ms-playlist-items__duration {
 	font-variant-numeric: tabular-nums;

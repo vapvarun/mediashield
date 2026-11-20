@@ -3,7 +3,7 @@ journey: watch-protected-video
 plugin: mediashield
 priority: critical
 roles: [subscriber, customer]
-covers: [player-wrapper, watermark, heartbeat, milestone-tracking]
+covers: [player-wrapper, watermark, heartbeat, milestone-tracking, devtools-detection, card:10528792946]
 prerequisites:
   - "Site reachable at $SITE_URL"
   - "MediaShield activated; ms_enabled = 1"
@@ -72,6 +72,11 @@ getting "did this user actually watch it?" data.
   ```
 - **On fail**: `includes/Milestones/MilestoneTracker.php::record` (insert/idempotency) OR thresholds filter (`mediashield_milestone_thresholds`) overrode to non-default.
 
+### 6. DevTools detection stays off pages with no protected player
+- **Action**: with Detect DevTools and Pause on DevTools on, open a page whose content links to `vimeo.com/...` (or any other embed hint) but carries no MediaShield player, as `journey-subscriber`, on a desktop viewport >= 1024px. Open DevTools and wait 10s. Then repeat on the page from step 1.
+- **Expect**: no-player page: `assets/js/protection.js` may load, but no `.ms-devtools-overlay` appears and no `POST /protection/devtools-event` is sent. Step-1 page: the overlay appears and playback pauses. A player set to protection level `none` alone on a page behaves like the no-player page.
+- **On fail**: `assets/js/protection.js` (`init()` / `startDevtoolsDetection()` started without a protected player, or `showOverlay()` lost its guard).
+
 ## Pass criteria
 
 ALL of the following hold:
@@ -80,6 +85,9 @@ ALL of the following hold:
 3. `/session/start` returns 200 with a session token.
 4. `/session/heartbeat` updates `last_heartbeat` and `total_seconds`.
 5. A `wp_ms_milestones` row exists for `(VIDEO_ID, USER_ID, 25)`.
+6. A page with no protected player never shows the DevTools overlay; the protected video page still does.
+
+7. card:10506484970 - Bunny direct play with MP4 (Platforms > Bunny card: Direct, MP4), REAL Safari via safaridriver (drive with JS, clicks do not reach the page): load a 28 s and a 5-min Bunny video 10 times each, muted autoplay. **Expect** every load plays to the end or shows "Reconnecting…" and then plays on; never frozen at 0:00 with no message. Deterministic check in Chromium: hold every `*.b-cdn.net/*.mp4` response; **expect** "Reconnecting…" after about 8 s (a second, freshly signed MP4 request), then "This video could not be loaded." with **Try again**, and Try again plays once the network is back. While the player carries `data-ms-recovering="1"` no "could not be loaded" text is in the DOM. A denied video (role restriction, as a subscriber) still shows its overlay and a removed YouTube video still shows "This video is unavailable."
 
 ## Fail diagnostics
 
@@ -90,3 +98,4 @@ ALL of the following hold:
 | `/session/start` returns 403 | AccessControl denied or capability fallback | `includes/Access/AccessControl.php::can_watch`, `mediashield_can_watch` filter |
 | Heartbeat 200 but no DB write | SessionManager::touch_session no-op | `includes/Access/SessionManager.php` |
 | No milestone row at 25% | Thresholds filter or PK collision | `includes/Milestones/MilestoneTracker.php` |
+| Frozen at 0:00 in Safari, no message | Stall watchdog not running for single-file sources | `assets/js/player-wrapper.js::watchForPlaybackStall` |

@@ -139,13 +139,7 @@ class Menu {
 			'version'      => $ver,
 		);
 
-		wp_enqueue_script(
-			'mediashield-admin',
-			$build_url . 'index.js',
-			array_merge( $asset['dependencies'], array( 'mediashield-request' ) ),
-			$asset['version'],
-			true
-		);
+		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-admin', $asset['dependencies'], (string) $asset['version'] );
 
 		// Pro-notice dismiss handler (replaces the former inline script).
 		wp_enqueue_script(
@@ -181,11 +175,11 @@ class Menu {
 				'isProActive'       => defined( 'MEDIASHIELD_PRO_VERSION' ),
 				// The Videos list labels a video with no level of its own.
 				'defaultProtection' => \MediaShield\Player\Protection::default_level(),
+				// Settings shows "Require X% watched" when an LMS that enforces
+				// it is active: Learnomy (Free) or LearnDash (Pro).
+				'isLearnomyActive'  => function_exists( '\\Learnomy\\table' ),
 			)
 		);
-
-		// Load script translations.
-		wp_set_script_translations( 'mediashield-admin', 'mediashield', MEDIASHIELD_PATH . 'languages' );
 	}
 
 	/**

@@ -60,6 +60,9 @@
 				},
 			};
 
+			// The YouTube API swaps the target for its iframe; keep the player.
+			var playerEl = target.closest( '.ms-protected-player' );
+
 			function initPlayer() {
 				var pv = { modestbranding: 1, rel: 0, fs: 0 };
 				if ( options.autoplay === true ) pv.autoplay = 1;
@@ -79,6 +82,13 @@
 								}
 							}, 500 );
 							if ( adapter._readyCb ) adapter._readyCb();
+						},
+						// 100: removed or private; 101 / 150: the owner
+						// turned embedding off. Either way it will not play here.
+						onError: function ( e ) {
+							if ( playerEl && [ 100, 101, 150 ].indexOf( e.data ) > -1 ) {
+								showUnavailable( playerEl );
+							}
 						},
 						onStateChange: function ( e ) {
 							adapter._playing = ( e.data === YT.PlayerState.PLAYING );
@@ -166,6 +176,10 @@
 							adapter._duration = d;
 						} );
 						if ( adapter._readyCb ) adapter._readyCb();
+					} ).catch( function () {
+						// Vimeo refuses a removed or private video here.
+						var vimeoEl = target.closest( '.ms-protected-player' );
+						if ( vimeoEl ) showUnavailable( vimeoEl );
 					} );
 				} )
 				.catch( function ( err ) {
@@ -278,8 +292,15 @@
 			};
 
 			var video = document.createElement( 'video' );
-			// Per-video overrides. `controls` defaults true; the others default false.
-			video.controls = options.controls === false ? false : true;
+			// The browser's own controls stay off: MediaShield draws one control
+			// bar (buildControlBar) once the video is ready, so a viewer never
+			// sees two sets of buttons, a second fullscreen icon or the
+			// picture-in-picture menu (Basecamp 10530930409). `controls` = false
+			// on the video (per-video override) means no bar at all.
+			video.controls = false;
+			adapter._wantsControls = options.controls !== false;
+			video.disablePictureInPicture = true;
+			video.setAttribute( 'disablepictureinpicture', '' );
 			video.autoplay = options.autoplay === true;
 			video.loop     = options.loop === true;
 			video.muted    = options.muted === true;
@@ -453,7 +474,9 @@
 						loadInto( url, resumeAt, wasPlaying, false !== afterError );
 						scheduleRefresh();
 						// A refresh that works clears what an earlier failed one said.
-						var stale = playerEl && playerEl.querySelector( '.ms-error-overlay' );
+						// The stall watchdog's "Reconnecting…" stays until the
+						// video actually moves again.
+						var stale = playerEl && playerEl.querySelector( '.ms-error-overlay:not([data-ms-stall])' );
 						if ( stale ) stale.remove();
 					} )
 					.catch( function ( err ) {
@@ -495,6 +518,15 @@
 
 			if ( ! isAdaptive ) {
 				video.src = url;
+				watchForPlaybackStall( video, playerEl, function () {
+					// A provider address with an expiry gets a freshly signed
+					// one; anything else reloads the same address.
+					if ( refreshVideoId && expiryOf( url ) && -1 === url.indexOf( 'ms_token=' ) ) {
+						refreshStream( true, true );
+					} else {
+						loadInto( url, video.currentTime, true, true );
+					}
+				} );
 				return adapter;
 			}
 
@@ -656,13 +688,51 @@
 	// and turned into a DOM event on the player so any number of listeners
 	// (the end screen, a playlist queue) can react on every platform.
 	function createAdapter( el ) {
+		var target = el.querySelector( '.ms-player-target' );
+		var poster = target ? ( target.dataset.poster || '' ) : '';
 		var adapter = buildAdapter( el );
 		if ( adapter ) {
 			adapter.onEnded( function () {
 				el.dispatchEvent( new CustomEvent( 'mediashield:ended', { bubbles: true } ) );
 			} );
+			// A <video> shows its own poster. A platform iframe shows the
+			// platform's thumbnail, so the owner's Featured Image goes on top
+			// until the viewer clicks play (Basecamp 10526098472).
+			var isNative = adapter._video instanceof HTMLVideoElement;
+			if ( poster && ! isNative && ! ( target && target.dataset.autoplay === '1' ) ) {
+				addIframePoster( el, adapter, poster );
+			}
 		}
 		return adapter;
+	}
+
+	/**
+	 * Cover a platform iframe with the video's poster; a click removes it and starts playback.
+	 *
+	 * The platform player may not be ready at the click, so play() is retried
+	 * for a few seconds until it reports playing. If a browser refuses to start
+	 * it (iPhone needs a tap inside the iframe), the platform's own play button
+	 * is now uncovered.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {Object}      adapter Platform adapter.
+	 * @param {string}      poster  Poster image URL.
+	 */
+	function addIframePoster( el, adapter, poster ) {
+		var cover = document.createElement( 'button' );
+		cover.type = 'button';
+		cover.className = 'ms-iframe-poster';
+		cover.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
+		cover.style.backgroundImage = 'url("' + poster.replace( /"/g, '%22' ) + '")';
+		cover.addEventListener( 'click', function () {
+			cover.remove();
+			var tries = 0;
+			( function start() {
+				adapter.play();
+				if ( ! adapter.isPlaying() && ++tries < 20 ) setTimeout( start, 250 );
+			} )();
+		} );
+		el.appendChild( cover );
 	}
 
 	function buildAdapter( el ) {
@@ -741,52 +811,282 @@
 	}
 
 	/**
-	 * Build a speed control menu using safe DOM methods.
+	 * A small pop-up menu button (speed, quality): one button, a list of
+	 * choices, the current one marked. Safe DOM methods only.
+	 *
+	 * @param {HTMLElement} parent   Where the control goes (the control bar).
+	 * @param {string}      cls      Class of the wrapper, e.g. 'ms-speed-control'.
+	 * @param {string}      label    Accessible name of the button.
+	 * @param {Array}       choices  [ { label, value } ].
+	 * @param {*}           current  Value marked as chosen.
+	 * @param {Function}    onPick   Called with the chosen value.
 	 */
-	function buildSpeedControl( el, container ) {
-		var speedControl = document.createElement( 'div' );
-		speedControl.className = 'ms-speed-control';
+	function buildMenuControl( parent, cls, label, choices, current, onPick ) {
+		var control = document.createElement( 'div' );
+		control.className = cls + ' ms-menu-control';
 
-		var speedBtn = document.createElement( 'button' );
-		speedBtn.className = 'ms-speed-btn';
-		speedBtn.setAttribute( 'aria-label', t( 'speed', 'Playback speed' ) );
-		speedBtn.textContent = '1x';
-		speedControl.appendChild( speedBtn );
+		var btn = document.createElement( 'button' );
+		btn.type = 'button';
+		btn.className = cls.replace( '-control', '-btn' ) + ' ms-menu-control__btn';
+		btn.setAttribute( 'aria-label', label );
+		btn.setAttribute( 'aria-haspopup', 'true' );
+		btn.setAttribute( 'aria-expanded', 'false' );
+		control.appendChild( btn );
 
 		var menu = document.createElement( 'div' );
-		menu.className = 'ms-speed-menu';
+		menu.className = cls.replace( '-control', '-menu' ) + ' ms-menu-control__menu';
+		menu.setAttribute( 'role', 'menu' );
 
-		var speeds = [ 0.5, 0.75, 1, 1.25, 1.5, 2 ];
-		speeds.forEach( function ( s ) {
+		var close = function () {
+			control.classList.remove( 'is-open' );
+			btn.setAttribute( 'aria-expanded', 'false' );
+		};
+
+		choices.forEach( function ( c ) {
 			var opt = document.createElement( 'button' );
-			opt.className = 'ms-speed-option' + ( s === 1 ? ' is-active' : '' );
-			opt.dataset.speed = s;
-			opt.textContent = s + 'x';
+			opt.type = 'button';
+			opt.setAttribute( 'role', 'menuitemradio' );
+			opt.className = cls.replace( '-control', '-option' ) + ' ms-menu-control__option';
+			opt.textContent = c.label;
+			var mark = function ( on ) {
+				opt.classList.toggle( 'is-active', on );
+				opt.setAttribute( 'aria-checked', on ? 'true' : 'false' );
+				if ( on ) btn.textContent = c.short || c.label;
+			};
+			mark( c.value === current );
 			opt.addEventListener( 'click', function ( e ) {
 				e.stopPropagation();
-				if ( el._msAdapter && el._msAdapter._video ) {
-					el._msAdapter._video.playbackRate = s;
-				}
-				speedBtn.textContent = s + 'x';
-				menu.querySelectorAll( '.ms-speed-option' ).forEach( function ( o ) { o.classList.remove( 'is-active' ); } );
-				opt.classList.add( 'is-active' );
-				speedControl.classList.remove( 'is-open' );
+				menu.querySelectorAll( '.ms-menu-control__option' ).forEach( function ( o ) {
+					o.classList.remove( 'is-active' );
+					o.setAttribute( 'aria-checked', 'false' );
+				} );
+				mark( true );
+				onPick( c.value );
+				close();
+				btn.focus();
 			} );
 			menu.appendChild( opt );
 		} );
+		control.appendChild( menu );
 
-		speedControl.appendChild( menu );
-
-		speedBtn.addEventListener( 'click', function ( e ) {
+		btn.addEventListener( 'click', function ( e ) {
 			e.stopPropagation();
-			speedControl.classList.toggle( 'is-open' );
+			var open = ! control.classList.contains( 'is-open' );
+			control.classList.toggle( 'is-open', open );
+			btn.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
 		} );
-
-		document.addEventListener( 'click', function () {
-			speedControl.classList.remove( 'is-open' );
+		control.addEventListener( 'keydown', function ( e ) {
+			if ( 'Escape' === e.key && control.classList.contains( 'is-open' ) ) {
+				e.stopPropagation();
+				close();
+				btn.focus();
+			}
 		} );
+		document.addEventListener( 'click', close );
 
-		container.appendChild( speedControl );
+		parent.appendChild( control );
+		return control;
+	}
+
+	/**
+	 * Playback-speed menu for a native <video>.
+	 */
+	function buildSpeedControl( el, parent ) {
+		buildMenuControl(
+			parent,
+			'ms-speed-control',
+			t( 'speed', 'Playback speed' ),
+			[ 0.5, 0.75, 1, 1.25, 1.5, 2 ].map( function ( s ) { return { label: s + 'x', value: s }; } ),
+			1,
+			function ( s ) {
+				if ( el._msAdapter && el._msAdapter._video ) {
+					el._msAdapter._video.playbackRate = s;
+				}
+			}
+		);
+	}
+
+	// Lucide icons (stroke 1.75) for the control bar. Constant markup, never
+	// built from data.
+	var ICONS = {
+		play: '<polygon points="6 3 20 12 6 21 6 3"/>',
+		pause: '<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>',
+		volume: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>',
+		muted: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
+		captions: '<rect width="18" height="14" x="3" y="5" rx="2" ry="2"/><path d="M7 15h4M15 15h2M7 11h2M13 11h4"/>',
+	};
+
+	function setIcon( btn, name, size ) {
+		var px = size || 20;
+		btn.innerHTML = '<svg class="ms-icon" width="' + px + '" height="' + px + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + ICONS[ name ] + '</svg>';
+	}
+
+	function clock( s ) {
+		s = Math.max( 0, Math.floor( s || 0 ) );
+		var h = Math.floor( s / 3600 );
+		var m = Math.floor( ( s % 3600 ) / 60 );
+		var sec = s % 60;
+		return ( h ? h + ':' + ( m < 10 ? '0' : '' ) : '' ) + m + ':' + ( sec < 10 ? '0' : '' ) + sec;
+	}
+
+	/**
+	 * One MediaShield control bar for a native <video> (self-hosted, Bunny
+	 * direct stream): play, scrubber, time, mute, captions and quality when
+	 * the video has them, speed, and the one fullscreen button. The browser's
+	 * controls stay off (NativeAdapter), so there is one set of controls and
+	 * no picture-in-picture menu (Basecamp 10530930409). The bar hides while
+	 * the video plays and nobody touches the player, and comes back on any
+	 * pointer move, focus or pause.
+	 *
+	 * @param {HTMLElement} el        Player container.
+	 * @param {Object}      adapter   Native adapter.
+	 * @param {boolean}     withSpeed Owner's Speed Control setting.
+	 */
+	function buildControlBar( el, adapter, withSpeed ) {
+		var video = adapter._video;
+		if ( ! video || el.querySelector( '.ms-controls' ) ) return;
+		el.classList.add( 'ms-has-controls' );
+
+		var bar = document.createElement( 'div' );
+		bar.className = 'ms-controls';
+		bar.setAttribute( 'role', 'group' );
+		bar.setAttribute( 'aria-label', t( 'videoControls', 'Video controls' ) );
+
+		// Central play button, shown while the video is paused.
+		var big = document.createElement( 'button' );
+		big.type = 'button';
+		big.className = 'ms-bigplay';
+		big.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
+		setIcon( big, 'play', 32 );
+		big.addEventListener( 'click', function () { adapter.play(); } );
+		el.appendChild( big );
+
+		var play = document.createElement( 'button' );
+		play.type = 'button';
+		play.className = 'ms-controls__btn ms-controls__play';
+		play.addEventListener( 'click', function () {
+			adapter.isPlaying() ? adapter.pause() : adapter.play();
+		} );
+		bar.appendChild( play );
+
+		var time = document.createElement( 'span' );
+		time.className = 'ms-controls__time';
+		time.setAttribute( 'aria-hidden', 'true' );
+		bar.appendChild( time );
+
+		var seek = document.createElement( 'input' );
+		seek.type = 'range';
+		seek.className = 'ms-controls__seek';
+		seek.min = '0';
+		seek.step = '0.1';
+		seek.value = '0';
+		seek.setAttribute( 'aria-label', t( 'seek', 'Seek' ) );
+		seek.addEventListener( 'input', function () {
+			video.currentTime = parseFloat( seek.value ) || 0;
+		} );
+		bar.appendChild( seek );
+
+		var mute = document.createElement( 'button' );
+		mute.type = 'button';
+		mute.className = 'ms-controls__btn ms-controls__mute';
+		mute.addEventListener( 'click', function () { video.muted = ! video.muted; } );
+		bar.appendChild( mute );
+
+		// Captions, when the video carries a text track.
+		var tracks = Array.prototype.filter.call( video.textTracks || [], function ( tr ) {
+			return 'subtitles' === tr.kind || 'captions' === tr.kind;
+		} );
+		if ( tracks.length ) {
+			var cc = document.createElement( 'button' );
+			cc.type = 'button';
+			cc.className = 'ms-controls__btn ms-controls__captions';
+			cc.setAttribute( 'aria-label', t( 'captions', 'Captions' ) );
+			setIcon( cc, 'captions' );
+			var syncCc = function () {
+				cc.setAttribute( 'aria-pressed', 'showing' === tracks[ 0 ].mode ? 'true' : 'false' );
+			};
+			cc.addEventListener( 'click', function () {
+				tracks[ 0 ].mode = 'showing' === tracks[ 0 ].mode ? 'hidden' : 'showing';
+				syncCc();
+			} );
+			syncCc();
+			bar.appendChild( cc );
+		}
+
+		// Quality, when an HLS stream offers more than one rendition.
+		var hls = adapter._hls;
+		if ( hls && hls.levels && hls.levels.length > 1 ) {
+			var levels = hls.levels.map( function ( l, i ) {
+				return { label: l.height ? l.height + 'p' : String( i + 1 ), value: i };
+			} );
+			levels.unshift( { label: t( 'auto', 'Auto' ), value: -1 } );
+			buildMenuControl( bar, 'ms-quality-control', t( 'quality', 'Quality' ), levels, -1, function ( v ) {
+				hls.currentLevel = v;
+			} );
+		}
+
+		if ( withSpeed ) {
+			buildSpeedControl( el, bar );
+		}
+
+		// The one fullscreen button (rendered by the server so the player has
+		// it before scripts run) moves into the bar.
+		var fs = el.querySelector( '.ms-fullscreen-btn' );
+		if ( fs ) {
+			fs.classList.add( 'ms-controls__btn' );
+			bar.appendChild( fs );
+		}
+
+		el.appendChild( bar );
+
+		var sync = function () {
+			var playing = adapter.isPlaying();
+			el.classList.toggle( 'ms-is-playing', playing );
+			setIcon( play, playing ? 'pause' : 'play' );
+			play.setAttribute( 'aria-label', playing ? t( 'pause', 'Pause' ) : t( 'play', 'Play' ) );
+		};
+		var syncTime = function () {
+			var d = adapter.getDuration();
+			var p = video.currentTime || 0;
+			if ( d ) seek.max = String( d );
+			seek.value = String( p );
+			seek.setAttribute( 'aria-valuetext', clock( p ) + ' / ' + clock( d ) );
+			time.textContent = clock( p ) + ' / ' + clock( d );
+		};
+		var syncMute = function () {
+			setIcon( mute, video.muted || 0 === video.volume ? 'muted' : 'volume' );
+			mute.setAttribute( 'aria-label', video.muted ? t( 'unmute', 'Unmute' ) : t( 'mute', 'Mute' ) );
+		};
+
+		// Hide the bar while playing and idle; any touch brings it back.
+		var idle = null;
+		var wake = function () {
+			el.classList.remove( 'ms-controls-idle' );
+			clearTimeout( idle );
+			idle = setTimeout( function () {
+				if ( adapter.isPlaying() && ! bar.contains( document.activeElement ) ) {
+					el.classList.add( 'ms-controls-idle' );
+				}
+			}, 2500 );
+		};
+
+		[ 'play', 'pause', 'ended' ].forEach( function ( ev ) {
+			video.addEventListener( ev, function () { sync(); wake(); } );
+		} );
+		[ 'timeupdate', 'durationchange', 'seeked' ].forEach( function ( ev ) {
+			video.addEventListener( ev, syncTime );
+		} );
+		video.addEventListener( 'volumechange', syncMute );
+		// A click on the picture plays or pauses, as on every video site.
+		video.addEventListener( 'click', function () {
+			adapter.isPlaying() ? adapter.pause() : adapter.play();
+		} );
+		el.addEventListener( 'pointermove', wake );
+		el.addEventListener( 'focusin', wake );
+
+		sync();
+		syncTime();
+		syncMute();
 	}
 
 	/**
@@ -857,8 +1157,12 @@
 		var container = el;
 		var platform = el.dataset.platform || '';
 
-		// ── Speed control (native video only — YouTube/Vimeo/Wistia have their own) ──
-		if ( feat( 'speedControl' ) && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
+		// ── Control bar (native video only — YouTube/Vimeo/Wistia draw their own) ──
+		// Speed sits in the bar. A video whose owner switched controls off
+		// gets no bar, as before.
+		if ( adapter._video && adapter._wantsControls ) {
+			buildControlBar( el, adapter, feat( 'speedControl' ) );
+		} else if ( feat( 'speedControl' ) && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
 			buildSpeedControl( el, container );
 		}
 
@@ -1178,6 +1482,11 @@
 					if ( ! handled ) {
 						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
 						showErrorOverlay( el, msg );
+						// The course to enrol in, when the server named one.
+						var access = data.data || {};
+						if ( access.access_url ) {
+							addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
+						}
 					}
 					return;
 				}
@@ -1208,6 +1517,7 @@
 							videoId: videoId,
 							token: data.session_token,
 							resumePosition: data.resume_position,
+							watch: data.watch || null,
 							watermarkConfig: data.watermark_config,
 							video: data.video,
 							adapter: adapter,
@@ -1321,6 +1631,147 @@
 		} );
 	}
 
+	// ─── Playback stall watchdog (single-file sources) ─────────
+	//
+	// Safari can start a direct MP4 (Bunny's MP4 fallback) and then sit
+	// frozen at 0:00: playing, readyState 1, no error event, play() never
+	// settles (Basecamp 10506484970). Nothing else notices, so the viewer
+	// faces a dead player. After STALL_RECOVER_MS of "playing" with no
+	// progress and no usable data, reset the source once at the same time
+	// with "Reconnecting…" on screen; if it stalls again, say so and offer
+	// Try again. Adaptive streams are left to hls.js, which recovers itself.
+	var STALL_RECOVER_MS = 8000;
+
+	function watchForPlaybackStall( video, playerEl, reset ) {
+		if ( ! playerEl || 'function' !== typeof reset ) return;
+
+		var lastTime  = -1;
+		var stuckFor  = 0;
+		var attempts  = 0;
+		var tick      = 1000;
+		// A new source pauses the element until its metadata arrives; the
+		// viewer still wants it to play, so the watch carries on.
+		var expecting = false;
+
+		var restart = function () {
+			expecting = true;
+			// Recovery under way: other failure paths hold their error until
+			// it succeeds or this watchdog gives up (showErrorOverlay).
+			playerEl.dataset.msRecovering = '1';
+			reset();
+			var p = video.play();
+			if ( p && p.catch ) {
+				p.catch( function () {} );
+			}
+		};
+
+		video.addEventListener( 'playing', function () {
+			expecting = false;
+		} );
+
+		// A source reset (a refreshed address, a reload) pauses the element
+		// without a 'pause' event, and the play() queued for after it can be
+		// refused, leaving a stopped player with no message. When the video
+		// was playing - not paused by the viewer - keep wanting it to play,
+		// so the watch below picks it up.
+		// Some browsers fire 'pause' as part of the reset itself, just before
+		// 'emptied', so a pause only counts as the viewer's once the same
+		// task has passed without a reset.
+		var playingIntent = false;
+		var resetAt       = 0;
+		var hasPlayed     = false;
+		video.addEventListener( 'play', function () {
+			playingIntent = true;
+			// Until the first frame moves, a refused or stalled start is
+			// this watch's to recover (Safari can refuse twice in a row at
+			// 0:00 and then play); hold the generic load error meanwhile.
+			if ( ! hasPlayed ) {
+				playerEl.dataset.msRecovering = '1';
+			}
+		} );
+		video.addEventListener( 'pause', function () {
+			var pausedAt = Date.now();
+			setTimeout( function () {
+				if ( resetAt < pausedAt ) {
+					playingIntent = false;
+					// Paused before it ever played (autoplay refused, or the
+					// viewer): nothing is being recovered any more.
+					if ( ! hasPlayed && ! expecting ) {
+						delete playerEl.dataset.msRecovering;
+					}
+				}
+			}, 0 );
+		} );
+		video.addEventListener( 'emptied', function () {
+			resetAt = Date.now();
+			if ( playingIntent ) {
+				expecting = true;
+			}
+		} );
+
+		var clearNotice = function () {
+			var notice = playerEl.querySelector( '.ms-error-overlay[data-ms-stall]' );
+			if ( notice ) notice.remove();
+		};
+
+		var timer = setInterval( function () {
+			if ( ! document.body.contains( video ) ) {
+				clearInterval( timer );
+				return;
+			}
+
+			var waitingToPlay = ( ! video.paused || expecting ) && ! video.ended;
+			var advanced      = video.currentTime > lastTime + 0.05;
+			lastTime          = video.currentTime;
+
+			// A reset left it paused with data ready: just carry on playing.
+			// If the browser keeps refusing, the count below runs on.
+			if ( waitingToPlay && video.paused && video.readyState >= 2 ) {
+				var resumed = video.play();
+				if ( resumed && resumed.catch ) {
+					resumed.catch( function () {} );
+				}
+			}
+
+			// HAVE_FUTURE_DATA or better while playing, or the clock moved: it plays.
+			if ( ! waitingToPlay || advanced || ( video.readyState >= 3 && ! video.paused ) ) {
+				stuckFor = 0;
+				if ( advanced ) {
+					// Recovered only once the clock moves: Safari reports
+					// 'playing' before any frame plays, and a refusal in that
+					// gap is still part of this reconnect.
+					attempts  = 0;
+					hasPlayed = true;
+					delete playerEl.dataset.msRecovering;
+					clearNotice();
+				}
+				return;
+			}
+
+			stuckFor += tick;
+			if ( stuckFor < STALL_RECOVER_MS ) return;
+			stuckFor = 0;
+
+			if ( 0 === attempts ) {
+				attempts = 1;
+				showErrorOverlay( playerEl, t( 'reconnecting', 'Reconnecting…' ) );
+				var notice = playerEl.querySelector( '.ms-error-overlay' );
+				if ( notice ) notice.setAttribute( 'data-ms-stall', '1' );
+				restart();
+				return;
+			}
+
+			attempts  = 2;
+			expecting = false;
+			delete playerEl.dataset.msRecovering;
+			video.pause();
+			showErrorOverlay( playerEl, t( 'loadFailed', 'This video could not be loaded.' ), function () {
+				attempts = 0;
+				restart();
+			} );
+		}, tick );
+	}
+
 	// ─── Error Overlay (generic) ────────────────────────────────
 	//
 	// Used for non-recoverable session-start errors: concurrent stream limit,
@@ -1328,6 +1779,15 @@
 	// on top of the player container so the viewer can read why the player
 	// isn't loading. Single instance per container — repeated calls replace.
 	function showErrorOverlay( el, message, onRetry ) {
+		// The stall watchdog is reconnecting: a load or refresh failure seen in
+		// the meantime is part of that attempt, not a verdict. Keep showing
+		// "Reconnecting…"; the watchdog shows the error itself if it gives up.
+		// Only the generic load failure is held: any other message (access
+		// denied, unavailable, stream limit) always shows.
+		if ( el.dataset && '1' === el.dataset.msRecovering && String( message ) === t( 'loadFailed', 'This video could not be loaded.' ) ) {
+			return;
+		}
+
 		var existing = el.querySelector( '.ms-error-overlay' );
 		if ( existing ) existing.remove();
 
@@ -1360,6 +1820,35 @@
 
 		overlay.appendChild( inner );
 		el.appendChild( overlay );
+	}
+
+	/**
+	 * Add a link button under the message of the error overlay on screen.
+	 *
+	 * @param {HTMLElement} el    Player container.
+	 * @param {string}      url   Where it goes.
+	 * @param {string}      label Button text.
+	 */
+	function addOverlayAction( el, url, label ) {
+		var inner = el.querySelector( '.ms-error-overlay .ms-error-message' );
+		if ( ! inner ) return;
+		var link = document.createElement( 'a' );
+		link.className = 'ms-error-action';
+		link.href = url;
+		link.textContent = label;
+		inner.appendChild( link );
+	}
+
+	/**
+	 * The host removed the video or made it private (Basecamp 10530930631).
+	 *
+	 * @param {HTMLElement} el Player container.
+	 */
+	function showUnavailable( el ) {
+		showErrorOverlay( el, t( 'unavailable', 'This video is unavailable.' ) );
+		// Opaque, so the host's own error text does not show through.
+		var overlay = el.querySelector( '.ms-error-overlay' );
+		if ( overlay ) overlay.classList.add( 'ms-error-overlay--solid' );
 	}
 
 	// ─── Login Overlay ───────────────────────────────────────────
@@ -1431,37 +1920,75 @@
 
 	// ─── Resume Prompt ───────────────────────────────────────────
 
+	/**
+	 * Is a stopping point worth offering to resume from?
+	 *
+	 * Only between 10 seconds in and 95% of the length: a viewer who stopped
+	 * 3 seconds in, or who finished, starts from the top (Basecamp
+	 * 10530930523). With no known length only the 10 second floor applies.
+	 *
+	 * @param {number} position Seconds where the viewer stopped.
+	 * @param {number} duration Video length in seconds, 0 when unknown.
+	 * @return {boolean}
+	 */
+	function resumeWorthOffering( position, duration ) {
+		if ( ! ( position >= 10 ) ) return false;
+		return ! ( duration > 0 ) || position < duration * 0.95;
+	}
+
+	/**
+	 * A small "Resume from 2:00" chip just above the control bar, never on
+	 * it. It goes away on its own after about 8 seconds, as soon as the video
+	 * plays, or with its close button.
+	 */
 	function showResumePrompt( el, position, adapter ) {
-		var mins = Math.floor( position / 60 );
-		var secs = Math.floor( position % 60 );
-		var timeStr = mins + ':' + ( secs < 10 ? '0' : '' ) + secs;
+		var target = el.querySelector( '.ms-player-target' );
+		var duration = adapter.getDuration() || parseFloat( target ? target.dataset.duration : 0 ) || 0;
+		if ( ! resumeWorthOffering( position, duration ) ) return;
 
-		var toast = document.createElement( 'div' );
-		toast.className = 'ms-resume-toast';
+		var chip = document.createElement( 'div' );
+		chip.className = 'ms-resume-chip';
 
-		var span = document.createElement( 'span' );
-		span.textContent = t( 'resumePrompt', 'Resume from %s?' ).replace( '%s', timeStr );
+		var go = document.createElement( 'button' );
+		go.type = 'button';
+		go.className = 'ms-resume-chip__go';
+		go.textContent = t( 'resumeFrom', 'Resume from %s' ).replace( '%s', clock( position ) );
 
-		var yesBtn = document.createElement( 'button' );
-		yesBtn.className = 'ms-resume-yes';
-		yesBtn.textContent = t( 'resume', 'Resume' );
-		yesBtn.addEventListener( 'click', function () {
+		var close = document.createElement( 'button' );
+		close.type = 'button';
+		close.className = 'ms-resume-chip__close';
+		close.setAttribute( 'aria-label', t( 'dismiss', 'Dismiss' ) );
+		close.textContent = '×';
+
+		var watch = null;
+		var done = function () {
+			clearInterval( watch );
+			el.classList.remove( 'ms-has-resume' );
+			if ( chip.parentNode ) chip.remove();
+		};
+		go.addEventListener( 'click', function () {
+			done();
 			adapter.seekTo( position );
 			adapter.play();
-			toast.remove();
 		} );
+		close.addEventListener( 'click', done );
 
-		var noBtn = document.createElement( 'button' );
-		noBtn.className = 'ms-resume-no';
-		noBtn.textContent = t( 'startOver', 'Start Over' );
-		noBtn.addEventListener( 'click', function () { toast.remove(); } );
+		chip.appendChild( go );
+		chip.appendChild( close );
 
-		toast.appendChild( span );
-		toast.appendChild( yesBtn );
-		toast.appendChild( noBtn );
-		el.appendChild( toast );
+		// Above MediaShield's control bar when there is one; platform players
+		// keep their own bar in the bottom 52px, which the CSS default clears.
+		var bar = el.querySelector( '.ms-controls' );
+		if ( bar && bar.offsetHeight ) {
+			chip.style.bottom = ( bar.offsetHeight + 8 ) + 'px';
+		}
+		el.appendChild( chip );
+		el.classList.add( 'ms-has-resume' );
 
-		setTimeout( function () { if ( toast.parentNode ) toast.remove(); }, 10000 );
+		var started = Date.now();
+		watch = setInterval( function () {
+			if ( adapter.isPlaying() || Date.now() - started > 8000 ) done();
+		}, 250 );
 	}
 
 	// ─── Custom Fullscreen ───────────────────────────────────────

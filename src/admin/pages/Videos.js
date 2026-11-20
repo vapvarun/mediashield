@@ -7,14 +7,17 @@
  * @package MediaShield
  */
 
-import { useState, useEffect } from '@wordpress/element';
-import { Button, Modal, Spinner, TextControl } from '@wordpress/components';
+import { useState, useEffect, useMemo } from '@wordpress/element';
+import { Button, Modal, Spinner, TextControl, SelectControl, CheckboxControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
+import { applyFilters } from '@wordpress/hooks';
 import { decodeEntities } from '@wordpress/html-entities';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import Icon from '../components/Icon';
+import { formatDuration } from '../utils/time';
+import './videos.css';
 
 const config = window.mediashieldAdmin || {};
 const PER_PAGE = 20;
@@ -155,20 +158,72 @@ const PlatformLabel = ( { platform } ) => {
 	);
 };
 
+const STATUS_LABELS = {
+	ready: __( 'Ready', 'mediashield' ),
+	encoding: __( 'Encoding', 'mediashield' ),
+	failed: __( 'Failed', 'mediashield' ),
+};
+
+const PROTECTION_OPTIONS = [
+	{ value: 'default', label: __( 'Site default', 'mediashield' ) },
+	{ value: 'none', label: __( 'None', 'mediashield' ) },
+	{ value: 'basic', label: __( 'Basic', 'mediashield' ) },
+	{ value: 'standard', label: __( 'Standard', 'mediashield' ) },
+	{ value: 'strict', label: __( 'Strict', 'mediashield' ) },
+];
+
+const StatusBadge = ( { status } ) => {
+	const s = STATUS_LABELS[ status ] ? status : 'ready';
+	const tone = { ready: 'success', encoding: 'warn', failed: 'danger' }[ s ];
+	return <span className={ `mediashield-badge mediashield-badge--${ tone }` }>{ STATUS_LABELS[ s ] }</span>;
+};
+
+const UsedIn = ( { places } ) => {
+	if ( ! places || ! places.length ) {
+		return <span className="ms-videos__muted">{ __( 'Not used yet', 'mediashield' ) }</span>;
+	}
+	return (
+		<ul className="ms-videos__used">
+			{ places.map( ( place ) => (
+				<li key={ place.id }>
+					<a href={ place.url }>{ decodeEntities( place.title ) }</a>
+					<span className="ms-videos__muted"> { place.type }</span>
+				</li>
+			) ) }
+		</ul>
+	);
+};
+
+/**
+ * Videos list (Basecamp 10530930295): thumbnail, duration, status, where it
+ * is used, platform and protection filters, bulk protection and Trash, and
+ * pages of 20, so a library of hundreds stays workable.
+ *
+ * @return {JSX.Element} Page.
+ */
 const Videos = () => {
 	const [ videos, setVideos ] = useState( [] );
 	const [ total, setTotal ] = useState( 0 );
 	const [ page, setPage ] = useState( 1 );
 	const [ search, setSearch ] = useState( '' );
 	const [ debouncedSearch, setDebouncedSearch ] = useState( '' );
+	const [ platform, setPlatform ] = useState( '' );
+	const [ protection, setProtection ] = useState( '' );
+	const [ view, setView ] = useState( 'all' );
 	const [ totalPages, setTotalPages ] = useState( 1 );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
-	// Bumped by Retry to run the list request again.
+	// Bumped by Retry or after a bulk action to run the list request again.
 	const [ attempt, setAttempt ] = useState( 0 );
 	const [ previewVideo, setPreviewVideo ] = useState( null );
+	const [ selected, setSelected ] = useState( [] );
+	const [ bulkAction, setBulkAction ] = useState( '' );
+	const [ applying, setApplying ] = useState( false );
 
 	const { createSuccessNotice, createErrorNotice } = useDispatch( noticesStore );
+
+	// Pro adds "Import from Bunny" when a Bunny library is connected.
+	const headerActions = useMemo( () => applyFilters( 'mediashield_videos_header_actions', [] ), [] );
 
 	const copyShortcode = async ( videoId ) => {
 		const shortcode = `[mediashield id=${ videoId }]`;
@@ -216,26 +271,37 @@ const Videos = () => {
 		let cancelled = false;
 		setLoading( true );
 		setError( '' );
+		setSelected( [] );
 
-		// Search is served by the core WP REST API `search` param (server-side,
-		// uses the indexed post-title/content search) — pagination + total counts
-		// come back in the X-WP-Total* headers exactly as for the unfiltered list.
-		const searchParam = debouncedSearch
-			? `&search=${ encodeURIComponent( debouncedSearch ) }`
-			: '';
+		// Search, filters and pages are all served by the core posts route;
+		// totals come back in the X-WP-Total* headers.
+		const params = new URLSearchParams( {
+			per_page: String( PER_PAGE ),
+			page: String( page ),
+			context: 'edit',
+			_locale: 'user',
+		} );
+		if ( debouncedSearch ) {
+			params.set( 'search', debouncedSearch );
+		}
+		if ( platform ) {
+			params.set( 'ms_platform', platform );
+		}
+		if ( protection ) {
+			params.set( 'ms_protection', protection );
+		}
+		params.set( 'status', 'trash' === view ? 'trash' : 'publish,draft,pending,private,future' );
 
 		apiFetch( {
-			path: `/wp/v2/mediashield-videos?per_page=${ PER_PAGE }&page=${ page }${ searchParam }&_locale=user`,
+			path: `/wp/v2/mediashield-videos?${ params.toString() }`,
 			parse: false,
 		} )
 			.then( async ( res ) => {
 				const json = await window.mediashieldRequest.readJSON( res );
 				if ( ! cancelled ) {
 					setVideos( json );
-					const tp = parseInt( res.headers.get( 'X-WP-TotalPages' ), 10 ) || 1;
-					const tt = parseInt( res.headers.get( 'X-WP-Total' ), 10 ) || 0;
-					setTotalPages( tp );
-					setTotal( tt );
+					setTotalPages( parseInt( res.headers.get( 'X-WP-TotalPages' ), 10 ) || 1 );
+					setTotal( parseInt( res.headers.get( 'X-WP-Total' ), 10 ) || 0 );
 				}
 			} )
 			.catch( ( err ) => {
@@ -252,34 +318,130 @@ const Videos = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [ page, debouncedSearch, attempt ] );
+	}, [ page, debouncedSearch, platform, protection, view, attempt ] );
+
+	const toggle = ( id ) => setSelected( ( prev ) => ( prev.includes( id ) ? prev.filter( ( x ) => x !== id ) : [ ...prev, id ] ) );
+	const allSelected = videos.length > 0 && videos.every( ( v ) => selected.includes( v.id ) );
+
+	const bulkOptions = 'trash' === view
+		? [ { value: '', label: __( 'Bulk actions', 'mediashield' ) }, { value: 'restore', label: __( 'Restore', 'mediashield' ) } ]
+		: [
+			{ value: '', label: __( 'Bulk actions', 'mediashield' ) },
+			...PROTECTION_OPTIONS.map( ( o ) => ( {
+				value: `protection:${ o.value }`,
+				label: sprintf( /* translators: %s: protection level, e.g. Standard. */ __( 'Set protection: %s', 'mediashield' ), o.label ),
+			} ) ),
+			{ value: 'trash', label: __( 'Move to Trash', 'mediashield' ) },
+		];
+
+	const applyBulk = () => {
+		if ( ! bulkAction || ! selected.length ) {
+			return;
+		}
+		const [ action, level ] = bulkAction.split( ':' );
+		setApplying( true );
+		apiFetch( {
+			path: '/mediashield/v1/videos/bulk',
+			method: 'POST',
+			data: { ids: selected, action, ...( level ? { level } : {} ) },
+		} )
+			.then( ( res ) => {
+				const done = ( res.done || [] ).length;
+				const skipped = ( res.skipped || [] ).length;
+				createSuccessNotice(
+					skipped
+						? sprintf(
+							/* translators: 1: videos changed, 2: videos left as they were. */
+							__( '%1$d updated. %2$d skipped: already changed, removed or not yours to edit.', 'mediashield' ),
+							done,
+							skipped
+						)
+						: sprintf( /* translators: %d: number of videos changed. */ __( '%d updated.', 'mediashield' ), done ),
+					{ type: 'snackbar' }
+				);
+				setBulkAction( '' );
+				setAttempt( ( n ) => n + 1 );
+			} )
+			.catch( ( err ) => createErrorNotice( window.mediashieldRequest.message( err, __( 'The bulk action could not be applied.', 'mediashield' ) ), { type: 'snackbar' } ) )
+			.finally( () => setApplying( false ) );
+	};
+
+	const filtered = !! ( debouncedSearch || platform || protection );
 
 	return (
 		<div className="mediashield-page mediashield-videos">
 			<header className="mediashield-page__header">
 				<h1>
-					{ __( 'Videos', 'mediashield' ) }
+					{ 'trash' === view ? __( 'Videos in Trash', 'mediashield' ) : __( 'Videos', 'mediashield' ) }
 					{ ! loading && ! error && (
 						<span className="mediashield-page__header-subtitle">
 							{ total } { total === 1 ? __( 'video', 'mediashield' ) : __( 'videos', 'mediashield' ) }
 						</span>
 					) }
 				</h1>
-				<a
-					href={ `${ config.adminUrl }post-new.php?post_type=mediashield_video` }
-					className="components-button is-primary"
-				>
-					{ __( 'Add New Video', 'mediashield' ) }
-				</a>
+				<div className="ms-videos__header-actions">
+					{ headerActions.map( ( a ) => (
+						<a key={ a.key } href={ a.href } className="components-button is-secondary">{ a.label }</a>
+					) ) }
+					<a
+						href={ `${ config.adminUrl }post-new.php?post_type=mediashield_video` }
+						className="components-button is-primary"
+					>
+						{ __( 'Add New Video', 'mediashield' ) }
+					</a>
+				</div>
 			</header>
 
-			<div className="mediashield-search-bar">
-				<TextControl
-					placeholder={ __( 'Search videos by title…', 'mediashield' ) }
-					value={ search }
-					onChange={ setSearch }
+			<div className="ms-videos__toolbar">
+				<div className="ms-videos__search">
+					<TextControl
+						label={ __( 'Search videos', 'mediashield' ) }
+						hideLabelFromVision
+						placeholder={ __( 'Search videos by title…', 'mediashield' ) }
+						value={ search }
+						onChange={ setSearch }
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+				</div>
+				<SelectControl
+					label={ __( 'Platform', 'mediashield' ) }
+					hideLabelFromVision
+					value={ platform }
+					options={ [ { value: '', label: __( 'All platforms', 'mediashield' ) }, ...Object.keys( PLATFORM_LABELS ).filter( ( k ) => 'iframe' !== k ).map( ( k ) => ( { value: k, label: PLATFORM_LABELS[ k ] } ) ) ] }
+					onChange={ ( v ) => {
+						setPlatform( v );
+						setPage( 1 );
+					} }
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
+				<SelectControl
+					label={ __( 'Protection', 'mediashield' ) }
+					hideLabelFromVision
+					value={ protection }
+					options={ [ { value: '', label: __( 'All protection levels', 'mediashield' ) }, ...PROTECTION_OPTIONS ] }
+					onChange={ ( v ) => {
+						setProtection( v );
+						setPage( 1 );
+					} }
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+				<div className="ms-videos__views" role="group" aria-label={ __( 'Show', 'mediashield' ) }>
+					<Button variant={ 'all' === view ? 'primary' : 'secondary' } aria-pressed={ 'all' === view } onClick={ () => {
+						setView( 'all' );
+						setPage( 1 );
+					} }>
+						{ __( 'All', 'mediashield' ) }
+					</Button>
+					<Button variant={ 'trash' === view ? 'primary' : 'secondary' } aria-pressed={ 'trash' === view } onClick={ () => {
+						setView( 'trash' );
+						setPage( 1 );
+					} }>
+						{ __( 'Trash', 'mediashield' ) }
+					</Button>
+				</div>
 			</div>
 
 			{ loading && (
@@ -302,25 +464,54 @@ const Videos = () => {
 
 			{ ! loading && ! error && (
 				<div className="mediashield-table-card">
-					<table className="mediashield-table">
+					{ videos.length > 0 && (
+						<div className="ms-videos__bulk">
+							<CheckboxControl
+								label={ allSelected ? __( 'Clear selection', 'mediashield' ) : __( 'Select all on this page', 'mediashield' ) }
+								checked={ allSelected }
+								onChange={ () => setSelected( allSelected ? [] : videos.map( ( v ) => v.id ) ) }
+								__nextHasNoMarginBottom
+							/>
+							<SelectControl
+								label={ __( 'Bulk action', 'mediashield' ) }
+								hideLabelFromVision
+								value={ bulkAction }
+								options={ bulkOptions }
+								onChange={ setBulkAction }
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+							/>
+							<Button variant="secondary" onClick={ applyBulk } isBusy={ applying } disabled={ applying || ! bulkAction || ! selected.length }>
+								{ selected.length
+									? sprintf( /* translators: %d: number of selected videos. */ __( 'Apply to %d', 'mediashield' ), selected.length )
+									: __( 'Apply', 'mediashield' ) }
+							</Button>
+						</div>
+					) }
+					<table className="mediashield-table ms-videos__table">
 						<thead>
 							<tr>
-								<th>{ __( 'Title', 'mediashield' ) }</th>
-								<th>{ __( 'Platform', 'mediashield' ) }</th>
-								<th>{ __( 'Protection', 'mediashield' ) }</th>
-								<th>{ __( 'Date', 'mediashield' ) }</th>
-								<th>{ __( 'Actions', 'mediashield' ) }</th>
+								<th className="ms-videos__col-check"><span className="screen-reader-text">{ __( 'Select', 'mediashield' ) }</span></th>
+								<th className="ms-videos__col-title">{ __( 'Video', 'mediashield' ) }</th>
+								<th className="ms-videos__col-platform">{ __( 'Platform', 'mediashield' ) }</th>
+								<th className="ms-videos__col-duration">{ __( 'Duration', 'mediashield' ) }</th>
+								<th className="ms-videos__col-status">{ __( 'Status', 'mediashield' ) }</th>
+								<th className="ms-videos__col-protection">{ __( 'Protection', 'mediashield' ) }</th>
+								<th className="ms-videos__col-used">{ __( 'Used in', 'mediashield' ) }</th>
+								<th className="ms-videos__col-actions">{ __( 'Actions', 'mediashield' ) }</th>
 							</tr>
 						</thead>
 						<tbody>
 							{ videos.length === 0 && (
 								<tr>
-									<td colSpan="5" className="mediashield-table__empty">
+									<td colSpan="8" className="mediashield-table__empty">
 										<Icon name="format-video" className="mediashield-table__empty-icon" />
-										{ debouncedSearch
-											? __( 'No videos match your search.', 'mediashield' )
-											: __( 'No videos yet. Create your first protected video.', 'mediashield' ) }
-										{ ! debouncedSearch && ! config.isProActive && (
+										{ 'trash' === view
+											? __( 'The trash is empty.', 'mediashield' )
+											: ( filtered
+												? __( 'No videos match these filters.', 'mediashield' )
+												: __( 'No videos yet. Create your first protected video.', 'mediashield' ) ) }
+										{ ! filtered && 'all' === view && ! config.isProActive && (
 											<div className="ms-upsell-inline" style={ { marginTop: '16px', justifyContent: 'center' } }>
 												<Icon name="cloud" />
 												<span>
@@ -332,62 +523,87 @@ const Videos = () => {
 									</td>
 								</tr>
 							) }
-							{ videos.map( ( video ) => (
-								<tr key={ video.id }>
-									<td data-label={ __( 'Title', 'mediashield' ) }>
-										<strong>
-											{ decodeEntities( video.title?.rendered || '' ) }
-										</strong>
-									</td>
-									<td data-label={ __( 'Platform', 'mediashield' ) }>
-										<PlatformLabel platform={ video.meta?._ms_platform } />
-									</td>
-									<td data-label={ __( 'Protection', 'mediashield' ) }>
-										<ProtectionBadge level={ video.meta?._ms_protection_level } />
-									</td>
-									<td data-label={ __( 'Date', 'mediashield' ) } style={ { color: 'var(--ms-color-text-secondary)', fontSize: '12px' } }>
-										{ video.date
-											? new Date( video.date ).toLocaleDateString( undefined, {
-												year: 'numeric',
-												month: 'short',
-												day: 'numeric',
-											} )
-											: '\u2014' }
-									</td>
-									<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
-										<a
-											href={ `${ config.adminUrl }post.php?post=${ video.id }&action=edit` }
-											className="mediashield-action-btn mediashield-action-btn--edit"
-										>
-											{ __( 'Edit', 'mediashield' ) }
-										</a>
-										<button
-										type="button"
-										className="mediashield-action-btn mediashield-action-btn--view"
-										onClick={ () => setPreviewVideo( video ) }
-									>
-										{ __( 'Preview', 'mediashield' ) }
-									</button>
-									<button
-										type="button"
-										className="mediashield-action-btn mediashield-action-btn--copy"
-										onClick={ () => copyShortcode( video.id ) }
-										title={ __( 'Copy [mediashield id=…] shortcode', 'mediashield' ) }
-										aria-label={ __( 'Copy shortcode to clipboard', 'mediashield' ) }
-									>
-										<Icon name="clipboard" className="mediashield-action-btn__icon" />
-										{ __( 'Copy shortcode', 'mediashield' ) }
-									</button>
-									</td>
-								</tr>
-							) ) }
+							{ videos.map( ( video ) => {
+								const list = video.ms_list || {};
+								const title = decodeEntities( video.title?.raw ?? video.title?.rendered ?? '' ) || __( '(no title)', 'mediashield' );
+								return (
+									<tr key={ video.id } className={ selected.includes( video.id ) ? 'is-selected' : '' }>
+										<td className="ms-videos__col-check" data-label={ __( 'Select', 'mediashield' ) }>
+											<CheckboxControl
+												label={ <span className="screen-reader-text">{ sprintf( /* translators: %s: video title. */ __( 'Select %s', 'mediashield' ), title ) }</span> }
+												checked={ selected.includes( video.id ) }
+												onChange={ () => toggle( video.id ) }
+												__nextHasNoMarginBottom
+											/>
+										</td>
+										<td className="ms-videos__col-title" data-label={ __( 'Video', 'mediashield' ) }>
+											<div className="ms-videos__title">
+												{ list.thumbnail ? (
+													<img className="ms-videos__thumb" src={ list.thumbnail } alt="" loading="lazy" />
+												) : (
+													<span className="ms-videos__thumb ms-videos__thumb--empty" aria-hidden="true"><Icon name="format-video" /></span>
+												) }
+												<span className="ms-videos__title-text">
+													<strong>{ title }</strong>
+													{ 'draft' === video.status && <span className="ms-videos__muted"> { __( 'Draft', 'mediashield' ) }</span> }
+												</span>
+											</div>
+										</td>
+										<td data-label={ __( 'Platform', 'mediashield' ) } className="ms-videos__col-platform">
+											<PlatformLabel platform={ video.meta?._ms_platform } />
+										</td>
+										<td data-label={ __( 'Duration', 'mediashield' ) } className="ms-videos__num ms-videos__col-duration">
+											{ formatDuration( list.duration ?? video.meta?._ms_duration ) }
+										</td>
+										<td data-label={ __( 'Status', 'mediashield' ) } className="ms-videos__col-status">
+											<StatusBadge status={ list.status } />
+										</td>
+										<td data-label={ __( 'Protection', 'mediashield' ) } className="ms-videos__col-protection">
+											<ProtectionBadge level={ video.meta?._ms_protection_level } />
+										</td>
+										<td data-label={ __( 'Used in', 'mediashield' ) } className="ms-videos__col-used">
+											<UsedIn places={ list.used_in } />
+										</td>
+										<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions ms-videos__col-actions">
+											<a
+												href={ `${ config.adminUrl }post.php?post=${ video.id }&action=edit` }
+												className="mediashield-action-btn mediashield-action-btn--edit"
+											>
+												{ __( 'Edit', 'mediashield' ) }
+											</a>
+											<button
+												type="button"
+												className="mediashield-action-btn mediashield-action-btn--view"
+												onClick={ () => setPreviewVideo( video ) }
+											>
+												{ __( 'Preview', 'mediashield' ) }
+											</button>
+											<button
+												type="button"
+												className="mediashield-action-btn mediashield-action-btn--copy"
+												onClick={ () => copyShortcode( video.id ) }
+												title={ __( 'Copy [mediashield id=…] shortcode', 'mediashield' ) }
+												aria-label={ __( 'Copy shortcode to clipboard', 'mediashield' ) }
+											>
+												<Icon name="clipboard" className="mediashield-action-btn__icon" />
+												{ __( 'Shortcode', 'mediashield' ) }
+											</button>
+										</td>
+									</tr>
+								);
+							} ) }
 						</tbody>
 					</table>
 
 					{ totalPages > 1 && (
-						<div className="mediashield-pagination">
+						<nav className="mediashield-pagination" aria-label={ __( 'Videos pages', 'mediashield' ) }>
 							<span className="mediashield-pagination__info">
-								{ `${ __( 'Page', 'mediashield' ) } ${ page } ${ __( 'of', 'mediashield' ) } ${ totalPages }` }
+								{ sprintf(
+									/* translators: 1: current page, 2: number of pages. */
+									__( 'Page %1$d of %2$d', 'mediashield' ),
+									page,
+									totalPages
+								) }
 							</span>
 							<div className="mediashield-pagination__buttons">
 								<Button
@@ -407,7 +623,7 @@ const Videos = () => {
 									{ __( 'Next', 'mediashield' ) }
 								</Button>
 							</div>
-						</div>
+						</nav>
 					) }
 				</div>
 			) }

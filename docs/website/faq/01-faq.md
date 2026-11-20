@@ -34,7 +34,7 @@ Yes, if you turn off Settings > General > Require Login. Guests then play the vi
 
 For platform videos (YouTube, Vimeo, Wistia, Bunny), the thumbnail is fetched automatically from the platform when the video is saved, unless you have already set a Featured Image. For self-hosted videos, MediaShield does not generate one - set the Featured Image on the video edit screen manually.
 
-From 1.4.0 the featured image is also the video's poster: a self-hosted video shows it before playback starts, and a logged-out visitor sees it, dimmed, behind the login message instead of a black box. It also appears next to the video in a playlist.
+From 1.4.0 the featured image is also the video's poster: a self-hosted video shows it before playback starts, a YouTube, Vimeo, Wistia or Bunny video shows it over the platform's player until the viewer clicks play (since 1.4.3), and a logged-out visitor sees it, dimmed, behind the login message instead of a black box. It also appears next to the video in a playlist.
 
 **Does it work with caching plugins?**
 
@@ -48,7 +48,7 @@ Yes. Admin and REST endpoints use WordPress authentication and are not cached by
 
 **How does the watermark work?**
 
-MediaShield draws a canvas overlay on top of the video showing the viewer's display name and IP address. It cycles through five positions - four corners and the center - at an interval you choose, stays visible in fullscreen, and pauses playback if the overlay is removed or hidden.
+MediaShield draws a canvas overlay on top of the video showing the viewer's display name and email (and their IP address, if you turn that on). It cycles through five positions - four corners and the center - at an interval you choose, stays visible in fullscreen, and pauses playback if the overlay is removed or hidden.
 
 **Can viewers still screen-record my videos?**
 
@@ -58,13 +58,13 @@ MediaShield makes screen recording traceable, not impossible. No web software ca
 
 On Apache, yes: MediaShield writes an `.htaccess` deny rule into `wp-content/uploads/mediashield/`, so the files can only be watched through the permission-checked player.
 
-A video whose source is a file from your Media Library gets the same protection since 1.4.2: MediaShield moves that file into its protected folder and keeps its Media Library entry, visible to editors only. If the same file is also used elsewhere on your site, for example embedded in a post or a lesson, it is left where it is so that page keeps working, and a notice lists those videos. Upload the file on the video's edit screen to give it a private copy.
+A video whose source is a file from your Media Library gets the same protection since 1.4.2: MediaShield moves that file into its protected folder and keeps its Media Library entry, visible to editors only. If the same file is also used elsewhere on your site, for example embedded in a post or a lesson, it is left where it is so that page keeps working, and a notice lists those videos. A file that is not in your Media Library, such as one another plugin keeps in its own folder, is never moved. Upload the file on the video's edit screen to give it a private copy.
 
 On nginx, `.htaccess` is ignored and those files are directly downloadable until you add a rule to your server config. MediaShield does not assume - it asks your own server for one of your video files and reports the result under **Tools > Site Health**, with the exact nginx rule to add if the answer is bad. Adding it does not affect playback, because the player streams through MediaShield rather than requesting that path.
 
 **What does developer-tools detection do?**
 
-When a viewer opens browser developer tools while watching, MediaShield detects it, records the event, and can optionally pause the video. In the free plugin the event is exposed as an action for your own logging - nothing is stored and there is no report screen. Pro records it as a suspicious-activity entry. Events are rate limited to one per viewer per hour, and detection is skipped on mobile and small screens.
+When a viewer opens browser developer tools while watching, MediaShield detects it, records the event, and can optionally pause the video. In the free plugin the event is exposed as an action for your own logging - nothing is stored and there is no report screen. Pro records it as a suspicious-activity entry. Events are rate limited to one per viewer per hour, and detection is skipped on mobile and small screens. It runs only on pages that carry a protected player.
 
 **Can I disable protection for a specific video?**
 
@@ -113,11 +113,11 @@ Your Pro features keep working. License status in MediaShield Pro controls updat
 
 **Can I white-label the watermark?**
 
-In the free plugin you can adjust opacity, color, and swap interval, but the watermark always shows display name and IP. Pro lets you choose from 7 fields (display name, email, IP, user ID, timestamp, site name, custom text) and set the font size.
+In the free plugin you can adjust opacity, color, and swap interval, and choose whether the viewer's IP address is shown next to their display name and email (off by default). Pro lets you choose from 7 fields (display name, email, IP, user ID, timestamp, site name, custom text) and set the font size.
 
 **How do I remove the "Protected by MediaShield" badge?**
 
-Settings > Watermark > Show MediaShield Badge. Toggle it off. Works in both free and Pro.
+It is off on new installs. If your site shows it, go to Settings > Watermark > Show MediaShield Badge and toggle it off. Works in both free and Pro.
 
 **Does MediaShield encrypt my videos?**
 

@@ -27,6 +27,7 @@ use MediaShield\REST\SettingsController;
 use MediaShield\REST\AnalyticsController;
 use MediaShield\REST\StreamController;
 use MediaShield\REST\ProtectionController;
+use MediaShield\REST\VideoListController;
 use MediaShield\Admin\HealthCheck;
 use MediaShield\Admin\Menu;
 use MediaShield\Admin\SetupWizard;
@@ -95,6 +96,7 @@ class Plugin {
 
 		// Admin menu + SPA assets.
 		Menu::register();
+		\MediaShield\Admin\NewDefaultsNotice::register();
 
 		// Setup wizard (first activation redirect).
 		SetupWizard::register();
@@ -148,6 +150,9 @@ class Plugin {
 		( new AnalyticsController() )->register_routes();
 		( new StreamController() )->register_routes();
 		( new ProtectionController() )->register_routes();
+		// Videos list: columns, filters, bulk actions (Basecamp 10530930295).
+		( new VideoListController() )->register_routes();
+		VideoListController::register_hooks();
 	}
 
 	/**

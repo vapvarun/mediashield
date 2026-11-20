@@ -150,13 +150,7 @@ class SetupWizard {
 			'version'      => $ver,
 		);
 
-		wp_enqueue_script(
-			'mediashield-wizard',
-			$build_url . 'index.js',
-			array_merge( $asset['dependencies'], array( 'mediashield-request' ) ),
-			$asset['version'],
-			true
-		);
+		\MediaShield\Core\Assets::enqueue_admin_bundle( 'mediashield-wizard', $asset['dependencies'], (string) $asset['version'] );
 
 		$css_file = file_exists( $build_dir . 'style-index.css' ) ? 'style-index.css' : 'index.css';
 		wp_enqueue_style(

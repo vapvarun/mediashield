@@ -97,6 +97,31 @@ class PrivacyExporter {
 				foreach ( self::query_milestone_tags( (int) $user->ID ) as $entry ) {
 					$items[] = $entry;
 				}
+				// Group 3b — seconds watched and where the member stopped, per
+				// video (WatchedSpans), one user-meta row, bounded by the
+				// videos watched.
+				foreach ( (array) get_user_meta( (int) $user->ID, \MediaShield\Access\WatchedSpans::META_KEY, true ) as $video_id => $entry ) {
+					$stop    = \MediaShield\Access\WatchedSpans::stop( (int) $user->ID, (int) $video_id );
+					$items[] = array(
+						'group_id'    => 'mediashield-watched-time',
+						'group_label' => __( 'MediaShield Time Watched', 'mediashield' ),
+						'item_id'     => 'mediashield-watched-' . (int) $video_id,
+						'data'        => array(
+							array(
+								'name'  => __( 'Video', 'mediashield' ),
+								'value' => sanitize_text_field( (string) get_the_title( (int) $video_id ) ),
+							),
+							array(
+								'name'  => __( 'Seconds watched', 'mediashield' ),
+								'value' => (int) \MediaShield\Access\WatchedSpans::seconds( (int) $user->ID, (int) $video_id ),
+							),
+							array(
+								'name'  => __( 'Stopped at (seconds)', 'mediashield' ),
+								'value' => null === $stop ? '' : (string) $stop,
+							),
+						),
+					);
+				}
 			}
 
 			// Group 4 — activity alerts, only next to an older Pro (below

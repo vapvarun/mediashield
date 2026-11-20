@@ -18,6 +18,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Settings {
 
 	/**
+	 * The protection levels, weakest first: the site default
+	 * (`ms_default_protection`) and every video's own level are one of these.
+	 */
+	public const PROTECTION_LEVELS = array( 'none', 'basic', 'standard', 'strict' );
+
+	/**
 	 * Schema for every free-plugin option.
 	 *
 	 * Each entry: `array( 'type' => <scalar>, 'default' => <value>, 'validate' => ?callable )`.
@@ -69,7 +75,7 @@ class Settings {
 			'ms_default_protection'      => array(
 				'type'     => 'string',
 				'default'  => 'standard',
-				'validate' => $enum( array( 'none', 'basic', 'standard', 'strict' ) ),
+				'validate' => $enum( self::PROTECTION_LEVELS ),
 			),
 			'ms_require_login'           => array(
 				'type'    => 'boolean',
@@ -91,6 +97,13 @@ class Settings {
 				'type'     => 'integer',
 				'default'  => 30,
 				'validate' => $min_int( 1 ),
+			),
+			// The viewer's IP address in the watermark. Off by default: an IP
+			// is personal data (GDPR), so showing it is the owner's choice,
+			// made next to a privacy note (Basecamp 10530930695).
+			'ms_watermark_show_ip'       => array(
+				'type'    => 'boolean',
+				'default' => false,
 			),
 			// Off by default so existing sites keep the centre position.
 			'ms_watermark_edges_only'    => array(
@@ -129,10 +142,27 @@ class Settings {
 				},
 			),
 
-			// Badge.
+			// LMS: share of a lesson's protected video a member must watch
+			// before the LMS lets them complete the lesson. 0 = off (default),
+			// so nothing changes for a site that has not chosen a share.
+			// Enforced server-side for Learnomy (Integrations\Learnomy) and
+			// LearnDash (Pro LearnDashAdapter).
+			'ms_lms_require_watch_pct'   => array(
+				'type'     => 'integer',
+				'default'  => 0,
+				'validate' => static function ( $v ) {
+					return max( 0, min( 100, (int) $v ) );
+				},
+			),
+
+			// Badge. Off for new installs: a vendor credit on the owner's paid
+			// video is the owner's call (wordpress.org guideline 10, credits on
+			// the public site are opt-in). seed_defaults() only adds missing
+			// rows, so a site that already has the option keeps its choice
+			// (Basecamp 10530931001).
 			'ms_show_badge'              => array(
 				'type'    => 'boolean',
-				'default' => true,
+				'default' => false,
 			),
 
 			// Login & access messages.
@@ -152,6 +182,21 @@ class Settings {
 			'ms_access_denied_text'      => array(
 				'type'    => 'string',
 				'default' => 'You do not have access to this video',
+			),
+			// Shown to a member refused a course video, with %s as the course
+			// name, above a button to the course (Basecamp 10530930631).
+			'ms_course_denied_text'      => array(
+				'type'    => 'string',
+				'default' => 'This video is part of %s. Enroll to watch it.',
+			),
+			'ms_view_course_text'        => array(
+				'type'    => 'string',
+				'default' => 'View course',
+			),
+			// A video its host removed or made private.
+			'ms_unavailable_text'        => array(
+				'type'    => 'string',
+				'default' => 'This video is unavailable.',
 			),
 
 			// Player controls.
@@ -461,10 +506,14 @@ class Settings {
 				'loginOverlay'    => self::message( 'ms_login_overlay_text', __( 'Please log in to watch this video', 'mediashield' ) ),
 				'loginButton'     => self::message( 'ms_login_button_text', __( 'Log In', 'mediashield' ) ),
 				'accessDenied'    => self::message( 'ms_access_denied_text', __( 'You do not have access to this video', 'mediashield' ) ),
+				'unavailable'     => self::message( 'ms_unavailable_text', __( 'This video is unavailable.', 'mediashield' ) ),
+				'viewCourse'      => self::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL
 				// produces. Without it the viewer just stares at a dead player.
 				'retry'           => __( 'Try again', 'mediashield' ),
+				// Shown while a stalled single-file stream is reset (Basecamp 10506484970).
+				'reconnecting'    => __( 'Reconnecting…', 'mediashield' ),
 				'loadFailed'      => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
 				'concurrentLimit' => __( 'Too many active streams. Please close another video first.', 'mediashield' ),
 				'playlistFailed'  => __( 'This video could not be loaded. Please try again.', 'mediashield' ),
@@ -474,10 +523,20 @@ class Settings {
 				'endscreen'       => __( 'Thanks for watching!', 'mediashield' ),
 				'continue'        => __( 'Continue', 'mediashield' ),
 				'replay'          => __( 'Replay', 'mediashield' ),
+				'playVideo'       => __( 'Play video', 'mediashield' ),
+				// The player's own control bar (native video).
+				'videoControls'   => __( 'Video controls', 'mediashield' ),
+				'play'            => __( 'Play', 'mediashield' ),
+				'pause'           => __( 'Pause', 'mediashield' ),
+				'seek'            => __( 'Seek', 'mediashield' ),
+				'mute'            => __( 'Mute', 'mediashield' ),
+				'unmute'          => __( 'Unmute', 'mediashield' ),
+				'captions'        => __( 'Captions', 'mediashield' ),
+				'quality'         => __( 'Quality', 'mediashield' ),
+				'auto'            => __( 'Auto', 'mediashield' ),
 				/* translators: %s: playback position, for example 12:34. */
-				'resumePrompt'    => __( 'Resume from %s?', 'mediashield' ),
-				'resume'          => __( 'Resume', 'mediashield' ),
-				'startOver'       => __( 'Start Over', 'mediashield' ),
+				'resumeFrom'      => __( 'Resume from %s', 'mediashield' ),
+				'dismiss'         => __( 'Dismiss', 'mediashield' ),
 				'adBreaks'        => __( 'Ad breaks', 'mediashield' ),
 				'ad'              => __( 'Ad', 'mediashield' ),
 				'advertisement'   => __( 'Advertisement', 'mediashield' ),

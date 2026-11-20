@@ -1,0 +1,212 @@
+/**
+ * Videos list (Basecamp 10530930295): thumbnail, duration, status, used in,
+ * filters and bulk actions. No truncated badges at 1440; stacked cards under
+ * 782px (the shared .mediashield-table pattern).
+ */
+
+.mediashield-videos .ms-videos__header-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --ms-space-2 );
+}
+
+.ms-videos__toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-3 );
+	margin-bottom: var( --ms-space-4 );
+}
+
+.ms-videos__search {
+	flex: 1 1 260px;
+	max-width: 420px;
+}
+
+.ms-videos__views {
+	display: inline-flex;
+	gap: var( --ms-space-1 );
+	margin-inline-start: auto;
+}
+
+.ms-videos__bulk {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-3 );
+	padding: var( --ms-space-3 ) 22px;
+	border-bottom: 1px solid var( --ms-color-border-light );
+}
+
+/* Column widths (Basecamp 10530930295 bounce): the shared rule in admin.css
+   sizes five columns by percentage, which zeroed Protection, Used in and
+   Actions on this eight-column list. Widths go on the header cells only (a
+   fixed layout reads the first row), so the stacked phone cards are not
+   affected; the title takes what is left. */
+.mediashield-videos table.ms-videos__table {
+	table-layout: fixed;
+}
+
+.mediashield-videos table.ms-videos__table thead th {
+	width: auto;
+	box-sizing: border-box;
+}
+
+/* Beats the shared nth-child percentages (admin.css), which gave the title 14%. */
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-title {
+	width: auto;
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-check {
+	width: 32px;
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-platform {
+	width: 124px;
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-duration {
+	width: 84px;
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-status {
+	width: 80px;
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-protection {
+	width: 148px;
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-used {
+	width: 104px;
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-actions {
+	width: 120px;
+}
+
+/* The title column (no width) takes what is left: about 300px at 1440. */
+.mediashield-videos .ms-videos__table th,
+.mediashield-videos .ms-videos__table td {
+	padding-inline: var( --ms-space-2 );
+}
+
+.mediashield-videos .ms-videos__table thead th {
+	text-overflow: clip;
+}
+
+/* Actions stack in their column instead of needing 250px in a row. */
+@media ( min-width: 783px ) {
+	.ms-videos__table td.ms-videos__col-actions {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: var( --ms-space-1 );
+	}
+
+	.ms-videos__table td.ms-videos__col-actions .mediashield-action-btn {
+		justify-content: center;
+		width: 100%;
+		margin: 0;
+		padding-inline: var( --ms-space-2 );
+		box-sizing: border-box;
+	}
+}
+
+/* Narrow desktop and tablet (783-1100px): Duration and Used in step aside so
+   the title keeps room; both stay on the edit screen and the phone cards. */
+@media ( min-width: 783px ) and ( max-width: 1100px ) {
+	.ms-videos__table .ms-videos__col-duration,
+	.ms-videos__table .ms-videos__col-used {
+		display: none;
+	}
+}
+
+/* Badges and platform names never clip or wrap mid-word. */
+.ms-videos__table td {
+	overflow: visible;
+	text-overflow: clip;
+	vertical-align: middle;
+}
+
+.ms-videos__table .mediashield-badge,
+.ms-videos__table .mediashield-platform {
+	white-space: nowrap;
+}
+
+.ms-videos__table tr.is-selected td {
+	background: var( --ms-color-primary-light );
+}
+
+.ms-videos__title {
+	display: flex;
+	align-items: center;
+	gap: var( --ms-space-2 );
+	min-width: 0;
+}
+
+.ms-videos__thumb {
+	flex-shrink: 0;
+	width: 48px;
+	aspect-ratio: 16 / 9;
+	height: auto;
+	object-fit: cover;
+	border-radius: 4px;
+	background: var( --ms-color-border-light );
+}
+
+.ms-videos__thumb--empty {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var( --ms-color-text-tertiary );
+}
+
+.ms-videos__title-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.ms-videos__num {
+	font-variant-numeric: tabular-nums;
+}
+
+.ms-videos__muted {
+	color: var( --ms-color-text-secondary );
+	font-size: 12px;
+}
+
+.ms-videos__used {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.ms-videos__used li + li {
+	margin-block-start: 2px;
+}
+
+@media ( max-width: 782px ) {
+	.ms-videos__search {
+		max-width: none;
+		flex-basis: 100%;
+	}
+
+	.ms-videos__toolbar .components-base-control {
+		flex: 1 1 140px;
+	}
+
+	.ms-videos__views {
+		margin-inline-start: 0;
+	}
+
+	.ms-videos__bulk {
+		padding-inline: var( --ms-space-4 );
+	}
+
+	/* The title cell already shows the video: no "Video" label above it. */
+	.ms-videos__table td.ms-videos__col-title::before,
+	.ms-videos__table td.ms-videos__col-check::before {
+		content: none;
+	}
+}

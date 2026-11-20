@@ -108,6 +108,15 @@ class UploadController extends WP_REST_Controller {
 		$files = $request->get_file_params();
 
 		if ( empty( $files['file'] ) ) {
+			// PHP drops the whole body, $_FILES included, when it is larger
+			// than post_max_size. That is "too large", not "no file": a 27 MB
+			// file on a 2 MB server used to say "No file provided"
+			// (Basecamp 10530929713).
+			$too_large = self::too_large_error();
+			if ( $too_large ) {
+				return $too_large;
+			}
+
 			return new WP_Error(
 				'no_file',
 				__( 'No file provided. Send a file in the "file" field.', 'mediashield' ),
@@ -171,6 +180,10 @@ class UploadController extends WP_REST_Controller {
 		);
 
 		if ( ! $result['success'] ) {
+			if ( 'upload_in_progress' === ( $result['code'] ?? '' ) ) {
+				return new WP_Error( 'upload_in_progress', $result['error'], array( 'status' => 409 ) );
+			}
+
 			return new WP_Error(
 				'upload_failed',
 				$result['error'],
@@ -219,6 +232,31 @@ class UploadController extends WP_REST_Controller {
 		$status = $driver->get_status( $upload_id );
 
 		return rest_ensure_response( $status );
+	}
+
+	/**
+	 * The "file too large" answer when PHP discarded an oversized request.
+	 *
+	 * @return WP_Error|null Null when the request was not over the server limit.
+	 */
+	private static function too_large_error(): ?WP_Error {
+		$sent  = isset( $_SERVER['CONTENT_LENGTH'] ) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+		$limit = (int) wp_convert_hr_to_bytes( (string) ini_get( 'post_max_size' ) );
+
+		if ( $limit <= 0 || $sent <= $limit ) {
+			return null;
+		}
+
+		return new WP_Error(
+			'file_too_large',
+			sprintf(
+				/* translators: 1: size of the file sent, e.g. "27 MB"; 2: largest upload this server accepts, e.g. "2 MB". */
+				__( 'This file is %1$s; your server allows %2$s.', 'mediashield' ),
+				size_format( $sent ),
+				size_format( wp_max_upload_size() )
+			),
+			array( 'status' => 413 )
+		);
 	}
 
 	/**

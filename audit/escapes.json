@@ -1,0 +1,243 @@
+{
+  "note": "Every bug that reached QA or a customer, and the guard that replays it. A row is added with the fix; the guard must fail on the pre-fix code. Guards are PHPUnit tests or journey check lines tagged card:<id>.",
+  "escapes": [
+    {
+      "card": "10502007194",
+      "title": "Show Break Markers off had no effect: wp_localize_script sent false as an empty string and the engine tested === false",
+      "guard": "tests/unit/AdBreakMarkersTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "5bea286 (showMarkers arrived as \"\")"
+    },
+    {
+      "card": "10526150191",
+      "title": "Session heartbeat accepted a negative position and stored a negative completion",
+      "guard": "tests/unit/HeartbeatPositionTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "e9b90ce (401 instead of 400; completion_pct -50)"
+    },
+    {
+      "card": "10526725655",
+      "title": "Tags screen Videos column always showed 0: GET /tags returned no video_count",
+      "guard": "tests/unit/TagVideoCountTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "d709ca8 (video_count missing)"
+    },
+    {
+      "card": "10526229932",
+      "title": "Protection level None was labelled Free preview / No protection, but the site-wide Require Login still gates guests",
+      "guard": "audit/journeys/customer/protection-levels.md (card:10526229932)",
+      "added": "2026-11-20",
+      "proven_failing_on": "5dd4bfc (labels read Free preview / No protection)"
+    },
+    {
+      "card": "10527059554",
+      "title": "Basic level promised right-click disabled, but only the global Block Right-Click toggle blocked it",
+      "guard": "audit/journeys/customer/protection-levels.md (card:10527059554)",
+      "added": "2026-11-20",
+      "proven_failing_on": "e2ad6c5 (protection.js read only the global toggle)"
+    },
+    {
+      "card": "10526281691",
+      "title": "Strict level did not force source hiding: with Hide Video Source off a Strict video printed its file URL",
+      "guard": "tests/unit/StrictHidesSourceTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "32a9059 (source_url printed)"
+    },
+    {
+      "card": "10501816150",
+      "title": "Allowed Domains refused a signed-in student who followed a link to their lesson from another site",
+      "guard": "tests/unit/AllowedDomainsTest.php::test_top_level_visit_from_a_link_on_another_site_is_allowed",
+      "added": "2026-11-20",
+      "proven_failing_on": "cefdc6d (foreign Referer refused for a top-level visit)"
+    },
+    {
+      "card": "10526587425",
+      "title": "Playlists admin screen showed only the first 10 playlists: no per_page and no pager",
+      "guard": "audit/journeys/admin/admin-lists.md (card:10526587425)",
+      "added": "2026-11-20",
+      "proven_failing_on": "fa5d8fd (request had no per_page/page; no pager)"
+    },
+    {
+      "card": "10526725213",
+      "title": "Tags could be created but not put on a video from any admin screen (REST only)",
+      "guard": "tests/unit/VideoTagPickerTest.php",
+      "added": "2026-11-20",
+      "proven_failing_on": "ce7c177 (no Tags field; save changed nothing)"
+    },
+    {
+      "card": "10526098472",
+      "title": "Featured image was not shown as the poster on YouTube, Vimeo, Wistia and Bunny iframe players",
+      "guard": "audit/journeys/customer/protection-levels.md (card:10526098472)",
+      "added": "2026-11-20",
+      "proven_failing_on": "488e5ab (poster applied to native <video> only)"
+    },
+    {
+      "card": "10516698451",
+      "title": "Watermark overlapped the YouTube title and control bars: only native controls were kept clear",
+      "guard": "audit/journeys/customer/protection-levels.md (card:10516698451)",
+      "added": "2026-11-20",
+      "proven_failing_on": "3c6de6b (insets() reserved native controls only)"
+    },
+    {
+      "card": "10530930409",
+      "title": "Native player showed the browser's controls under MediaShield's speed and fullscreen buttons: two fullscreen icons and a picture-in-picture menu",
+      "guard": "audit/journeys/customer/player-owner-audit.md (card:10530930409)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b75cb14 (video.controls true, disablePictureInPicture false; browser walk 1440/390, 08-*-before.png)"
+    },
+    {
+      "card": "10530930523",
+      "title": "Resume prompt offered a finished video (Resume from 5:00?) and a 3-second start, and its bar covered the player controls, hiding them at 390px",
+      "guard": "audit/journeys/customer/player-owner-audit.md (card:10530930523)",
+      "added": "2026-11-20",
+      "proven_failing_on": "a26aa92 (toast at 300 s and 3 s; toast bottom 446 over controls at 390; 09-*-before.png)"
+    },
+    {
+      "card": "10530930729",
+      "title": "A protected video lesson's Complete button worked at 0:00; there was no 'watch X% before Complete' rule for Learnomy or LearnDash",
+      "guard": "tests/unit/LessonWatchRequirementTest.php; Pro tests/unit/LearnDashWatchRequirementTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930729)",
+      "added": "2026-11-20",
+      "proven_failing_on": "9653eb8 (learnomy_lesson_completion_rules unanswered: all_met true, Complete enabled at 0:00, 12-*-before.png)"
+    },
+    {
+      "card": "10530930695",
+      "title": "Watermark showed every member their own IP address by default (personal data) and no email; Free had no way to leave the IP out",
+      "guard": "tests/unit/WatermarkDefaultsTest.php::test_default_watermark_is_name_and_email_and_ip_is_opt_in; audit/journeys/customer/player-owner-audit.md (card:10530930695)",
+      "added": "2026-11-20",
+      "proven_failing_on": "e688b5b (text 'Aisha Khan', ip sent; 11-*-before.png shows 'Aisha Khan · 192.168.80.1')"
+    },
+    {
+      "card": "10530929713",
+      "title": "Over-limit upload said No file provided; re-picking mid-upload re-enabled Upload and made a second (orphaned) Bunny video",
+      "guard": "tests/unit/HonestUploadTest.php + audit/journeys/admin/upload-and-publish-video.md (card:10530929713)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b75cb14 (no lock; empty $_FILES answered no_file)"
+    },
+    {
+      "card": "10530931001",
+      "title": "'Protected by MediaShield' vendor badge was on by default over the owner's paid video, in faint white-on-black that vanished on dark posters",
+      "guard": "tests/unit/BadgeDefaultTest.php; Pro tests/unit/BadgeChoiceTest.php; audit/journeys/customer/player-owner-audit.md (card:10530931001)",
+      "added": "2026-11-20",
+      "proven_failing_on": "a24cccc (seed_defaults() added ms_show_badge = true; badge rgba(255,255,255,.6) on rgba(0,0,0,.5); 16-*-before.png)"
+    },
+    {
+      "card": "10530930846",
+      "title": "Admin app menu was 15 flat items: Upload Queue, Milestone Actions, Tags and License sat as peers of Videos",
+      "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930846)",
+      "added": "2026-11-20",
+      "proven_failing_on": "0f2d9f1 (15 flat sidebar items; 14-*-before.png)"
+    },
+    {
+      "card": "10530930901",
+      "title": "Dashboard chart was empty when a week's sessions fell on one day, said '1 views', listed four milestone rows for one viewer and video, showed no protection status and no first-run steps",
+      "guard": "tests/unit/DashboardOverviewTest.php; audit/journeys/admin/admin-menu-groups.md (card:10530930901)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b2b4fa8 (sessions_chart one row; four milestone rows; no protection/first_run keys; 15-*-before.png)"
+    },
+    {
+      "card": "10530930295",
+      "title": "Videos list had no thumbnail, duration, status, used-in, filters, bulk actions or trash; badges truncated",
+      "guard": "audit/journeys/admin/admin-lists.md (card:10530930295)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b75cb14 (browser walk: 5 columns, Default (Standard)... clipped)"
+    },
+    {
+      "card": "10530930776",
+      "title": "Settings was one long auto-saving page with no section navigation and no search",
+      "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930776)",
+      "added": "2026-11-20",
+      "proven_failing_on": "722fc16 (no nav or search; 13-*-before.png, 5,342 px at 1440)"
+    },
+    {
+      "card": "10530930631",
+      "title": "A member not enrolled in a course saw 'Enroll in this course to watch this video.' with no course named, no button, and a live fullscreen icon",
+      "guard": "tests/unit/DeniedStateTest.php; Pro tests/unit/LmsAccessLinkTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930631)",
+      "added": "2026-11-20",
+      "proven_failing_on": "e2e4c7c (403 carried only the LMS text; 10-*-before.png)"
+    },
+    {
+      "card": "10506484970",
+      "title": "Safari Bunny direct MP4 froze at 0:00 (readyState 1, no error) with no message or retry",
+      "guard": "audit/journeys/customer/watch-protected-video.md (card:10506484970)",
+      "added": "2026-11-20",
+      "proven_failing_on": "b75cb14 (no stall watchdog; held MP4 sat 'playing' forever)"
+    },
+    {
+      "card": "10530930631",
+      "title": "Denied player always wrapped an integration refusal in 'This video is part of <course>. Enroll to watch it.' and replaced the integration's own link, so an enrolled student of a withdrawn Learnomy lesson was told to enrol; an integration can now pass link + keep_reason",
+      "guard": "learnomy tests/audit/mediashield-withdrawn-lesson-keeps-video.php#case-1b (browser walk on the Learnomy+MediaShield lab)",
+      "added": "2026-11-20",
+      "proven_failing_on": "MediaShield 6d56821 (QA browser note on this card)"
+    },
+    {
+      "card": "10531602227",
+      "title": "Resume point was lost after one visit without pressing play: the newest session (a page view at 0) was read",
+      "guard": "tests/unit/ResumePositionTest.php; audit/journeys/customer/player-owner-audit.md (card:10531602227)",
+      "added": "2026-11-20",
+      "proven_failing_on": "6744d4a (visit 2 and 3 offered nothing; 09-lost-1440-light-before.png)"
+    },
+    {
+      "card": "10530930729",
+      "title": "QA bounce: 'watched' was the furthest point, so dragging to 4:08 and playing 20 s unlocked Complete; unlock lagged about 14 s",
+      "guard": "tests/unit/WatchedSpansTest.php; tests/unit/LessonWatchRequirementTest.php; audit/journeys/customer/player-owner-audit.md (card:10530930729)",
+      "added": "2026-11-20",
+      "proven_failing_on": "f9275e6 (watched_percent() = MAX(completion_pct) = 89 after a drag; 12-skip-1440-light-before.png)"
+    },
+    {
+      "card": "10530930776",
+      "title": "QA bounce: the settings nav did not stay in view (it filled the column, and the content column's overflow-x made it the sticky box); Pro Watermark rendered outside the layout, 194 px off-screen at 1440",
+      "guard": "audit/journeys/admin/admin-menu-groups.md (card:10530930776)",
+      "added": "2026-11-20",
+      "proven_failing_on": "2866f11 (nav top -5095 after a jump; Pro card outside .mediashield-settings__sections, right edge past the viewport; 13-sticky/13-prowm-*-before.png)"
+    },
+    {
+      "card": "10530930695",
+      "title": "Owner decision: sites updated from 1.4.2 kept the stored old defaults (badge on; Pro Username + IP) and were never offered the 1.4.3 ones",
+      "guard": "tests/unit/NewDefaultsNoticeTest.php; Pro tests/unit/NewWatermarkDefaultTest.php; audit/journeys/customer/player-owner-audit.md",
+      "added": "2026-11-20",
+      "proven_failing_on": "63c9ede (no notice; stored badge and IP kept with no way to know; 11-16-notice-1440-light-before.png)"
+    },
+    {
+      "card": "10530931001",
+      "title": "Owner decision: sites updated from 1.4.2 kept the stored old defaults (badge on; Pro Username + IP) and were never offered the 1.4.3 ones",
+      "guard": "tests/unit/NewDefaultsNoticeTest.php; Pro tests/unit/NewWatermarkDefaultTest.php; audit/journeys/customer/player-owner-audit.md",
+      "added": "2026-11-20",
+      "proven_failing_on": "63c9ede (no notice; stored badge and IP kept with no way to know; 11-16-notice-1440-light-before.png)"
+    },
+    {
+      "card": "10531502283",
+      "title": "Block Save Shortcut was documented as also blocking Ctrl+U and F12; only Ctrl/Cmd+S inside the player is blocked",
+      "guard": "tests/unit/SettingsHelpScopeTest.php::test_block_keyboard_is_described_as_the_save_shortcut_only",
+      "added": "2026-11-20",
+      "proven_failing_on": "8944051 (settings-reference row claimed Ctrl+U/F12; browser: ctrl+u and f12 defaultPrevented false)"
+    },
+    {
+      "card": "10531502288",
+      "title": "Skip Delay help said 0 = immediate without saying a creative's own 0 or blank uses the site value",
+      "guard": "tests/unit/SettingsHelpScopeTest.php::test_skip_delay_explains_a_creatives_zero",
+      "added": "2026-11-20",
+      "proven_failing_on": "8944051 (help 'Seconds before the Skip button unlocks on each ad. 0 = skippable immediately.'; resolver: global 5 + per-ad 0 => 5)"
+    },
+    {
+      "card": "10530930295",
+      "title": "Videos list at 1440 collapsed: shared five-column nth-child widths gave Protection, Used in and Actions 0px and the title 14%",
+      "guard": "audit/journeys/admin/admin-lists.md (card:10530930295, column widths at 1440/1280/1024)",
+      "added": "2026-11-21",
+      "proven_failing_on": "722fc16 (ths 193,147,162,139,312,0,0,0 at 1440)"
+    },
+    {
+      "card": "10531602227",
+      "title": "Resume offered the furthest point, not where the member stopped: watched to 8:00, rewound to 3:00, left, came back to 'Resume from 8:20' (owner: exact stop, like YouTube/Netflix)",
+      "guard": "tests/unit/ResumePositionTest.php::test_resume_offers_the_exact_stop_after_a_rewind; audit/journeys/customer/player-owner-audit.md step 8 (card:10531602227)",
+      "added": "2026-11-21",
+      "proven_failing_on": "9da6331 (offered 480 for a 180 stop; resume-stop-1440-light-before.png)"
+    },
+    {
+      "card": "10533275569",
+      "title": "Settings could not be deep-linked: #/settings/integrations (Learnomy's link to Lesson Completion) opened the Dashboard, because the router matched the hash exactly and the section nav only scrolled on click",
+      "guard": "tests/unit/SettingsDeepLinkTest.php; audit/journeys/admin/admin-menu-groups.md step 4 (card:10533275569)",
+      "added": "2026-11-21",
+      "proven_failing_on": "bfb96ac (Dashboard shown for #/settings/integrations; deeplink-1440-light-before.png)"
+    }
+  ]
+}

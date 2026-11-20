@@ -18,8 +18,9 @@ Pro settings are listed separately at the bottom of [hooks-filters-pro.md](hooks
 | `ms_enabled` | bool | `true` | Master toggle. All protection and session tracking requires this to be on. |
 | `ms_default_protection` | string | `standard` | Baseline protection level for all videos: `none`, `basic`, `standard`, `strict`. Used when a video has no per-video override. Values outside this enum are rejected. |
 | `ms_require_login` | bool | `true` | Force login before any video playback. Honoured on **both** sides since 1.3.0 - it is emitted to the client as `requireLogin` and relaxes the `/session/start` permission callback when off. Before 1.3.0 turning it off had no effect: the client gated on `isLoggedIn` alone and the REST callback refused every anonymous request regardless. |
-| `ms_show_badge` | bool | `true` | Display "Protected by MediaShield" badge on the player. |
+| `ms_show_badge` | bool | `false` | Display the "Protected by MediaShield" badge (a pill in the Brand Color) on the player. Default `false` since 1.4.3 (wordpress.org guideline 10: a credit on the public site is opt-in); `seed_defaults()` only adds a missing row, so existing sites keep their stored value. |
 | `ms_session_retention_months` | int | `0` | Months of watch history to keep in the live table before moving rows to `ms_watch_sessions_archive`. **`0` = keep everything, and that is the default on purpose.** Clamped 0-120. Before 1.3.0 archiving ran unconditionally at 24 months into a table no read path queried, so every report silently lost history at month 25. Rows already archived are walked back on upgrade by `ms_restore_archived_sessions`. |
+| `ms_lms_require_watch_pct` | int | `0` | Share of a lesson's protected video a member must watch before the LMS lets them complete the lesson. `0` = off. Clamped 0-100. Learnomy: `Integrations\Learnomy::require_watch()` on `learnomy_lesson_completion_rules`. LearnDash (Pro): `LearnDashAdapter` on `learndash_process_mark_complete` and `learndash_mark_complete_input_button_html`. Requirement = `SessionManager::watch_requirement( video, user )` (`{ required, watched, met }` or null when off); watched = time spent watching (`WatchedSpans::percent()`), not the furthest point. Added 1.4.3. |
 
 ---
 
@@ -67,7 +68,7 @@ Global defaults for the player UI. Most can be overridden per-video via the vide
 | `ms_player_prevent_forward_seek` | bool | `false` | Block seeking past the furthest point already watched. Emitted to JS as `player.preventForwardSeek`. Overridable per video since 1.3.0 via `_ms_player_prevent_forward_seek`. |
 | `ms_player_sticky` | bool | `false` | Pin the player to a corner when scrolled off-screen during playback. |
 | `ms_player_keyboard` | bool | `true` | Allow Space/Arrow/M/F shortcuts on the player. |
-| `ms_player_resume` | bool | `true` | Resume from the last reached position when re-opening a video. |
+| `ms_player_resume` | bool | `true` | Resume from the exact stop point (the player's last reported position, rewinds included) when re-opening a video. Logged-in members: `WatchedSpans::stop()` (`p` in the `_ms_watched_spans` user meta); viewings from before 1.4.3 and guests fall back to the furthest point of the last session that played. The player offers it only from 10 s and before 95%. |
 | `ms_player_endscreen` | bool | `false` | Render the end-screen CTA when the video ends. |
 | `ms_player_endscreen_text` | string | `''` | CTA text shown on the end-screen card (global fallback when a video doesn't set its own). |
 | `ms_player_endscreen_url` | string | `''` | CTA URL. Empty allowed; otherwise must survive `esc_url_raw` (rejects `javascript:` URLs). |
@@ -84,7 +85,7 @@ The pre / mid / post-roll engine and the WB Ad Manager bridge (`Integrations\AdM
 | `ms_ads_preroll` | bool | `true` | Play a pre-roll before the video starts. |
 | `ms_ads_midroll_count` | int | `3` | How many mid-rolls to space across the video. Clamped 0-10; `0` disables mid-rolls. |
 | `ms_ads_require_full_view` | bool | `false` | Mandatory viewing: the Skip button never appears and the viewer must watch each ad in full. Overrides `ms_ads_skip_after`. |
-| `ms_ads_skip_after` | int | `5` | Seconds before Skip unlocks, when full-view is off. Clamped 0-60; `0` is skippable immediately. |
+| `ms_ads_skip_after` | int | `5` | Seconds before Skip unlocks, when full-view is off. Clamped 0-60; `0` here is skippable immediately. A creative's own `skip_after` above 0 wins for that ad (clamped to 60); a creative's `0` or blank means "not set" and uses this value, because WB Ad Manager stores a blank field as 0 (`AdManagerBridge::to_break()`). A creative cannot ask for an immediate skip on its own; set this to 0 site-wide for that. |
 | `ms_ads_show_markers` | bool | `true` | Show the ad-break marker ruler under the player. |
 
 ---
@@ -96,9 +97,9 @@ Server-side toggles consumed by `assets/js/protection.js` and `Player\Protection
 | Option Key | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `ms_block_right_click` | bool | `true` | Disable the browser context menu over protected players. |
-| `ms_block_keyboard` | bool | `false` | Disable Ctrl/Cmd+S, Ctrl+U, F12 and similar capture shortcuts on player pages. |
-| `ms_hide_source` | bool | `true` | Strip `src=` attributes from rendered video elements; the JS adapter reads them via `dataset` instead. |
-| `ms_detect_devtools` | bool | `true` | Detect open browser devtools and dispatch a beacon to `/protection/devtools-event`. |
+| `ms_block_keyboard` | bool | `false` | Block Ctrl+S / Cmd+S while keyboard focus is inside a protected player (`assets/js/protection.js`). Only the save shortcut: Ctrl+U (View Source), F12, Print and other shortcuts are not blocked, on the player or elsewhere on the page, at any protection level. |
+| `ms_hide_source` | bool | `true` | Self-hosted only. For a file pasted from elsewhere in uploads, serve it through the signed `/stream/{id}` URL instead of printing its address. A file MediaShield holds (source is the `/stream/` URL, sits in `uploads/mediashield/`, or the video has `_ms_owned_file`) always plays through the signed `/stream/` URL whatever this says, since its raw address is never printed (`Protection::filter_player_urls()`, `Protection::in_protected_folder()`). |
+| `ms_detect_devtools` | bool | `true` | Detect open browser devtools and dispatch a beacon to `/protection/devtools-event`. Runs only on pages with a protected player (any level but `none`), so a page that merely loads `protection.js` never shows the overlay. |
 | `ms_pause_on_devtools` | bool | `false` | When devtools open, pause playback in addition to showing the overlay. |
 | `ms_devtools_title` | string | `"Developer Tools Detected"` | Heading shown on the devtools overlay. |
 | `ms_devtools_message` | string | `"Please close developer tools to continue watching this video."` | Body copy below the heading. |

@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
+use MediaShield\Core\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -80,12 +81,16 @@ class SessionController extends WP_REST_Controller {
 					'position' => array(
 						'type'              => 'number',
 						'required'          => true,
+						'minimum'           => 0,
+						'validate_callback' => 'rest_validate_request_arg',
 						'sanitize_callback' => function ( $value ) {
 							return (float) $value; },
 					),
 					'duration' => array(
 						'type'              => 'number',
 						'required'          => true,
+						'minimum'           => 0,
+						'validate_callback' => 'rest_validate_request_arg',
 						'sanitize_callback' => function ( $value ) {
 							return (float) $value; },
 					),
@@ -97,6 +102,7 @@ class SessionController extends WP_REST_Controller {
 						'type'    => 'boolean',
 						'default' => true,
 					),
+					'spans'    => self::spans_arg(),
 				),
 			)
 		);
@@ -126,6 +132,7 @@ class SessionController extends WP_REST_Controller {
 						'default' => 0,
 						'minimum' => 0,
 					),
+					'spans'    => self::spans_arg(),
 				),
 			)
 		);
@@ -146,6 +153,28 @@ class SessionController extends WP_REST_Controller {
 					),
 				),
 			)
+		);
+	}
+
+	/**
+	 * The `spans` argument of /session/heartbeat and /session/end: the
+	 * stretches played since the last report, [ [start, end], ... ] (1.4.3).
+	 *
+	 * @return array
+	 */
+	private static function spans_arg(): array {
+		return array(
+			'type'     => 'array',
+			'maxItems' => 120,
+			'items'    => array(
+				'type'     => 'array',
+				'minItems' => 2,
+				'maxItems' => 2,
+				'items'    => array(
+					'type'    => 'number',
+					'minimum' => 0,
+				),
+			),
 		);
 	}
 
@@ -275,6 +304,24 @@ class SessionController extends WP_REST_Controller {
 			// back to the legacy 'access_denied' so any integrator listening for
 			// the old code still works.
 			$code = ! empty( $access['reason'] ) ? sanitize_key( $access['reason'] ) : 'access_denied';
+			// A course to enrol in: name it and link to it, in the owner's
+			// words (Basecamp 10530930631).
+			if ( ! empty( $access['link'] ) ) {
+				return new WP_Error(
+					$code,
+					// An integration that says the viewer is already in the
+					// course (keep_reason) gets its own words, not "Enroll".
+					! empty( $access['keep_reason'] ) && '' !== (string) ( $access['reason'] ?? '' )
+						? (string) $access['reason']
+						/* translators: %s: course title. */
+						: sprintf( Settings::message( 'ms_course_denied_text', __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) ), $access['link']['title'] ),
+					array(
+						'status'       => 403,
+						'access_url'   => $access['link']['url'],
+						'access_label' => '' !== (string) ( $access['link']['label'] ?? '' ) ? (string) $access['link']['label'] : Settings::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
+					)
+				);
+			}
 			return new WP_Error( $code, $access['reason'], array( 'status' => 403 ) );
 		}
 
@@ -295,16 +342,14 @@ class SessionController extends WP_REST_Controller {
 		// (one source of settings and defaults), plus the viewer's own text
 		// and IP. Key is `text` (not `username`) to match what
 		// assets/js/watermark.js reads. Pro's AdvancedConfig filter overwrites
-		// `text` when active. This response is the only place a viewer's name
-		// and IP are sent: the page config must stay cacheable.
+		// `text` when active. This response is the only place a viewer's name,
+		// email and IP are sent: the page config must stay cacheable.
 		$watermark_config = array_merge(
 			\MediaShield\Player\Watermark::get_config(),
 			array(
-				// WordPress stores the display name HTML-escaped ("Tom &amp; Jerry"),
-				// and the canvas paints text as is, so decode it (card 10497708826).
-				// A guest has no name; the docs promise "Guest" plus the IP.
-				'text' => is_user_logged_in() ? \MediaShield\Support\Text::plain( wp_get_current_user()->display_name ) : __( 'Guest', 'mediashield' ),
-				'ip'   => $ip,
+				'text' => \MediaShield\Player\Watermark::viewer_text( wp_get_current_user() ),
+				// Personal data: only when the owner chose to show it.
+				'ip'   => Settings::get( 'ms_watermark_show_ip' ) ? $ip : '',
 			)
 		);
 
@@ -321,8 +366,16 @@ class SessionController extends WP_REST_Controller {
 		 */
 		$watermark_config = apply_filters( 'mediashield_watermark_config', $watermark_config, $video_id, $user_id );
 
+		$watch = $user_id > 0 ? SessionManager::watch_requirement( $video_id, $user_id ) : null;
+
 		return rest_ensure_response(
 			array(
+				// The member's watched share, so the player can report the
+				// moment they reach "Require X% watched" (null when off).
+				'watch'            => $watch ? array(
+					'watched_pct'  => $watch['watched'],
+					'required_pct' => $watch['required'],
+				) : null,
 				'session_token'    => $result['session_token'],
 				'resume_position'  => $result['resume_position'],
 				'is_resumed'       => $result['is_resumed'],
@@ -408,19 +461,28 @@ class SessionController extends WP_REST_Controller {
 			(float) $request->get_param( 'position' ),
 			(float) $request->get_param( 'duration' ),
 			(bool) $request->get_param( 'playing' ),
-			(bool) $request->get_param( 'focused' )
+			(bool) $request->get_param( 'focused' ),
+			is_array( $request->get_param( 'spans' ) ) ? $request->get_param( 'spans' ) : null
 		);
 
 		if ( ! $success ) {
 			return new WP_Error( 'invalid_token', __( 'Invalid session token.', 'mediashield' ), array( 'status' => 401 ) );
 		}
 
-		return rest_ensure_response(
-			array(
-				'success' => true,
-				'status'  => 'recorded',
-			)
+		$response = array(
+			'success' => true,
+			'status'  => 'recorded',
 		);
+		// With "Require X% watched" on, tell the player the member's share so
+		// it can report the moment they reach it, not up to 30 s later.
+		$parsed = SessionManager::validate_token( $token );
+		$watch  = $parsed && (int) $parsed['user_id'] > 0 ? SessionManager::watch_requirement( (int) $parsed['video_id'], (int) $parsed['user_id'] ) : null;
+		if ( $watch ) {
+			$response['watched_pct']  = $watch['watched'];
+			$response['required_pct'] = $watch['required'];
+		}
+
+		return rest_ensure_response( $response );
 	}
 
 	/**
@@ -433,7 +495,8 @@ class SessionController extends WP_REST_Controller {
 		$success = SessionManager::end(
 			(string) $request->get_param( 'token' ),
 			(float) $request->get_param( 'position' ),
-			(float) $request->get_param( 'duration' )
+			(float) $request->get_param( 'duration' ),
+			is_array( $request->get_param( 'spans' ) ) ? $request->get_param( 'spans' ) : null
 		);
 
 		if ( ! $success ) {
@@ -467,10 +530,12 @@ class SessionController extends WP_REST_Controller {
 	 *
 	 * Only trusts REMOTE_ADDR by default. Sites behind a reverse proxy
 	 * can add trusted headers via the mediashield_trusted_ip_headers filter.
+	 * Public since 1.4.3 so Pro's Watermark Fields read the same IP when the
+	 * owner ticks IP Address (Free sends `ip` only with its own opt-in on).
 	 *
 	 * @return string IP address.
 	 */
-	private static function get_client_ip(): string {
+	public static function get_client_ip(): string {
 		/**
 		 * Filter the trusted IP headers for client IP detection.
 		 *

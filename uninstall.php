@@ -33,6 +33,9 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 	foreach ( $tables as $table ) {
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall drop tables.
 	}
+
+	// Watched-time record, part of the same viewing history (1.4.3).
+	delete_metadata( 'user', 0, '_ms_watched_spans', '', true );
 }
 
 // Delete free plugin options — derived from the settings schema, never a
@@ -67,7 +70,9 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			'ms_activated_at',
 			'ms_library_files_pending',
 			'ms_library_files_report',
+			'ms_library_files_repair_pending',
 			'ms_poster_names_pending',
+			'ms_new_defaults_decided',
 			'ms_custom_url_patterns', // Removed in 1.3.0.
 			'ms_max_upload_size',     // Removed in 1.3.0.
 		)

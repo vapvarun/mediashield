@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { SelectControl, Spinner } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import Chart from 'chart.js/auto';
 import Icon from '../components/Icon';
@@ -54,6 +54,115 @@ const STAT_CARDS = [
 		format: ( v ) => v ?? '0',
 	},
 ];
+
+/**
+ * The three first-run steps (Basecamp 10530930901). Shown until all are done.
+ */
+const FIRST_RUN_STEPS = [
+	{
+		key: 'has_video',
+		title: __( 'Add a video', 'mediashield' ),
+		body: __( 'Upload a file, paste a YouTube, Vimeo, Bunny or Wistia link, or connect a platform.', 'mediashield' ),
+		href: '#/videos',
+		cta: __( 'Add a video', 'mediashield' ),
+	},
+	{
+		key: 'has_protected',
+		title: __( 'Protect it', 'mediashield' ),
+		body: __( 'Pick a protection level above None, for one video or as the site default.', 'mediashield' ),
+		href: '#/settings',
+		cta: __( 'Choose protection', 'mediashield' ),
+	},
+	{
+		key: 'has_view',
+		title: __( 'Place it on a page', 'mediashield' ),
+		body: __( 'Add the MediaShield Video block or the [mediashield id=X] shortcode, then open the page once.', 'mediashield' ),
+		href: '#/videos',
+		cta: __( 'Copy a shortcode', 'mediashield' ),
+	},
+];
+
+const FirstRunChecklist = ( { status } ) => {
+	const done = FIRST_RUN_STEPS.filter( ( step ) => status?.[ step.key ] ).length;
+	return (
+		<section className="mediashield-first-run" aria-labelledby="mediashield-first-run-title">
+			<div className="mediashield-first-run__head">
+				<h2 id="mediashield-first-run-title">{ __( 'Get started', 'mediashield' ) }</h2>
+				<span className="mediashield-first-run__count">
+					{ sprintf( /* translators: 1: steps done, 2: total steps. */ __( '%1$d of %2$d done', 'mediashield' ), done, FIRST_RUN_STEPS.length ) }
+				</span>
+			</div>
+			<ol className="mediashield-first-run__steps">
+				{ FIRST_RUN_STEPS.map( ( step, i ) => {
+					const isDone = !! status?.[ step.key ];
+					return (
+						<li key={ step.key } className={ 'mediashield-first-run__step' + ( isDone ? ' is-done' : '' ) }>
+							<span className="mediashield-first-run__mark" aria-hidden="true">
+								{ isDone ? <Icon name="yes" /> : i + 1 }
+							</span>
+							<div className="mediashield-first-run__text">
+								<strong>
+									{ step.title }
+									{ isDone && <span className="screen-reader-text">{ ' ' + __( '(done)', 'mediashield' ) }</span> }
+								</strong>
+								<span>{ step.body }</span>
+							</div>
+							{ ! isDone && (
+								<a href={ step.href } className="components-button is-secondary mediashield-first-run__cta">
+									{ step.cta }
+								</a>
+							) }
+						</li>
+					);
+				} ) }
+			</ol>
+		</section>
+	);
+};
+
+const ProtectionCard = ( { protection } ) => {
+	if ( ! protection ) {
+		return null;
+	}
+	const items = [
+		{
+			label: __( 'Videos protected', 'mediashield' ),
+			/* translators: 1: protected videos, 2: all published videos. */
+			value: sprintf( __( '%1$d of %2$d', 'mediashield' ), protection.protected, protection.total ),
+		},
+		{
+			label: __( 'Blocked attempts', 'mediashield' ),
+			value: null === protection.blocked ? null : String( protection.blocked ),
+		},
+		{
+			label: __( 'Alerts', 'mediashield' ),
+			value: null === protection.alerts ? null : String( protection.alerts ),
+			href: '#/alerts',
+		},
+	];
+	return (
+		<section className="mediashield-protection-card" aria-labelledby="mediashield-protection-title">
+			<div className="mediashield-protection-card__head">
+				<span className="mediashield-protection-card__icon"><Icon name="shield" /></span>
+				<h2 id="mediashield-protection-title">{ __( 'Protection', 'mediashield' ) }</h2>
+			</div>
+			<dl className="mediashield-protection-card__list">
+				{ items.map( ( item ) => (
+					<div key={ item.label } className="mediashield-protection-card__item">
+						<dt>{ item.label }</dt>
+						<dd>
+							{ null === item.value ? (
+								<span className="mediashield-protection-card__pro">{ __( 'Recorded with Pro', 'mediashield' ) }</span>
+							) : item.href ? (
+								<a href={ item.href }>{ item.value }</a>
+							) : item.value }
+						</dd>
+					</div>
+				) ) }
+			</dl>
+		</section>
+	);
+};
 
 const Dashboard = () => {
 	const [ period, setPeriod ] = useState( '7d' );
@@ -136,7 +245,10 @@ const Dashboard = () => {
 						borderWidth: 2.5,
 						fill: true,
 						tension: 0.4,
-						pointRadius: 0,
+						// A day with sessions is a dot, so one busy day in a
+						// quiet week is still visible.
+						pointRadius: sessions.map( ( n ) => ( n > 0 ? 3 : 0 ) ),
+						pointBackgroundColor: '#3858e9',
 						pointHoverRadius: 5,
 						pointHoverBackgroundColor: '#3858e9',
 						pointHoverBorderColor: '#fff',
@@ -241,40 +353,8 @@ const Dashboard = () => {
 				</div>
 			) }
 
-			{ ! loading && ! error && data?.total_videos === 0 && (
-				<div className="mediashield-onboarding-hero">
-					<div className="mediashield-onboarding-hero__icon">
-						<Icon name="video-alt3" />
-					</div>
-					<h2 className="mediashield-onboarding-hero__title">
-						{ __( 'Welcome to MediaShield!', 'mediashield' ) }
-					</h2>
-					<p className="mediashield-onboarding-hero__lede">
-						{ __( 'You haven\u2019t added a video yet. Once you do, this dashboard fills up with real engagement data \u2014 sessions, completion rates, top videos, and milestone events.', 'mediashield' ) }
-					</p>
-					<ol className="mediashield-onboarding-hero__steps">
-						<li>
-							<strong>{ __( '1. Add your first video', 'mediashield' ) }</strong>
-							<span>{ __( 'Paste a YouTube, Vimeo, Bunny, or Wistia URL \u2014 we auto-detect the platform.', 'mediashield' ) }</span>
-						</li>
-						<li>
-							<strong>{ __( '2. Embed it', 'mediashield' ) }</strong>
-							<span>{ __( 'Use the [mediashield id=X] shortcode or the MediaShield Video block.', 'mediashield' ) }</span>
-						</li>
-						<li>
-							<strong>{ __( '3. Watch it play', 'mediashield' ) }</strong>
-							<span>{ __( 'Visit the page in an incognito window to see the watermark and protection in action.', 'mediashield' ) }</span>
-						</li>
-					</ol>
-					<div className="mediashield-onboarding-hero__actions">
-						<a href="#/videos" className="components-button is-primary">
-							{ __( 'Add Your First Video', 'mediashield' ) }
-						</a>
-						<a href="#/settings" className="components-button is-secondary">
-							{ __( 'Review Settings', 'mediashield' ) }
-						</a>
-					</div>
-				</div>
+			{ ! loading && ! error && data?.first_run && ! ( data.first_run.has_video && data.first_run.has_protected && data.first_run.has_view ) && (
+				<FirstRunChecklist status={ data.first_run } />
 			) }
 
 			{ ! loading && ! error && data?.total_videos > 0 && (
@@ -295,6 +375,8 @@ const Dashboard = () => {
 							</div>
 						) ) }
 					</div>
+
+					<ProtectionCard protection={ data?.protection } />
 
 					{ /* Chart */ }
 					<div className="mediashield-chart-card">
@@ -326,7 +408,13 @@ const Dashboard = () => {
 									{ topVideos.slice( 0, 5 ).map( ( v, i ) => (
 										<li key={ i } className="mediashield-quick-stat__item">
 											<span>{ v.title || `Video #${ v.video_id }` }</span>
-											<strong>{ v.session_count || 0 } views</strong>
+											<strong>
+												{ sprintf(
+													/* translators: %d: number of views. */
+													_n( '%d view', '%d views', v.session_count || 0, 'mediashield' ),
+													v.session_count || 0
+												) }
+											</strong>
 										</li>
 									) ) }
 								</ul>
@@ -342,7 +430,11 @@ const Dashboard = () => {
 									{ recentMilestones.slice( 0, 5 ).map( ( m ) => (
 										<li key={ m.id } className="mediashield-quick-stat__item">
 											<div className="mediashield-quick-stat__item-main">
-												<span>{ m.user_name || __( 'User', 'mediashield' ) }</span>
+												<span>
+													{ ( m.user_name || __( 'User', 'mediashield' ) ) + ' \u2013 ' + ( 100 <= m.milestone_pct
+														? __( 'finished', 'mediashield' )
+														: sprintf( /* translators: %d: percent of the video reached. */ __( 'reached %d%%', 'mediashield' ), m.milestone_pct ) ) }
+												</span>
 												<span className="mediashield-quick-stat__item-meta">{ m.video_title }</span>
 											</div>
 											<span className="mediashield-milestone-badge" title={ m.reached_at_fmt }>

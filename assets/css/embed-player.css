@@ -1,0 +1,8 @@
+/**
+ * Standalone embed page, player variant. Loaded after embed.css.
+ * The frame IS the player. No theme, no chrome, no scroll: the app supplies
+ * everything around this.
+ */
+html, body { overflow: hidden; }
+.ms-embed-stage { width: 100%; }
+.ms-embed-stage > * { width: 100%; }

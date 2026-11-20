@@ -253,13 +253,15 @@ class AnalyticsController extends WP_REST_Controller {
 
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
+		$protected_counts = self::protected_counts();
+
 		return rest_ensure_response(
 			array(
 				'total_videos'      => $total_videos,
 				'total_sessions'    => $total_sessions,
 				'avg_completion'    => round( $avg_completion, 1 ),
 				'active_viewers'    => $active_viewers,
-				'sessions_chart'    => ! empty( $sessions_per_day ) ? $sessions_per_day : array(),
+				'sessions_chart'    => self::fill_days( is_array( $sessions_per_day ) ? $sessions_per_day : array(), $interval ),
 				'top_videos'        => array_map(
 					function ( $row ) {
 						return array(
@@ -272,8 +274,124 @@ class AnalyticsController extends WP_REST_Controller {
 					! empty( $top_videos ) ? $top_videos : array()
 				),
 				'recent_milestones' => self::recent_milestones( $interval, $now_utc ),
+				'protection'        => self::protection_summary( $protected_counts, $interval, $now_utc ),
+				'first_run'         => self::first_run( $protected_counts ),
 				'site_timezone'     => wp_timezone_string(),
 			)
+		);
+	}
+
+	/**
+	 * One row per day of the period, days without sessions at 0.
+	 *
+	 * The chart used to receive only the days that had sessions, so a week
+	 * whose sessions all fell on one day was a single point, which a line
+	 * chart cannot draw: the card looked empty (Basecamp 10530930901).
+	 *
+	 * @param object[] $rows     Rows of (date Y-m-d in the site timezone, count).
+	 * @param string   $interval Period from period_to_interval(), e.g. '7 DAY'.
+	 * @return array<int, array{date: string, count: int}>
+	 */
+	private static function fill_days( array $rows, string $interval ): array {
+		$counts = array();
+		foreach ( $rows as $row ) {
+			$counts[ (string) $row->date ] = (int) $row->count;
+		}
+		// Same timezone as the CONVERT_TZ() grouping (tz_offset()).
+		$today = new \DateTimeImmutable( 'now', wp_timezone() );
+		$day   = $today->modify( '-' . max( 0, (int) $interval - 1 ) . ' days' );
+		if ( $counts && min( array_keys( $counts ) ) < $day->format( 'Y-m-d' ) ) {
+			$day = new \DateTimeImmutable( (string) min( array_keys( $counts ) ), wp_timezone() );
+		}
+		$out = array();
+		while ( $day->format( 'Y-m-d' ) <= $today->format( 'Y-m-d' ) ) {
+			$key   = $day->format( 'Y-m-d' );
+			$out[] = array(
+				'date'  => $key,
+				'count' => $counts[ $key ] ?? 0,
+			);
+			$day   = $day->modify( '+1 day' );
+		}
+		return $out;
+	}
+
+	/**
+	 * How many published videos are protected (above None), of how many.
+	 *
+	 * The level is the video's own or the site default
+	 * (Protection::resolve_level()), worked out in one COUNT.
+	 *
+	 * @return array{protected: int, total: int}
+	 */
+	private static function protected_counts(): array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One COUNT for the dashboard; core tables, indexed on post_type/status and meta post_id.
+		$counts = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT COUNT(*) AS total,
+				        SUM( COALESCE( NULLIF( m.meta_value, '' ), %s ) <> 'none' ) AS protected
+				 FROM {$wpdb->posts} p
+				 LEFT JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_ms_protection_level'
+				 WHERE p.post_type = 'mediashield_video' AND p.post_status = 'publish'",
+				\MediaShield\Player\Protection::default_level()
+			)
+		);
+		return array(
+			'protected' => (int) ( $counts->protected ?? 0 ),
+			'total'     => (int) ( $counts->total ?? 0 ),
+		);
+	}
+
+	/**
+	 * What the dashboard's Protection card shows.
+	 *
+	 * Videos protected comes from protected_counts(). Alerts and blocked
+	 * attempts are recorded by Pro; it fills them through
+	 * `mediashield_dashboard_protection`, and they stay null without it.
+	 *
+	 * @param array  $counts   From protected_counts().
+	 * @param string $interval Period from period_to_interval().
+	 * @param string $now_utc  The overview's clock.
+	 * @return array{protected: int, total: int, alerts: int|null, blocked: int|null}
+	 */
+	private static function protection_summary( array $counts, string $interval, string $now_utc ): array {
+		$summary = $counts + array(
+			'alerts'  => null,
+			'blocked' => null,
+		);
+
+		/**
+		 * The dashboard Protection card, before it is sent.
+		 *
+		 * Pro sets `alerts` (suspicious-activity alerts in the period) and
+		 * `blocked` (DevTools attempts the player stopped in the period).
+		 *
+		 * @since 1.4.3
+		 *
+		 * @param array  $summary  { protected, total, alerts, blocked }.
+		 * @param string $interval SQL interval of the period, e.g. '7 DAY'.
+		 * @param string $now_utc  UTC 'Y-m-d H:i:s' the period ends at.
+		 */
+		return (array) apply_filters( 'mediashield_dashboard_protection', $summary, $interval, $now_utc );
+	}
+
+	/**
+	 * The three first-run steps and whether each is done.
+	 *
+	 * A video exists; one is protected (above None); someone has opened one
+	 * (any watch session, so it is on a page). Each is one indexed query.
+	 *
+	 * @param array $counts From protected_counts().
+	 * @return array{has_video: bool, has_protected: bool, has_view: bool}
+	 */
+	private static function first_run( array $counts ): array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; existence check.
+		$viewed = (bool) $wpdb->get_var( "SELECT 1 FROM {$wpdb->prefix}ms_watch_sessions LIMIT 1" );
+		return array(
+			'has_video'     => $counts['total'] > 0,
+			'has_protected' => $counts['protected'] > 0,
+			'has_view'      => $viewed,
 		);
 	}
 
@@ -658,15 +776,15 @@ class AnalyticsController extends WP_REST_Controller {
 		if ( '' === $format ) {
 			$format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 		}
-		$ts = strtotime( $utc_datetime . ' UTC' );
-		return false === $ts ? '' : wp_date( $format, $ts );
+		return \MediaShield\Support\Time::date_label( $utc_datetime, '', $format );
 	}
 
 	/**
 	 * Recent milestone events for the dashboard activity feed.
 	 *
-	 * Joins ms_milestones with ms_watch_sessions + posts so the UI can show
-	 * "<user> hit <pct>% on <video>" with a site-timezone timestamp.
+	 * One row per viewer and video with the furthest milestone reached, so the
+	 * UI can show "<user> - finished / reached 50%" on <video> with a
+	 * site-timezone timestamp.
 	 *
 	 * @param string $interval SQL INTERVAL value (e.g. '7 DAY') — hardcoded allowlist
 	 *                         from period_to_interval(); safe to interpolate.
@@ -684,14 +802,18 @@ class AnalyticsController extends WP_REST_Controller {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Custom analytics tables joined with core posts; aggregated read-only feed for the admin dashboard. $interval is a hardcoded-allowlist value from period_to_interval().
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT m.id, m.video_id, m.user_id, m.milestone_pct, m.reached_at,
+				// One row per viewer and video: the furthest milestone they
+				// reached and when, so one viewer finishing one video is one
+				// line ("finished"), not four (Basecamp 10530930901).
+				"SELECT MAX(m.id) AS id, m.video_id, m.user_id, MAX(m.milestone_pct) AS milestone_pct, MAX(m.reached_at) AS reached_at,
 				        p.post_title AS video_title,
 				        u.display_name AS user_name
 				 FROM {$milestones} m
 				 INNER JOIN {$wpdb->posts} p ON m.video_id = p.ID AND p.post_status = 'publish'
 				 LEFT JOIN {$wpdb->users} u ON m.user_id = u.ID
 				 WHERE m.reached_at >= DATE_SUB(%s, INTERVAL {$interval})
-				 ORDER BY m.reached_at DESC
+				 GROUP BY m.video_id, m.user_id, p.post_title, u.display_name
+				 ORDER BY reached_at DESC
 				 LIMIT %d",
 				$now_utc,
 				$limit

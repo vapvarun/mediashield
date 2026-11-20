@@ -4,6 +4,21 @@
 
 Everything lives under one **MediaShield** menu in the WordPress sidebar. It opens a single app with its own left-hand menu. The address changes after a `#`, so you can bookmark any screen, for example `wp-admin/admin.php?page=mediashield#/settings`.
 
+## The menu: six groups
+
+The app's left-hand menu has six items. Click one to open its first screen; the group's other screens are listed under it while you are in that group.
+
+| Menu item | Screens in it |
+|-----------|---------------|
+| Dashboard | Dashboard |
+| Videos | Videos, Playlists, Tags, Upload Queue (Pro) |
+| Analytics | Viewers, Heatmaps (Pro), Realtime (Pro), Milestones, Export (Pro) |
+| Security | Alerts (Pro) |
+| Platforms | Platforms and the library browsers (Pro) |
+| Settings | Settings, License (Pro), Milestone Actions (Pro) |
+
+Without Pro, the Pro screens show as locked entries with a PRO label. Every screen keeps its own address, so bookmarks and links from before 1.4.3 still open the same screen. On a phone the six items are a row of icons and the open group's screens are a second row.
+
 ## Before you start
 
 - Only administrators can open these screens.
@@ -13,7 +28,7 @@ Everything lives under one **MediaShield** menu in the WordPress sidebar. It ope
 
 | Screen | Address ending | What you do there |
 |--------|----------------|-------------------|
-| Dashboard | `#/dashboard` | See total videos, sessions, average completion and live viewers, an activity chart, Top Videos and Recent Milestones. Pick Today, 7, 30 or 90 days. A first-time welcome panel walks through adding a video. |
+| Dashboard | `#/dashboard` | See total videos, sessions, average completion and live viewers; a Protection card (videos protected, and with Pro the blocked DevTools attempts and alerts in the period); an activity chart with every day of the period, so one busy day still shows; Top Videos; and Recent Milestones, one line per viewer and video ("Aisha Khan - finished"). Pick Today, 7, 30 or 90 days. Until a video is added, protected and opened on a page, a three-step Get started checklist sits at the top. |
 | Videos | `#/videos` | Search by title, page through the library, see platform, duration and protection level, preview a video, copy its shortcode, edit it, or add a new one. |
 | Playlists | `#/playlists` | List playlists with badges for Autoplay, Loop and Shuffle. Create one, open **Manage items** to add, reorder and set playback options, view or edit it. |
 | Viewers | `#/viewers` | Search by name or email. See videos watched, average completion and last active. Click a viewer for their watch history. The old address `#/students` still works. |

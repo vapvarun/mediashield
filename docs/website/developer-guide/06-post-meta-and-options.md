@@ -30,7 +30,7 @@ Saved from the video edit screen. Not registered for REST.
 | `_ms_player_endscreen_text`, `_ms_player_endscreen_url` | string | Per-video end screen message and link. |
 | `_ms_library_id` | string | Bunny library ID, read from the pasted URL. |
 | `_ms_owned_file` | string | File name this video owns in `uploads/mediashield/`. An empty string means "claimed, no file". The stream endpoint serves only the owner's file. |
-| `_ms_library_file` | `moved`, `in_use`, `none`, `restored` | Since 1.4.2. Whether this video's Media Library file was moved into `uploads/mediashield/`, left because the file is used elsewhere, needed nothing, or was moved back. Its presence marks the video as checked. |
+| `_ms_library_file` | `moved`, `in_use`, `not_in_library`, `none`, `restored` | Since 1.4.2. Whether this video's Media Library file was moved into `uploads/mediashield/`, left because the file is used elsewhere, left because it has no Media Library item (1.4.3), needed nothing, or was moved back. Its presence marks the video as checked. |
 | `_ms_library_kept` | string | Since 1.4.2. The source URL the owner moved back with restore. While the video still plays it, saving does not move it again. |
 | `_ms_library_restore` | array | Since 1.4.2. On a video and on its Media Library item: the old path, source URL and status, so the move can be undone. |
 | `_ms_access_type` | string | Not written by Free. An extension sets it to declare its own gate; a non-empty value lets anonymous visitors reach `POST /session/start`. |
@@ -69,7 +69,7 @@ Registered with `show_in_rest`; edited through `/wp/v2/mediashield-playlists/{id
 | `ms_allowed_domains` | string | (empty) | Hosts separated by spaces, commas or new lines; a pasted URL is reduced to its host. |
 | `ms_max_concurrent_streams` | integer | `2` | Minimum 1. Logged-in users only. |
 | `ms_session_retention_months` | integer | `0` | Clamped to 0-120. 0 keeps everything. |
-| `ms_show_badge` | boolean | `true` | "Protected by MediaShield" badge. |
+| `ms_show_badge` | boolean | `false` (1.4.3; `true` before) | "Protected by MediaShield" badge. |
 | `ms_login_overlay_text` | string | `Please log in to watch this video` | Translated while it is still the default. |
 | `ms_login_button_text` | string | `Log In` | Same. |
 | `ms_access_denied_text` | string | `You do not have access to this video` | Same. |
@@ -84,12 +84,12 @@ Registered with `show_in_rest`; edited through `/wp/v2/mediashield-playlists/{id
 | `ms_player_endscreen_url` | string | (empty) | URL or empty; an invalid URL is rejected. |
 | `ms_ads_enabled` | boolean | `true` | Master switch for ad breaks. |
 | `ms_ads_require_full_view` | boolean | `false` | Hides Skip; overrides the skip delay. |
-| `ms_ads_skip_after` | integer | `5` | Seconds, clamped to 0-60. |
+| `ms_ads_skip_after` | integer | `5` | Seconds, clamped to 0-60. Used for ads whose own `skip_after` is 0 or missing. |
 | `ms_ads_preroll` | boolean | `true` | Pre-roll break. |
 | `ms_ads_midroll_count` | integer | `3` | Clamped to 0-10. |
 | `ms_ads_show_markers` | boolean | `true` | Break markers on the seek bar. |
 | `ms_block_right_click` | boolean | `true` | Block the context menu. |
-| `ms_block_keyboard` | boolean | `false` | Block Ctrl+S / Cmd+S. |
+| `ms_block_keyboard` | boolean | `false` | Block Ctrl+S / Cmd+S inside the player only. Ctrl+U and F12 are not blocked. |
 | `ms_hide_source` | boolean | `true` | Self-hosted only: serve through the signed stream endpoint. |
 | `ms_detect_devtools` | boolean | `true` | Devtools detection beacon. |
 | `ms_pause_on_devtools` | boolean | `false` | Pause and show the overlay. |
@@ -102,10 +102,11 @@ Options in the schema are deleted on uninstall automatically. Do not add your ow
 
 | Option | Written by | Purpose |
 |--------|-----------|---------|
-| `ms_db_version` | Activator, Migrator | Installed database version (7 at 1.4.1). |
+| `ms_db_version` | Activator, Migrator | Installed database version (11 at 1.4.3). |
 | `ms_wizard_completed` | `POST /wizard/complete` | Setup wizard finished. |
 | `ms_activated_at` | Activator, admin notice | Activation time (Unix), used to delay the Pro notice by 7 days. |
 | `ms_pro_notice_dismissed` | `ms_dismiss_pro_notice` AJAX | Pro upsell notice dismissed. |
+| `ms_library_files_repair_pending` | Migrator, repair job | Since 1.4.3. Last video ID the one-off `ms_repair_library_files` job checked; deleted when the job finishes. |
 | `ms_file_claims_pending` | Migrator, cleanup job | Highest video ID the 1.4.0 ownership backfill must still cover; deleted when the job finishes. |
 | `ms_default_upload_target` | Pro (settings filter) | `auto`, `self`, or a driver name. Free reads it in `UploadManager::resolve_default_driver()`; without Pro it is unset and behaves as `auto`. |
 

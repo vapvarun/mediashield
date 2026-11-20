@@ -479,9 +479,8 @@ class Renderer {
 		if ( '' === $platform || 'self' === $platform ) {
 			$platform_video_id = '';
 		}
-		$protected_folder = trailingslashit( wp_upload_dir()['baseurl'] ) . 'mediashield/';
 		foreach ( array( &$source_url, &$stream_url ) as &$url ) {
-			if ( '' !== (string) $url && false !== stripos( preg_replace( '#^https?:#i', '', (string) $url ), preg_replace( '#^https?:#i', '', $protected_folder ) ) ) {
+			if ( Protection::in_protected_folder( (string) $url ) ) {
 				$url = '';
 			}
 		}

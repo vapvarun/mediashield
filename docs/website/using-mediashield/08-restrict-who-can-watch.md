@@ -40,7 +40,7 @@ The match is exact. A video for `subscriber` is not watchable by an editor. Logg
 1. In **Settings > Access**, fill **Allowed Domains**.
 2. Enter one domain per line, or separate them with commas or spaces. A pasted web address works too, only the domain is used.
 
-With a list set, your own domain always passes, listed domains and their subdomains pass, and everything else is refused. A request with no Referer header is refused by default.
+With a list set, your own domain always passes, listed domains and their subdomains pass, and everything else is refused. A visitor who follows a link from another site to your lesson page is not refused: only showing your video inside another site's page is. A request with no Referer header is refused by default.
 
 This is a Referer check. A Referer can be forged, so treat it as a fence, not a lock.
 

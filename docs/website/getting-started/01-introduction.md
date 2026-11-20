@@ -35,7 +35,7 @@ The free plugin ships a complete protection and analytics layer. MediaShield Pro
 
 | Feature | Free | Pro |
 |---------|------|-----|
-| Dynamic watermark (name + IP) | Yes | Yes, with 7 configurable fields |
+| Dynamic watermark (name + email, IP optional) | Yes | Yes, with 7 configurable fields |
 | Login and role access control | Yes | Yes |
 | Concurrent stream limit | Yes | Yes |
 | Session tracking and milestones | Yes | Yes |

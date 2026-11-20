@@ -45,11 +45,13 @@ Under **Settings > Login and Access Messages** edit the login message, login but
 
 ## What is not available
 
-MediaShield has no captions or subtitles track, no quality selector, no picture-in-picture button and no chapters.
+MediaShield cannot add a captions file to a video yet and has no chapters. Picture-in-picture is switched off on purpose: a floating window shows the video without its watermark.
 
 ## What viewers see
 
-Viewers see the controls, end screen and messages you chose. Controls the host's own player provides (YouTube, Vimeo, Wistia) are the host's.
+Self-hosted videos, and Bunny videos played through Pro direct playback, show one MediaShield control bar: play and pause, a scrubber, the time, mute, the speed menu when Speed Control is on, and one fullscreen button. A round play button sits in the middle while the video is paused. The bar fades while the video plays and comes back when the viewer moves the pointer, taps or uses the keyboard. Captions and a quality menu appear in the bar only when the video carries captions or more than one quality. The browser's own controls and its picture-in-picture menu are never shown.
+
+Controls the host's own player provides (YouTube, Vimeo, Wistia) are the host's.
 
 ## Check it worked
 

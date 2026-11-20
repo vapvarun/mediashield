@@ -116,10 +116,14 @@ class SessionManager {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
 			$wpdb->query( 'COMMIT' );
 
+			WatchedSpans::start( $user_id, $video_id );
+
 			return array(
 				'session_token'   => self::generate_token( (int) $existing->id, $video_id, $user_id, $existing->started_at ),
 				'session_id'      => (int) $existing->id,
-				'resume_position' => (float) $existing->max_position,
+				// The place from the last viewing that played, not this
+				// session's own (a reload without play left it at 0).
+				'resume_position' => self::resume_enabled( $video_id ) ? self::last_played_position( $video_id, $user_id ) : 0.0,
 				'is_resumed'      => true,
 			);
 		}
@@ -144,25 +148,12 @@ class SessionManager {
 			return false;
 		}
 
-		// Get resume position from most recent session (active or not), but only
-		// when Resume Playback is enabled. The per-video override (`_ms_player_resume`
-		// meta: 'on'/'off') wins; an empty override falls back to the global
-		// `ms_player_resume` setting. When disabled, skip the query entirely so the
-		// client never receives a position to prompt with (and we save a DB read).
-		$resume_position = 0.0;
-		if ( self::resume_enabled( $video_id ) ) {
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
-			$resume_position = (float) $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT max_position FROM {$table}
-				 WHERE video_id = %d AND user_id = %d
-				 ORDER BY last_heartbeat DESC LIMIT 1",
-					$video_id,
-					$user_id
-				)
-			);
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		}
+		// Only when Resume Playback is enabled (per-video override, then the
+		// global setting); otherwise no query and no position to prompt with.
+		// Resume from the last viewing that actually played. Every page view
+		// opens a session at 0, so "the newest session" lost the place after
+		// one visit without pressing play (Basecamp 10531602227).
+		$resume_position = self::resume_enabled( $video_id ) ? self::last_played_position( $video_id, $user_id ) : 0.0;
 
 		// Parse device info from user agent.
 		$device_type = self::parse_device_type( $ua );
@@ -202,6 +193,7 @@ class SessionManager {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
 		$wpdb->query( 'COMMIT' );
+		WatchedSpans::start( $user_id, $video_id );
 
 		$token = self::generate_token( $session_id, $video_id, $user_id, $now );
 
@@ -336,16 +328,22 @@ class SessionManager {
 	 * @param string $token    HMAC session token.
 	 * @param float  $position Current playback position in seconds.
 	 * @param float  $duration Total video duration in seconds.
-	 * @param bool   $playing  Whether video is currently playing.
-	 * @param bool   $focused  Whether browser tab is focused.
+	 * @param bool       $playing  Whether video is currently playing.
+	 * @param bool       $focused  Whether browser tab is focused.
+	 * @param array|null $spans    Stretches played since the last report, [ [start, end], ... ];
+	 *                             null from a player that does not report them.
 	 * @return bool Success.
 	 */
-	public static function heartbeat( string $token, float $position, float $duration, bool $playing = true, bool $focused = true ): bool {
+	public static function heartbeat( string $token, float $position, float $duration, bool $playing = true, bool $focused = true, ?array $spans = null ): bool {
 		$parsed = self::validate_token( $token );
 
 		if ( ! $parsed ) {
 			return false;
 		}
+
+		// A place or length below zero is not a place in the video (Basecamp 10526150191).
+		$position = max( 0.0, $position );
+		$duration = max( 0.0, $duration );
 
 		global $wpdb;
 		$table = "{$wpdb->prefix}ms_watch_sessions";
@@ -363,6 +361,17 @@ class SessionManager {
 
 		$completion_pct = $effective_duration > 0 ? min( 100, ( $position / $effective_duration ) * 100 ) : 0;
 
+		// Seconds really watched (Basecamp 10530930729): the stretches the
+		// player reports, checked against the time since its last report.
+		// A guest (nothing to keep spans against) and a player without span
+		// reports (a page cached before 1.4.3) keep the old 30 seconds per
+		// playing heartbeat.
+		// The same write keeps where a member stopped, for the resume offer,
+		// from every report: heartbeat, pause-time beats and the end beacon.
+		$user_id  = (int) $parsed['user_id'];
+		$accepted = $user_id > 0 ? WatchedSpans::record( $user_id, (int) $parsed['video_id'], $spans ?? array(), $effective_duration, $position ) : 0.0;
+		$watched  = ( null === $spans || $user_id <= 0 ) ? ( $playing ? 30 : 0 ) : (int) round( $accepted );
+
 		// Single atomic update with GREATEST for max_position.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table update.
 		$rows = $wpdb->query(
@@ -374,7 +383,7 @@ class SessionManager {
 				completion_pct = %f
 			WHERE id = %d AND is_active = 1",
 				$now,
-				$playing ? 30 : 0,
+				$watched,
 				$position,
 				$completion_pct,
 				$parsed['session_id']
@@ -396,6 +405,38 @@ class SessionManager {
 	}
 
 	/**
+	 * Where this viewer stopped last time they watched this video.
+	 *
+	 * The exact stop point the player last reported, rewinds included, like
+	 * YouTube and Netflix (owner decision on Basecamp 10531602227; kept in
+	 * WatchedSpans). A member with no recorded stop (viewings from before
+	 * 1.4.3) gets the furthest point of their most recent session that
+	 * played; a session opened by a page view without play is skipped.
+	 * Answers the resume offer; the client still offers it only between 10 s
+	 * and 95%. 0 for a guest or a video never played.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  Viewer.
+	 * @return float Seconds.
+	 */
+	public static function last_played_position( int $video_id, int $user_id ): float {
+		if ( $video_id <= 0 || $user_id <= 0 ) {
+			return 0.0;
+		}
+		$stop = WatchedSpans::stop( $user_id, $video_id );
+		if ( null !== $stop ) {
+			return $stop;
+		}
+		global $wpdb;
+		$table  = $wpdb->prefix . 'ms_watch_sessions';
+		$played = self::played_sql();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table, idx_video_user; live read.
+		return (float) $wpdb->get_var( $wpdb->prepare( "SELECT max_position FROM {$table} WHERE video_id = %d AND user_id = %d AND {$played} ORDER BY last_heartbeat DESC LIMIT 1", $video_id, $user_id ) );
+	}
+
+	/**
 	 * SQL condition for a session that actually played.
 	 *
 	 * The session/start route is also the access gate, so every page view opens a
@@ -412,6 +453,38 @@ class SessionManager {
 	}
 
 	/**
+	 * Has this member watched enough of this video to complete its lesson?
+	 *
+	 * The one place the "Require X% watched" rule (Settings
+	 * `ms_lms_require_watch_pct`) is worked out, for the player, Learnomy and
+	 * Pro's LearnDash adapter. Watched is time spent watching, not the
+	 * furthest point: the parts played at least once, merged across sittings,
+	 * so skipping ahead earns nothing and a rewatch counts once (WatchedSpans;
+	 * owner decision on Basecamp 10530930729). Who is exempt is the caller's
+	 * call: LearnDash skips site admins, Learnomy follows its own enforcement
+	 * mode. For milestones read `ms_milestones`, for the furthest point
+	 * `max_position`.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  Member; 0 (a guest) has watched nothing.
+	 * @return array{required: int, watched: int, met: bool}|null Null when the rule is off or there is no video.
+	 */
+	public static function watch_requirement( int $video_id, int $user_id ): ?array {
+		$required = (int) \MediaShield\Core\Settings::get( 'ms_lms_require_watch_pct' );
+		if ( $required <= 0 || $video_id <= 0 ) {
+			return null;
+		}
+		$watched = $user_id > 0 ? WatchedSpans::percent( $user_id, $video_id ) : 0;
+		return array(
+			'required' => $required,
+			'watched'  => $watched,
+			'met'      => $watched >= $required,
+		);
+	}
+
+	/**
 	 * End a watch session.
 	 *
 	 * A position sent with the end (the page is closing) is recorded first,
@@ -420,17 +493,18 @@ class SessionManager {
 	 * @param string $token    HMAC session token.
 	 * @param float  $position Last playback position in seconds, 0 when unknown.
 	 * @param float  $duration Video length in seconds, 0 when unknown.
+	 * @param array|null $spans Stretches played since the last report.
 	 * @return bool Success.
 	 */
-	public static function end( string $token, float $position = 0.0, float $duration = 0.0 ): bool {
+	public static function end( string $token, float $position = 0.0, float $duration = 0.0, ?array $spans = null ): bool {
 		$parsed = self::validate_token( $token );
 
 		if ( ! $parsed ) {
 			return false;
 		}
 
-		if ( $position > 0 ) {
-			self::heartbeat( $token, $position, $duration, false );
+		if ( $position > 0 || $spans ) {
+			self::heartbeat( $token, $position, $duration, false, true, $spans ?? array() );
 		}
 
 		global $wpdb;

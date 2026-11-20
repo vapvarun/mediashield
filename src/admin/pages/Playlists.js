@@ -15,6 +15,7 @@ import Icon from '../components/Icon';
 import PlaylistItemsModal from '../components/PlaylistItemsModal';
 
 const config = window.mediashieldAdmin || {};
+const PER_PAGE = 20;
 
 const Playlists = () => {
 	const [ playlists, setPlaylists ] = useState( [] );
@@ -23,6 +24,9 @@ const Playlists = () => {
 	const [ itemsModal, setItemsModal ] = useState( null );
 	// Bumped when the modal closes, so the Settings column shows what was just changed in it.
 	const [ refresh, setRefresh ] = useState( 0 );
+	const [ page, setPage ] = useState( 1 );
+	const [ totalPages, setTotalPages ] = useState( 1 );
+	const [ total, setTotal ] = useState( 0 );
 
 	useEffect( () => {
 		let cancelled = false;
@@ -30,10 +34,16 @@ const Playlists = () => {
 		setError( '' );
 
 		apiFetch( {
-			path: '/wp/v2/mediashield-playlists?_locale=user',
+			path: `/wp/v2/mediashield-playlists?per_page=${ PER_PAGE }&page=${ page }&_locale=user`,
+			parse: false,
 		} )
-			.then( ( res ) => {
-				if ( ! cancelled ) setPlaylists( res );
+			.then( async ( res ) => {
+				const json = await window.mediashieldRequest.readJSON( res );
+				if ( ! cancelled ) {
+					setPlaylists( json );
+					setTotalPages( parseInt( res.headers.get( 'X-WP-TotalPages' ), 10 ) || 1 );
+					setTotal( parseInt( res.headers.get( 'X-WP-Total' ), 10 ) || 0 );
+				}
 			} )
 			.catch( ( err ) => {
 				if ( ! cancelled ) setError( window.mediashieldRequest.message( err, __( 'Failed to load playlists.', 'mediashield' ) ) );
@@ -45,7 +55,7 @@ const Playlists = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [ refresh ] );
+	}, [ refresh, page ] );
 
 	return (
 		<div className="mediashield-page mediashield-playlists">
@@ -54,7 +64,7 @@ const Playlists = () => {
 					{ __( 'Playlists', 'mediashield' ) }
 					{ ! loading && (
 						<span className="mediashield-page__header-subtitle">
-							{ playlists.length } { playlists.length === 1 ? __( 'playlist', 'mediashield' ) : __( 'playlists', 'mediashield' ) }
+							{ total } { total === 1 ? __( 'playlist', 'mediashield' ) : __( 'playlists', 'mediashield' ) }
 						</span>
 					) }
 				</h1>
@@ -174,6 +184,32 @@ const Playlists = () => {
 							} ) }
 						</tbody>
 					</table>
+
+					{ totalPages > 1 && (
+						<div className="mediashield-pagination">
+							<span className="mediashield-pagination__info">
+								{ `${ __( 'Page', 'mediashield' ) } ${ page } ${ __( 'of', 'mediashield' ) } ${ totalPages }` }
+							</span>
+							<div className="mediashield-pagination__buttons">
+								<Button
+									variant="secondary"
+									size="small"
+									disabled={ page <= 1 }
+									onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
+								>
+									{ __( 'Previous', 'mediashield' ) }
+								</Button>
+								<Button
+									variant="secondary"
+									size="small"
+									disabled={ page >= totalPages }
+									onClick={ () => setPage( ( p ) => p + 1 ) }
+								>
+									{ __( 'Next', 'mediashield' ) }
+								</Button>
+							</div>
+						</div>
+					) }
 				</div>
 			) }
 

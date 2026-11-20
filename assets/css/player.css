@@ -130,6 +130,63 @@ iframe.ms-player-target {
 	display: block;
 }
 
+/* Featured Image over a platform iframe until the viewer clicks play. */
+.ms-iframe-poster {
+	position: absolute;
+	inset: 0;
+	z-index: 8;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 0;
+	background-color: var(--ms-player-bg);
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+	cursor: pointer;
+}
+
+.ms-iframe-poster::before {
+	content: "";
+	width: 72px;
+	height: 72px;
+	border-radius: 50%;
+	background: var(--ms-accent);
+	box-shadow: 0 2px 12px rgb(0 0 0 / 35%);
+}
+
+.ms-iframe-poster::after {
+	content: "";
+	position: absolute;
+	/* A play icon points right in every language, so physical sides here. */
+	margin-left: 6px;
+	border-top: 14px solid transparent;
+	border-bottom: 14px solid transparent;
+	border-left: 22px solid var(--ms-on-overlay);
+}
+
+.ms-iframe-poster:focus-visible {
+	outline: 3px solid var(--ms-accent);
+	outline-offset: -3px;
+}
+
+@media (max-width: 480px) {
+	.ms-iframe-poster::before {
+		width: 56px;
+		height: 56px;
+	}
+
+	.ms-iframe-poster::after {
+		margin-left: 4px;
+		border-top-width: 11px;
+		border-bottom-width: 11px;
+		border-left-width: 17px;
+	}
+}
+
 /* Watermark canvas overlay */
 .ms-watermark-canvas {
 	position: absolute;
@@ -195,6 +252,41 @@ iframe.ms-player-target {
 	background: var(--ms-accent-hover);
 }
 
+/* A video the host removed: cover the host's own error page completely. */
+.ms-error-overlay--solid {
+	background: var(--ms-player-bg);
+}
+
+/* A course to enrol in, offered on a refusal (Basecamp 10530930631). */
+.ms-error-action {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--ms-tap-min);
+	margin-block-start: var(--ms-space-4);
+	padding: 0 var(--ms-space-5);
+	border-radius: var(--ms-radius-sm);
+	background: var(--ms-accent);
+	color: var(--ms-on-overlay) !important;
+	font-size: 1rem;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.ms-error-action:hover,
+.ms-error-action:focus-visible {
+	background: var(--ms-accent-hover);
+}
+
+/* No working controls under a refusal or a dead video: the overlay is the
+   whole player. */
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-controls,
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-bigplay,
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-fullscreen-btn,
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-speed-control,
+.ms-protected-player:has(> .ms-error-overlay, > .ms-login-overlay) .ms-resume-chip {
+	display: none;
+}
+
 /* Login overlay */
 .ms-login-overlay {
 	position: absolute;
@@ -237,72 +329,65 @@ iframe.ms-player-target {
 	background: var(--ms-accent-hover);
 }
 
-/* Resume toast */
-.ms-resume-toast {
+/* Resume chip: small, above the control bar, never on it. */
+.ms-resume-chip {
 	position: absolute;
-	bottom: 60px;
-	left: 50%;
-	transform: translateX(-50%);
-	z-index: 25;
-	background: rgba(0, 0, 0, 0.9);
-	color: var(--ms-on-overlay);
-	padding: 0.75rem 1.25rem;
-	border-radius: 8px;
+	bottom: 64px;
+	inset-inline-start: var(--ms-space-3);
+	z-index: 16;
 	display: flex;
 	align-items: center;
-	gap: 0.75rem;
-	font-size: 0.875rem;
-	line-height: 1.4;
-	white-space: nowrap;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	max-width: calc(100% - 2 * var(--ms-space-3));
+	border-radius: 999px;
+	background: var(--ms-overlay-surface-strong);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	line-height: 1;
 }
 
-.ms-resume-toast span {
-	color: var(--ms-on-overlay);
-}
-
-.ms-resume-yes,
-.ms-resume-no {
-	border: none;
-	padding: 0.375rem 0.75rem;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 0.8125rem;
-	font-weight: 600;
-}
-
-.ms-resume-yes {
-	background: var(--ms-accent);
-	color: var(--ms-on-overlay);
-}
-
-.ms-resume-yes:hover {
-	background: var(--ms-accent-hover);
-}
-
-.ms-resume-no {
+.ms-resume-chip__go,
+.ms-resume-chip__close {
+	min-height: var(--ms-tap-min);
+	border: 0;
 	background: transparent;
-	color: var(--ms-on-overlay-muted);
-	text-decoration: underline;
-}
-
-.ms-resume-no:hover {
 	color: var(--ms-on-overlay);
+	font-size: var(--ms-font-size-sm);
+	font-weight: 600;
+	cursor: pointer;
 }
 
-/* Protected by MediaShield badge — moved to top-left so it doesn't sit on
- * top of the native <video> controls bar on self-hosted players (the bottom
- * row is reserved for play/seek/volume/fullscreen). */
+.ms-resume-chip__go {
+	padding-inline: var(--ms-space-4) var(--ms-space-2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.ms-resume-chip__close {
+	min-width: var(--ms-tap-min);
+	padding: 0;
+	font-size: var(--ms-font-size-md);
+	color: var(--ms-on-overlay-muted);
+}
+
+/* "Protected by MediaShield" badge (off by default; the owner turns it on).
+ * A solid pill in the owner's brand colour with full-strength white text,
+ * outlined so it reads on light and dark posters alike. Top-left, clear of
+ * the control bar; the watermark measures it and keeps away. */
 .ms-badge {
 	position: absolute;
 	top: var(--ms-space-3);
-	left: var(--ms-space-3);
+	inset-inline-start: var(--ms-space-3);
 	z-index: 15;
-	background: var(--ms-overlay-surface-soft);
-	color: var(--ms-overlay-text);
-	font-size: var(--ms-font-size-xs);
-	padding: var(--ms-space-1) var(--ms-space-2);
-	border-radius: var(--ms-radius-sm);
+	/* The brand colour, deepened so white text stays readable even when the
+	   theme's primary is a light tint (Reign's dark mode uses one). */
+	background: var(--ms-overlay-surface-strong);
+	background: color-mix(in srgb, var(--ms-accent) 55%, #000);
+	color: var(--ms-on-overlay);
+	font-size: var(--ms-font-size-sm);
+	font-weight: 600;
+	padding: var(--ms-space-1) var(--ms-space-3);
+	border-radius: 999px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
 	pointer-events: none;
 	line-height: 1.4;
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -429,7 +514,8 @@ iframe.ms-player-target {
 	background: rgba(0, 0, 0, 0.8);
 }
 
-.ms-speed-menu {
+.ms-speed-menu,
+.ms-menu-control__menu {
 	display: none;
 	position: absolute;
 	top: 100%;
@@ -440,11 +526,13 @@ iframe.ms-player-target {
 	margin-top: 4px;
 }
 
-.ms-speed-control.is-open .ms-speed-menu {
+.ms-speed-control.is-open .ms-speed-menu,
+.ms-menu-control.is-open .ms-menu-control__menu {
 	display: block;
 }
 
-.ms-speed-option {
+.ms-speed-option,
+.ms-menu-control__option {
 	display: block;
 	width: 100%;
 	background: none;
@@ -453,17 +541,132 @@ iframe.ms-player-target {
 	padding: 6px 16px;
 	font-size: 13px;
 	cursor: pointer;
-	text-align: left;
+	text-align: start;
 	white-space: nowrap;
 }
 
-.ms-speed-option:hover {
+.ms-speed-option:hover,
+.ms-menu-control__option:hover {
 	background: rgba(255, 255, 255, 0.1);
 }
 
-.ms-speed-option.is-active {
+.ms-speed-option.is-active,
+.ms-menu-control__option.is-active {
 	color: var(--ms-accent);
 	font-weight: 600;
+}
+
+/* One control bar for a native <video> (self-hosted, Bunny direct stream).
+ * The browser's own controls are off, so this is the only set of controls:
+ * play, scrubber, time, mute, captions / quality when available, speed and
+ * the one fullscreen button. */
+.ms-controls {
+	position: absolute;
+	inset-inline: 0;
+	bottom: 0;
+	z-index: 15;
+	display: flex;
+	align-items: center;
+	gap: var(--ms-space-1);
+	padding: var(--ms-space-6) var(--ms-space-2) var(--ms-space-1);
+	background: linear-gradient(transparent, var(--ms-overlay-surface-strong));
+	line-height: 1;
+	transition: opacity 0.2s;
+}
+
+.ms-controls-idle .ms-controls {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.ms-controls__btn,
+.ms-controls .ms-menu-control__btn {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--ms-tap-min);
+	height: var(--ms-tap-min);
+	padding: 0 var(--ms-space-2);
+	border: 0;
+	border-radius: var(--ms-radius-sm);
+	background: transparent;
+	color: var(--ms-on-overlay);
+	font-size: var(--ms-font-size-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.ms-controls__captions[aria-pressed="true"] {
+	color: var(--ms-accent);
+}
+
+/* The server-rendered fullscreen button, moved into the bar. */
+.ms-controls .ms-fullscreen-btn {
+	position: static;
+	width: var(--ms-tap-min);
+	background: transparent;
+}
+
+.ms-controls .ms-menu-control {
+	position: relative;
+	inset: auto;
+}
+
+/* Menus in the bar open upwards. */
+.ms-controls .ms-menu-control__menu {
+	top: auto;
+	bottom: 100%;
+	right: auto;
+	inset-inline-end: 0;
+	margin-block: 0 var(--ms-space-1);
+}
+
+.ms-controls__time {
+	flex: 0 0 auto;
+	padding-inline: var(--ms-space-1);
+	color: var(--ms-on-overlay);
+	font-size: var(--ms-font-size-sm);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.ms-controls__seek {
+	flex: 1 1 auto;
+	min-width: 48px;
+	height: var(--ms-tap-min);
+	margin: 0;
+	background: transparent;
+	accent-color: var(--ms-accent);
+	cursor: pointer;
+}
+
+/* Central play button while the video is paused. */
+.ms-bigplay {
+	position: absolute;
+	inset: 0;
+	z-index: 14;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 64px;
+	margin: auto;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: var(--ms-accent);
+	color: var(--ms-on-overlay);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+	cursor: pointer;
+}
+
+.ms-bigplay .ms-icon {
+	margin-inline-start: 4px;
+}
+
+.ms-is-playing .ms-bigplay {
+	display: none;
 }
 
 /* Sticky / floating player */
@@ -522,6 +725,22 @@ iframe.ms-player-target {
 /* Touch / coarse-pointer devices: restore the 40px tap-target minimum so
    thumb taps land comfortably (WCAG 2.5.5). Pointer-feature query is
    widely supported and falls back gracefully where unsupported. */
+@media (hover: hover) {
+	.ms-controls__btn:hover,
+	.ms-controls .ms-menu-control__btn:hover {
+		background: rgba(255, 255, 255, 0.15);
+	}
+
+	.ms-bigplay:hover {
+		background: var(--ms-accent-hover);
+	}
+
+	.ms-resume-chip__go:hover,
+	.ms-resume-chip__close:hover {
+		color: var(--ms-accent);
+	}
+}
+
 @media (pointer: coarse) {
 	.ms-sticky-close {
 		width: var(--ms-tap-min);
@@ -599,13 +818,19 @@ iframe.ms-player-target {
 
 /* Keyboard focus ring for every interactive player control (Rule 14). */
 .ms-fullscreen-btn:focus-visible,
+.ms-controls__btn:focus-visible,
+.ms-controls__seek:focus-visible,
+.ms-menu-control__btn:focus-visible,
+.ms-menu-control__option:focus-visible,
+.ms-bigplay:focus-visible,
 .ms-speed-btn:focus-visible,
 .ms-speed-option:focus-visible,
 .ms-sticky-close:focus-visible,
 .ms-login-button:focus-visible,
 .ms-playlist-item:focus-visible,
-.ms-resume-yes:focus-visible,
-.ms-resume-no:focus-visible,
+.ms-error-action:focus-visible,
+.ms-resume-chip__go:focus-visible,
+.ms-resume-chip__close:focus-visible,
 .ms-endscreen__replay:focus-visible {
 	outline: 2px solid var(--ms-accent);
 	outline-offset: 2px;
@@ -613,18 +838,46 @@ iframe.ms-player-target {
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-	.ms-resume-toast {
-		font-size: 0.75rem;
-		padding: 0.5rem 1rem;
-		bottom: 40px;
+	.ms-error-message {
+		padding: var(--ms-space-4);
 	}
 
-	.ms-login-message p {
+	.ms-error-message p {
+		font-size: var(--ms-font-size-base);
+	}
+
+	.ms-error-action {
+		margin-block-start: var(--ms-space-3);
+		font-size: var(--ms-font-size-base);
+	}
+
+	.ms-controls {
+		gap: 0;
+		padding-inline: var(--ms-space-1);
+	}
+
+	.ms-controls__time {
+		font-size: var(--ms-font-size-xs);
+	}
+
+	.ms-bigplay {
+		width: 52px;
+		height: 52px;
+	}
+
+	/* A short phone player has no room for both: the chip is the play
+	   choice while it shows, and the bar keeps its own play button. */
+	.ms-has-resume .ms-bigplay {
+		display: none;
+	}
+
+		.ms-login-message p {
 		font-size: 1rem;
 	}
 
 	.ms-badge {
-		font-size: 0.5625rem;
+		font-size: var(--ms-font-size-xs);
+		padding-inline: var(--ms-space-2);
 	}
 
 	.ms-sticky-player {

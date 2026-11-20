@@ -1,7 +1,9 @@
 /**
  * MediaShield Watermark — Canvas overlay rendering.
  *
- * Renders username + IP as semi-transparent text on a canvas overlay.
+ * Renders the viewer's name and email (the IP only when the owner opts in) as
+ * semi-transparent text on a canvas overlay, clear of the badge, the control
+ * bar and the paused play button.
  * Swaps position at configurable intervals. Mobile-responsive sizing.
  * Re-renders on container resize. Pauses video if canvas is removed.
  *
@@ -51,15 +53,22 @@
 		var currentPos = 0;
 		var SEP = ' · ';
 		var GAP = 8;
+		// ponytail: bands measured on the 2026 players; re-measure if a platform redesigns.
+		var PLATFORM_CHROME = {
+			youtube: { top: 60, bottom: 52 },
+			vimeo: { top: 60, bottom: 52 },
+			wistia: { top: 0, bottom: 48 },
+		};
 
 		// Player chrome sitting in the corners (badge top-left, speed top-right,
-		// fullscreen button bottom-right) and the browser's own control bar,
+		// fullscreen button bottom-right), MediaShield's control bar on a
+		// native video, and the browser's own control bar,
 		// which the DOM cannot measure. The watermark is drawn clear of them.
 		// ponytail: 64px covers the Chrome, Firefox and Safari bars; measure if one grows.
 		function insets(rect) {
 			var top = 0;
 			var bottom = 0;
-			el.querySelectorAll('.ms-badge, .ms-speed-control, .ms-fullscreen-btn').forEach(function (node) {
+			el.querySelectorAll('.ms-badge, .ms-speed-control, .ms-fullscreen-btn, .ms-controls').forEach(function (node) {
 				var r = node.getBoundingClientRect();
 				if (!r.height) return;
 				if (r.top - rect.top < rect.height / 2) {
@@ -71,6 +80,14 @@
 			var video = el.querySelector('video');
 			if (video && video.controls) {
 				bottom = Math.max(bottom, 64);
+			}
+			// Platform players draw their own chrome inside the iframe, which
+			// the DOM cannot measure either: YouTube and Vimeo a title bar on
+			// top, all three a control bar below (Basecamp 10516698451).
+			var chrome = PLATFORM_CHROME[el.dataset.platform];
+			if (chrome && el.querySelector('iframe')) {
+				top = Math.max(top, chrome.top);
+				bottom = Math.max(bottom, chrome.bottom);
 			}
 			return { top: top + GAP, bottom: bottom + GAP };
 		}
@@ -171,6 +188,23 @@
 			// A player too short for the block even at 8px (a ~270px player with
 			// every Pro field and a long email) keeps the text on canvas; it can
 			// then touch the chrome. ponytail: drop to fewer fields if that matters.
+			// The round play button sits in the middle while the video is
+			// paused: step the text above or below it, never across it.
+			var big = el.querySelector('.ms-bigplay');
+			var br = big && big.offsetParent ? big.getBoundingClientRect() : null;
+			if (br && br.height) {
+				var bTop = br.top - rect.top - GAP;
+				var bBottom = br.bottom - rect.top + GAP;
+				var bx = Math.max(padding, x);
+				var overlapsX = bx < br.right - rect.left && bx + block.width > br.left - rect.left;
+				if (overlapsX && y < bBottom && y + blockH > bTop) {
+					if (bTop - blockH >= top) {
+						y = bTop - blockH;
+					} else if (bBottom + blockH <= bottom) {
+						y = bBottom;
+					}
+				}
+			}
 			y = Math.max(0, Math.min(y, canvas.height - blockH));
 			ctx.textBaseline = 'top';
 			block.lines.forEach(function (l, i) {

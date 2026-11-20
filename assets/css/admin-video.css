@@ -127,9 +127,64 @@
 
 /* The side metabox column gets narrow before the viewport does, so stack on
    the label instead of letting the select shrink to an unreadable width. */
+/* Tags row of the Settings box. */
+.ms-video-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+	margin-block-end: 8px;
+}
+
+.ms-video-tags__tag {
+	white-space: nowrap;
+}
+
 @media screen and (max-width: 782px) {
 	.ms-feature-overrides__row {
 		grid-template-columns: 1fr;
 		gap: 4px;
+	}
+}
+
+/* Upload progress (Basecamp 10530929713): a bar with a percentage while the
+   file reaches the site, then an indeterminate bar while the site hands it to
+   the platform. */
+.ms-upload-progress {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-block-start: 8px;
+	max-width: 420px;
+}
+
+.ms-upload-progress[hidden] {
+	display: none;
+}
+
+.ms-upload-progress progress {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 8px;
+}
+
+.ms-upload-progress__pct {
+	min-width: 3.5em;
+	font-variant-numeric: tabular-nums;
+	text-align: end;
+}
+
+.ms-upload-target strong {
+	font-weight: 600;
+}
+
+@media screen and (max-width: 782px) {
+	#ms-video-file,
+	#ms-upload-btn {
+		display: block;
+		margin-block-end: 8px;
+	}
+
+	.ms-upload-progress {
+		max-width: none;
 	}
 }

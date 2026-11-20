@@ -1,0 +1,9 @@
+/**
+ * Standalone embed page (includes/Embed/EmbedPage.php): the shared frame and
+ * the plain-sentence message shown when there is no video to play.
+ */
+html, body { margin: 0; padding: 0; background: #000; height: 100%; }
+.ms-embed-stage { display: flex; align-items: center; justify-content: center; height: 100%; }
+.ms-embed-message { color: #fff; font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-align: center; padding: 24px; }
+.ms-embed-message p { margin: 0 0 8px; }
+.ms-embed-message .ms-embed-message__detail { opacity: .7; font-size: 14px; }

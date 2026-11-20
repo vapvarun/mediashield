@@ -27,7 +27,7 @@ class AccessControl {
 	 *
 	 * @param int $video_id Video CPT post ID.
 	 * @param int $user_id  User ID (0 for guests).
-	 * @return array{allowed: bool, reason: string}
+	 * @return array{allowed: bool, reason: string, link?: array{title: string, url: string, label: string}|null} `link` only on a refusal from mediashield_can_watch.
 	 */
 	public static function can_watch( int $video_id, int $user_id = 0 ): array {
 		// Admins always pass.
@@ -68,13 +68,82 @@ class AccessControl {
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param array $result   {allowed: bool, reason: string}
+		 * @param array $result   {allowed: bool, reason: string}. A refusal may add
+		 *                        link {title, url, label?} (where to go; label is
+		 *                        the button text) and keep_reason
+		 *                        (true: show reason as written, with that link,
+		 *                        instead of "This video is part of <course>.
+		 *                        Enroll to watch it.").
+		 *                        Since 1.4.3.
 		 * @param int   $video_id Video CPT post ID.
 		 * @param int   $user_id  User ID.
 		 */
 		$result = apply_filters( 'mediashield_can_watch', $result, $video_id, $user_id );
 
+		// A refusal from an integration (a course the viewer is not enrolled
+		// in) carries where to get access, so the player can name the course
+		// and link to it. Role, domain and login refusals return above and
+		// never get one: their own message is the right answer. An integration
+		// that already knows the right link (an enrolled student whose lesson
+		// is withdrawn goes back to their course) keeps it.
+		if ( is_array( $result ) && empty( $result['allowed'] ) ) {
+			$result['link'] = empty( $result['link'] )
+				? self::access_link( $video_id, $user_id )
+				: self::clean_link( $result['link'] );
+		}
+
 		return $result;
+	}
+
+	/**
+	 * Where can a viewer who is refused this video get access?
+	 *
+	 * Asked only after an integration refused (see can_watch()). The answer is
+	 * the course that plays the video: its name and the page to enrol from.
+	 * Learnomy is answered by Integrations\Learnomy, LearnDash and other
+	 * linked LMS lessons by Pro. Null when no course is known; the player then
+	 * shows the refusal's own words.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  Viewer, 0 for a guest.
+	 * @return array{title: string, url: string, label: string}|null
+	 */
+	public static function access_link( int $video_id, int $user_id = 0 ): ?array {
+		/**
+		 * Where a viewer refused this video can get access: the course playing it.
+		 *
+		 * @since 1.4.3
+		 *
+		 * @param array|null $link     { title: course name, url: course page } or null.
+		 * @param int        $video_id Video CPT post ID.
+		 * @param int        $user_id  Viewer, 0 for a guest.
+		 */
+		return self::clean_link( apply_filters( 'mediashield_video_access_link', null, $video_id, $user_id ) );
+	}
+
+	/**
+	 * A refusal link made safe to hand to the player: a plain-text title and
+	 * a URL that survives esc_url_raw(), or null when either is missing.
+	 *
+	 * @since 1.4.3
+	 *
+	 * @param mixed $link { title, url } from an integration.
+	 * @return array{title: string, url: string, label: string}|null
+	 */
+	private static function clean_link( $link ): ?array {
+		if ( ! is_array( $link ) || empty( $link['url'] ) || empty( $link['title'] ) ) {
+			return null;
+		}
+		$url = esc_url_raw( (string) $link['url'] );
+		return '' === $url ? null : array(
+			'title' => \MediaShield\Support\Text::plain( (string) $link['title'] ),
+			'url'   => $url,
+			// The integration's own button words (a site that renamed
+			// "Course" says "View Program"); empty falls back to the setting.
+			'label' => isset( $link['label'] ) ? \MediaShield\Support\Text::plain( (string) $link['label'] ) : '',
+		);
 	}
 
 	/**
@@ -162,6 +231,10 @@ class AccessControl {
 		// referer". `wp_get_raw_referer()` returns the actual header so we can
 		// match against the whitelist.
 		$referer = wp_get_raw_referer();
+		// Sec-Fetch-* are set by the browser and cannot be removed by the page
+		// doing the framing. A browser too old to send them sends neither.
+		$dest    = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ) ) : '';
+		$is_rest = defined( 'REST_REQUEST' ) && REST_REQUEST;
 
 		if ( empty( $referer ) ) {
 			// The whitelist is about where the player is EMBEDDED. A page this
@@ -172,15 +245,12 @@ class AccessControl {
 			// own students are never blocked (Basecamp 10499053739). A page
 			// framed elsewhere, and a guest's player request with no Referer,
 			// are still refused unless the filter opts in.
-			// Sec-Fetch-* are set by the browser and cannot be removed by the
-			// page doing the framing, so a lesson framed on another site with
-			// referrerpolicy=no-referrer is still told apart from a direct
-			// visit. A browser too old to send them is treated as a direct
-			// visit, so students are never blocked.
-			$dest    = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_DEST'] ) ) ) : '';
-			$site    = isset( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ) ) : '';
-			$framed  = in_array( $dest, array( 'iframe', 'frame', 'embed', 'object' ), true );
-			$is_rest = defined( 'REST_REQUEST' ) && REST_REQUEST;
+			// A lesson framed on another site with referrerpolicy=no-referrer
+			// is still told apart from a direct visit by Sec-Fetch-Dest. A
+			// browser too old to send it is treated as a direct visit, so
+			// students are never blocked.
+			$site   = isset( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_SEC_FETCH_SITE'] ) ) ) : '';
+			$framed = in_array( $dest, array( 'iframe', 'frame', 'embed', 'object' ), true );
 			if ( ! $framed && ! $is_rest && ! wp_doing_ajax() ) {
 				return self::allow();
 			}
@@ -214,6 +284,14 @@ class AccessControl {
 			if ( $referer_host === $domain || str_ends_with( $referer_host, '.' . $domain ) ) {
 				return self::allow();
 			}
+		}
+
+		// A top-level visit is this site's own page, whatever site linked to
+		// it: a student clicking their lesson link in a newsletter or forum
+		// is not an embed (Basecamp 10501816150). Only the browser's own
+		// Sec-Fetch-Dest: document says so; without it the Referer decides.
+		if ( 'document' === $dest && ! $is_rest && ! wp_doing_ajax() ) {
+			return self::allow();
 		}
 
 		return self::deny( Settings::get( 'ms_access_denied_text' ) );

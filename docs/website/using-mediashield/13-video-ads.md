@@ -22,7 +22,7 @@ If you sell sponsorship or show house promotions, ads can play inside the same p
 4. Set **Mid-roll Count**, 0 to 10. Breaks are spaced evenly across the middle of the video, between the 10 and 90 percent points. The help text shows example times for a 46-minute video.
 5. Choose how viewers may leave an ad:
    - **Require Full View** on: no Skip button, the ad must finish. Use it for compliance viewing.
-   - **Require Full View** off: set **Skip Delay (seconds)**, 0 to 60. 0 lets viewers skip at once.
+   - **Require Full View** off: set **Skip Delay (seconds)**, 0 to 60. 0 lets viewers skip at once. An ad that has its own skip delay in WB Ad Manager keeps it; an ad whose own delay is blank or 0 uses this setting, because WB Ad Manager saves a blank field as 0. To let viewers skip every ad at once, set this setting to 0.
 6. Leave **Show Break Markers** on to show ad positions on the seek bar.
 
 ## Settings and defaults
@@ -33,7 +33,7 @@ If you sell sponsorship or show house promotions, ads can play inside the same p
 | Pre-roll | On | One ad before the video |
 | Mid-roll Count | 3 | Breaks spread across the middle of the video (0 to 10) |
 | Require Full View | Off | Viewer must watch each ad to the end. No Skip button |
-| Skip Delay (seconds) | 5 | Seconds before Skip appears (0 to 60). Ignored when Require Full View is on |
+| Skip Delay (seconds) | 5 | Seconds before Skip appears (0 to 60). Used for every ad whose own skip delay is blank or 0. Ignored when Require Full View is on |
 | Show Break Markers | On | Marks on the seek bar for upcoming ad breaks |
 
 ## How many breaks you get

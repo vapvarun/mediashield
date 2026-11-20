@@ -158,7 +158,7 @@ MediaShield makes screen recording traceable, not impossible. The dynamic waterm
 
 When a user opens browser developer tools while watching a video, MediaShield:
 
-1. Detects the panel opening (via timing and size heuristics). Skipped on touch and small-screen devices, where it produces too many false alarms.
+1. Detects the panel opening (via a debugger-timing check). Runs only on pages with a protected player. Skipped on touch and small-screen devices, where it produces too many false alarms.
 2. Pauses video playback and shows an overlay, if you have turned "Pause Video When Detected" on. That is off by default; detection is recorded either way.
 3. Records the event. In free, it goes to your WordPress error log -- there is no admin screen listing these. Pro turns each one into a suspicious-activity alert you can see and act on.
 

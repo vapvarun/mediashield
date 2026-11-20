@@ -72,7 +72,50 @@ class Migrator {
 		// Background job, queued by Thumbnail::ensure_rename_job().
 		self::rename_id_posters( $installed );
 
+		// v11 - move back the files 1.4.2 took that had no Media Library item
+		// and sat outside the uploads YYYY/MM folders (another plugin's files).
+		// Background job, queued by LibraryFiles::ensure_job().
+		self::repair_library_files( $installed );
+
+		// v12 - an existing site keeps the defaults it stored; offer it the
+		// 1.4.3 ones once (Admin\NewDefaultsNotice). A fresh install has
+		// them already.
+		self::offer_new_defaults( $installed );
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
+	}
+
+	/**
+	 * Mark a site that updated from before v12 to be offered the 1.4.3 defaults.
+	 *
+	 * 1.4.2 stored its defaults on activation, so the new ones never reach an
+	 * existing site by themselves. The flag only lets the notice appear; the
+	 * notice still shows only while a stored value differs, and nothing
+	 * changes until the owner chooses. A fresh install (version 0) is skipped.
+	 *
+	 * @param int $installed DB version before this run.
+	 */
+	private static function offer_new_defaults( int $installed ): void {
+		if ( $installed < 1 || $installed >= 12 || get_option( \MediaShield\Admin\NewDefaultsNotice::DECIDED ) ) {
+			return;
+		}
+		update_option( \MediaShield\Admin\NewDefaultsNotice::DECIDED, 'pending', false );
+	}
+
+	/**
+	 * Queue the one-off move back of files 1.4.2 took from other plugins.
+	 *
+	 * Only installs that ran the v8 move (DB version 8 to 10) can have such a
+	 * file. Only the cursor is set here, for the same reason as the library-file
+	 * job: this runs on plugins_loaded, before Action Scheduler is ready.
+	 *
+	 * @param int $installed DB version before this run.
+	 */
+	private static function repair_library_files( int $installed ): void {
+		if ( $installed < 8 || $installed >= 11 ) {
+			return;
+		}
+		update_option( \MediaShield\Upload\LibraryFiles::REPAIR_PENDING, 0, false );
 	}
 
 	/**

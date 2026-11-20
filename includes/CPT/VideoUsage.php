@@ -1,0 +1,158 @@
+<?php
+/**
+ * Where is each video used? (Videos list "Used in" column.)
+ *
+ * @package MediaShield\CPT
+ */
+
+namespace MediaShield\CPT;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Finds the pages, posts and lessons that show a video.
+ *
+ * Answers "which published or draft content embeds video X?" for the Videos
+ * list (Basecamp 10530930295), one batch per list page. Not the same question
+ * as Upload\LibraryFiles' "is this FILE referenced anywhere", which scans meta
+ * and options for a path.
+ */
+class VideoUsage {
+
+	/**
+	 * Answers for the current request, by video ID.
+	 *
+	 * @var array<int, array<int, array{id:int,title:string,url:string,type:string}>>
+	 */
+	private static $cache = array();
+
+	/**
+	 * Most places listed per video.
+	 */
+	const MAX_PER_VIDEO = 5;
+
+	/**
+	 * Look up several videos with one query and remember the answers.
+	 *
+	 * One scan of post_content for the MediaShield shortcode and block, for the
+	 * whole list page. post_content is not indexed, so this is a table scan;
+	 * it runs once per Videos list page (20 videos), never per row, and is
+	 * capped at 500 matching posts.
+	 *
+	 * @param int[] $video_ids Video IDs.
+	 */
+	public static function prime( array $video_ids ): void {
+		$video_ids = array_values( array_diff( array_unique( array_map( 'intval', $video_ids ) ), array_keys( self::$cache ), array( 0 ) ) );
+
+		if ( empty( $video_ids ) ) {
+			return;
+		}
+
+		foreach ( $video_ids as $id ) {
+			self::$cache[ $id ] = array();
+		}
+
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One batched read per list page; see the docblock.
+		$rows = $wpdb->get_results(
+			"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
+			WHERE post_status IN ( 'publish', 'future', 'draft', 'private' )
+			AND post_type NOT IN ( 'revision', 'mediashield_video', 'mediashield_playlist', 'nav_menu_item', 'attachment', 'wp_global_styles' )
+			AND ( post_content LIKE '%[mediashield %' OR post_content LIKE '%wp:mediashield/video%' )
+			ORDER BY post_modified_gmt DESC
+			LIMIT 500"
+		);
+
+		$wanted = array_flip( $video_ids );
+
+		foreach ( (array) $rows as $row ) {
+			foreach ( self::ids_in( (string) $row->post_content ) as $id ) {
+				if ( isset( $wanted[ $id ] ) && count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
+					self::$cache[ $id ][] = self::entry( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
+				}
+			}
+		}
+
+		/**
+		 * Filter where the listed videos are used.
+		 *
+		 * Pro adds the LMS lesson a video is linked to. Each entry is
+		 * { id, title, url, type }; keep each list short.
+		 *
+		 * @since 1.4.3
+		 *
+		 * @param array<int, array> $usage     Places by video ID.
+		 * @param int[]             $video_ids Videos being listed.
+		 */
+		$filtered = apply_filters( 'mediashield_video_used_in', array_intersect_key( self::$cache, $wanted ), $video_ids );
+
+		foreach ( (array) $filtered as $id => $places ) {
+			if ( isset( $wanted[ (int) $id ] ) ) {
+				self::$cache[ (int) $id ] = array_slice( (array) $places, 0, self::MAX_PER_VIDEO );
+			}
+		}
+	}
+
+	/**
+	 * Where one video is used.
+	 *
+	 * @param int $video_id Video ID.
+	 * @return array<int, array{id:int,title:string,url:string,type:string}>
+	 */
+	public static function for_video( int $video_id ): array {
+		if ( ! isset( self::$cache[ $video_id ] ) ) {
+			self::prime( array( $video_id ) );
+		}
+
+		return self::$cache[ $video_id ] ?? array();
+	}
+
+	/**
+	 * One place, as the list shows it: a link the owner may follow.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $title   Post title.
+	 * @param string $type    Post type.
+	 * @return array{id:int,title:string,url:string,type:string}
+	 */
+	public static function entry( int $post_id, string $title, string $type ): array {
+		$object = get_post_type_object( $type );
+
+		return array(
+			'id'    => $post_id,
+			'title' => '' !== $title ? wp_strip_all_tags( $title ) : __( '(no title)', 'mediashield' ),
+			'url'   => current_user_can( 'edit_post', $post_id ) ? (string) get_edit_post_link( $post_id, 'raw' ) : (string) get_permalink( $post_id ),
+			'type'  => $object ? (string) $object->labels->singular_name : $type,
+		);
+	}
+
+	/**
+	 * Video IDs a post's content shows, by shortcode or block.
+	 *
+	 * @param string $content Post content.
+	 * @return int[]
+	 */
+	private static function ids_in( string $content ): array {
+		$ids = array();
+
+		if ( preg_match_all( '/\[mediashield\s+[^\]]*\bid=["\']?(\d+)/', $content, $m ) ) {
+			$ids = array_merge( $ids, $m[1] );
+		}
+
+		if ( preg_match_all( '/<!--\s*wp:mediashield\/video\s+\{[^}]*"videoId"\s*:\s*"?(\d+)/', $content, $m ) ) {
+			$ids = array_merge( $ids, $m[1] );
+		}
+
+		return array_values( array_unique( array_map( 'intval', $ids ) ) );
+	}
+
+	/**
+	 * Forget answers. Test seam.
+	 */
+	public static function flush(): void {
+		self::$cache = array();
+	}
+}

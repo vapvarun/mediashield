@@ -24,23 +24,9 @@ import apiFetch from '@wordpress/api-fetch';
 import Icon from './Icon';
 import VideoPickerModal from './VideoPickerModal';
 import PlaylistPlaybackOptions from './PlaylistPlaybackOptions';
+import { formatDuration } from '../utils/time';
 
 const config = window.mediashieldAdmin || {};
-
-/**
- * Format integer seconds as "M:SS" or "H:MM:SS".
- */
-function formatDuration( seconds ) {
-	seconds = Math.max( 0, Math.floor( seconds ) );
-	const h = Math.floor( seconds / 3600 );
-	const m = Math.floor( ( seconds % 3600 ) / 60 );
-	const s = seconds % 60;
-	const pad = ( n ) => ( n < 10 ? `0${ n }` : `${ n }` );
-	if ( h > 0 ) {
-		return `${ h }:${ pad( m ) }:${ pad( s ) }`;
-	}
-	return `${ m }:${ pad( s ) }`;
-}
 
 export default function PlaylistItemsModal( { playlistId, playlistTitle, onClose } ) {
 	const [ items, setItems ] = useState( [] );

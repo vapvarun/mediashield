@@ -31,6 +31,8 @@ Tags are labels you can attach to videos, and milestones attach them to members.
 2. Type a name and click **Add Tag**. The slug is made for you.
 3. Delete a tag with its **Delete** button. The count column shows how many videos use it.
 
+To put tags on a video, open the video and use the **Tags** field in its **Settings** box. Type tag names separated by commas (a new name becomes a new tag) and save the video. Untick a tag listed there to take it off.
+
 To award a tag when a viewer reaches a point in a video, use the **Milestone Tags** box on the video edit screen. See [Analytics and Milestones](02-analytics-and-milestones.md).
 
 ## Show members their own progress

@@ -181,7 +181,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						options={ [
 							// Empty = follow MediaShield > Settings > Default protection.
 							{ label: __( 'Site default', 'mediashield' ), value: '' },
-							{ label: __( 'None — Free preview', 'mediashield' ), value: 'none' },
+							{ label: __( 'None — No extra protection', 'mediashield' ), value: 'none' },
 							{ label: __( 'Basic — Login + right-click block', 'mediashield' ), value: 'basic' },
 							{ label: __( 'Standard — Watermark + tracking', 'mediashield' ), value: 'standard' },
 							{ label: __( 'Strict — Devtools detection + source hiding', 'mediashield' ), value: 'strict' },

@@ -4,20 +4,22 @@ The watermark is the core forensic tool in MediaShield. It renders the viewer's 
 
 ## Why use it
 
-If a recording of your video turns up online, the name and IP address on screen point to the account it came from. Knowing viewers can be identified also discourages casual sharing. It identifies a leaker. It does not stop a determined copier.
+If a recording of your video turns up online, the name and email on screen point to the account it came from. Knowing viewers can be identified also discourages casual sharing. It identifies a leaker. It does not stop a determined copier.
 
 ## What the watermark shows
 
 In the free plugin, the watermark displays:
 - The viewer's WordPress display name
-- The viewer's IP address
+- The viewer's email address
+- The viewer's IP address, only if you turn on **Show the viewer's IP address** (off by default)
 
-Two details worth knowing:
+Details worth knowing:
 
-- **On narrow players the IP is dropped.** When the player is under 640 px wide - phones, and small columns on desktop - the overlay shows the display name only, so the text stays readable. The IP is still recorded against the watch session either way.
-- **Guests are labelled "Guest".** If you have turned Require Login off, an anonymous viewer's watermark reads "Guest" plus their IP. Only a logged-in viewer can be named.
+- **The IP address is opt-in.** An IP address is personal data under privacy laws such as the GDPR, and each viewer sees their own on screen, so MediaShield leaves it out unless you choose to show it. Turn it on only if your privacy policy says you show it. The IP is still recorded against the watch session either way.
+- **On narrow players the IP is dropped.** When the player is under 640 px wide - phones, and small columns on desktop - an IP you turned on is left out so the text stays readable.
+- **Guests are labelled "Guest".** If you have turned Require Login off, an anonymous viewer's watermark reads "Guest", plus their IP when you show IPs. Only a logged-in viewer can be named.
 
-MediaShield Pro extends the watermark to 7 configurable fields: display name, email, IP address, user ID, timestamp, site name, and custom text.
+MediaShield Pro extends the watermark to 7 configurable fields: display name, email, IP address, user ID, timestamp, site name, and custom text. A new Pro install starts with display name and email; IP Address is a box you tick, with the same privacy note.
 
 ## How to configure the watermark
 
@@ -36,7 +38,7 @@ Go to **MediaShield > Settings > Watermark**:
 The watermark is a canvas element rendered on top of the video player container. It:
 
 - Cycles through five positions - the four corners and the center - at the interval you set, or the four corners only with Keep the watermark at the edges on
-- Sits clear of the player's badge, speed button, fullscreen button and control bar, and wraps onto more lines when it is wider than the player
+- Sits clear of the player's badge, its control bar and the round play button shown while paused, and of the title bar and controls YouTube, Vimeo and Wistia draw inside their own players, and wraps onto more lines when it is wider than the player
 - Redraws when the player is resized, and stays visible in fullscreen
 - Watches its own element, and reacts if the page tries to remove or hide it
 
@@ -52,7 +54,7 @@ To see the watermark:
 
 ## What viewers see
 
-Viewers see their display name and IP address as text over the video, moving to a new position at the swap interval you set. Guests see "Guest" and their IP address.
+Viewers see their display name and email as text over the video (and their IP address if you turned it on), moving to a new position at the swap interval you set. Guests see "Guest".
 
 ## Honest limits
 

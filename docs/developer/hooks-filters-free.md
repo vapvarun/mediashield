@@ -305,6 +305,31 @@ add_action( 'mediashield_privacy_before_erase', function( $email, $user, $page, 
 
 ## Filters
 
+
+
+### mediashield_video_status
+
+Since 1.4.3. A video's state in the Videos list Status column. Args: `$status` (`ready`, `encoding` or `failed`; default `ready`), `$video_id`, `$platform`. Pro reports Bunny encoding and failures.
+
+### mediashield_video_used_in
+
+Since 1.4.3. Where the listed videos are used. Args: `$usage` (array of places by video ID, each `{ id, title, url, type }`), `$video_ids`. Free finds the shortcode and block in content; Pro adds the linked LMS lesson.
+
+---
+
+### mediashield_upload_target_label
+
+Since 1.4.3. The name of the upload target shown above the editor's uploader ("Uploads to: ...").
+
+| Arg | Type | Notes |
+|-----|------|-------|
+| `$label` | string | Default `This site (protected uploads folder)` for `self_hosted`, else the driver name |
+| `$driver` | string | Driver the next upload uses (`UploadManager::resolve_default_driver()`) |
+
+Pro returns "Bunny Stream - <connection name>" for the Bunny driver.
+
+---
+
 ### mediashield_can_watch
 
 The primary access control gate. Return the `$result` array unchanged to pass through, modify `allowed` to `false` with a `reason` string to deny, or return `array( 'allowed' => false, 'reason' => '...' )` to deny with a custom message.

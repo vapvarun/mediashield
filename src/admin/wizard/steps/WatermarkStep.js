@@ -17,7 +17,7 @@ export default function WatermarkStep( { onSave, initialData } ) {
 				<Icon name="art" className="ms-wizard__step-icon" />
 				<div>
 					<h2>{ __( 'Watermark Settings', 'mediashield' ) }</h2>
-					<p>{ __( 'Configure how the watermark appears on your videos. It shows the viewer\'s username and IP address.', 'mediashield' ) }</p>
+					<p>{ __( 'Configure how the watermark appears on your videos. It shows the viewer\'s name and email. You can add their IP address later under Settings > Watermark.', 'mediashield' ) }</p>
 				</div>
 			</div>
 
@@ -65,7 +65,7 @@ export default function WatermarkStep( { onSave, initialData } ) {
 						className="ms-wizard__watermark-preview-text"
 						style={ { color, opacity } }
 					>
-						{ __( 'John Doe', 'mediashield' ) } &middot; 192.168.1.1
+						{ __( 'John Doe', 'mediashield' ) } &middot; john@example.com
 					</span>
 				</div>
 			</div>

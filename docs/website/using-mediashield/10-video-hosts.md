@@ -63,3 +63,13 @@ Open the page that holds the video. It should play with the "Protected by MediaS
 
 - [Upload a Video File](11-upload-a-video-file.md)
 - [Troubleshooting](../troubleshooting/01-common-problems.md)
+
+## Manage a long list of videos
+
+**MediaShield > Videos** lists 20 videos a page. For each video you see its thumbnail, platform, length, status (**Ready**, **Encoding** while a platform is still processing it, or **Failed**), protection level, and **Used in**: the pages, posts or lessons that show it.
+
+- Narrow the list with the search box and the **Platform** and **Protection** filters.
+- Tick videos (or **Select all on this page**), choose a bulk action and click **Apply**: **Set protection** to a level or to the site default, or **Move to Trash**. Open **Trash** to restore a video.
+- Moving a video to the Trash removes it from your site only. The file on Bunny, YouTube, Vimeo or Wistia is never deleted.
+- With Pro and a Bunny connection, **Import from Bunny** next to **Add New Video** opens the Bunny Library.
+

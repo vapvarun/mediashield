@@ -25,7 +25,7 @@ PUT behavior: known keys are type-cast to their schema type, then run through th
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/tags` | logged in | List tags. Args: `page`, `per_page` (max 100, default 50), `search`. |
+| GET | `/tags` | logged in | List tags. Args: `page`, `per_page` (max 100, default 50), `search`. Each tag carries `video_count`, the number of videos it is assigned to. |
 | POST | `/tags` | edit_posts | Create a tag. Body: `{ name, description? }`. The slug is derived from the name. |
 | GET | `/tags/{id}` | logged in | Get a single tag. |
 | PATCH | `/tags/{id}` | edit_posts | Update `name` and/or `description`. Note: PATCH, not PUT. |
@@ -41,7 +41,7 @@ PUT behavior: known keys are type-cast to their schema type, then run through th
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
 | POST | `/session/start` | logged in, or anonymous when allowed | Start a watch session. Body: `{ video_id }`. Returns the session token, resume position, watermark config, and video details. |
-| POST | `/session/heartbeat` | logged in, or a valid session token | Update progress. Body: `{ token, position, duration, playing?, focused? }`. `token`, `position` and `duration` are required; `playing` and `focused` default to true. |
+| POST | `/session/heartbeat` | logged in, or a valid session token | Update progress. Body: `{ token, position, duration, playing?, focused? }`. `token`, `position` and `duration` are required, and `position` and `duration` must be 0 or more (400 `rest_invalid_param` otherwise); `playing` and `focused` default to true. |
 | POST | `/session/end` | logged in, or a valid session token | End session and finalize stats. Body: `{ token }`. |
 | POST | `/session/revoke-user` | manage_options | End all active sessions for a user. Body: `{ user_id }`. |
 

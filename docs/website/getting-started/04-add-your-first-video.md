@@ -18,7 +18,7 @@ Fill in the fields:
 
 **Protection Level** - Pick the level for this video. The dropdown starts on your site-wide default and always stores an explicit value once you save.
 
-- **None** - Free preview. No gate, no watermark, no session tracking.
+- **None** - No extra protection: no watermark, no session tracking. The site-wide Require Login setting still applies, so guests are asked to log in while it is on.
 - **Basic** - Login gate and right-click blocking. No watermark, and no session tracking or milestones for this video.
 - **Standard** - Login gate, watermark, session tracking, and milestones.
 - **Strict** - Everything in Standard, and forces developer-tools detection and source-URL hiding on even if you have those switched off globally.
@@ -70,7 +70,7 @@ This renders a grid of every video the current logged-in user has watched, with 
 Open the page in a browser where you are logged in. You should see:
 
 - The video player with the protection layer
-- A watermark overlay showing your display name and IP address (protection level Standard or Strict only)
+- A watermark overlay showing your display name and email (protection level Standard or Strict only)
 - The "Protected by MediaShield" badge (if enabled in Settings)
 
 Watch the video for at least 30 seconds, then check **MediaShield > Dashboard**. You'll see the session counted and the activity chart updated. If the video is set to Basic or None, no session is recorded by design - only Standard and Strict track watch sessions.

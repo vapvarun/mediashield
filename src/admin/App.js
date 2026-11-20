@@ -115,16 +115,22 @@ const App = () => {
 	// Allow pro extensions to add / reorder routes.
 	const routes = applyFilters( 'mediashield_admin_routes', defaultRoutes );
 
-	const activeRoute = routes.find( ( r ) => r.hash === currentHash );
+	// A route also answers its own sub-paths, so a page can deep-link inside
+	// itself: #/settings/integrations opens Settings at that section. The
+	// exact hash wins first.
+	const activeRoute = routes.find( ( r ) => r.hash === currentHash ) ||
+		routes.find( ( r ) => currentHash.startsWith( r.hash + '/' ) );
 	const ActiveComponent = activeRoute ? activeRoute.component : Dashboard;
+	// Moving between sub-paths of one route keeps the page mounted.
+	const routeHash = activeRoute ? activeRoute.hash : currentHash;
 
 	return (
 		<SlotFillProvider>
 			<div className="mediashield-admin">
-				<Sidebar routes={ routes } currentHash={ currentHash } />
+				<Sidebar routes={ routes } currentHash={ routeHash } />
 				<main className="mediashield-admin__content">
 					<Toast />
-					<ErrorBoundary key={ currentHash }>
+					<ErrorBoundary key={ routeHash }>
 						<ActiveComponent />
 					</ErrorBoundary>
 				</main>

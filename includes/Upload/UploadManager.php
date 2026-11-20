@@ -145,6 +145,38 @@ class UploadManager {
 			);
 		}
 
+		// One upload per video at a time (Basecamp 10530929713). A second
+		// request for the same video - a double submit, a re-picked file, a
+		// retry while the first is still sending to the platform - used to
+		// create a second remote video (one orphaned, still billed) and a
+		// second queue row. It is refused before anything leaves the site.
+		$lock = self::lock_name( $file_path, $options );
+
+		if ( ! self::acquire_lock( $lock ) ) {
+			return array(
+				'success' => false,
+				'code'    => 'upload_in_progress',
+				'error'   => __( 'This video is already uploading. Wait for that upload to finish, then try again if it fails.', 'mediashield' ),
+			);
+		}
+
+		try {
+			return self::run_upload( $instance, $driver, $file_path, $options );
+		} finally {
+			self::release_lock( $lock );
+		}
+	}
+
+	/**
+	 * Run one upload through its driver, firing the lifecycle actions.
+	 *
+	 * @param DriverInterface $instance  Driver.
+	 * @param string          $driver    Driver name.
+	 * @param string          $file_path Absolute path to the file.
+	 * @param array           $options   Driver-specific options.
+	 * @return array Upload result.
+	 */
+	private static function run_upload( DriverInterface $instance, string $driver, string $file_path, array $options ): array {
 		/**
 		 * Fires just before an upload begins, for any driver.
 		 *
@@ -186,5 +218,85 @@ class UploadManager {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Where does an upload from this site go, in words the owner recognises?
+	 *
+	 * Shown above the uploader ("Uploads to: Bunny Stream - Course videos"),
+	 * so the owner knows the target before choosing a file (Basecamp
+	 * 10530929713).
+	 *
+	 * @return string Label, e.g. "This site" or "Bunny Stream - Course videos".
+	 */
+	public static function target_label(): string {
+		$driver = self::resolve_default_driver();
+		$label  = 'self_hosted' === $driver ? __( 'This site (protected uploads folder)', 'mediashield' ) : $driver;
+
+		/**
+		 * Filter the name of the upload target shown above the uploader.
+		 *
+		 * @since 1.4.3
+		 *
+		 * @param string $label  Label shown to the owner.
+		 * @param string $driver Driver the next upload will use.
+		 */
+		return (string) apply_filters( 'mediashield_upload_target_label', $label, $driver );
+	}
+
+	/**
+	 * Which lock name stands for "this upload"?
+	 *
+	 * The video being filled in when there is one (the admin uploader always
+	 * names it); otherwise the uploader plus the file's name and size, which is
+	 * what a double submit of a new video repeats.
+	 *
+	 * @param string $file_path Absolute path to the uploaded temp file.
+	 * @param array  $options   Upload options (attach_to, original_name).
+	 * @return string MySQL lock name (64 characters at most).
+	 */
+	public static function lock_name( string $file_path, array $options ): string {
+		$attach_to = isset( $options['attach_to'] ) ? (int) $options['attach_to'] : 0;
+
+		if ( $attach_to > 0 ) {
+			return 'ms_upload_video_' . $attach_to;
+		}
+
+		$size = is_file( $file_path ) ? (int) filesize( $file_path ) : 0;
+		$name = isset( $options['original_name'] ) ? (string) $options['original_name'] : basename( $file_path );
+
+		return 'ms_upload_' . md5( get_current_user_id() . '|' . $name . '|' . $size );
+	}
+
+	/**
+	 * Take a named lock: can this request go ahead alone?
+	 *
+	 * A MySQL named lock belongs to the database connection, so it is released
+	 * when the request ends even if PHP dies mid-upload: nothing to clean up,
+	 * no stale row. Public because it is the one lock helper for the plugin
+	 * pair: uploads use it per video (no wait), Pro's Bunny import per GUID
+	 * (waits for a parallel webhook). Always pair with release_lock().
+	 *
+	 * @param string $name Lock name (64 characters at most).
+	 * @param int    $wait Seconds to wait for another holder; 0 answers at once.
+	 * @return bool False when another request still holds it.
+	 */
+	public static function acquire_lock( string $name, int $wait = 0 ): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
+		return '1' === (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $name, max( 0, $wait ) ) );
+	}
+
+	/**
+	 * Release a lock taken by acquire_lock().
+	 *
+	 * @param string $name Lock name.
+	 */
+	public static function release_lock( string $name ): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A lock, not data.
+		$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $name ) );
 	}
 }

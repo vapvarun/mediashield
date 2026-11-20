@@ -275,7 +275,7 @@ add_filter( 'mediashield_upload_drivers', function( $drivers ) {
 
 *Since 1.4.2.* Report a use of a Media Library file that MediaShield cannot see, so the file is left in place instead of being moved into the protected folder. Return where it is used, in a few words the owner will read in the notice (for example `a Learnomy lesson`). MediaShield's Learnomy integration uses it for lesson and course URLs.
 
-**Parameters:** `$where` (string, '' when unused so far), `$relative` (string, path below the uploads folder), `$attachment_id` (int, 0 when none), `$video_id` (int)
+**Parameters:** `$where` (string, '' when unused so far), `$relative` (string, path below the uploads folder), `$attachment_id` (int; since 1.4.3 always set, because a file with no Media Library item is never moved), `$video_id` (int)
 
 ```php
 add_filter( 'mediashield_library_file_in_use', function( $where, $relative ) {
@@ -287,7 +287,7 @@ add_filter( 'mediashield_library_file_in_use', function( $where, $relative ) {
 
 ### mediashield_library_files_batch_size
 
-*Since 1.4.2.* Videos checked per pass of the one-off `ms_protect_library_files` job. Default 50, clamped to 10-200.
+*Since 1.4.2.* Videos checked per pass of the one-off `ms_protect_library_files` job, and since 1.4.3 of the one-off `ms_repair_library_files` job. Default 50, clamped to 10-200.
 
 **Parameters:** `$batch` (int)
 
@@ -565,6 +565,21 @@ add_filter( 'mediashield_bunny_pull_zones', function( $zones ) {
 *Since 1.4.0.* Videos handled per pass of the one-off job that records which video owns each uploaded file. Default 200, clamped to 50-1000.
 
 **Parameters:** `$batch` (int)
+
+---
+
+### mediashield_display_timezone
+
+*Since 1.4.3.* The timezone MediaShield shows times in: analytics activity, the PDF report and the weekly digest (with MediaShield Pro). Times are stored in UTC; only the display moves. Default is the site timezone from Settings > General. Return a person's own timezone to show each viewer their local time. A value that is not a `DateTimeZone` falls back to the site timezone.
+
+**Parameters:** `$timezone` (DateTimeZone), `$user_id` (int, the person the time is shown to; for the weekly digest, the recipient's account when the digest address belongs to one)
+
+```php
+add_filter( 'mediashield_display_timezone', function( $timezone, $user_id ) {
+    $own = get_user_meta( $user_id, 'my_timezone', true );
+    return $own ? new DateTimeZone( $own ) : $timezone;
+}, 10, 2 );
+```
 
 ---
 

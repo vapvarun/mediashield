@@ -17,14 +17,18 @@ You can host a video yourself with no outside account. It suits short clips and 
 ## Steps
 
 1. Go to **MediaShield > Videos > Add New Video**.
-2. Under **Video Source**, find **Or upload a file** and choose your file.
-3. Click **Upload**. A progress bar shows. "Uploaded. Save the video to keep this file." appears when done.
-4. Add a title, set a **Featured Image** for the poster (MediaShield does not make one), and set **Duration** if you know it.
-5. Click **Publish**.
+2. Under **Video Source**, find **Or upload a file**. The line below it says where the file goes ("Uploads to: This site" or, with Pro, "Uploads to: Bunny Stream - your connection name") and the largest file your server accepts.
+3. Choose your file. If it is larger than your server accepts, the screen says so straight away with both sizes ("This file is 27 MB; your server allows 2 MB.") and nothing is sent.
+4. Click **Upload**. A bar shows the percentage sent to your site. When the target is a video platform, the screen then says it is sending the file there; a large file can take a few minutes, so keep the page open. "Uploaded. Save the video to keep this file." appears when done.
+5. While a file is uploading, the file picker, **Upload** and **Publish** stay locked, so the same video is never sent twice.
+6. Add a title, set a **Featured Image** for the poster (MediaShield does not make one), and set **Duration** if you know it.
+7. Click **Publish**.
 
 ## Where the file goes
 
 The file is stored in `wp-content/uploads/mediashield/`, outside the media library. The file name carries a random token so addresses cannot be guessed. Visitors watch it through a permission-checked address, so the real file path is never printed in the page while Hide Video Source URL is on.
+
+If you paste the address of a file that is already on your site instead of uploading one, MediaShield moves it into the protected folder only when it is in your Media Library. A file another plugin keeps in its own folder (for example `wp-content/uploads/wpmediaverse/`) stays where it is so that plugin keeps working, and a notice lists the video as not protected. Upload the file under **Or upload a file** to protect that video.
 
 ## Check your server blocks direct downloads
 
@@ -36,7 +40,9 @@ On Apache, MediaShield writes an `.htaccess` rule that blocks direct access. ngi
 
 ## If the upload fails
 
-- "Upload failed: the connection dropped or the file is larger than this server accepts." Raise `upload_max_filesize` and `post_max_size`, or use a video platform.
+- "This file is ... ; your server allows ..." Raise `upload_max_filesize` and `post_max_size`, or upload the file to your video platform (with Pro and Bunny: upload it in Bunny, then use **Browse & Import**).
+- "This video is already uploading." Another upload of the same video is still running. Wait for it to finish.
+- "Upload failed: the connection dropped or the file is larger than this server accepts." The connection to your site dropped. Try again.
 - The Upload button stays grey until a file is chosen.
 - See [Error Messages](../troubleshooting/02-error-messages.md).
 

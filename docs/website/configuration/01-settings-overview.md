@@ -2,7 +2,7 @@
 
 **Included in Free.** Two cards on this screen only appear with MediaShield Pro (see the end of this page).
 
-All MediaShield settings live under **MediaShield > Settings**. The page is one scrolling screen of cards, not tabs. Every change saves by itself a moment after you make it, and a small "Settings saved." message confirms it. There is no Save button.
+All MediaShield settings live under **MediaShield > Settings**. The cards sit in one column with a section list on the left: Protection, Watermark, Player, Access & messages, Video ads, Upload & storage and, when a course plugin is active, Integrations. Click a section to jump to it. Type in **Search settings** above the list to show only the cards that mention what you typed, for example "IP" or "resume". On a phone the section list is a **Go to section** menu. Every change saves by itself a moment after you make it, and a "Saved" message confirms it at the bottom of the screen. There is no Save button.
 
 ## Before you start
 
@@ -35,8 +35,8 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Require Login | On | Visitors must be logged in to watch. Off lets guests watch, and their sessions are recorded. |
 | Block Right-Click | On | Hides the browser menu over the player so "Save video as" is not offered. |
 | Block Save Shortcut (Ctrl+S / Cmd+S) | Off | Stops the save shortcut while the player has focus. |
-| Hide Video Source URL | On | Self-hosted video only. The page no longer prints the file address. |
-| Detect Developer Tools | On | Notices when a viewer opens browser developer tools. Skipped on touch devices and narrow screens. |
+| Hide Video Source URL | On | Self-hosted video only. The page no longer prints the file address. Videos uploaded to MediaShield always play through the protected address, on or off. |
+| Detect Developer Tools | On | Notices when a viewer opens browser developer tools. Runs only on pages with a protected player. Skipped on touch devices and narrow screens. |
 | Pause Video When Detected | Off | Pauses and shows the message below when developer tools are found. Appears only while detection is on. |
 | Overlay Title | Developer Tools Detected | Heading of that message. Appears only while Pause Video When Detected is on. |
 | Overlay Message | Please close developer tools to continue watching this video. | Body of that message. Appears only while Pause Video When Detected is on. |
@@ -44,16 +44,19 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Watermark Color | #ffffff | Colour of the watermark text, as a hex code. |
 | Position Swap Interval | 30 | Seconds before the watermark moves. Minimum 1. |
 | Keep the watermark at the edges | Off | Keeps the watermark in the corners, off the centre of the video. |
-| Show MediaShield Badge | On | Small "Protected by MediaShield" label on the player. |
+| Show MediaShield Badge | Off | Small "Protected by MediaShield" label on the player, a pill in your Brand Color. Off on new installs. A site updated from an earlier version keeps its setting and sees one notice on the MediaShield screens offering the new defaults (badge off; watermark name and email, IP opt-in): **Apply new defaults** or **Keep my settings**, and the notice is gone for good. **Not now** hides it for a week. |
 | Allowed Domains | Empty | Sites allowed to embed your videos. Separate entries with commas, spaces or new lines, in any mix. A pasted web address is reduced to its domain. Empty allows any. See [Access Control](04-access-control.md). |
 | Max Concurrent Streams | 2 | Videos one account may watch at the same time. Minimum 1. |
 | Keep watch history for (months) | 0 | 0 keeps everything. 1 to 120 moves older sessions out of reports. See below. |
 | Login Overlay Text | Please log in to watch this video | Message on the video for visitors who are not logged in. |
 | Login Button Text | Log In | Label of the login button. |
 | Access Denied Text | You do not have access to this video | Message for signed-in viewers who lack the role, or whose domain is not allowed. |
+| Course Access Text | This video is part of %s. Enroll to watch it. | Shown to a member not enrolled in the course a video belongs to (Learnomy, or with Pro a linked LearnDash lesson). %s becomes the course name. A button to the course sits under it. |
+| Course Button Text | View course | Label of that button. |
+| Unavailable Video Text | This video is unavailable. | Shown when YouTube or Vimeo says the video was removed or made private. |
 | Speed Control | On | Speed selector, 0.5x to 2x. Self-hosted, and Bunny with Pro direct playback. |
 | Keyboard Shortcuts | On | Space, arrows, M and F while the player has focus. |
-| Resume Playback | On | Offers to continue where the viewer stopped. |
+| Resume Playback | On | Offers to continue exactly where the viewer stopped, rewinds included. |
 | Prevent Skipping Ahead | Off | Blocks seeking beyond the furthest point watched. |
 | Sticky Player | Off | Keeps the player floating in a corner while the viewer scrolls. |
 | End Screen | Off | Shows a message and button when the video ends. |
@@ -64,7 +67,7 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Pre-roll | On | One ad before the video starts. |
 | Mid-roll Count | 3 | Ads spaced across the middle of the video. 0 to 10. |
 | Require Full View | Off | Hides the Skip button so every ad must be watched. |
-| Skip Delay (seconds) | 5 | Seconds before Skip unlocks. 0 to 60. Ignored when Require Full View is on. |
+| Skip Delay (seconds) | 5 | Seconds before Skip unlocks. 0 to 60; 0 means skippable at once. An ad with its own skip delay in WB Ad Manager keeps it; an ad left blank or at 0 uses this value. Ignored when Require Full View is on. |
 | Show Break Markers | On | Marks on the seek bar for upcoming ad breaks. |
 
 The ad rows only appear while Enable In-Video Ads is on. The end screen rows only appear while End Screen is on.
@@ -77,7 +80,7 @@ Setting names such as `ms_watermark_opacity` are listed for developers in the [S
 
 **Default Protection Level** decides what a video gets when it has no level of its own:
 
-- None - No protection and no session tracking.
+- None - No extra protection and no session tracking. The site-wide Require Login setting still applies.
 - Basic - Login gate and right-click blocking. No watermark, and no tracking.
 - Standard - Login gate, watermark, tracking and milestones.
 - Strict - Standard, plus developer-tools detection, pause on detection and source hiding forced on.
