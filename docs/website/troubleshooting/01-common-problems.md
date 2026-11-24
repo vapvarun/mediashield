@@ -51,6 +51,10 @@ The usual cause is a source URL that is not the video. The classic case is a **B
 
    The dry run reports what it found and changes nothing. Collection URLs (a folder of videos rather than a video) are reported but never rewritten, because a collection ID is not a video ID.
 
+## The video freezes at 0:00 or says "Reconnecting"
+
+When a video says it is playing but nothing moves for about 8 seconds (Safari does this with a direct MP4 file), the player resets the source once and shows **Reconnecting...** while it does. If playback stalls again, it pauses and says "This video could not be loaded." with a **Try again** button. Adaptive streams (HLS) are left to their own recovery. If **Try again** does not help, check that the source plays outside the page, and see "The player never starts, and shows no error" above.
+
 ## Watermark isn't showing
 
 Video plays but no username or IP overlay appears.

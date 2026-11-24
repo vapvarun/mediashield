@@ -29,7 +29,7 @@ Customise the overlay under Settings > Login & Access Messages:
 
 Each video has an optional **Restrict to Role** setting. When set, only users who actually hold that role can watch.
 
-The match is exact, not hierarchical. A video restricted to `subscriber` refuses an `editor`, because an editor does not hold the subscriber role. Administrators are the one exception and always pass. Logged-out visitors are refused with the login overlay text, since a guest cannot hold any role.
+Leaving the role empty, or set to `any`, means no role restriction: the video plays for every viewer who passes the other checks, with or without MediaShield Pro active. The match is exact, not hierarchical. A video restricted to `subscriber` refuses an `editor`, because an editor does not hold the subscriber role. Administrators are the one exception and always pass. Logged-out visitors are refused with the login overlay text, since a guest cannot hold any role.
 
 Users who are signed in but don't hold the role see the **Access Denied Text** (Settings > Login & Access Messages). Default: "You do not have access to this video".
 
