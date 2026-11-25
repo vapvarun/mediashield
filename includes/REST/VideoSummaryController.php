@@ -67,6 +67,24 @@ class VideoSummaryController extends WP_REST_Controller {
 			)
 		);
 
+		// The picker's row: what the video is, in owners' words.
+		register_rest_field(
+			'mediashield_video',
+			'ms_card',
+			array(
+				'get_callback' => static function ( $post ) {
+					$id = (int) ( $post['id'] ?? 0 );
+					return $id && current_user_can( 'read_post', $id ) ? self::card( $id ) : null;
+				},
+				'schema'       => array(
+					'description' => 'Platform name, length, poster and protection in owners\' words (VideoSummaryController::card()).',
+					'type'        => array( 'object', 'null' ),
+					'context'     => array( 'view', 'edit' ),
+					'readonly'    => true,
+				),
+			)
+		);
+
 		register_rest_route(
 			$this->namespace,
 			'/videos/(?P<id>\d+)/summary',
@@ -186,12 +204,6 @@ class VideoSummaryController extends WP_REST_Controller {
 	 * @return array<string, mixed>
 	 */
 	public static function summary( int $video_id, int $post_id ): array {
-		$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
-		$platform = '' !== $platform ? $platform : Platforms::SELF_HOSTED;
-		$level    = Protection::resolve_level( $video_id );
-		$levels   = Protection::levels();
-		$own      = (string) get_post_meta( $video_id, '_ms_protection_level', true );
-
 		$places = array_values(
 			array_filter(
 				VideoUsage::for_video( $video_id ),
@@ -200,6 +212,38 @@ class VideoSummaryController extends WP_REST_Controller {
 		);
 
 		$title = get_the_title( $video_id );
+
+		return array(
+			'id'           => $video_id,
+			// Plain text: the block shows it as text, so get_the_title()'s
+			// texturised entities (&#8211;) would show literally.
+			'title'        => '' !== $title ? html_entity_decode( wp_strip_all_tags( $title ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : __( '(no title)', 'mediashield' ),
+			'status'       => (string) get_post_status( $video_id ),
+			'edit_url'     => current_user_can( 'edit_post', $video_id ) ? (string) get_edit_post_link( $video_id, 'raw' ) : '',
+			'used_in'      => $places,
+			'used_in_more' => count( VideoUsage::for_video( $video_id ) ) >= VideoUsage::MAX_PER_VIDEO,
+		) + self::card( $video_id );
+	}
+
+	/**
+	 * A video as owners recognise it: "YouTube · 12:04 · Site default (Standard)",
+	 * plus its poster. Never a platform slug or an id.
+	 *
+	 * The block, the "Choose a Video" picker (as the `ms_card` field on
+	 * /wp/v2/mediashield-videos) and summary() all read this, with the same
+	 * platform names and protection words as the Videos list.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $video_id Video ID.
+	 * @return array{platform: string, platform_label: string, duration: int, thumbnail: string, protection: string, protection_label: string, follows_default: bool}
+	 */
+	public static function card( int $video_id ): array {
+		$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
+		$platform = '' !== $platform ? $platform : Platforms::SELF_HOSTED;
+		$level    = Protection::resolve_level( $video_id );
+		$levels   = Protection::levels();
+		$own      = (string) get_post_meta( $video_id, '_ms_protection_level', true );
 
 		// No poster of the owner's: a YouTube video still has YouTube's
 		// public thumbnail, as the block showed before 1.4.4. Never derived
@@ -211,11 +255,6 @@ class VideoSummaryController extends WP_REST_Controller {
 		}
 
 		return array(
-			'id'               => $video_id,
-			// Plain text: the block shows it as text, so get_the_title()'s
-			// texturised entities (&#8211;) would show literally.
-			'title'            => '' !== $title ? html_entity_decode( wp_strip_all_tags( $title ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : __( '(no title)', 'mediashield' ),
-			'status'           => (string) get_post_status( $video_id ),
 			'platform'         => $platform,
 			'platform_label'   => Platforms::label( $platform ),
 			'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
@@ -224,9 +263,6 @@ class VideoSummaryController extends WP_REST_Controller {
 			// The one wording for "follows the site": "Site default (Standard)".
 			'protection_label' => '' === $own ? Protection::site_default_label() : ( $levels[ $level ]['label'] ?? $level ),
 			'follows_default'  => '' === $own,
-			'edit_url'         => current_user_can( 'edit_post', $video_id ) ? (string) get_edit_post_link( $video_id, 'raw' ) : '',
-			'used_in'          => $places,
-			'used_in_more'     => count( VideoUsage::for_video( $video_id ) ) >= VideoUsage::MAX_PER_VIDEO,
 		);
 	}
 }
