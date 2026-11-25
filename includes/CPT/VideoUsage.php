@@ -114,13 +114,12 @@ class VideoUsage {
 	const INDEX_BATCH = 100;
 
 	/**
-	 * Most index rows read per video or playlist. More than the five a list
-	 * shows: My Videos looks for the first one the member may read, which
-	 * can be past drafts and private posts.
-	 * shortcut: a fixed ceiling, not paging; a video placed on more than 50
-	 * newer posts the member cannot read links nowhere in My Videos.
+	 * Most index rows read per video or playlist: the MAX_PER_VIDEO places
+	 * every screen keeps (found() cuts to that, and page_for_viewer() reads
+	 * the cut list), plus room for stale rows a read drops and deletes, so
+	 * the list is still full on that read.
 	 */
-	const PER_TARGET = 50;
+	const PER_TARGET = 10;
 
 	/**
 	 * Statuses whose embeds count as places.
@@ -235,9 +234,12 @@ class VideoUsage {
 		// One part per video or playlist, each with its own limit, so a video
 		// shown on thousands of lessons reads PER_TARGET rows, not all of
 		// them, and cannot crowd out another video's places.
-		$part  = "( SELECT m.post_id AS target, p.ID, p.post_title, p.post_type, p.post_modified_gmt
+		// The host's EMBEDS comes from the same query (one meta row each),
+		// never all of the host's meta.
+		$part  = "( SELECT m.meta_id, m.post_id AS target, p.ID, p.post_title, p.post_type, p.post_modified_gmt, e.meta_value AS embeds
 			FROM {$wpdb->postmeta} m
 			INNER JOIN {$wpdb->posts} p ON p.ID = CAST( m.meta_value AS UNSIGNED )
+			LEFT JOIN {$wpdb->postmeta} e ON e.post_id = p.ID AND e.meta_key = %s
 			WHERE m.meta_key = %s AND m.post_id = %d
 			AND p.post_status IN ( {$in_statuses} )
 			AND p.post_type NOT IN ( {$not_places} )
@@ -246,16 +248,11 @@ class VideoUsage {
 		$args  = array();
 		foreach ( $targets as $target ) {
 			$parts[] = $part;
-			$args    = array_merge( $args, array( self::USED_IN, $target ), $statuses, self::NOT_PLACES, array( self::PER_TARGET ) );
+			$args    = array_merge( $args, array( self::EMBEDS, self::USED_IN, $target ), $statuses, self::NOT_PLACES, array( self::PER_TARGET ) );
 		}
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Index read on postmeta.post_id and the posts primary key; every value is a placeholder.
 		$rows = $wpdb->get_results( $wpdb->prepare( implode( ' UNION ALL ', $parts ) . ' ORDER BY post_modified_gmt DESC', $args ) );
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-
-		// A row counts only while the post that shows the video still says
-		// so (EMBEDS): a copied video (Duplicate Post), an import or a
-		// search-replace can bring USED_IN rows nothing wrote for it.
-		update_meta_cache( 'post', array_unique( array_map( static fn( $row ) => (int) $row->ID, (array) $rows ) ) );
 
 		$is_video = array_flip( $video_ids );
 		$hits     = array();
@@ -263,8 +260,13 @@ class VideoUsage {
 			$id     = (int) $row->ID;
 			$target = (int) $row->target;
 			$kind   = isset( $is_video[ $target ] ) ? 'videos' : 'playlists';
-			$shows  = get_post_meta( $id, self::EMBEDS, true );
+			// A row counts only while the post that shows the video still says
+			// so (EMBEDS): a copied video (Duplicate Post), an import or a
+			// search-replace can bring rows nothing wrote for it. Such a row
+			// is deleted the first time it is seen.
+			$shows = maybe_unserialize( (string) $row->embeds );
 			if ( ! is_array( $shows ) || ! in_array( $target, array_map( 'intval', (array) ( $shows[ 'videos' === $kind ? 'v' : 'p' ] ?? array() ) ), true ) ) {
+				delete_metadata_by_mid( 'post', (int) $row->meta_id );
 				continue;
 			}
 			if ( ! isset( $hits[ $id ] ) ) {
@@ -276,7 +278,9 @@ class VideoUsage {
 					'playlists' => array(),
 				);
 			}
-			$hits[ $id ][ $kind ][] = $target;
+			if ( ! in_array( $target, $hits[ $id ][ $kind ], true ) ) {
+				$hits[ $id ][ $kind ][] = $target;
+			}
 		}
 		return array_values( $hits );
 	}
@@ -381,10 +385,14 @@ class VideoUsage {
 			foreach ( array_diff( $was, $is ) as $target ) {
 				delete_post_meta( $target, self::USED_IN, (string) $post_id );
 			}
-			// Every target it shows has its row, not only new ones: an import
-			// can bring EMBEDS without the rows.
-			foreach ( $is as $target ) {
-				if ( ! in_array( (string) $post_id, (array) get_post_meta( $target, self::USED_IN ), true ) ) {
+			foreach ( array_diff( $is, $was ) as $target ) {
+				add_post_meta( $target, self::USED_IN, (string) $post_id );
+			}
+			// A target listed before still has its row, unless an import
+			// brought EMBEDS without it: one indexed existence check, never
+			// the target's whole list.
+			foreach ( array_intersect( $is, $was ) as $target ) {
+				if ( ! self::has_row( $target, $post_id ) ) {
 					add_post_meta( $target, self::USED_IN, (string) $post_id );
 				}
 			}
@@ -397,6 +405,26 @@ class VideoUsage {
 			delete_post_meta( $post_id, self::EMBEDS );
 		}
 		self::flush();
+	}
+
+	/**
+	 * Does this video or playlist have the index row for this post?
+	 *
+	 * @param int $target  Video or playlist ID.
+	 * @param int $post_id Post that shows it.
+	 * @return bool
+	 */
+	private static function has_row( int $target, int $post_id ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One indexed row on postmeta.post_id.
+		return (bool) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT meta_id FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s AND meta_value = %s LIMIT 1",
+				$target,
+				self::USED_IN,
+				(string) $post_id
+			)
+		);
 	}
 
 	/**

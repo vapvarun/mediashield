@@ -220,6 +220,76 @@ class UsageIndexTest extends WP_UnitTestCase {
 		$this->assertSame( 2, substr_count( $sql[0], 'LIMIT ' . VideoUsage::PER_TARGET ), 'A limit per video.' );
 	}
 
+	/**
+	 * Final check #3: a stale row is deleted the first time a read sees it.
+	 * Fails before: it was skipped but kept, filling the read window.
+	 */
+	public function test_stale_row_is_deleted_when_seen(): void {
+		$video = $this->video();
+		$this->page( '[mediashield id="' . $video . '"]' );
+		$copy = $this->video();
+		foreach ( get_post_meta( $video, VideoUsage::USED_IN ) as $row ) {
+			add_post_meta( $copy, VideoUsage::USED_IN, $row );
+		}
+
+		VideoUsage::prime( array( $copy ) );
+
+		$this->assertSame( array(), get_post_meta( $copy, VideoUsage::USED_IN ) );
+	}
+
+	/**
+	 * Final check #1: reading "Used in" never loads all meta of the posts
+	 * that show the video. Fails before: update_meta_cache() on every host.
+	 */
+	public function test_read_does_not_load_host_meta(): void {
+		$video = $this->video();
+		$page  = $this->page( '[mediashield id="' . $video . '"]' );
+		wp_cache_flush();
+		$loads = 0;
+		add_filter(
+			'query',
+			function ( $q ) use ( &$loads, $page ) {
+				if ( preg_match( '/post_id IN \(\s*' . $page . '\s*\)/', (string) $q ) ) {
+					++$loads;
+				}
+				return $q;
+			}
+		);
+
+		VideoUsage::prime( array( $video ) );
+
+		$this->assertSame( array( $page ), wp_list_pluck( VideoUsage::for_video( $video ), 'id' ) );
+		$this->assertSame( 0, $loads );
+	}
+
+	/**
+	 * Final check #2: saving a post that shows a video does not read the
+	 * video's whole list. Fails before: get_post_meta() on the target.
+	 */
+	public function test_save_does_not_read_the_whole_list(): void {
+		$video = $this->video();
+		$page  = $this->page( '[mediashield id="' . $video . '"]' );
+		for ( $i = 0; $i < 30; $i++ ) {
+			add_post_meta( $video, VideoUsage::USED_IN, (string) ( 900000 + $i ) );
+		}
+		wp_cache_flush();
+		$loads = 0;
+		add_filter(
+			'query',
+			function ( $q ) use ( &$loads, $video ) {
+				if ( preg_match( '/post_id IN \(\s*' . $video . '\s*\)/', (string) $q ) ) {
+					++$loads;
+				}
+				return $q;
+			}
+		);
+
+		wp_update_post( array( 'ID' => $page, 'post_title' => 'Edited' ) );
+
+		$this->assertSame( 0, $loads );
+		$this->assertContains( $page, $this->used_in( $video ) );
+	}
+
 	public function test_upgrade_queues_the_index(): void {
 		delete_option( VideoUsage::INDEX_PENDING );
 		update_option( 'ms_db_version', 17 );
