@@ -377,6 +377,10 @@ iframe.ms-player-target {
 	line-height: 1;
 }
 
+.ms-resume-chip--low {
+	bottom: var(--ms-space-3);
+}
+
 .ms-resume-chip__go,
 .ms-resume-chip__over {
 	min-height: var(--ms-tap-min);

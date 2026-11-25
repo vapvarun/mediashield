@@ -2225,6 +2225,10 @@
 		var bar = el.querySelector( '.ms-controls' );
 		if ( bar && bar.offsetHeight ) {
 			chip.style.bottom = ( bar.offsetHeight + 8 ) + 'px';
+		} else if ( cover ) {
+			// The poster hides the platform's bar until play: sit low, clear
+			// of the poster's play mark (a phone player is only 186px tall).
+			chip.classList.add( 'ms-resume-chip--low' );
 		}
 		el.appendChild( chip );
 		el.classList.add( 'ms-has-resume' );
