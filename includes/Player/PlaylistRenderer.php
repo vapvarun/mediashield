@@ -143,7 +143,7 @@ class PlaylistRenderer {
 						$seconds = (int) $item->duration;
 						if ( $seconds > 0 ) :
 							?>
-							<span class="ms-playlist-item-duration"><?php echo esc_html( $seconds >= HOUR_IN_SECONDS ? gmdate( 'G:i:s', $seconds ) : ltrim( gmdate( 'i:s', $seconds ), '0' ) ); ?></span>
+							<span class="ms-playlist-item-duration"><?php echo esc_html( self::duration_label( $seconds ) ); ?></span>
 						<?php endif; ?>
 					</div>
 				</div>
@@ -187,6 +187,27 @@ class PlaylistRenderer {
 			$wrapper_attrs ? ' ' . $wrapper_attrs : '', // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
 			$players
 		);
+	}
+
+	/**
+	 * A playlist item's length as a viewer reads it: 0:22, 4:05, 1:02:03.
+	 *
+	 * Minutes are never padded and always shown, so a clip under a minute
+	 * reads 0:22 (ltrim() of "00:22" used to leave ":22"); hours appear only
+	 * from one hour, without a 24-hour wrap.
+	 *
+	 * @param int $seconds Length in seconds, above 0.
+	 * @return string
+	 */
+	public static function duration_label( int $seconds ): string {
+		$seconds = max( 0, $seconds );
+		$hours   = intdiv( $seconds, HOUR_IN_SECONDS );
+		$minutes = intdiv( $seconds % HOUR_IN_SECONDS, MINUTE_IN_SECONDS );
+		$rest    = $seconds % MINUTE_IN_SECONDS;
+
+		return $hours > 0
+			? sprintf( '%d:%02d:%02d', $hours, $minutes, $rest )
+			: sprintf( '%d:%02d', $minutes, $rest );
 	}
 
 	/**
