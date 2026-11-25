@@ -27,7 +27,7 @@ class LearnomyNewLessonDefaultTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A new install: 80, and Learnomy's move is recorded as done with nothing moved.
+	 * A new install: 80; MediaShield never writes Learnomy's move record.
 	 */
 	public function test_new_install_starts_new_lessons_at_80(): void {
 		$this->empty_site();
@@ -35,10 +35,8 @@ class LearnomyNewLessonDefaultTest extends WP_UnitTestCase {
 
 		$this->assertSame( 80, Settings::get( 'ms_learnomy_new_lesson_pct' ) );
 		$this->assertSame( 80, Learnomy::default_watch_pct( 0 ) );
-		$this->assertSame( 0, Settings::get( 'ms_lms_require_watch_pct' ), 'The site-wide gate stays off.' );
-		$moved = get_option( Learnomy::RULE_MOVED_OPTION );
-		$this->assertIsArray( $moved, 'Nothing to move on a new install.' );
-		$this->assertSame( 0, $moved['moved'] );
+		$this->assertSame( 0, Settings::get( 'ms_lms_require_watch_pct' ), 'The site-wide gate stays off, so Learnomy owns the rule.' );
+		$this->assertFalse( get_option( Learnomy::RULE_MOVED_OPTION ), 'Learnomy\'s record is Learnomy\'s to write.' );
 	}
 
 	/**

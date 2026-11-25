@@ -61,10 +61,6 @@ class Activator {
 		// Seed defaults for every option declared in the Settings schema.
 		Settings::seed_defaults( $updating );
 
-		// A new install has no lessons on an old site-wide watch rule.
-		if ( ! $updating ) {
-			\MediaShield\Integrations\Learnomy::finish_move_on_install();
-		}
 
 		// Grant upload capability to administrators.
 		$admin_role = get_role( 'administrator' );

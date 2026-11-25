@@ -158,30 +158,9 @@ class Learnomy {
 	}
 
 	/**
-	 * On a new install there are no lessons held to an old site-wide rule,
-	 * so Learnomy's one-time move is recorded as done with nothing moved.
-	 *
-	 * Without this, Learnomy would read the new-lesson default (80) as the
-	 * old rule and copy it onto lessons that never had one. A site that
-	 * updates keeps the move: it starts from its stored Require X% watched.
-	 *
-	 * @since 1.4.4
-	 */
-	public static function finish_move_on_install(): void {
-		if ( false === get_option( self::RULE_MOVED_OPTION ) ) {
-			add_option(
-				self::RULE_MOVED_OPTION,
-				array(
-					'pct'   => 0,
-					'moved' => 0,
-					'at'    => time(),
-				)
-			);
-		}
-	}
-
-	/**
 	 * Learnomy's record of its one-time move of the site-wide watch rule.
+	 * Learnomy owns it and writes it, including on a site with nothing to
+	 * move; MediaShield only reads it (owns_watch_rule()).
 	 */
 	public const RULE_MOVED_OPTION = 'learnomy_protected_video_rule_moved';
 
