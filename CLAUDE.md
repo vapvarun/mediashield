@@ -175,7 +175,7 @@ assets/
 ### mediashield_playlist
 - **Not public** (1.4.4): no single page, no rewrite, no query var. It shows only where the Playlist block or `[mediashield_playlist]` places it. Migrator v13 dropped the old `/playlist/<slug>/` rule; `PlaylistPostType::redirect_old_address()` sends that address (and `?mediashield_playlist=`) 301 to `VideoUsage::page_for_playlist()`, or 404s when no page shows it.
 - **Edit screen:** classic (`use_block_editor_for_post_type` false), like Videos; the items box sits in the `ms_main` context drawn under the title.
-- **REST base:** `mediashield-playlists`
+- **REST base:** `mediashield-playlists`. Reading `wp/v2` needs `edit_posts` for playlists and videos alike (`REST/LibraryPostsController.php`, 1.4.4); viewers get them only where they are placed.
 - **Supports:** title, editor, thumbnail
 - **Meta fields:**
   - `_ms_autoplay` (boolean, default false)
@@ -360,6 +360,8 @@ Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `media
 | Hook | Where | Description |
 |------|-------|-------------|
 | `mediashield_admin_routes` | `src/admin/App.js:116` | Adds pages to the admin SPA hash router. This is how Pro injects its screens. |
+
+DOM events the player fires are listed in `docs/website/developer-guide/08-javascript-events-and-config.md`. 1.4.4 adds `mediashield:watched` (bubbles from `.ms-protected-player`, detail `{ videoId, watchedPct, requiredPct }`, on session start and every heartbeat; `assets/js/tracker.js` `emitWatched()`), which Learnomy listens to for its live "Watch X%" line.
 
 ---
 

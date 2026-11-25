@@ -11,11 +11,13 @@ const path = require( 'path' );
 
 // MS_PLAYER_JS points the suite at another copy (the old code, to see it fail).
 const SCRIPT = fs.readFileSync( process.env.MS_PLAYER_JS || path.join( __dirname, '../../assets/js/player-wrapper.js' ), 'utf8' );
+// MS_TRACKER_JS likewise for the tracker.
+const TRACKER = fs.readFileSync( process.env.MS_TRACKER_JS || path.join( __dirname, '../../assets/js/tracker.js' ), 'utf8' );
 
 let played;
 let reports;
 
-function boot( { markup, session, loggedIn = true } ) {
+function boot( { markup, session, loggedIn = true, tracker = false, heartbeat = {} } ) {
 	document.body.innerHTML = markup;
 	reports = [];
 	window.mediashieldConfig = {
@@ -32,11 +34,19 @@ function boot( { markup, session, loggedIn = true } ) {
 		reports.push( { url, type: blob.type } );
 		return true;
 	} );
-	global.fetch = jest.fn( () => {
-		return Promise.resolve( { status: session.status || 200, json: () => Promise.resolve( session.body ) } );
+	global.fetch = jest.fn( ( url ) => {
+		const body = /heartbeat/.test( url ) ? heartbeat : session.body;
+		const res = { ok: true, status: /heartbeat/.test( url ) ? 200 : session.status || 200, json: () => Promise.resolve( body ) };
+		res.clone = () => res;
+		return Promise.resolve( res );
 	} );
+	window.mediashieldConfig.interval = 30000;
 	// eslint-disable-next-line no-eval
 	window.eval( SCRIPT );
+	if ( tracker ) {
+		// eslint-disable-next-line no-eval
+		window.eval( TRACKER );
+	}
 }
 
 const flush = () => new Promise( ( r ) => jest.requireActual( 'timers' ).setImmediate( r ) );
@@ -148,6 +158,19 @@ describe( 'Player states (Basecamp 10545260568)', () => {
 		expect( action.getAttribute( 'href' ) ).toBe( 'https://example.org/join/' );
 	} );
 
+	test( 'logged in without access and no membership page: a plain next step, no button', async () => {
+		boot( {
+			markup: nativePlayer( 'data-access-denied="1"' ),
+			session: { status: 403, body: { code: 'access_denied', message: 'You do not have access to this video', data: { status: 403 } } },
+		} );
+		await flush();
+		await flush();
+
+		const overlay = document.querySelector( '.ms-error-overlay' );
+		expect( overlay.querySelector( '.ms-error-sub' ).textContent ).toBe( 'Ask the site owner for access.' );
+		expect( overlay.querySelector( 'a, button' ) ).toBeNull();
+	} );
+
 	function youtubePlayer( extra = '' ) {
 		return `
 			<div class="ms-protected-player" data-video-id="9" data-platform="youtube" data-protection-level="none" ${ extra }>
@@ -194,5 +217,32 @@ describe( 'Player states (Basecamp 10545260568)', () => {
 		expect( note.textContent ).toContain( 'YouTube will not play this video here. It may be private, removed, or not allowed on other sites.' );
 		expect( note.querySelector( 'a' ).getAttribute( 'href' ) ).toBe( '/wp-admin/post.php?post=9&action=edit' );
 		expect( reports ).toHaveLength( 1 );
+	} );
+} );
+
+describe( 'Live watched share for an LMS (mediashield:watched)', () => {
+	test( 'fires on session start and after each heartbeat, from the player container', async () => {
+		boot( {
+			markup: nativePlayer( 'data-watch-required="70"' ),
+			session: { body: { session_token: 't', resume_position: 0, watch: { watched_pct: 12, required_pct: 0 } } },
+			heartbeat: { watched_pct: 20, required_pct: 0 },
+			tracker: true,
+		} );
+		const seen = [];
+		document.addEventListener( 'mediashield:watched', ( e ) => {
+			seen.push( { target: e.target.matches( '.ms-protected-player' ), ...e.detail } );
+		} );
+		await readyNative();
+
+		document.querySelector( '.ms-bigplay' ).click();
+		jest.advanceTimersByTime( 30000 );
+		await flush();
+		await flush();
+		await flush();
+
+		expect( seen ).toEqual( [
+			{ target: true, videoId: 7, watchedPct: 12, requiredPct: 70 },
+			{ target: true, videoId: 7, watchedPct: 20, requiredPct: 70 },
+		] );
 	} );
 } );

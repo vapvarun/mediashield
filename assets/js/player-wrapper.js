@@ -1545,9 +1545,10 @@
 
 					if ( ! handled ) {
 						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
-						showErrorOverlay( el, msg );
-						// The course to enrol in, when the server named one.
+						// The course to enrol in or the owner's membership page,
+						// when the server named one; otherwise a plain next step.
 						var access = data.data || {};
+						showErrorOverlay( el, msg, null, access.access_url ? {} : { sub: t( 'askOwner', 'Ask the site owner for access.' ) } );
 						if ( access.access_url ) {
 							addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
 						}

@@ -181,6 +181,9 @@ class PlaylistPostType {
 				'query_var'           => false,
 				'show_in_rest'        => true,
 				'rest_base'           => 'mediashield-playlists',
+				// Reading needs edit_posts: a playlist is shown only where it
+				// is placed (REST\LibraryPostsController).
+				'rest_controller_class' => \MediaShield\REST\LibraryPostsController::class,
 				'has_archive'         => false,
 				'rewrite'             => false,
 				// custom-fields is what puts registered meta in the REST response.

@@ -94,6 +94,8 @@ class VideoPostType {
 				'show_ui'             => true,
 				'show_in_rest'        => true,
 				'rest_base'           => 'mediashield-videos',
+				// Editors only, as for playlists (REST\LibraryPostsController).
+				'rest_controller_class' => \MediaShield\REST\LibraryPostsController::class,
 				'has_archive'         => false,
 				'rewrite'             => false,
 				'supports'            => array( 'title', 'thumbnail', 'custom-fields' ),

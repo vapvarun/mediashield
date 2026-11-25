@@ -212,14 +212,17 @@ class VideoSummaryController extends WP_REST_Controller {
 
 		return array(
 			'id'               => $video_id,
-			'title'            => '' !== $title ? wp_strip_all_tags( $title ) : __( '(no title)', 'mediashield' ),
+			// Plain text: the block shows it as text, so get_the_title()'s
+			// texturised entities (&#8211;) would show literally.
+			'title'            => '' !== $title ? html_entity_decode( wp_strip_all_tags( $title ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : __( '(no title)', 'mediashield' ),
 			'status'           => (string) get_post_status( $video_id ),
 			'platform'         => $platform,
 			'platform_label'   => Platforms::label( $platform ),
 			'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
 			'thumbnail'        => $thumbnail,
 			'protection'       => $level,
-			'protection_label' => $levels[ $level ]['label'] ?? $level,
+			// The one wording for "follows the site": "Site default (Standard)".
+			'protection_label' => '' === $own ? Protection::site_default_label() : ( $levels[ $level ]['label'] ?? $level ),
 			'follows_default'  => '' === $own,
 			'edit_url'         => current_user_can( 'edit_post', $video_id ) ? (string) get_edit_post_link( $video_id, 'raw' ) : '',
 			'used_in'          => $places,

@@ -58,7 +58,8 @@ class VideoBlockLibraryTest extends WP_UnitTestCase {
 			$this->assertSame( 'Studio lighting basics', $match['title'] );
 			$this->assertSame( 'YouTube', $match['platform_label'] );
 			$this->assertSame( 724, $match['duration'] );
-			$this->assertSame( 'Standard', $match['protection_label'] );
+			// Test change: a video that follows the site reads like everywhere else.
+			$this->assertSame( 'Site default (Standard)', $match['protection_label'] );
 		}
 	}
 
@@ -97,6 +98,26 @@ class VideoBlockLibraryTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'post=' . $this->video, $data['edit_url'] );
 		$this->assertSame( array( $other ), wp_list_pluck( $data['used_in'], 'id' ), 'The page being edited is not counted.' );
 		$this->assertSame( 'https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg', $data['thumbnail'], 'YouTube\'s thumbnail when the owner set no poster.' );
+	}
+
+	/**
+	 * QA finding: the block showed "Rick Astley &#8211; Never Gonna Give You Up"
+	 * and "Standard (site default)". Fails on 4393798.
+	 */
+	public function test_title_is_plain_text_and_default_reads_like_everywhere_else(): void {
+		wp_update_post(
+			array(
+				'ID'         => $this->video,
+				'post_title' => 'Rick Astley - Never Gonna Give You Up',
+			)
+		);
+
+		$data = $this->get( '/videos/' . $this->video . '/summary' )->get_data();
+
+		$this->assertSame( "Rick Astley \u{2013} Never Gonna Give You Up", $data['title'] );
+		$this->assertStringNotContainsString( '&#', $data['title'] );
+		$this->assertSame( \MediaShield\Player\Protection::site_default_label(), $data['protection_label'] );
+		$this->assertSame( 'Site default (Standard)', $data['protection_label'] );
 	}
 
 	/**

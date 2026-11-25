@@ -30,6 +30,7 @@ import {
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
+import { decodeEntities } from '@wordpress/html-entities';
 import VideoPickerModal from '../../admin/components/VideoPickerModal';
 import { detectPlatform, extractVideoId } from '../../admin/utils/platform';
 import { formatDuration } from '../../admin/utils/time';
@@ -285,7 +286,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							<p>
 								{ sprintf(
 									/* translators: %s: protection level, e.g. Standard. */
-									summary.follows_default ? __( 'Protection: %s (site default)', 'mediashield' ) : __( 'Protection: %s', 'mediashield' ),
+									__( 'Protection: %s', 'mediashield' ),
 									summary.protection_label
 								) }
 								{ summary.edit_url && (
@@ -302,7 +303,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								<ul className="ms-block-sidebar__places">
 									{ others.map( ( place ) => (
 										<li key={ place.id }>
-											<ExternalLink href={ place.url }>{ place.title }</ExternalLink>
+											<ExternalLink href={ place.url }>{ decodeEntities( place.title ) }</ExternalLink>
 											<span className="ms-block-sidebar__muted"> · { place.type }</span>
 										</li>
 									) ) }

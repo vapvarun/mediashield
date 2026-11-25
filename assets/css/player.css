@@ -272,6 +272,10 @@ iframe.ms-player-target {
 }
 
 .ms-error-admin a {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--ms-tap-min);
+	padding-inline: var(--ms-space-2);
 	color: var(--ms-on-overlay) !important;
 	text-decoration: underline;
 }

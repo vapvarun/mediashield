@@ -55,6 +55,30 @@
 		}, intervalMs );
 
 		activeSessions.push( session );
+		emitWatched( session );
+	}
+
+	/**
+	 * Tell the page how much of the video this member has watched.
+	 *
+	 * `mediashield:watched` bubbles from the player container
+	 * (.ms-protected-player) with detail { videoId, watchedPct, requiredPct },
+	 * once when the session starts and after every heartbeat that carries the
+	 * share, so a lesson's "Watch 70%: x% / 70%" line can follow along
+	 * (Learnomy). Only for a logged-in member: a guest's share is not kept.
+	 *
+	 * @param {Object} session Tracked session.
+	 */
+	function emitWatched( session ) {
+		if ( 'number' !== typeof session.watchedPct ) return;
+		session.el.dispatchEvent( new CustomEvent( 'mediashield:watched', {
+			bubbles: true,
+			detail: {
+				videoId: parseInt( session.el.dataset.videoId, 10 ) || 0,
+				watchedPct: session.watchedPct,
+				requiredPct: session.requiredPct || 0,
+			},
+		} ) );
 	}
 
 	/**
@@ -170,6 +194,7 @@
 							session.requiredPct = lessonRequired( session.el ) || data.required_pct || 0;
 							// Still short after the early beat: allow another.
 							session.earlySent = session.watchedPct >= session.requiredPct;
+							emitWatched( session );
 						}
 					// ms-silent-ok: the share is only a hint for an early beat.
 					} ).catch( function () {} );

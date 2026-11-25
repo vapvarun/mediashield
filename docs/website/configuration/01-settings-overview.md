@@ -50,7 +50,7 @@ All MediaShield settings live under **MediaShield > Settings**. The cards sit in
 | Login Overlay Text | Please log in to watch this video | Message on the video for visitors who are not logged in. |
 | Login Button Text | Log In | Label of the login button. |
 | Access Denied Text | You do not have access to this video | Message for signed-in viewers who lack the role, or whose domain is not allowed. |
-| Membership Page | Empty | Your membership or pricing page. When set, a signed-in viewer who may not watch gets a button to it under the message. Empty shows no button. A course link from your LMS is used instead when there is one. |
+| Membership Page | Empty | Your membership or pricing page. When set, a signed-in viewer who may not watch gets a button to it under the message. Empty shows "Ask the site owner for access." with no button. A course link from your LMS is used instead when there is one. |
 | Membership Button Text | See membership options | Label of that button. Shown once a Membership Page is set. |
 | Course Access Text | This video is part of %s. Enroll to watch it. | Shown to a member not enrolled in the course a video belongs to (Learnomy, or with Pro a linked LearnDash lesson). %s becomes the course name. A button to the course sits under it. |
 | Course Button Text | View course | Label of that button. |
