@@ -105,6 +105,7 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 		<p class="ms-my-videos__empty"><?php echo esc_html( $filters[ $filter ][2] ); ?></p>
 	<?php endif; ?>
 	<div class="ms-my-videos__grid">
+		<?php \MediaShield\CPT\VideoUsage::prime( array_map( 'intval', wp_list_pluck( $videos, 'video_id' ) ) ); // One scan for the whole page. ?>
 		<?php foreach ( $videos as $video ) : ?>
 			<?php
 			$video_post = get_post( (int) $video->video_id );
@@ -121,8 +122,12 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 			 * The video post type is not public, so it has no page of its own:
 			 * its permalink lands on the home page. An integration that embeds
 			 * the video (an LMS lesson, a course page) returns that page's URL.
-			 * Left empty, the title shows as plain text and no Resume link is
-			 * printed. The player on that page offers to resume by itself.
+			 * Left empty, MediaShield links the first published page or post
+			 * that shows the video and that this member may read (the Videos
+			 * list's "Used in"), so a site with no LMS still leads back to the
+			 * video. With none, the title shows as plain text and no Resume
+			 * link is printed. The player on that page offers to resume by
+			 * itself.
 			 *
 			 * @since 1.4.1
 			 *
@@ -131,6 +136,9 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 			 * @param int    $user_id  Member the list is for.
 			 */
 			$watch_url = (string) apply_filters( 'mediashield_video_watch_url', '', $video_post->ID, $current_user_id );
+			if ( '' === $watch_url ) {
+				$watch_url = \MediaShield\CPT\VideoUsage::page_for_viewer( $video_post->ID, $current_user_id );
+			}
 			?>
 			<div class="ms-my-videos-item ms-my-videos__card" data-completion-pct="<?php echo esc_attr( $completion ); ?>">
 				<?php if ( $thumbnail ) : ?>

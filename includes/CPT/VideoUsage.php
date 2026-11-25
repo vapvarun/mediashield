@@ -111,6 +111,34 @@ class VideoUsage {
 	}
 
 	/**
+	 * The page where this member can watch the video again, for My Videos on
+	 * a site where no LMS supplies one: the first place that shows it which
+	 * is published, has no password and the member may read. '' when none.
+	 *
+	 * Not entry()'s url, which is the edit screen for anyone who can edit.
+	 *
+	 * @param int $video_id Video ID.
+	 * @param int $user_id  Member the list is for.
+	 * @return string
+	 */
+	public static function page_for_viewer( int $video_id, int $user_id ): string {
+		foreach ( self::for_video( $video_id ) as $place ) {
+			$post = get_post( (int) ( $place['id'] ?? 0 ) );
+			if ( ! $post || 'publish' !== $post->post_status || post_password_required( $post ) ) {
+				continue;
+			}
+			if ( ! is_post_type_viewable( $post->post_type ) || ! user_can( $user_id, 'read_post', $post->ID ) ) {
+				continue;
+			}
+			$url = (string) get_permalink( $post );
+			if ( '' !== $url ) {
+				return $url;
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * One place, as the list shows it: a link the owner may follow.
 	 *
 	 * @param int    $post_id Post ID.
