@@ -608,6 +608,48 @@ add_filter( 'mediashield_display_timezone', function( $timezone, $user_id ) {
 
 ---
 
+### mediashield_create_video
+
+*Since 1.4.4.* The one way another plugin adds a video to the MediaShield library, for example an LMS lesson editor that offers "Add a video" or turns an ordinary video lesson into a protected one. Call it instead of writing MediaShield's posts or meta yourself.
+
+```php
+$video_id = apply_filters( 'mediashield_create_video', null, array(
+    'source_url'    => 'https://youtu.be/jNQXAC9IVRw', // a YouTube, Vimeo, Wistia or Bunny Stream link, or a link to an .mp4 file
+    // or 'attachment_id' => 123,                       // a video file in the Media Library
+    'title'         => 'Lesson 1',                      // optional
+) );
+
+if ( is_wp_error( $video_id ) ) {
+    // $video_id->get_error_message() is ready to show; get_error_data()['status'] is 400, 403, 404 or 500.
+} elseif ( is_int( $video_id ) ) {
+    $shortcode = '[mediashield id="' . $video_id . '"]';
+}
+// null: MediaShield is not active (nothing answered the filter).
+```
+
+**Parameters:** `$result` (`null`; a callback that already holds an `int` or `WP_Error` keeps it), `$args` (array):
+
+| Key | Type | Meaning |
+|-----|------|---------|
+| `source_url` | string | A link MediaShield can play: YouTube, Vimeo, Wistia, Bunny Stream (with Pro), or a link to a video file. |
+| `attachment_id` | int | A video file already in the Media Library. Used instead of `source_url` when both are given. |
+| `title` | string | Optional. Empty: the platform's title (or "Video 123"), or the Media Library item's title for a file. |
+
+**Returns** the video ID (`int`), or a `WP_Error`:
+
+| Code | Status | When |
+|------|--------|------|
+| `mediashield_cannot_create_video` | 403 | The current user may not add videos (needs `edit_posts`), or may not edit that Media Library file. |
+| `mediashield_unplayable_source` | 400 | The link is not a video MediaShield can play. The message says what to use instead, in the same words as the Add video screen. |
+| `mediashield_not_a_video_file` | 404 | `attachment_id` is not a video in the Media Library. |
+| (WordPress's code) | 500 | The video could not be saved. |
+
+It takes the same path as **Videos > Add New**: the same link check, the same save (platform and id stored in one shape, the platform's title fetched when none is given, the Videos list status), no protection level stamped (the video follows the site default), and a Media Library file is moved into the protected folder with its Media Library item made private, as when an owner pastes that file's link. A file keeps the name it was uploaded with and its length is read from it. A link already in the library, however it is written (`youtu.be/…` or `watch?v=…`), returns that video instead of adding a copy, as the Video block does; so does the same Media Library file twice.
+
+A file the site still uses somewhere else (a lesson's own video field, a post) is left where it is and played from there. Point that use at the new video first if the file should be protected.
+
+---
+
 ## JavaScript events
 
 The player dispatches browser events (`mediashield:player-ready`, `mediashield:access-denied` and others). They are documented on [JavaScript Events and Player Config](08-javascript-events-and-config.md).

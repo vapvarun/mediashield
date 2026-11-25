@@ -16,7 +16,6 @@ use MediaShield\CPT\VideoUsage;
 use MediaShield\Player\Protection;
 use MediaShield\Support\Platforms;
 use WP_Error;
-use WP_Query;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -39,11 +38,6 @@ class VideoSummaryController extends WP_REST_Controller {
 	 * @var string
 	 */
 	protected $namespace = 'mediashield/v1';
-
-	/**
-	 * Post statuses a library video can be found in (not the trash).
-	 */
-	const FINDABLE = array( 'publish', 'draft', 'pending', 'private', 'future' );
 
 	/**
 	 * Register the routes.
@@ -118,7 +112,7 @@ class VideoSummaryController extends WP_REST_Controller {
 			return $link;
 		}
 
-		$id = self::find( $link['platform'], $link['video_id'], $url );
+		$id = \MediaShield\CPT\VideoCreator::find( $link['platform'], $link['video_id'], $url );
 
 		return new WP_REST_Response(
 			array(
@@ -142,58 +136,6 @@ class VideoSummaryController extends WP_REST_Controller {
 			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
 		}
 		return new WP_REST_Response( self::summary( $id, (int) $request->get_param( 'post_id' ) ), 200 );
-	}
-
-	/**
-	 * The library video a link already is: same platform and platform id,
-	 * or for a video file the same address. Oldest first, so the video people
-	 * have been using wins over a later copy.
-	 *
-	 * @param string $platform Platform from Platforms::recognise().
-	 * @param string $video_id Platform video id ('' for a video file).
-	 * @param string $url      The link as pasted.
-	 * @return int Video ID, 0 when the link is new.
-	 */
-	public static function find( string $platform, string $video_id, string $url ): int {
-		$meta_query = '' !== $video_id
-			? array(
-				'relation' => 'AND',
-				array(
-					'key'   => '_ms_platform',
-					'value' => $platform,
-				),
-				array(
-					'key'   => '_ms_platform_video_id',
-					'value' => $video_id,
-				),
-			)
-			: array(
-				array(
-					'key'   => '_ms_source_url',
-					'value' => esc_url_raw( $url ),
-				),
-			);
-
-		$query = new WP_Query(
-			array(
-				'post_type'              => 'mediashield_video',
-				'post_status'            => self::FINDABLE,
-				'meta_query'             => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Keyed on the indexed meta_key; one lookup per paste.
-				'orderby'                => 'ID',
-				'order'                  => 'ASC',
-				'posts_per_page'         => 1,
-				'fields'                 => 'ids',
-				'no_found_rows'          => true,
-				'update_post_term_cache' => false,
-			)
-		);
-
-		foreach ( $query->posts as $id ) {
-			if ( current_user_can( 'read_post', (int) $id ) ) {
-				return (int) $id;
-			}
-		}
-		return 0;
 	}
 
 	/**
