@@ -106,12 +106,82 @@ class LearnomyWatchedShareTest extends WP_UnitTestCase {
 	 * @preserveGlobalState disabled
 	 */
 	public function test_when_learnomy_owns_the_rule_completion_is_left_alone(): void {
-		eval( 'namespace Learnomy; function protected_video_measured(): bool { return true; }' ); // phpcs:ignore Squiz.PHP.Eval.Discouraged -- test stub of Learnomy 2.4.1's function.
+		$this->stub_learnomy_241();
 		update_option( 'ms_lms_require_watch_pct', 80 );
+		update_option( 'learnomy_protected_video_rule_moved', array( 'pct' => 80, 'moved' => 3, 'at' => '2026-11-25 05:00:00' ) );
+
+		$this->assertTrue( \MediaShield\Integrations\Learnomy::owns_watch_rule() );
 
 		$this->assertSame( $this->status(), apply_filters( 'learnomy_lesson_completion_rules', $this->status(), $this->member, $this->lesson() ) );
 		// The share is still reported, for Learnomy's own rule.
 		$this->assertSame( 42, $this->share( $this->lesson() ) );
+	}
+
+	/**
+	 * Learnomy 2.4.1 still moving the site-wide % onto its lessons: the old
+	 * rule keeps applying, and Settings keeps its control, until it is done.
+	 *
+	 * Fails before the fix: the function alone handed the rule to Learnomy,
+	 * so the lessons had no watch gate while the move ran.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_while_learnomy_is_moving_the_rule_the_old_rule_applies(): void {
+		$this->stub_learnomy_241();
+		update_option( 'ms_lms_require_watch_pct', 80 );
+		delete_option( 'learnomy_protected_video_rule_moved' );
+
+		$this->assertFalse( \MediaShield\Integrations\Learnomy::owns_watch_rule() );
+		$status = apply_filters( 'learnomy_lesson_completion_rules', $this->status(), $this->member, $this->lesson() );
+		$this->assertSame( 'mediashield_watch', $status['completion_mode'] );
+		$this->assertSame( 80, $status['requirements'][0]['min_pct'] );
+
+		// Settings reads the same answer, so it keeps the site-wide control.
+		$this->assertFalse( $this->settings_flag() );
+
+		// The move finishes: Learnomy owns the rule and Settings says so.
+		update_option( 'learnomy_protected_video_rule_moved', array( 'pct' => 80, 'moved' => 3, 'at' => '2026-11-25 05:00:00' ) );
+		$this->assertTrue( \MediaShield\Integrations\Learnomy::owns_watch_rule() );
+		$this->assertSame( $this->status(), apply_filters( 'learnomy_lesson_completion_rules', $this->status(), $this->member, $this->lesson() ) );
+		$this->assertTrue( $this->settings_flag() );
+	}
+
+	/**
+	 * Learnomy 2.4.1 with no site-wide %: nothing to move, so it owns the rule at once.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_with_no_site_wide_rule_learnomy_owns_it_at_once(): void {
+		$this->stub_learnomy_241();
+		delete_option( 'ms_lms_require_watch_pct' );
+		delete_option( 'learnomy_protected_video_rule_moved' );
+
+		$this->assertTrue( \MediaShield\Integrations\Learnomy::owns_watch_rule() );
+		$this->assertTrue( $this->settings_flag() );
+	}
+
+	/**
+	 * Define Learnomy 2.4.1's protected_video_measured(). Call only in a separate process.
+	 */
+	private function stub_learnomy_241(): void {
+		eval( 'namespace Learnomy; function protected_video_measured(): bool { return true; }' ); // phpcs:ignore Squiz.PHP.Eval.Discouraged -- test stub of Learnomy 2.4.1's function.
+	}
+
+	/**
+	 * The learnomyOwnsWatchRule flag the admin Settings screen gets.
+	 *
+	 * @return bool
+	 */
+	private function settings_flag(): bool {
+		$GLOBALS['wp_scripts'] = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- fresh script registry per read.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		\MediaShield\Admin\Menu::enqueue_admin_assets( 'toplevel_page_mediashield' );
+		$data = (string) wp_scripts()->get_data( 'mediashield-admin', 'data' );
+		$this->assertMatchesRegularExpression( '/var mediashieldAdmin = (\{.*\});/s', $data );
+		preg_match( '/var mediashieldAdmin = (\{.*\});/s', $data, $m );
+		return (bool) json_decode( $m[1], true )['learnomyOwnsWatchRule'];
 	}
 
 	private function status(): array {

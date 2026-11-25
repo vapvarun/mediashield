@@ -54,30 +54,41 @@ class Learnomy {
 		// protected videos (\Learnomy\protected_video_measured()).
 		add_filter( 'learnomy_lesson_watched_pct', array( __CLASS__, 'watched_pct' ), 10, 3 );
 		add_filter( 'learnomy_protected_video_default_watch_pct', array( __CLASS__, 'default_watch_pct' ) );
-		// Nothing listens to learnomy_protected_video_rule_moved: when Learnomy
-		// copies the % onto its Manual protected lessons, the setting
-		// ms_lms_require_watch_pct stays as it is. It still gates LearnDash
-		// lessons (Pro), feeds the player's early report (SessionController)
-		// and is the starting % for new Learnomy lessons (default_watch_pct()),
-		// so clearing it would change those, and require_watch() already
-		// stands down for Learnomy without it.
+		// When Learnomy has copied the % onto its Manual protected lessons it
+		// saves the option learnomy_protected_video_rule_moved, which
+		// owns_watch_rule() waits for. The setting ms_lms_require_watch_pct
+		// stays as it is: it still gates LearnDash lessons (Pro), feeds the
+		// player's early report (SessionController) and is the starting % for
+		// new Learnomy lessons (default_watch_pct()), so clearing it would
+		// change those.
 	}
 
 	/**
 	 * Does Learnomy decide "watch the video to complete" on each lesson?
 	 *
-	 * True from Learnomy 2.4.1, which defines protected_video_measured(); then
-	 * the lesson's own Completion rule decides and MediaShield only reports
-	 * the watched share (watched_pct()). False with Learnomy 2.4.0 or older,
-	 * where the site-wide "Require X% watched" applies (require_watch()). The
-	 * admin Settings screen reads the same answer (Admin\Menu).
+	 * True from Learnomy 2.4.1, which defines protected_video_measured(), once
+	 * it has finished moving the site-wide % onto each lesson (it saves
+	 * `learnomy_protected_video_rule_moved`, { pct, moved, at }, on the last
+	 * page of its background move), or straight away when the site-wide % is
+	 * 0 and there is nothing to move. Then the lesson's own Completion rule
+	 * decides and MediaShield only reports the watched share (watched_pct()).
+	 *
+	 * False with Learnomy 2.4.0 or older, and with 2.4.1 while the move is
+	 * still running: until then the lessons have no watch gate of their own,
+	 * so the site-wide "Require X% watched" keeps applying (require_watch())
+	 * and Settings keeps its control. The admin Settings screen reads the
+	 * same answer (Admin\Menu, learnomyOwnsWatchRule).
 	 *
 	 * @since 1.4.4
 	 *
 	 * @return bool
 	 */
 	public static function owns_watch_rule(): bool {
-		return function_exists( '\\Learnomy\\protected_video_measured' );
+		if ( ! function_exists( '\\Learnomy\\protected_video_measured' ) ) {
+			return false;
+		}
+		return ! empty( get_option( 'learnomy_protected_video_rule_moved' ) )
+			|| (int) Settings::get( 'ms_lms_require_watch_pct' ) <= 0;
 	}
 
 	/**
@@ -204,10 +215,12 @@ class Learnomy {
 	 * (admins, the course's instructor) is untouched, 'advisory' shows the
 	 * requirement without blocking. A completed lesson stays completed.
 	 *
-	 * From Learnomy 2.4.1 the lesson's own Completion rule decides (it asks
+	 * Once Learnomy owns the rule (owns_watch_rule(): 2.4.1 with the % moved
+	 * onto each lesson) the lesson's own Completion rule decides (it asks
 	 * watched_pct() for the share), so this adds nothing: two rules on one
-	 * lesson would show two strips and could disagree. With Learnomy 2.4.0
-	 * it behaves exactly as in 1.4.3.
+	 * lesson would show two strips and could disagree. With Learnomy 2.4.0,
+	 * and with 2.4.1 until its move has finished, it behaves exactly as in
+	 * 1.4.3, so no lesson is left without a watch gate in between.
 	 *
 	 * @since 1.4.3
 	 *

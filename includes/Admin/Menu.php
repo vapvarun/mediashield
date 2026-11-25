@@ -172,7 +172,8 @@ class Menu {
 				// it is active: Learnomy (Free) or LearnDash (Pro).
 				'isLearnomyActive'      => function_exists( '\\Learnomy\\table' ),
 				// Learnomy 2.4.1+ sets "watch to complete" on each lesson, so
-				// Settings explains that instead of offering the site-wide %.
+				// once it has moved the site-wide % onto them, Settings
+				// explains that instead of offering the site-wide %.
 				'learnomyOwnsWatchRule' => \MediaShield\Integrations\Learnomy::owns_watch_rule(),
 				// Video Ads shows only where WB Ad Manager's video ads are
 				// installed (the class AdManagerBridge reads them from).
