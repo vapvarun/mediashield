@@ -451,7 +451,7 @@ class VideoPostType {
 
 		$levels = array(
 			'none'     => __( 'None', 'mediashield' ),
-			'basic'    => __( 'Basic — Login required, right-click disabled', 'mediashield' ),
+			'basic'    => __( 'Basic — Right-click disabled; login follows the Require Login setting', 'mediashield' ),
 			'standard' => __( 'Standard — Watermark + session tracking', 'mediashield' ),
 			'strict'   => __( 'Strict — Devtools detection + source hiding', 'mediashield' ),
 		);
@@ -752,7 +752,7 @@ class VideoPostType {
 		?>
 		<div class="ms-player-options">
 			<p class="description" style="margin-bottom: 12px;">
-				<?php esc_html_e( 'These options apply to self-hosted and Bunny videos. YouTube, Vimeo, and Wistia use their own player controls.', 'mediashield' ); ?>
+				<?php esc_html_e( 'Autoplay, Loop and Start muted apply to self-hosted and Bunny videos. Show player controls applies to self-hosted videos and to Bunny videos played as a direct stream; a Bunny embed always shows Bunny\'s own controls. YouTube, Vimeo and Wistia use their own player settings.', 'mediashield' ); ?>
 			</p>
 			<p>
 				<label>

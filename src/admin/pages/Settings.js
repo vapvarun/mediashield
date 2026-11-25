@@ -572,7 +572,7 @@ const Settings = () => {
 					paddingLeft: '2px',
 				} }>
 					<div><strong>{ __( 'None:', 'mediashield' ) }</strong> { __( 'No extra protection for the video. The site-wide Require Login setting still applies.', 'mediashield' ) }</div>
-					<div><strong>{ __( 'Basic:', 'mediashield' ) }</strong> { __( 'Login required, right-click disabled', 'mediashield' ) }</div>
+					<div><strong>{ __( 'Basic:', 'mediashield' ) }</strong> { __( 'Right-click disabled. Login follows the Require Login setting below.', 'mediashield' ) }</div>
 					<div><strong>{ __( 'Standard:', 'mediashield' ) }</strong> { __( 'Basic + watermark + session tracking', 'mediashield' ) }</div>
 					<div><strong>{ __( 'Strict:', 'mediashield' ) }</strong> { __( 'Standard + devtools detection + source hiding', 'mediashield' ) }</div>
 				</div>
@@ -835,6 +835,9 @@ const Settings = () => {
 					placeholder={ __( 'You do not have access to this video', 'mediashield' ) }
 					__nextHasNoMarginBottom
 				/>
+				{ /* Course words only where a course plugin can link a video to a course (Basecamp 10536749905). */ }
+				{ ( config.isLearnomyActive || lmsConfig.isLMSActive ) && (
+				<>
 				<TextControl
 					label={ __( 'Course Access Text', 'mediashield' ) }
 					help={ /* translators: %s is typed as written; the site replaces it with the course name. */ __( 'Shown to a member who is not enrolled in the course a video belongs to, above a button to the course. %s is replaced by the course name.', 'mediashield' ) }
@@ -850,6 +853,8 @@ const Settings = () => {
 					placeholder={ __( 'View course', 'mediashield' ) }
 					__nextHasNoMarginBottom
 				/>
+				</>
+				) }
 				<TextControl
 					label={ __( 'Unavailable Video Text', 'mediashield' ) }
 					help={ __( 'Shown when the video host says the video was removed or made private.', 'mediashield' ) }

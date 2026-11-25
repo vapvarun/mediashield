@@ -605,6 +605,28 @@
 	// This adapter loads them in an <iframe>. Cross-origin iframes expose no
 	// playback position/duration, so tracking + watermark are best-effort (0).
 
+	// The video's Player Options on a Bunny Stream embed: Bunny's embed page
+	// reads autoplay, loop and muted from its query string. It has no switch
+	// for its controls, so Show player controls applies only when Bunny plays
+	// as a direct stream (NativeAdapter). Any other embed URL is left as it is.
+	function bunnyEmbedUrl( sourceUrl, options ) {
+		var url;
+		try {
+			url = new URL( sourceUrl, window.location.href );
+		} catch ( e ) {
+			return sourceUrl;
+		}
+		if ( ! /(^|\.)mediadelivery\.net$/i.test( url.hostname ) ) {
+			return sourceUrl;
+		}
+		[ 'autoplay', 'loop', 'muted' ].forEach( function ( key ) {
+			if ( options && typeof options[ key ] === 'boolean' ) {
+				url.searchParams.set( key, options[ key ] ? 'true' : 'false' );
+			}
+		} );
+		return url.toString();
+	}
+
 	var IframeAdapter = {
 		create: function ( target, sourceUrl, options ) {
 			options = options || {};
@@ -625,7 +647,7 @@
 			};
 
 			var iframe = document.createElement( 'iframe' );
-			iframe.src = sourceUrl;
+			iframe.src = bunnyEmbedUrl( sourceUrl, options );
 			iframe.setAttribute( 'frameborder', '0' );
 			iframe.setAttribute( 'allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media' );
 			iframe.setAttribute( 'allowfullscreen', '' );

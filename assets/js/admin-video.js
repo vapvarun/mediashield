@@ -413,4 +413,35 @@
 			endscreenFields.style.display = this.value === 'on' ? '' : 'none';
 		} );
 	}
+
+	// Tags: suggestions for the tag being typed after a comma. A datalist
+	// matches the whole field, so after "one, t" nothing matched and only the
+	// first tag could be picked (Basecamp 10536871245). Each suggestion keeps
+	// what is already typed and offers only tags not typed yet.
+	var tagsField = document.getElementById( 'ms-add-tags' );
+	var tagsList  = document.getElementById( 'ms-tag-names' );
+	if ( tagsField && tagsList ) {
+		var tagNames = Array.prototype.map.call( tagsList.options, function ( o ) { return o.value; } );
+		tagsField.addEventListener( 'input', function () {
+			var value  = tagsField.value;
+			var cut    = value.lastIndexOf( ',' );
+			// What is typed up to the tag being written, spaces after the comma
+			// included, so each suggestion starts with exactly the typed text.
+			var prefix = cut === -1 ? '' : value.slice( 0, cut + 1 ) + value.slice( cut + 1 ).match( /^\s*/ )[ 0 ];
+			var typed  = value.slice( 0, cut === -1 ? 0 : cut ).split( ',' ).map( function ( t ) {
+				return t.trim().toLowerCase();
+			} );
+			while ( tagsList.firstChild ) {
+				tagsList.removeChild( tagsList.firstChild );
+			}
+			tagNames.forEach( function ( name ) {
+				if ( typed.indexOf( name.toLowerCase() ) !== -1 ) {
+					return;
+				}
+				var option   = document.createElement( 'option' );
+				option.value = prefix + name;
+				tagsList.appendChild( option );
+			} );
+		} );
+	}
 } )();
