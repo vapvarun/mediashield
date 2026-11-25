@@ -303,7 +303,7 @@ class VideoPostType {
 						printf(
 							/* translators: %s: comma-separated platform names */
 							esc_html__( 'Connected platforms: %s. Use Browse & Import for bulk actions.', 'mediashield' ),
-							esc_html( implode( ', ', array_map( array( __CLASS__, 'get_platform_label' ), $connected_platforms ) ) )
+							esc_html( implode( ', ', array_map( array( \MediaShield\Support\Platforms::class, 'label' ), $connected_platforms ) ) )
 						);
 						?>
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=mediashield#/platforms' ) ); ?>"><?php esc_html_e( 'Manage Platforms →', 'mediashield' ); ?></a>
@@ -366,7 +366,7 @@ class VideoPostType {
 								array_filter(
 									array(
 										__( 'Uploaded file', 'mediashield' ),
-										$duration > 0 ? self::length_label( $duration ) : '',
+										$duration > 0 ? \MediaShield\Player\PlaylistRenderer::duration_label( $duration ) : '',
 										size_format( (int) filesize( $held ) ),
 										__( 'kept private, played through a signed link', 'mediashield' ),
 									)
@@ -428,7 +428,7 @@ class VideoPostType {
 				<tr id="ms-detected-platform-row" <?php echo ( $platform && '' === $held ) ? '' : 'style="display:none;"'; ?>>
 					<th><?php esc_html_e( 'Detected Platform', 'mediashield' ); ?></th>
 					<td>
-						<strong id="ms-detected-platform-label"><?php echo esc_html( self::get_platform_label( $platform ) ); ?></strong>
+						<strong id="ms-detected-platform-label"><?php echo esc_html( \MediaShield\Support\Platforms::label( $platform ) ); ?></strong>
 						<input type="hidden" id="ms-platform" name="_ms_platform" value="<?php echo esc_attr( $platform ); ?>" />
 						<input type="hidden" id="ms-platform-video-id" name="_ms_platform_video_id" value="<?php echo esc_attr( $video_id ); ?>" />
 						<?php
@@ -458,36 +458,6 @@ class VideoPostType {
 		<?php
 		// Platform auto-detection behavior lives in assets/js/admin-video.js
 		// (enqueued by enqueue_edit_assets()).
-	}
-
-	/**
-	 * A length as m:ss, or h:mm:ss from an hour (the admin's formatDuration()).
-	 *
-	 * @param int $seconds Seconds.
-	 * @return string
-	 */
-	private static function length_label( int $seconds ): string {
-		$h = intdiv( $seconds, 3600 );
-		$m = intdiv( $seconds % 3600, 60 );
-		$r = $seconds % 60;
-		return $h ? sprintf( '%d:%02d:%02d', $h, $m, $r ) : sprintf( '%d:%02d', $m, $r );
-	}
-
-	/**
-	 * Get human-readable platform label.
-	 *
-	 * @param string $platform Platform slug.
-	 * @return string Label.
-	 */
-	private static function get_platform_label( string $platform ): string {
-		$labels = array(
-			'youtube' => __( 'YouTube', 'mediashield' ),
-			'vimeo'   => __( 'Vimeo', 'mediashield' ),
-			'wistia'  => __( 'Wistia', 'mediashield' ),
-			'bunny'   => __( 'Bunny Stream', 'mediashield' ),
-			'self'    => __( 'Video file', 'mediashield' ),
-		);
-		return $labels[ $platform ] ?? $platform;
 	}
 
 	/**
