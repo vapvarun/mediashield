@@ -163,7 +163,7 @@ class VideoListController extends WP_REST_Controller {
 		// "Used in" scans post content, so it is primed only for a response
 		// that carries ms_list: the Videos list, not a picker asking for a
 		// few fields (prime_usage()).
-		$fields                   = $request instanceof WP_REST_Request ? wp_parse_list( (string) $request->get_param( '_fields' ) ) : array();
+		$fields                 = $request instanceof WP_REST_Request ? wp_parse_list( (string) $request->get_param( '_fields' ) ) : array();
 		$args['ms_prime_usage'] = empty( $fields ) || rest_is_field_included( 'ms_list', $fields );
 
 		// The filters read protection settings; only people who edit videos may use them.
