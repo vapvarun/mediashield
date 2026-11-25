@@ -958,6 +958,43 @@
 	}
 
 	/**
+	 * Make a native <video> startable without a control bar: a central play
+	 * button, and a click or tap on the picture that plays or pauses, as on
+	 * every video site.
+	 *
+	 * With the bar, the button shows whenever the video is paused (the bar
+	 * sets .ms-is-playing). Without it (the owner switched Show player
+	 * controls off) the button shows only until the first play, so the
+	 * picture stays clean afterwards; a click still pauses and resumes.
+	 * Without this, controls off and autoplay off left a video nobody could
+	 * start.
+	 *
+	 * @param {HTMLElement} el            Player container.
+	 * @param {Object}      adapter       Native adapter.
+	 * @param {boolean}     untilFirstPlay Remove the button once playback starts.
+	 */
+	function addTapToPlay( el, adapter, untilFirstPlay ) {
+		var video = adapter._video;
+		var big = document.createElement( 'button' );
+		big.type = 'button';
+		big.className = 'ms-bigplay';
+		big.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
+		setIcon( big, 'play', 32 );
+		big.addEventListener( 'click', function () { adapter.play(); } );
+		el.appendChild( big );
+
+		video.addEventListener( 'click', function () {
+			adapter.isPlaying() ? adapter.pause() : adapter.play();
+		} );
+
+		if ( untilFirstPlay ) {
+			// An autoplaying video removes it at once; one the browser refused
+			// to autoplay keeps it.
+			video.addEventListener( 'play', function () { big.remove(); }, { once: true } );
+		}
+	}
+
+	/**
 	 * One MediaShield control bar for a native <video> (self-hosted, Bunny
 	 * direct stream): play, scrubber, time, mute, captions and quality when
 	 * the video has them, speed, and the one fullscreen button. The browser's
@@ -980,14 +1017,9 @@
 		bar.setAttribute( 'role', 'group' );
 		bar.setAttribute( 'aria-label', t( 'videoControls', 'Video controls' ) );
 
-		// Central play button, shown while the video is paused.
-		var big = document.createElement( 'button' );
-		big.type = 'button';
-		big.className = 'ms-bigplay';
-		big.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
-		setIcon( big, 'play', 32 );
-		big.addEventListener( 'click', function () { adapter.play(); } );
-		el.appendChild( big );
+		// Central play button, shown while the video is paused, and a click
+		// on the picture plays or pauses.
+		addTapToPlay( el, adapter, false );
 
 		var play = document.createElement( 'button' );
 		play.type = 'button';
@@ -1105,10 +1137,6 @@
 			video.addEventListener( ev, syncTime );
 		} );
 		video.addEventListener( 'volumechange', syncMute );
-		// A click on the picture plays or pauses, as on every video site.
-		video.addEventListener( 'click', function () {
-			adapter.isPlaying() ? adapter.pause() : adapter.play();
-		} );
 		el.addEventListener( 'pointermove', wake );
 		el.addEventListener( 'focusin', wake );
 
@@ -1183,15 +1211,16 @@
 		}
 
 		var container = el;
-		var platform = el.dataset.platform || '';
 
 		// ── Control bar (native video only — YouTube/Vimeo/Wistia draw their own) ──
 		// Speed sits in the bar. A video whose owner switched controls off
-		// gets no bar, as before.
+		// gets no bar and no Speed menu, only a way to start it (play button
+		// until the first play, click to play or pause) and the Fullscreen
+		// button the page already holds.
 		if ( adapter._video && adapter._wantsControls ) {
 			buildControlBar( el, adapter, feat( 'speedControl' ) );
-		} else if ( feat( 'speedControl' ) && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
-			buildSpeedControl( el, container );
+		} else if ( adapter._video ) {
+			addTapToPlay( el, adapter, true );
 		}
 
 		// ── Prevent forward skipping (watch enforcement / CLE compliance) ──
