@@ -113,4 +113,23 @@ class GuestSessionTest extends WP_UnitTestCase {
 		$this->assertIsArray( $first );
 		$this->assertFalse( $second, 'A second concurrent stream for one user must be refused.' );
 	}
+
+	/**
+	 * Fails on 1.4.3: a second device opening the SAME video was handed the
+	 * first device's session, was never counted, and then let a third device
+	 * in. The open session is reused only by the device that opened it.
+	 */
+	public function test_another_device_on_the_same_video_counts_toward_the_limit(): void {
+		update_option( 'ms_max_concurrent_streams', 1 );
+		$user = self::factory()->user->create();
+
+		$first  = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'UA' );
+		$again  = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'UA' );
+		$second = SessionManager::start( $this->video_id, $user, '203.0.113.10', 'Other UA' );
+
+		$this->assertIsArray( $first );
+		$this->assertIsArray( $again, 'the same device reopening the video keeps its session' );
+		$this->assertSame( $first['session_id'], $again['session_id'] );
+		$this->assertFalse( $second, 'another device on the same video is one more stream and is refused' );
+	}
 }

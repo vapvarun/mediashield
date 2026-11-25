@@ -97,16 +97,22 @@ class SessionManager {
 			)
 		);
 
-		// Check for existing session on same video (dedup, locked).
+		// This device's open session on the same video (a reload, a second
+		// tab), reused. Only this device's: another device handed it, as
+		// before, shared the session and was never counted, so a login could
+		// be watched on one device more than the limit (same video, then any).
 		$existing = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$table}
 			 WHERE video_id = %d AND user_id = %d AND is_active = 1
+			 AND ip_address = %s AND user_agent = %s
 			 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
 			 ORDER BY last_heartbeat DESC LIMIT 1
 			 FOR UPDATE",
 				$video_id,
 				$user_id,
+				$ip,
+				mb_substr( $ua, 0, 500 ),
 				$now
 			)
 		);

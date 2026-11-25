@@ -252,6 +252,9 @@
 					video.bind( 'pause', function () { adapter._playing = false; } );
 					video.bind( 'end', function () {
 						adapter._playing = false;
+						// Wistia reports whole seconds, so a finished 16.5 s video
+						// stopped at 16 and never reached 100% or Completed.
+						adapter._position = adapter._duration || video.duration() || adapter._position;
 						if ( adapter._endedCb ) adapter._endedCb();
 					} );
 					if ( adapter._readyCb ) adapter._readyCb();
@@ -1878,8 +1881,11 @@
 	function showLoginOverlay( el ) {
 		var overlay = document.createElement( 'div' );
 		overlay.className = 'ms-login-overlay';
-		overlay.setAttribute( 'role', 'dialog' );
-		overlay.setAttribute( 'aria-modal', 'true' );
+		// A notice in the player, shown on page load, not a dialog the
+		// viewer opened: it neither takes focus nor traps Tab, so a page with
+		// videos below the fold opens at the top (it jumped to the last
+		// player's Log In link). The link stays in the normal Tab order.
+		overlay.setAttribute( 'role', 'region' );
 		// Screen-reader label mirrors the admin-configured overlay text so it
 		// stays in sync with the visible message (not a separate hardcoded key).
 		overlay.setAttribute( 'aria-label', t( 'loginOverlay', 'Login required' ) );
@@ -1907,37 +1913,6 @@
 		message.appendChild( link );
 		overlay.appendChild( message );
 		el.appendChild( overlay );
-
-		// Focus the login link for keyboard accessibility.
-		link.focus();
-
-		// Focus trap: keep Tab within the overlay.
-		overlay.addEventListener( 'keydown', function ( e ) {
-			if ( e.key === 'Escape' ) {
-				overlay.remove();
-				return;
-			}
-
-			if ( e.key !== 'Tab' ) return;
-
-			var focusable = overlay.querySelectorAll( 'a, button, input, [tabindex]:not([tabindex="-1"])' );
-			if ( focusable.length === 0 ) return;
-
-			var first = focusable[0];
-			var last = focusable[ focusable.length - 1 ];
-
-			if ( e.shiftKey ) {
-				if ( document.activeElement === first ) {
-					e.preventDefault();
-					last.focus();
-				}
-			} else {
-				if ( document.activeElement === last ) {
-					e.preventDefault();
-					first.focus();
-				}
-			}
-		} );
 	}
 
 	// ─── Resume Prompt ───────────────────────────────────────────
