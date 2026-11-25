@@ -33,7 +33,6 @@ Saved from the video edit screen. Not registered for REST.
 | `_ms_owned_file` | string | File name this video owns in `uploads/mediashield/`. An empty string means "claimed, no file". The stream endpoint serves only the owner's file. |
 | `_ms_used_in` | post ID, one row each | Since 1.4.4. On a video or playlist: each published, scheduled, draft or private post that shows it by shortcode or block. Written when that post is saved, trashed or deleted. |
 | `_ms_embeds` | array `{ v: int[], p: int[] }` | Since 1.4.4. On a post that shows MediaShield: the video and playlist IDs it showed when last saved, so the next save moves only the difference onto `_ms_used_in`. |
-| `_ms_length_unreadable` | `1` | Since 1.4.4. The length backfill could not read this uploaded file; it is not tried again. |
 | `_ms_library_file` | `moved`, `in_use`, `not_in_library`, `none`, `restored` | Since 1.4.2. Whether this video's Media Library file was moved into `uploads/mediashield/`, left because the file is used elsewhere, left because it has no Media Library item (1.4.3), needed nothing, or was moved back. Its presence marks the video as checked. |
 | `_ms_library_kept` | string | Since 1.4.2. The source URL the owner moved back with restore. While the video still plays it, saving does not move it again. |
 | `_ms_library_restore` | array | Since 1.4.2. On a video and on its Media Library item: the old path, source URL and status, so the move can be undone. |

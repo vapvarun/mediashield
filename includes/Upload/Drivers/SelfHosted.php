@@ -462,12 +462,6 @@ class SelfHosted implements DriverInterface {
 	const LENGTHS_PENDING = 'ms_lengths_pending';
 
 	/**
-	 * Video meta: getID3 could not read this file's length; the backfill
-	 * does not try it again.
-	 */
-	const LENGTH_UNREADABLE = '_ms_length_unreadable';
-
-	/**
 	 * Files read per backfill run.
 	 */
 	const LENGTHS_BATCH = 50;
@@ -487,10 +481,11 @@ class SelfHosted implements DriverInterface {
 	 * Fill the length of uploaded files that have none, 50 a run, in a
 	 * background job (Migrator v15 queues it; `ms_backfill_lengths`).
 	 *
-	 * Walks video IDs above the stored cursor, so each file is read once. A
-	 * length the owner typed is kept; a file getID3 cannot read is marked
-	 * LENGTH_UNREADABLE. Reschedules itself until none are left, then
-	 * deletes the pending option.
+	 * Walks video IDs above the stored cursor, so each file is read once. The
+	 * cursor is saved before each file is read: a file that stops PHP
+	 * (memory, time) is skipped by the next run instead of stopping the job.
+	 * A length the owner typed is kept. Reschedules itself until none are
+	 * left, then deletes the pending option.
 	 *
 	 * @since 1.4.4
 	 */
@@ -521,12 +516,10 @@ class SelfHosted implements DriverInterface {
 		}
 
 		foreach ( $ids as $id ) {
-			if ( 0 === self::record_length( (int) $id, \MediaShield\REST\StreamController::resolve_file( (int) $id ) ) ) {
-				update_post_meta( (int) $id, self::LENGTH_UNREADABLE, 1 );
-			}
+			update_option( self::LENGTHS_PENDING, (string) (int) $id, false );
+			self::record_length( (int) $id, \MediaShield\REST\StreamController::resolve_file( (int) $id ) );
 		}
 
-		update_option( self::LENGTHS_PENDING, (string) max( array_map( 'intval', $ids ) ), false );
 		\MediaShield\Cron\Cleanup::schedule_single( 'ms_backfill_lengths', time() + MINUTE_IN_SECONDS );
 	}
 

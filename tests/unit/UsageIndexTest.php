@@ -162,6 +162,64 @@ class UsageIndexTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $this->scans );
 	}
 
+	/**
+	 * Ponytail re-review #4: a copied video (Duplicate Post copies its meta)
+	 * showed the original's pages. Fails before: the copy listed the page.
+	 */
+	public function test_copied_video_has_no_places(): void {
+		$video = $this->video();
+		$page  = $this->page( '[mediashield id="' . $video . '"]' );
+		$copy  = $this->video();
+		foreach ( get_post_meta( $video, VideoUsage::USED_IN ) as $row ) {
+			add_post_meta( $copy, VideoUsage::USED_IN, $row ); // As a meta copy brings it.
+		}
+
+		VideoUsage::prime( array( $video, $copy ) );
+
+		$this->assertSame( array( $page ), wp_list_pluck( VideoUsage::for_video( $video ), 'id' ) );
+		$this->assertSame( array(), VideoUsage::for_video( $copy ), 'The copy is not on the page.' );
+		$this->assertSame( '', VideoUsage::page_for_viewer( $copy, self::factory()->user->create() ) );
+		$this->assertContains( VideoUsage::USED_IN, VideoUsage::skip_on_copy( array() ), 'Duplicate Post skips the index.' );
+		$this->assertContains( VideoUsage::EMBEDS, VideoUsage::skip_on_copy( array() ) );
+	}
+
+	/**
+	 * An import brings a page's EMBEDS without the video's row: its next
+	 * save writes the row.
+	 */
+	public function test_save_restores_a_missing_row(): void {
+		$video = $this->video();
+		$page  = $this->page( '[mediashield id="' . $video . '"]' );
+		delete_post_meta( $video, VideoUsage::USED_IN );
+
+		wp_update_post( array( 'ID' => $page, 'post_title' => 'Imported page' ) );
+
+		$this->assertSame( array( $page ), $this->used_in( $video ) );
+	}
+
+	/**
+	 * Ponytail re-review #6: each video reads at most PER_TARGET rows.
+	 * Fails before: one unlimited read.
+	 */
+	public function test_each_video_reads_a_limited_number_of_rows(): void {
+		$busy  = $this->video();
+		$quiet = $this->video();
+		$sql   = array();
+		add_filter(
+			'query',
+			function ( $q ) use ( &$sql ) {
+				if ( false !== strpos( (string) $q, VideoUsage::USED_IN ) ) {
+					$sql[] = $q;
+				}
+				return $q;
+			}
+		);
+		VideoUsage::prime( array( $busy, $quiet ) );
+
+		$this->assertCount( 1, $sql, 'One query for the page.' );
+		$this->assertSame( 2, substr_count( $sql[0], 'LIMIT ' . VideoUsage::PER_TARGET ), 'A limit per video.' );
+	}
+
 	public function test_upgrade_queues_the_index(): void {
 		delete_option( VideoUsage::INDEX_PENDING );
 		update_option( 'ms_db_version', 17 );
