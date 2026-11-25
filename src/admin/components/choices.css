@@ -1,0 +1,117 @@
+/*
+ * Choice lists: the protection level picker (Settings, setup wizard) and the
+ * wizard's platform tiles. Real radios and checkboxes inside a label, so the
+ * whole row is the tap target (40px minimum).
+ */
+.ms-choices {
+	display: grid;
+	gap: var( --ms-space-2 );
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.ms-choices__legend {
+	font-size: var( --ms-font-size-md );
+	font-weight: 600;
+	color: var( --ms-color-text );
+	margin-block-end: var( --ms-space-2 );
+	padding: 0;
+}
+
+.ms-choices--tiles {
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) );
+}
+
+.ms-choice {
+	display: flex;
+	align-items: flex-start;
+	gap: var( --ms-space-3 );
+	min-height: 40px;
+	padding: var( --ms-space-3 ) var( --ms-space-4 );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-md );
+	background: var( --ms-color-surface );
+	cursor: pointer;
+	box-sizing: border-box;
+}
+
+.ms-choice input {
+	margin-block-start: 2px;
+	flex-shrink: 0;
+}
+
+.ms-choice:has( input:checked ) {
+	border-color: var( --ms-color-primary );
+	background: var( --ms-color-primary-light );
+}
+
+.ms-choice:has( input:focus-visible ) {
+	outline: 2px solid var( --ms-color-primary );
+	outline-offset: 2px;
+}
+
+.ms-choice__text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.ms-choice__label {
+	font-size: var( --ms-font-size-md );
+	font-weight: 600;
+	color: var( --ms-color-text );
+}
+
+.ms-choice__desc {
+	font-size: var( --ms-font-size-base );
+	color: var( --ms-color-text-secondary );
+	line-height: 1.5;
+}
+
+.ms-choice--pro {
+	cursor: default;
+	margin-block-start: var( --ms-space-2 );
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	background: var( --ms-color-bg );
+}
+
+.ms-choice__badge {
+	display: inline-block;
+	margin-inline-start: var( --ms-space-2 );
+	padding: 1px var( --ms-space-2 );
+	border-radius: var( --ms-radius-full );
+	background: var( --ms-color-primary-light );
+	color: var( --ms-color-primary );
+	font-size: var( --ms-font-size-xs );
+	font-weight: 600;
+	vertical-align: middle;
+}
+
+.ms-choice__link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	font-size: var( --ms-font-size-base );
+}
+
+.ms-choices__note {
+	margin: var( --ms-space-2 ) 0 0;
+	font-size: var( --ms-font-size-base );
+	color: var( --ms-color-text-secondary );
+}
+
+@media ( max-width: 1024px ) {
+	.ms-choices--tiles {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) );
+	}
+}
+
+@media ( max-width: 640px ) {
+	.ms-choices--tiles {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+}

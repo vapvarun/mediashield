@@ -32,8 +32,8 @@ See [Video Hosts](../using-mediashield/10-video-hosts.md) for what each host sup
 
 | Field | Default | What it does |
 |-------|---------|--------------|
-| Protection Level | Default (your site setting) | None, Basic, Standard or Strict for this video. Saving stores an explicit value. |
-| Restrict to Role | Any logged-in user | Only people holding this exact role can watch. Administrators always pass. |
+| Protection Level | Site default (for example "Site default (Standard)") | None, Basic, Standard or Strict for this video, in the same words as Settings; the line under it says what the chosen level does. Site default follows Settings > Protection. |
+| Who can watch | Everyone the site allows | Or "Only <role>": only people holding this exact role can watch. Administrators always pass. Require login is not set here: it is one site setting under Settings > Who can watch, and the first choice names its state. |
 | Tags | None | Tags on this video. Type names separated by commas to add (a new name becomes a tag), untick one to remove it. Saved with the video. |
 
 ## Embed This Video

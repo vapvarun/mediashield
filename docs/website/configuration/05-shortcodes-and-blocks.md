@@ -36,7 +36,7 @@ Renders a protected playlist player: the current video, plus a sidebar list of t
 |-----------|----------|-------------|
 | `id` | Yes | The ID number of the playlist from your MediaShield library |
 
-Access control, session tracking, milestones, the watermark and "Hide Video Source URL" all apply per video as the queue advances, using each video's own protection level.
+Access control, session tracking, milestones, the watermark and Strict's hidden file address all apply per video as the queue advances, using each video's own protection level.
 
 ### [mediashield_my_videos] - User's watched videos
 

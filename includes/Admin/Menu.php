@@ -166,8 +166,6 @@ class Menu {
 				'adminUrl'              => admin_url(),
 				'siteUrl'               => home_url(),
 				'isProActive'           => defined( 'MEDIASHIELD_PRO_VERSION' ),
-				// The Videos list labels a video with no level of its own.
-				'defaultProtection'     => \MediaShield\Player\Protection::default_level(),
 				// Settings shows "Require X% watched" when an LMS that enforces
 				// it is active: Learnomy (Free) or LearnDash (Pro).
 				'isLearnomyActive'      => function_exists( '\\Learnomy\\table' ),
@@ -178,7 +176,27 @@ class Menu {
 				// Video Ads shows only where WB Ad Manager's video ads are
 				// installed (the class AdManagerBridge reads them from).
 				'isAdManagerActive'     => class_exists( '\\WBAM_Pro\\Modules\\AdTypes\\Video_Ad_Resolver' ),
-			)
+			) + self::vocabulary()
+		);
+	}
+
+	/**
+	 * The words every admin screen shares, printed with each admin bundle.
+	 *
+	 * The protection levels and the refusal for a link that cannot play come
+	 * from PHP so the edit screen, the SPA, the wizard and the block say the
+	 * same thing (Basecamp 10545260510, 10545260436).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function vocabulary(): array {
+		return array(
+			'defaultProtection' => \MediaShield\Player\Protection::default_level(),
+			'protectionLevels'  => \MediaShield\Player\Protection::levels(),
+			'siteDefaultLabel'  => \MediaShield\Player\Protection::site_default_label(),
+			'unplayableMessage' => \MediaShield\Support\Platforms::unplayable_message(),
 		);
 	}
 

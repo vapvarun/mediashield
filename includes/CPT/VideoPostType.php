@@ -459,12 +459,9 @@ class VideoPostType {
 		$protection = (string) get_post_meta( $post->ID, '_ms_protection_level', true );
 		$access     = get_post_meta( $post->ID, '_ms_access_role', true );
 
-		$levels = array(
-			'none'     => __( 'None', 'mediashield' ),
-			'basic'    => __( 'Basic — Right-click disabled; login follows the Require Login setting', 'mediashield' ),
-			'standard' => __( 'Standard — Watermark + session tracking', 'mediashield' ),
-			'strict'   => __( 'Strict — Devtools detection + source hiding', 'mediashield' ),
-		);
+		// The one set of level words (Protection::levels(), Basecamp 10545260510).
+		$words  = \MediaShield\Player\Protection::levels();
+		$levels = wp_list_pluck( $words, 'label' );
 
 		/**
 		 * Filter the protection levels offered on the video edit screen.
@@ -488,13 +485,12 @@ class VideoPostType {
 		// remove the only route back to "follow the site default". The label
 		// names the current default, because "Default" on its own tells the
 		// operator nothing about what they are choosing.
-		$levels = array(
-			'' => sprintf(
-				/* translators: %s: the site-wide default protection level. */
-				__( 'Default (%s)', 'mediashield' ),
-				\MediaShield\Player\Protection::default_level()
-			),
-		) + $levels;
+		$levels = array( '' => \MediaShield\Player\Protection::site_default_label() ) + $levels;
+
+		// What the chosen level does, under the select; admin-video.js swaps
+		// it when the choice changes.
+		$default_level = \MediaShield\Player\Protection::default_level();
+		$summaries     = array( '' => $words[ $default_level ]['summary'] ?? '' ) + wp_list_pluck( $words, 'summary' );
 
 		$roles = wp_roles()->get_names();
 		?>
@@ -502,13 +498,14 @@ class VideoPostType {
 			<tr>
 				<th><label for="ms-protection-level"><?php esc_html_e( 'Protection Level', 'mediashield' ); ?></label></th>
 				<td>
-					<select id="ms-protection-level" name="_ms_protection_level">
+					<select id="ms-protection-level" name="_ms_protection_level" aria-describedby="ms-protection-summary">
 						<?php foreach ( $levels as $value => $label ) : ?>
-							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $protection, $value ); ?>>
+							<option value="<?php echo esc_attr( $value ); ?>" data-summary="<?php echo esc_attr( $summaries[ $value ] ?? '' ); ?>" <?php selected( $protection, $value ); ?>>
 								<?php echo esc_html( $label ); ?>
 							</option>
 						<?php endforeach; ?>
 					</select>
+					<p class="description" id="ms-protection-summary"><?php echo esc_html( $summaries[ $protection ] ?? '' ); ?></p>
 					<?php
 					// A file on another site cannot be served through MediaShield,
 					// so no level can hide its address. Said here, where the owner
@@ -523,17 +520,37 @@ class VideoPostType {
 				</td>
 			</tr>
 			<tr>
-				<th><label for="ms-access-role"><?php esc_html_e( 'Restrict to Role', 'mediashield' ); ?></label></th>
+				<th><label for="ms-access-role"><?php esc_html_e( 'Who can watch', 'mediashield' ); ?></label></th>
 				<td>
 					<select id="ms-access-role" name="_ms_access_role">
-						<option value=""><?php esc_html_e( '— Any logged-in user —', 'mediashield' ); ?></option>
+						<option value="">
+							<?php
+							// Login is the site's Who can watch setting, not part of a level.
+							echo esc_html(
+								\MediaShield\Core\Settings::get( 'ms_require_login' )
+									? __( 'Everyone the site allows (Require login is on: logged-in members)', 'mediashield' )
+									: __( 'Everyone the site allows (Require login is off: anyone)', 'mediashield' )
+							);
+							?>
+						</option>
 						<?php foreach ( $roles as $slug => $name ) : ?>
 							<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $access, $slug ); ?>>
-								<?php echo esc_html( translate_user_role( $name ) ); ?>
+								<?php
+								/* translators: %s: a user role, e.g. Subscriber. */
+								echo esc_html( sprintf( __( 'Only %s', 'mediashield' ), translate_user_role( $name ) ) );
+								?>
 							</option>
 						<?php endforeach; ?>
 					</select>
-					<p class="description"><?php esc_html_e( 'Only users with this role can watch. Leave empty for all logged-in users.', 'mediashield' ); ?></p>
+					<p class="description">
+						<?php
+						printf(
+							/* translators: %s: link to the Who can watch settings. */
+							esc_html__( 'Require login is set once for the whole site, under %s.', 'mediashield' ),
+							'<a href="' . esc_url( admin_url( 'admin.php?page=mediashield#/settings/access' ) ) . '">' . esc_html__( 'Settings > Who can watch', 'mediashield' ) . '</a>'
+						);
+						?>
+					</p>
 				</td>
 			</tr>
 			<?php self::render_tags_row( $post->ID ); ?>

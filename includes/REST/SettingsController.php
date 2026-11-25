@@ -72,6 +72,10 @@ class SettingsController extends WP_REST_Controller {
 	public function get_settings( WP_REST_Request $request ): WP_REST_Response {
 		$settings = Settings::get_all();
 
+		// The pre-1.4.4 site-wide switches this site still uses, for the note
+		// on the Protection card (Protection::legacy_switches()).
+		$settings['ms_legacy_switches'] = \MediaShield\Player\Protection::legacy_switches();
+
 		/**
 		 * Filter the settings response.
 		 *
@@ -110,6 +114,17 @@ class SettingsController extends WP_REST_Controller {
 		 * @param array $data Settings data from the request.
 		 */
 		$data = apply_filters( 'mediashield_settings_update', $data );
+
+		// Picking a level on the Protection card moves a site that kept its
+		// pre-1.4.4 site-wide switches onto the levels: the switches go, and
+		// source hiding and developer-tools detection are Strict's from now
+		// on (Protection::legacy_switches()).
+		if ( isset( $data['ms_default_protection'] ) && null !== Settings::sanitize( 'ms_default_protection', $data['ms_default_protection'] ) ) {
+			foreach ( \MediaShield\Player\Protection::LEGACY_SWITCHES as $switch ) {
+				delete_option( $switch );
+			}
+			unset( $data['ms_hide_source'], $data['ms_detect_devtools'], $data['ms_pause_on_devtools'] );
+		}
 
 		foreach ( $data as $key => $value ) {
 			$sanitized = Settings::sanitize( (string) $key, $value );

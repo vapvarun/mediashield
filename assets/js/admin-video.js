@@ -444,3 +444,18 @@
 		} );
 	}
 } )();
+
+// The chosen protection level's words under the select (Protection::levels()).
+( function () {
+	'use strict';
+
+	var select = document.getElementById( 'ms-protection-level' );
+	var summary = document.getElementById( 'ms-protection-summary' );
+	if ( ! select || ! summary ) {
+		return;
+	}
+	select.addEventListener( 'change', function () {
+		var option = select.options[ select.selectedIndex ];
+		summary.textContent = option ? option.getAttribute( 'data-summary' ) || '' : '';
+	} );
+}() );

@@ -16,14 +16,14 @@ Fill in the fields:
 
 **Duration** - Length in seconds. Used to sanity-check watch progress. Leave 0 if you don't know it.
 
-**Protection Level** - Pick the level for this video. The dropdown starts on your site-wide default and always stores an explicit value once you save.
+**Protection Level** - Pick the level for this video, or leave it on **Site default**. The line under the menu says what the chosen level does, in the same words as Settings.
 
 - **None** - No extra protection: no watermark, no session tracking. The site-wide Require Login setting still applies, so guests are asked to log in while it is on.
 - **Basic** - Login gate and right-click blocking. No watermark, and no session tracking or milestones for this video.
 - **Standard** - Login gate, watermark, session tracking, and milestones.
 - **Strict** - Everything in Standard, and forces developer-tools detection and source-URL hiding on even if you have those switched off globally.
 
-**Restrict to Role** (optional) - Restrict playback to one WordPress role. The match is exact: a video restricted to `subscriber` is not watchable by an `author`. Administrators always pass. Leave it on "Any logged-in user" to allow every signed-in viewer.
+**Who can watch** (optional) - Leave it on "Everyone the site allows", or pick "Only <role>" to restrict playback to one WordPress role. The match is exact: a video restricted to `subscriber` is not watchable by an `author`. Administrators always pass. Whether guests must log in is one site setting, **Require login** under Settings > Who can watch.
 
 **Player Options** (sidebar) - Autoplay, Loop, Start muted, and Show player controls. These apply to self-hosted videos and to Bunny videos played through Pro direct playback; YouTube, Vimeo, Wistia and Bunny's own embedded player use their own controls.
 

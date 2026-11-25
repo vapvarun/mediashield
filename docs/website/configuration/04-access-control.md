@@ -10,7 +10,7 @@ MediaShield decides who can watch a video with a single check that runs when a w
 
 ## Login requirement
 
-**Require Login** (Settings > General) is on by default. While it is on, visitors who are not logged in see a login overlay instead of the player.
+**Require login** (Settings > Who can watch) is on by default. While it is on, visitors who are not logged in see a login overlay instead of the player.
 
 Turn it off and guests can watch: the player asks the server, the server allows it, and the watch session is recorded like any other.
 

@@ -1,10 +1,15 @@
 /**
  * Wizard Step 1: General Settings.
+ *
+ * The protection levels are the shared list (LevelPicker, the same words as
+ * Settings and the video edit screen); login is its own setting, as under
+ * Settings > Who can watch (Basecamp 10545260510).
  */
 import { __ } from '@wordpress/i18n';
-import { ToggleControl, SelectControl } from '@wordpress/components';
+import { ToggleControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import Icon from '../../components/Icon';
+import LevelPicker from '../../components/LevelPicker';
 
 export default function GeneralStep( { onSave, initialData } ) {
 	const [ enabled, setEnabled ] = useState( initialData?.ms_enabled ?? true );
@@ -21,34 +26,41 @@ export default function GeneralStep( { onSave, initialData } ) {
 				<Icon name="admin-generic" className="ms-wizard__step-icon" />
 				<div>
 					<h2>{ __( 'General Settings', 'mediashield' ) }</h2>
-					<p>{ __( 'Configure the basic protection settings for your videos.', 'mediashield' ) }</p>
+					<p>{ __( 'How your videos are protected and who can watch them.', 'mediashield' ) }</p>
 				</div>
 			</div>
 
 			<div className="ms-wizard__step-fields">
 				<ToggleControl
-					label={ __( 'Enable video protection', 'mediashield' ) }
+					label={ __( 'Protect videos', 'mediashield' ) }
+					help={ __( 'Off: every video plays with no MediaShield protection.', 'mediashield' ) }
 					checked={ enabled }
-					onChange={ ( val ) => { setEnabled( val ); save( 'ms_enabled', val ); } }
+					onChange={ ( val ) => {
+						setEnabled( val );
+						save( 'ms_enabled', val );
+					} }
+					__nextHasNoMarginBottom
+				/>
+
+				<LevelPicker
+					legend={ __( 'Protection level for your videos', 'mediashield' ) }
+					value={ protection }
+					onChange={ ( val ) => {
+						setProtection( val );
+						save( 'ms_default_protection', val );
+					} }
+					note={ __( 'Each level includes the one above it. A video can set its own level.', 'mediashield' ) }
 				/>
 
 				<ToggleControl
-					label={ __( 'Require login to watch', 'mediashield' ) }
-					help={ __( 'Visitors must be logged in to view protected videos.', 'mediashield' ) }
+					label={ __( 'Require login', 'mediashield' ) }
+					help={ __( 'Only logged-in members can watch. Applies at every protection level.', 'mediashield' ) }
 					checked={ requireLogin }
-					onChange={ ( val ) => { setRequireLogin( val ); save( 'ms_require_login', val ); } }
-				/>
-
-				<SelectControl
-					label={ __( 'Default protection level', 'mediashield' ) }
-					value={ protection }
-					options={ [
-						{ label: __( 'Standard (Watermark + Tracking)', 'mediashield' ), value: 'standard' },
-						{ label: __( 'None (No extra protection)', 'mediashield' ), value: 'none' },
-					] }
-					onChange={ ( val ) => { setProtection( val ); save( 'ms_default_protection', val ); } }
+					onChange={ ( val ) => {
+						setRequireLogin( val );
+						save( 'ms_require_login', val );
+					} }
 					__nextHasNoMarginBottom
-					__next40pxDefaultSize
 				/>
 			</div>
 		</div>
