@@ -1166,7 +1166,7 @@ const Settings = () => {
 							</p>
 							<NumberField
 								label={ __( 'Default for new protected video lessons (%)', 'mediashield' ) }
-								help={ __( 'The share a new Learnomy lesson that plays a protected video starts with. It changes only lessons created from now on; each existing lesson keeps its own % in Learnomy. 0 leaves the choice to the author.', 'mediashield' ) }
+								help={ __( 'The share a new Learnomy lesson that plays a protected video starts with. It changes only lessons created from now on; each existing lesson keeps its own % in Learnomy. 0: MediaShield sets no starting %, and Learnomy uses its own.', 'mediashield' ) }
 								value={ settings?.ms_learnomy_new_lesson_pct ?? 80 }
 								onCommit={ ( val ) => updateSetting( 'ms_learnomy_new_lesson_pct', val ) }
 								min={ 0 }

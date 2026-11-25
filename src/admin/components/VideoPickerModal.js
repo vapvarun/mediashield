@@ -65,6 +65,8 @@ export default function VideoPickerModal( { onSelect, onClose } ) {
 			per_page: String( PER_PAGE ),
 			page: String( page ),
 			status: 'publish',
+			// Only videos that can play: never a draft or a video with no source.
+			ms_state: 'ready',
 			orderby: query ? 'relevance' : 'date',
 			order: 'desc',
 			_fields: 'id,title,ms_card',

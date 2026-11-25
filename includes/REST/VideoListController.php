@@ -217,7 +217,12 @@ class VideoListController extends WP_REST_Controller {
 		$state = (string) $request->get_param( 'ms_state' );
 		$chip  = in_array( $state, array( 'ready', 'attention', 'draft' ), true ) ? \MediaShield\CPT\VideoStatus::query_args( $state ) : array();
 		if ( isset( $chip['post_status'] ) && 'trash' !== ( $args['post_status'] ?? '' ) ) {
-			$args['post_status'] = $chip['post_status'];
+			// Within the statuses asked for: the block picker asks for
+			// status=publish&ms_state=ready and gets published, playable
+			// videos only; the Videos list asks for every status.
+			$asked               = array_filter( (array) ( $args['post_status'] ?? array() ) );
+			$within              = $asked ? array_values( array_intersect( $chip['post_status'], $asked ) ) : $chip['post_status'];
+			$args['post_status'] = $within ? $within : array( 'ms-none' );
 		}
 		foreach ( $chip['meta_query'] ?? array() as $clause ) {
 			$meta_query[] = $clause;

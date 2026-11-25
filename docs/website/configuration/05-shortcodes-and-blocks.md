@@ -56,7 +56,7 @@ All three blocks are available in the block inserter by searching for "MediaShie
 
 ### MediaShield Video block
 
-Embeds a single protected video. Paste a video link into the block, or click **Choose from library**. The library picker searches as you type and shows 20 videos at a time with **Show more**; each row shows the poster, the title, and the platform, length and protection, for example "YouTube · 12:04 · Site default (Standard)".
+Embeds a single protected video. Paste a video link into the block, or click **Choose from library**. The library picker lists only published videos that can play (never a draft or a video with "No source"), searches as you type and shows 20 videos at a time with **Show more**; each row shows the poster, the title, and the platform, length and protection, for example "YouTube · 12:04 · Site default (Standard)".
 
 - **A link already in your library.** The block says "This link is already in your library" with the video's title, platform, length and protection, and offers **Use this video** first. Choose **Add as a new video** only when you really want a second copy, for example to give it different protection. A YouTube link matches however it is written (`youtu.be/...`, `watch?v=...`, with or without a start time).
 - **A new link.** The video is added to your library and placed in the block.

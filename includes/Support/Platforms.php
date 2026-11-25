@@ -189,19 +189,71 @@ class Platforms {
 	}
 
 	/**
+	 * Does this site play Bunny Stream links? Pro with a connected Bunny
+	 * library answers yes through `mediashield_plays_bunny`.
+	 *
+	 * The one test for naming Bunny Stream in the "which links work" words
+	 * below, so every screen (edit screen, wizard, Video block) agrees.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return bool
+	 */
+	public static function plays_bunny(): bool {
+		/**
+		 * Whether Bunny Stream links play on this site.
+		 *
+		 * @since 1.4.4
+		 *
+		 * @param bool $plays False in Free; Pro answers true when a Bunny library is connected.
+		 */
+		return (bool) apply_filters( 'mediashield_plays_bunny', false );
+	}
+
+	/**
 	 * The sentence that refuses a link MediaShield cannot play, naming what to use instead.
 	 *
-	 * Bunny is named only where Pro can play it.
+	 * Bunny is named only where it plays (plays_bunny()).
 	 *
 	 * @since 1.4.4
 	 *
 	 * @return string
 	 */
 	public static function unplayable_message(): string {
-		if ( defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+		if ( self::plays_bunny() ) {
 			return __( 'This link is not a video MediaShield can play. Use a YouTube, Vimeo, Wistia or Bunny Stream link, a link to an .mp4 file, or upload a file.', 'mediashield' );
 		}
 		return __( 'This link is not a video MediaShield can play. Use a YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file.', 'mediashield' );
+	}
+
+	/**
+	 * The hint under a link field: which links work. Same platforms as
+	 * unplayable_message().
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return string
+	 */
+	public static function link_hint(): string {
+		if ( self::plays_bunny() ) {
+			return __( 'A YouTube, Vimeo, Wistia or Bunny Stream link, a link to an .mp4 file, or upload a file.', 'mediashield' );
+		}
+		return __( 'A YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file.', 'mediashield' );
+	}
+
+	/**
+	 * The setup wizard's first-video hint: which links work (the wizard has
+	 * no upload). Same platforms as unplayable_message().
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return string
+	 */
+	public static function wizard_link_hint(): string {
+		if ( self::plays_bunny() ) {
+			return __( 'Paste a YouTube, Vimeo, Wistia or Bunny Stream link, or a link to an .mp4 file. You can skip this and add videos later.', 'mediashield' );
+		}
+		return __( 'Paste a YouTube, Vimeo or Wistia link, or a link to an .mp4 file. You can skip this and add videos later.', 'mediashield' );
 	}
 
 	/**

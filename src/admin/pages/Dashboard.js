@@ -49,7 +49,7 @@ const STAT_CARDS = [
 	},
 	{
 		key: 'active_viewers',
-		label: __( 'Active Viewers', 'mediashield' ),
+		label: __( 'Watching now', 'mediashield' ),
 		icon: 'groups',
 		iconClass: 'viewers',
 		format: ( v ) => v ?? '0',
@@ -422,8 +422,8 @@ const Dashboard = () => {
 											<span>{ v.title || `Video #${ v.video_id }` }</span>
 											<strong>
 												{ sprintf(
-													/* translators: %d: number of views. */
-													_n( '%d view', '%d views', v.session_count || 0, 'mediashield' ),
+													/* translators: %d: number of viewings. */
+													_n( '%d viewing', '%d viewings', v.session_count || 0, 'mediashield' ),
 													v.session_count || 0
 												) }
 											</strong>
@@ -483,7 +483,7 @@ const Dashboard = () => {
 								<div className="ms-upsell-card">
 									<Icon name="download" className="ms-upsell-card__icon" />
 									<h3>{ __( 'CSV & PDF Export', 'mediashield' ) }</h3>
-									<p>{ __( 'Export watch sessions, milestones, and user data as CSV or formatted PDF reports.', 'mediashield' ) }</p>
+									<p>{ __( 'Export viewings, milestones and member data as CSV or PDF reports.', 'mediashield' ) }</p>
 								</div>
 							</div>
 							<div className="ms-upsell-banner">

@@ -282,11 +282,8 @@ class VideoPostType {
 			<?php if ( $is_new ) : ?>
 				<p class="ms-source-intro">
 					<?php
-					echo esc_html(
-						defined( 'MEDIASHIELD_PRO_VERSION' )
-							? __( 'Paste a YouTube, Vimeo, Wistia or Bunny Stream link, or upload a file. The platform is read from the link.', 'mediashield' )
-							: __( 'Paste a YouTube, Vimeo or Wistia link, or upload a file. The platform is read from the link.', 'mediashield' )
-					);
+					// Which links work is said once, under the field (Platforms::link_hint()).
+					esc_html_e( 'Paste a link or upload a file. The platform is read from the link.', 'mediashield' );
 					?>
 				</p>
 
@@ -390,7 +387,7 @@ class VideoPostType {
 							autocomplete="off"
 							data-form-type="other"
 							placeholder="<?php esc_attr_e( 'https://www.youtube.com/watch?v=... or https://vimeo.com/...', 'mediashield' ); ?>" />
-						<p class="description"><?php echo '' !== $held ? esc_html__( 'Leave empty to keep the uploaded file.', 'mediashield' ) : esc_html__( 'A YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file below.', 'mediashield' ); ?></p>
+						<p class="description"><?php echo '' !== $held ? esc_html__( 'Leave empty to keep the uploaded file.', 'mediashield' ) : esc_html( \MediaShield\Support\Platforms::link_hint() ); ?></p>
 					</td>
 				</tr>
 				<?php

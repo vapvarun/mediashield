@@ -55,6 +55,24 @@ class LearnomyNewLessonDefaultTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * QA round 2: the saved option is the value Settings shows, never a
+	 * missing row that the screen reads as 80. Fails before DB v16: a site
+	 * already at v15 when the setting arrived kept no row.
+	 */
+	public function test_the_resolved_value_is_stored(): void {
+		$this->empty_site();
+		\MediaShield\Core\Activator::activate();
+		$this->assertSame( 80, (int) get_option( 'ms_learnomy_new_lesson_pct', -1 ), 'Fresh install stores 80.' );
+
+		$this->empty_site();
+		update_option( 'ms_db_version', 15 );
+		update_option( 'ms_lms_require_watch_pct', 0 );
+		\MediaShield\Core\Migrator::run();
+		$this->assertSame( '0', (string) get_option( 'ms_learnomy_new_lesson_pct', 'missing' ), 'A v15 site stores its own 0 (no gate before), not a missing row.' );
+		$this->assertSame( 0, Settings::get( 'ms_learnomy_new_lesson_pct' ), 'Settings shows what is stored.' );
+	}
+
+	/**
 	 * The owner's own value is used, and 0 leaves Learnomy's default.
 	 */
 	public function test_owner_value_answers_the_filter(): void {

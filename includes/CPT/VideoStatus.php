@@ -65,6 +65,57 @@ class VideoStatus {
 		foreach ( array( 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ) as $hook ) {
 			add_action( $hook, array( __CLASS__, 'on_meta' ), 10, 3 );
 		}
+		add_filter( 'mediashield_library_choices', array( __CLASS__, 'library_choices' ), 10, 2 );
+	}
+
+	/**
+	 * Most videos one `mediashield_library_choices` page returns.
+	 */
+	const CHOICES_MAX = 100;
+
+	/**
+	 * The ready, published videos another plugin may offer in a chooser
+	 * (Learnomy's lesson video select), as [ id => title ], one page at a
+	 * time. Answers the public filter `mediashield_library_choices`.
+	 *
+	 * Ready means it has something to play: published, not "No source",
+	 * not unavailable at its platform (query_args( 'ready' )). Not the
+	 * Videos list (all states) or the block picker (REST, same rule).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param array $choices Choices from an earlier callback; kept first.
+	 * @param array $args    { page: int (1), per_page: int (20, at most 100), search: string }.
+	 * @return array<int, string> Video ID => title, newest first.
+	 */
+	public static function library_choices( $choices, $args = array() ): array {
+		$args     = (array) $args;
+		$per_page = max( 1, min( self::CHOICES_MAX, (int) ( $args['per_page'] ?? 20 ) ) );
+		$page     = max( 1, (int) ( $args['page'] ?? 1 ) );
+		$ready    = self::query_args( 'ready' );
+
+		$query = new \WP_Query(
+			array(
+				'post_type'              => 'mediashield_video',
+				'post_status'            => 'publish',
+				'meta_query'             => $ready['meta_query'], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- NOT EXISTS on two keys, one page.
+				's'                      => sanitize_text_field( (string) ( $args['search'] ?? '' ) ),
+				'posts_per_page'         => $per_page,
+				'paged'                  => $page,
+				'orderby'                => 'date',
+				'order'                  => 'DESC',
+				'no_found_rows'          => true,
+				'ignore_sticky_posts'    => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+
+		$own = array();
+		foreach ( $query->posts as $post ) {
+			$own[ (int) $post->ID ] = '' !== $post->post_title ? $post->post_title : sprintf( /* translators: %d: video ID. */ __( 'Video %d', 'mediashield' ), $post->ID );
+		}
+		return (array) $choices + $own;
 	}
 
 	/**

@@ -266,18 +266,18 @@ const RevokeSessions = ( { user } ) => {
 				createSuccessNotice(
 					count
 						? sprintf(
-							/* translators: 1: number of sessions, 2: viewer name. */
-							_n( 'Ended %1$d active session for %2$s.', 'Ended %1$d active sessions for %2$s.', count, 'mediashield' ),
+							/* translators: 1: number of viewings stopped, 2: viewer name. */
+							_n( 'Stopped %1$d viewing for %2$s.', 'Stopped %1$d viewings for %2$s.', count, 'mediashield' ),
 							count,
 							name
 						)
-						: sprintf( /* translators: %s: viewer name. */ __( '%s had no active session to end.', 'mediashield' ), name ),
+						: sprintf( /* translators: %s: viewer name. */ __( '%s was not watching anything.', 'mediashield' ), name ),
 					{ type: 'snackbar' }
 				);
 			} )
 			.catch( ( err ) =>
 				createErrorNotice(
-					window.mediashieldRequest.message( err, __( 'The session could not be revoked.', 'mediashield' ) ),
+					window.mediashieldRequest.message( err, __( 'Playback could not be stopped.', 'mediashield' ) ),
 					{ type: 'snackbar' }
 				)
 			)
@@ -291,15 +291,15 @@ const RevokeSessions = ( { user } ) => {
 				className="mediashield-action-btn mediashield-action-btn--delete"
 				onClick={ () => setState( 'confirm' ) }
 			>
-				{ __( 'Revoke session', 'mediashield' ) }
+				{ __( 'Stop playback', 'mediashield' ) }
 			</button>
 		);
 	}
 
 	return (
-		<div className="mediashield-revoke-confirm" role="group" aria-label={ __( 'Confirm revoke', 'mediashield' ) }>
+		<div className="mediashield-revoke-confirm" role="group" aria-label={ __( 'Confirm stop playback', 'mediashield' ) }>
 			<span>
-				{ sprintf( /* translators: %s: viewer name. */ __( 'End every active session for %s?', 'mediashield' ), name ) }
+				{ sprintf( /* translators: %s: viewer name. */ __( 'Stop every video %s is watching now?', 'mediashield' ), name ) }
 			</span>
 			<button
 				type="button"
@@ -307,7 +307,7 @@ const RevokeSessions = ( { user } ) => {
 				disabled={ 'busy' === state }
 				onClick={ revoke }
 			>
-				{ 'busy' === state ? __( 'Revoking...', 'mediashield' ) : __( 'Revoke', 'mediashield' ) }
+				{ 'busy' === state ? __( 'Stopping...', 'mediashield' ) : __( 'Stop', 'mediashield' ) }
 			</button>
 			<button
 				type="button"

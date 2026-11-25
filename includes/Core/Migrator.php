@@ -97,6 +97,11 @@ class Migrator {
 			\MediaShield\Upload\Drivers\SelfHosted::backfill_lengths();
 		}
 
+		// v16 - no step of its own: the bump makes seed_defaults() above
+		// store ms_learnomy_new_lesson_pct (the stored Require X% watched) on
+		// sites that reached v15 before that setting existed, so the saved
+		// value is what Settings shows, never a missing row read as 80.
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
 	}
 

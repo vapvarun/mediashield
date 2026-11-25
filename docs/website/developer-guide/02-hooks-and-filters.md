@@ -228,6 +228,31 @@ add_filter( 'mediashield_my_videos_per_page', fn() => 24 );
 
 ---
 
+### mediashield_library_choices
+
+*Since 1.4.4.* A read for other plugins: the videos ready to be chosen, as `[ id => title ]`, newest first. Ready means published, with something to play (not "No source", not unavailable at its platform), the same rule as the Video block's picker. Use it for a video select in your own screens, for example a lesson editor.
+
+**Parameters:** `$choices` (array, pass `[]`), `$args` (array: `page` int, default 1; `per_page` int, default 20, at most 100; `search` string)
+
+Ask one page at a time; a page shorter than `per_page` is the last one.
+
+```php
+$videos = apply_filters( 'mediashield_library_choices', array(), array( 'page' => 1, 'per_page' => 50, 'search' => 'intro' ) );
+foreach ( $videos as $id => $title ) {
+	printf( '<option value="%d">%s</option>', $id, esc_html( $title ) );
+}
+```
+
+---
+
+### mediashield_plays_bunny
+
+*Since 1.4.4.* Whether Bunny Stream links play on this site. False in the free plugin; MediaShield Pro answers true when a Bunny library is connected. It decides whether the "which links work" words (link field hints, the setup wizard, the refusal for a link that cannot play) name Bunny Stream.
+
+**Parameters:** `$plays` (bool)
+
+---
+
 ### mediashield_watermark_config
 
 Customize the watermark configuration handed to the browser in the `POST /session/start` response.

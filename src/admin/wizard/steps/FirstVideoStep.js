@@ -96,7 +96,7 @@ export default function FirstVideoStep( { hosts = [] } ) {
 								__( 'Paste a %s link, or a link to an .mp4 file. You can skip this and add videos later.', 'mediashield' ),
 								named.join( ', ' )
 							)
-							: __( 'Paste a YouTube, Vimeo or Wistia link, or a link to an .mp4 file. You can skip this and add videos later.', 'mediashield' ) }
+							: config.wizardLinkHint || __( 'Paste a YouTube, Vimeo or Wistia link, or a link to an .mp4 file. You can skip this and add videos later.', 'mediashield' ) }
 					</p>
 				</div>
 			</div>

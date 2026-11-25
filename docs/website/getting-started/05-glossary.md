@@ -43,6 +43,7 @@ MediaShield uses one word for one thing on every screen: Settings, the video edi
 | Member | Someone logged in to your site. | User, student |
 | Viewer | Anyone watching a video, member or guest. Analytics > Viewers lists members. | Student, user |
 | Viewing | One time someone plays a video. A page that loads a player without playing is not a viewing. (Developers: a session that played.) | Session, view, play |
+| Watching now | Viewers playing a video in the last 5 minutes: the Dashboard card and the count on Realtime (Pro). | Active viewers, live viewers |
 | Completion | How far a viewer got through a video: the furthest point of any of their viewings. | Progress |
 | Milestone | 25%, 50%, 75% or 100% of a video, recorded once per viewer. | Checkpoint |
 | Streams at once | How many videos one member can play at the same time. The only place "stream" is used. | Concurrent sessions |

@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Plugin constants.
 define( 'MEDIASHIELD_VERSION', '1.4.3' );
-define( 'MEDIASHIELD_DB_VERSION', 15 ); // v15: record the length of files uploaded before 1.4.4.
+define( 'MEDIASHIELD_DB_VERSION', 16 ); // v16: store settings added late in 1.4.4 (resolved new-lesson %).
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );

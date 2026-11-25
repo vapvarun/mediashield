@@ -103,7 +103,7 @@ Stat cards all read 0. Chart is empty.
 
 1. **No sessions yet.** The dashboard shows real data only. Watch a video as a logged-in user for at least 30 seconds, then refresh.
 
-2. **Date range filter.** Check the period selector at the top of the dashboard. Make sure your test activity falls within the selected range. Total Videos and Active Viewers ignore the range; everything else follows it.
+2. **Date range filter.** Check the period selector at the top of the dashboard. Make sure your test activity falls within the selected range. Total Videos and Watching now ignore the range; everything else follows it.
 
 3. **Older history looks missing.** If you set a retention window under Settings > Analytics Retention, sessions older than that window are archived and reports no longer include them.
 

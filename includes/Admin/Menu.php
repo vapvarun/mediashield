@@ -197,6 +197,7 @@ class Menu {
 			'protectionLevels'  => \MediaShield\Player\Protection::levels(),
 			'siteDefaultLabel'  => \MediaShield\Player\Protection::site_default_label(),
 			'unplayableMessage' => \MediaShield\Support\Platforms::unplayable_message(),
+			'wizardLinkHint'    => \MediaShield\Support\Platforms::wizard_link_hint(),
 		);
 	}
 

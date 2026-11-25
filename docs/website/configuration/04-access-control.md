@@ -41,7 +41,7 @@ Leave the setting on "Any logged-in user" to allow every signed-in viewer.
 
 To change it: open **MediaShield > Settings**, find Max Concurrent Streams, enter a whole number of 1 or more and save. The new limit applies to the next stream a viewer starts. Streams already playing are not cut off.
 
-The player sends a heartbeat every 30 seconds. A session that has not sent one for 5 minutes stops counting toward the limit, so a viewer who closes their laptop is not locked out for long. An hourly background job then marks sessions with no heartbeat for 10 minutes as finished, which is what clears them out of the Active Viewers count.
+The player sends a heartbeat every 30 seconds. A session that has not sent one for 5 minutes stops counting toward the limit, so a viewer who closes their laptop is not locked out for long. An hourly background job then marks sessions with no heartbeat for 10 minutes as finished, which is what clears them out of the Watching now count.
 
 When a viewer tries to start a stream beyond the limit, the request is refused with "You are playing too many videos at once. Close another video first." The `mediashield_concurrent_limit_reached` action fires at the same moment, so you can hook logging or alerting.
 
@@ -51,7 +51,7 @@ Guests are never counted. With no account there is nothing to share, and countin
 
 ### Revoking a user's sessions
 
-Go to **MediaShield > Viewers**, click **Revoke session** on the member's row, then **Revoke** to confirm. It ends every active watch session for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop them watching, change what they are allowed to watch or deactivate the account.
+Go to **MediaShield > Viewers**, click **Stop playback** on the member's row, then **Stop** to confirm. It ends every viewing in progress for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop them watching, change what they are allowed to watch or deactivate the account.
 
 The same action is an authenticated REST call for administrators:
 

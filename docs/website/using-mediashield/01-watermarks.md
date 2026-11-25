@@ -70,7 +70,7 @@ For the wider picture of what protection can and cannot do, see "What MediaShiel
 
 ## Revoking access when you catch a leak
 
-If you identify a leak from watermark forensics, go to **MediaShield > Viewers**, click **Revoke session** on that member's row and confirm. It is also an administrator REST call:
+If you identify a leak from watermark forensics, go to **MediaShield > Viewers**, click **Stop playback** on that member's row and confirm. It is also an administrator REST call:
 
 ```
 POST /wp-json/mediashield/v1/session/revoke-user
