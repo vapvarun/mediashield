@@ -340,6 +340,12 @@ class SessionController extends WP_REST_Controller {
 		$ua     = $request->get_header( 'user-agent' ) ?? '';
 		$result = SessionManager::start( $video_id, $user_id, $ip, $ua );
 
+		// The database could not record the session (busy after every retry,
+		// or failing): ask the viewer to try again, never blame their streams.
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
 		if ( false === $result ) {
 			return new WP_Error(
 				'concurrent_limit',

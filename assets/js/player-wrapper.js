@@ -1593,8 +1593,11 @@
 				// Any other answer without a session token (a JSON 5xx is what
 				// WordPress sends for a fatal in REST) is a failed start: no
 				// token means no watermark, so keep the video stopped and say so.
+				// The server's own words only when it says the session could
+				// not be recorded (a busy database); a fatal's text is not for
+				// viewers.
 				blockPlayback( el, adapter );
-				showErrorOverlay( el, window.mediashieldRequest.networkMessage, function () {
+				showErrorOverlay( el, ( data.code === 'mediashield_session_failed' && data.message ) || window.mediashieldRequest.networkMessage, function () {
 					startSession( el, videoId, adapter );
 				} );
 			} )

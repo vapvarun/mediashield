@@ -87,6 +87,19 @@ class SessionStartDeadlockTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * start() commits, which ends the test case's transaction, so undo by hand.
+	 */
+	public function tear_down(): void {
+		global $wpdb;
+		delete_option( 'ms_max_concurrent_streams' );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Test cleanup of committed rows.
+		$wpdb->delete( $wpdb->prefix . 'ms_watch_sessions', array( 'video_id' => $this->video ) );
+		$wpdb->query( 'COMMIT' );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		parent::tear_down();
+	}
+
+	/**
 	 * Make the session-table query matching $pattern raise $code, $times times.
 	 *
 	 * @param string $pattern Regex on the SQL.
@@ -142,8 +155,9 @@ class SessionStartDeadlockTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A deadlock every time: a bounded number of tries, then false, and the
-	 * last one is reported as wpdb reports any error.
+	 * A deadlock every time: a bounded number of tries, then the
+	 * "could not start" error (not the stream-limit false), and the last try
+	 * is reported as wpdb reports any error.
 	 */
 	public function test_retries_are_bounded_and_the_last_deadlock_is_reported(): void {
 		global $wpdb;
@@ -151,7 +165,8 @@ class SessionStartDeadlockTest extends WP_UnitTestCase {
 
 		list( $session, $printed ) = $this->start();
 
-		$this->assertFalse( $session );
+		$this->assertWPError( $session, 'Giving up was reported as the stream limit.' );
+		$this->assertSame( 'mediashield_session_failed', $session->get_error_code() );
 		$this->assertSame( 3, $this->fails );
 		$this->assertSame( 1, substr_count( $printed, 'Deadlock found' ), 'Only the last try reports the deadlock.' );
 		$this->assertFalse( (bool) $wpdb->suppress_errors( false ), 'start() left wpdb errors suppressed.' );
@@ -166,9 +181,41 @@ class SessionStartDeadlockTest extends WP_UnitTestCase {
 
 		list( $session, $printed ) = $this->start();
 
-		$this->assertFalse( $session );
+		$this->assertWPError( $session );
+		$this->assertSame( 'mediashield_session_failed', $session->get_error_code() );
 		$this->assertSame( 1, $this->fails, 'A non-deadlock error was retried.' );
 		$this->assertStringContainsString( 'Something else went wrong', $printed, 'A non-deadlock error was hidden.' );
+	}
+
+	/**
+	 * What the player is told: a database that gave up asks the viewer to try
+	 * again (HTTP 503); only the real limit says "Too many active streams".
+	 *
+	 * Fails before the fix: both came back as the 429 stream-limit refusal.
+	 */
+	public function test_the_player_is_told_to_try_again_not_blamed(): void {
+		wp_set_current_user( $this->member );
+		$this->fail_query( '/^\s*INSERT INTO/i', 1213, 99 );
+
+		$request = new \WP_REST_Request( 'POST', '/mediashield/v1/session/start' );
+		$request->set_param( 'video_id', $this->video );
+		ob_start();
+		$log      = ini_set( 'error_log', '/dev/null' ); // phpcs:ignore WordPress.PHP.IniSet.Risky -- keeps wpdb's error_log() copy out of the test output.
+		$response = rest_do_request( $request );
+		ini_set( 'error_log', (string) $log ); // phpcs:ignore WordPress.PHP.IniSet.Risky -- restores the setting changed above.
+		ob_end_clean();
+
+		$this->assertSame( 503, $response->get_status() );
+		$this->assertSame( 'mediashield_session_failed', $response->get_data()['code'] );
+		$this->assertSame( 'The video could not start. Please try again.', $response->get_data()['message'] );
+
+		// The real limit keeps its own answer.
+		$this->fails = 99; // The raising filter stands down.
+		update_option( 'ms_max_concurrent_streams', 1 );
+		SessionManager::start( $this->video, $this->member, '198.51.100.1', 'Other device' );
+		$response = rest_do_request( $request );
+		$this->assertSame( 429, $response->get_status() );
+		$this->assertSame( 'concurrent_limit', $response->get_data()['code'] );
 	}
 
 	/**

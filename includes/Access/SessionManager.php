@@ -42,7 +42,12 @@ class SessionManager {
 	 * @param int    $user_id  User ID.
 	 * @param string $ip       Client IP.
 	 * @param string $ua       User agent string.
-	 * @return array|false Session data on success, false on failure (concurrent limit).
+	 * @return array|false|\WP_Error Session data on success; false when the
+	 *                               concurrent-stream limit refuses this device;
+	 *                               a `mediashield_session_failed` WP_Error when
+	 *                               the database could not record the session
+	 *                               (a deadlock after every retry, a failed
+	 *                               insert), which is not the viewer's doing.
 	 */
 	public static function start( int $video_id, int $user_id, string $ip = '', string $ua = '' ) {
 		global $wpdb;
@@ -93,7 +98,7 @@ class SessionManager {
 				return $result;
 			}
 			if ( $last ) {
-				return false;
+				return self::could_not_start();
 			}
 			usleep( $attempt * 50000 + wp_rand( 0, 50000 ) );
 		}
@@ -115,7 +120,7 @@ class SessionManager {
 	 * @param string $now            Current GMT datetime in MySQL format.
 	 * @param int    $max_concurrent Most other devices allowed.
 	 * @param bool   $last           Whether this is the last try.
-	 * @return array|false|null Session data, false (stream limit or a failed insert), null (deadlock, try again).
+	 * @return array|false|\WP_Error|null Session data, false (stream limit), WP_Error (a failed insert), null (deadlock, try again).
 	 */
 	private static function start_member_session( int $video_id, int $user_id, string $ip, string $ua, string $now, int $max_concurrent, bool $last ) {
 		global $wpdb;
@@ -284,7 +289,7 @@ class SessionManager {
 				}
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction rollback.
 				$wpdb->query( 'ROLLBACK' );
-				return false;
+				return self::could_not_start();
 			}
 
 			$session_id = (int) $wpdb->insert_id;
@@ -317,6 +322,23 @@ class SessionManager {
 		} finally {
 			$report();
 		}
+	}
+
+	/**
+	 * The answer when the database could not record a session.
+	 *
+	 * Not the stream limit (start() returns false for that, and the player
+	 * says "Too many active streams"): this is a busy or failing database,
+	 * so the viewer is asked to try again and nothing blames them.
+	 *
+	 * @return \WP_Error Code `mediashield_session_failed`, HTTP 503.
+	 */
+	private static function could_not_start(): \WP_Error {
+		return new \WP_Error(
+			'mediashield_session_failed',
+			__( 'The video could not start. Please try again.', 'mediashield' ),
+			array( 'status' => 503 )
+		);
 	}
 
 	/**
@@ -357,7 +379,7 @@ class SessionManager {
 	 * @param string $ip       Client IP address.
 	 * @param string $ua       Client user agent.
 	 * @param string $now      Current GMT datetime in MySQL format.
-	 * @return array|false Session data on success, false if the insert failed.
+	 * @return array|\WP_Error Session data on success; could_not_start() if the insert failed.
 	 */
 	private static function start_guest_session( int $video_id, string $ip, string $ua, string $now ) {
 		global $wpdb;
@@ -386,7 +408,7 @@ class SessionManager {
 		);
 
 		if ( ! $inserted ) {
-			return false;
+			return self::could_not_start();
 		}
 
 		$session_id = (int) $wpdb->insert_id;
