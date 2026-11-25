@@ -148,16 +148,20 @@ class VideoPostType {
 			'default'
 		);
 
-		// Pro teaser meta boxes (only when Pro is NOT active).
+		// Pro teaser meta boxes (only when Pro is NOT active). The LMS one
+		// only when an LMS Pro links to is active (the detection Pro's
+		// LMSManager uses): with none it sold a feature the site cannot use.
 		if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
-			add_meta_box(
-				'mediashield-pro-lms-teaser',
-				__( 'LMS Integration', 'mediashield' ) . ' <span class="ms-pro-badge-small">PRO</span>',
-				array( __CLASS__, 'render_lms_teaser' ),
-				'mediashield_video',
-				'side',
-				'low'
-			);
+			if ( defined( 'LEARNDASH_VERSION' ) || function_exists( 'tutor' ) || function_exists( 'llms' ) ) {
+				add_meta_box(
+					'mediashield-pro-lms-teaser',
+					__( 'LMS Integration', 'mediashield' ) . ' <span class="ms-pro-badge-small">PRO</span>',
+					array( __CLASS__, 'render_lms_teaser' ),
+					'mediashield_video',
+					'side',
+					'low'
+				);
+			}
 			add_meta_box(
 				'mediashield-pro-features-teaser',
 				__( 'Pro Features', 'mediashield' ) . ' <span class="ms-pro-badge-small">PRO</span>',

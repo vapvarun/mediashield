@@ -499,7 +499,7 @@ const Settings = () => {
 	// covered by the search (Basecamp 10530930776).
 	const extras = applyFilters( 'mediashield_settings_sections', [] ).filter( ( x ) => x && x.key && x.component );
 	const navGroups = [];
-	SETTINGS_GROUPS.filter( ( g ) => 'integrations' !== g.key || config.isLearnomyActive || lmsConfig.isLMSActive ).forEach( ( g ) => {
+	SETTINGS_GROUPS.filter( ( g ) => ( 'integrations' !== g.key || config.isLearnomyActive || lmsConfig.isLMSActive ) && ( 'ads' !== g.key || config.isAdManagerActive ) ).forEach( ( g ) => {
 		navGroups.push( g );
 		extras.filter( ( x ) => x.after === g.key ).forEach( ( x ) => navGroups.push( { key: x.key, label: x.label } ) );
 	} );
@@ -958,6 +958,8 @@ const Settings = () => {
 				</div>
 			</SectionCard>
 
+			{ /* Only with WB Ad Manager's video ads installed: it is where the ads come from. */ }
+			{ config.isAdManagerActive && (
 			<SectionCard
 				icon="megaphone"
 				group="ads"
@@ -1024,6 +1026,7 @@ const Settings = () => {
 					</>
 				) }
 			</SectionCard>
+			) }
 
 			{ settings?.ms_connected_platforms && settings.ms_connected_platforms.length > 0 && (
 				<SectionCard

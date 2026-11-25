@@ -171,6 +171,9 @@ class Menu {
 				// Settings shows "Require X% watched" when an LMS that enforces
 				// it is active: Learnomy (Free) or LearnDash (Pro).
 				'isLearnomyActive'  => function_exists( '\\Learnomy\\table' ),
+				// Video Ads shows only where WB Ad Manager's video ads are
+				// installed (the class AdManagerBridge reads them from).
+				'isAdManagerActive' => class_exists( '\\WBAM_Pro\\Modules\\AdTypes\\Video_Ad_Resolver' ),
 			)
 		);
 	}
