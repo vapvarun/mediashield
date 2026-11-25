@@ -281,7 +281,13 @@ class VideoPostType {
 			<input type="text" style="display:none !important" autocomplete="username" tabindex="-1" aria-hidden="true">
 			<?php if ( $is_new ) : ?>
 				<p class="ms-source-intro">
-					<?php esc_html_e( 'Paste a video URL from YouTube, Vimeo, Wistia, or Bunny Stream. The platform and video ID will be detected automatically.', 'mediashield' ); ?>
+					<?php
+					echo esc_html(
+						defined( 'MEDIASHIELD_PRO_VERSION' )
+							? __( 'Paste a YouTube, Vimeo, Wistia or Bunny Stream link, or upload a file. The platform is read from the link.', 'mediashield' )
+							: __( 'Paste a YouTube, Vimeo or Wistia link, or upload a file. The platform is read from the link.', 'mediashield' )
+					);
+					?>
 				</p>
 
 				<?php if ( $has_pro && ! empty( $connected_platforms ) ) : ?>
@@ -339,7 +345,7 @@ class VideoPostType {
 							)
 						);
 						?>
-						<?php esc_html_e( 'Upgrade to MediaShield Pro to connect cloud platforms (Bunny, YouTube, Vimeo, Wistia) for protected streaming, bulk import, and advanced analytics.', 'mediashield' ); ?>
+						<?php esc_html_e( 'YouTube, Vimeo and Wistia links play here as they are. MediaShield Pro adds Bunny Stream: browse your Bunny library and import videos in one step.', 'mediashield' ); ?>
 					</p>
 				<?php endif; ?>
 			<?php endif; ?>
