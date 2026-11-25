@@ -314,6 +314,12 @@
 				if ( videoIdField && body.platform_video_id ) {
 					videoIdField.value = body.platform_video_id;
 				}
+				// The length read from the file; left at 0 the next save
+				// would have overwritten it.
+				var durationField = document.getElementById( 'ms-duration' );
+				if ( durationField && parseInt( body.duration, 10 ) > 0 ) {
+					durationField.value = String( parseInt( body.duration, 10 ) );
+				}
 				if ( platformLabel ) {
 					platformLabel.textContent = labels[ uploaded ] || uploaded;
 				}

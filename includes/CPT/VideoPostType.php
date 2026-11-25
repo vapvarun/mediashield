@@ -1116,6 +1116,14 @@ class VideoPostType {
 			'_ms_access_role',
 		);
 
+		// A length read from an uploaded file is never replaced by an empty or
+		// 0 Duration field (a form opened before the upload finished).
+		if ( isset( $_POST['_ms_duration'] ) && 0 === absint( wp_unslash( $_POST['_ms_duration'] ) )
+			&& (int) get_post_meta( $post_id, '_ms_duration', true ) > 0
+			&& '' !== (string) get_post_meta( $post_id, '_ms_owned_file', true ) ) {
+			unset( $fields['_ms_duration'] );
+		}
+
 		// The edit screen shows an uploaded file by name with an empty link
 		// field (render_source_meta_box()); empty there keeps the file.
 		if ( ! empty( $_POST['_ms_source_held'] ) && isset( $_POST['_ms_source_url'] ) && '' === trim( sanitize_text_field( wp_unslash( $_POST['_ms_source_url'] ) ) ) ) {
