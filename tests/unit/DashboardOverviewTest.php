@@ -25,6 +25,9 @@ class DashboardOverviewTest extends WP_UnitTestCase {
 
 	private function video( string $level = '' ): int {
 		$id = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		// Test change (Basecamp 10545260458): a video with no source is not
+		// Ready and is not counted as protected, so the fixture has a link.
+		update_post_meta( $id, '_ms_source_url', 'https://vimeo.com/76979871' );
 		if ( '' !== $level ) {
 			update_post_meta( $id, '_ms_protection_level', $level );
 		}

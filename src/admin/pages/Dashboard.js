@@ -27,7 +27,8 @@ const PERIOD_OPTIONS = [
 const STAT_CARDS = [
 	{
 		key: 'total_videos',
-		label: __( 'Total Videos', 'mediashield' ),
+		// Ready videos only: published, with something that plays (Basecamp 10545260458).
+		label: __( 'Ready videos', 'mediashield' ),
 		icon: 'format-video',
 		iconClass: 'videos',
 		format: ( v ) => v ?? '0',
@@ -127,7 +128,7 @@ const ProtectionCard = ( { protection } ) => {
 	const items = [
 		{
 			label: __( 'Videos protected', 'mediashield' ),
-			/* translators: 1: protected videos, 2: all published videos. */
+			/* translators: 1: protected videos, 2: Ready videos (published, with something that plays). */
 			value: sprintf( __( '%1$d of %2$d', 'mediashield' ), protection.protected, protection.total ),
 		},
 		{
@@ -146,6 +147,17 @@ const ProtectionCard = ( { protection } ) => {
 				<span className="mediashield-protection-card__icon"><Icon name="shield" /></span>
 				<h2 id="mediashield-protection-title">{ __( 'Protection', 'mediashield' ) }</h2>
 			</div>
+			{ protection.attention > 0 && (
+				<p className="mediashield-protection-card__attention">
+					<a href="#/videos/attention">
+						{ sprintf(
+							/* translators: %d: number of videos with no source or unavailable at their platform. */
+							_n( '%d video needs attention and is not counted.', '%d videos need attention and are not counted.', protection.attention, 'mediashield' ),
+							protection.attention
+						) }
+					</a>
+				</p>
+			) }
 			<dl className="mediashield-protection-card__list">
 				{ items.map( ( item ) => (
 					<div key={ item.label } className="mediashield-protection-card__item">

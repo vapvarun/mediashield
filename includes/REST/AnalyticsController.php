@@ -182,9 +182,6 @@ class AnalyticsController extends WP_REST_Controller {
 		$interval = self::period_to_interval( $period );
 		$sessions = "{$wpdb->prefix}ms_watch_sessions";
 
-		// Total videos.
-		$total_videos = (int) wp_count_posts( 'mediashield_video' )->publish;
-
 		// All queries below use $sessions (table name variable) and $interval (hardcoded allowlist value).
 		// `started_at` / `last_heartbeat` are stored UTC via current_time('mysql', true);
 		// pass the same function's output here as a prepared %s parameter so both
@@ -257,7 +254,8 @@ class AnalyticsController extends WP_REST_Controller {
 
 		return rest_ensure_response(
 			array(
-				'total_videos'      => $total_videos,
+				// Ready videos only: published with something that plays.
+				'total_videos'      => $protected_counts['total'],
 				'total_sessions'    => $total_sessions,
 				'avg_completion'    => round( $avg_completion, 1 ),
 				'active_viewers'    => $active_viewers,
@@ -316,29 +314,39 @@ class AnalyticsController extends WP_REST_Controller {
 	}
 
 	/**
-	 * How many published videos are protected (above None), of how many.
+	 * How many Ready videos are protected (above None), of how many Ready.
 	 *
-	 * The level is the video's own or the site default
-	 * (Protection::resolve_level()), worked out in one COUNT.
+	 * Ready is published with something to play that its platform has not
+	 * refused (CPT\VideoStatus): a video with no source, or one removed at
+	 * YouTube, is not counted as protected (Basecamp 10545260458); those are
+	 * `attention`, for the Dashboard's link to the Videos list. The level is
+	 * the video's own or the site default (Protection::resolve_level()),
+	 * worked out in one COUNT.
 	 *
-	 * @return array{protected: int, total: int}
+	 * @return array{protected: int, total: int, attention: int}
 	 */
 	private static function protected_counts(): array {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One COUNT for the dashboard; core tables, indexed on post_type/status and meta post_id.
 		$counts = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT COUNT(*) AS total,
-				        SUM( COALESCE( NULLIF( m.meta_value, '' ), %s ) <> 'none' ) AS protected
+				"SELECT SUM( ns.meta_id IS NULL AND un.meta_id IS NULL ) AS total,
+				        SUM( ns.meta_id IS NULL AND un.meta_id IS NULL AND COALESCE( NULLIF( m.meta_value, '' ), %s ) <> 'none' ) AS protected,
+				        SUM( ns.meta_id IS NOT NULL OR un.meta_id IS NOT NULL ) AS attention
 				 FROM {$wpdb->posts} p
 				 LEFT JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_ms_protection_level'
+				 LEFT JOIN {$wpdb->postmeta} ns ON ns.post_id = p.ID AND ns.meta_key = %s
+				 LEFT JOIN {$wpdb->postmeta} un ON un.post_id = p.ID AND un.meta_key = %s
 				 WHERE p.post_type = 'mediashield_video' AND p.post_status = 'publish'",
-				\MediaShield\Player\Protection::default_level()
+				\MediaShield\Player\Protection::default_level(),
+				\MediaShield\CPT\VideoStatus::NO_SOURCE,
+				\MediaShield\CPT\SourceStatus::META
 			)
 		);
 		return array(
 			'protected' => (int) ( $counts->protected ?? 0 ),
 			'total'     => (int) ( $counts->total ?? 0 ),
+			'attention' => (int) ( $counts->attention ?? 0 ),
 		);
 	}
 

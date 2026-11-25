@@ -85,13 +85,28 @@ class VideoListController extends WP_REST_Controller {
 			)
 		);
 
+		// The filter chips' counts, one COUNT(*) for the library (Basecamp 10545260458).
+		register_rest_route(
+			$this->namespace,
+			'/videos/counts',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => static function () {
+					return rest_ensure_response( \MediaShield\CPT\VideoStatus::counts() );
+				},
+				'permission_callback' => static function () {
+					return current_user_can( 'edit_posts' );
+				},
+			)
+		);
+
 		register_rest_field(
 			'mediashield_video',
 			'ms_list',
 			array(
 				'get_callback' => array( $this, 'list_field' ),
 				'schema'       => array(
-					'description' => 'Videos list columns: thumbnail, duration, status (ready, encoding, failed, unavailable), used_in. Null for users who cannot edit the video.',
+					'description' => 'Videos list columns: thumbnail, duration, status (ready, encoding, failed, unavailable, no_source, draft), source (uploaded file name), used_in. Null for users who cannot edit the video.',
 					'type'        => array( 'object', 'null' ),
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -120,6 +135,11 @@ class VideoListController extends WP_REST_Controller {
 			'description' => 'Only videos on this platform.',
 			'type'        => 'string',
 			'enum'        => self::PLATFORMS,
+		);
+		$params['ms_state']      = array(
+			'description' => 'Only videos with this status: ready, attention (no source, or unavailable at the platform) or draft.',
+			'type'        => 'string',
+			'enum'        => array( 'ready', 'attention', 'draft' ),
 		);
 		$params['ms_protection'] = array(
 			'description' => 'Only videos at this protection level; "default" means the video follows the site setting.',
@@ -188,6 +208,15 @@ class VideoListController extends WP_REST_Controller {
 				);
 		}
 
+		$state = (string) $request->get_param( 'ms_state' );
+		$chip  = in_array( $state, array( 'ready', 'attention', 'draft' ), true ) ? \MediaShield\CPT\VideoStatus::query_args( $state ) : array();
+		if ( isset( $chip['post_status'] ) && 'trash' !== ( $args['post_status'] ?? '' ) ) {
+			$args['post_status'] = $chip['post_status'];
+		}
+		foreach ( $chip['meta_query'] ?? array() as $clause ) {
+			$meta_query[] = $clause;
+		}
+
 		if ( $meta_query ) {
 			$meta_query['relation'] = 'AND';
 			$args['meta_query']     = $meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
@@ -242,12 +271,42 @@ class VideoListController extends WP_REST_Controller {
 		 */
 		$status = (string) apply_filters( 'mediashield_video_status', 'ready', $id, $platform );
 
+		// Nothing to play outranks what a platform says; a draft that is
+		// otherwise fine is a Draft (CPT\VideoStatus, Basecamp 10545260458).
+		if ( '' !== (string) get_post_meta( $id, \MediaShield\CPT\VideoStatus::NO_SOURCE, true ) ) {
+			$status = 'no_source';
+		} elseif ( 'ready' === $status && in_array( get_post_status( $id ), \MediaShield\CPT\VideoStatus::DRAFT_STATUSES, true ) ) {
+			$status = 'draft';
+		}
+
 		return array(
 			'thumbnail' => Thumbnail::poster_url( $id, 'thumbnail', true ),
 			'duration'  => (int) get_post_meta( $id, '_ms_duration', true ),
-			'status'    => in_array( $status, array( 'ready', 'encoding', 'failed', 'unavailable' ), true ) ? $status : 'ready',
+			'status'    => in_array( $status, array( 'ready', 'encoding', 'failed', 'unavailable', 'no_source', 'draft' ), true ) ? $status : 'ready',
+			'source'    => self::source_label( $id, $platform ),
 			'used_in'   => VideoUsage::for_video( $id ),
 		);
+	}
+
+	/**
+	 * The uploaded file's name, for a video whose file MediaShield holds.
+	 *
+	 * The source URL of an upload is the signed /stream/ address, which means
+	 * nothing to an owner; the file name does.
+	 *
+	 * @param int    $id       Video ID.
+	 * @param string $platform Platform slug.
+	 * @return string File name, or '' for a link.
+	 */
+	public static function source_label( int $id, string $platform ): string {
+		if ( 'self' !== $platform ) {
+			return '';
+		}
+		$file = (string) get_post_meta( $id, '_ms_owned_file', true );
+		if ( '' === $file ) {
+			$file = \MediaShield\REST\StreamController::resolve_file( $id );
+		}
+		return '' !== $file ? wp_basename( $file ) : '';
 	}
 
 	/**

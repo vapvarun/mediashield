@@ -1,0 +1,22 @@
+/* The one-line Free upsell (Basecamp 10545260681): a sentence and a link, never a box of features. */
+.ms-upsell-line {
+	margin: var( --ms-space-4 ) 0 0;
+	padding: var( --ms-space-3 ) var( --ms-space-4 );
+	border: 1px dashed var( --ms-color-border );
+	border-radius: var( --ms-radius-md );
+	font-size: var( --ms-font-size-base );
+	color: var( --ms-color-text-secondary );
+}
+
+.ms-upsell-line a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	font-weight: 600;
+}
+
+@media ( max-width: 640px ) {
+	.ms-upsell-line {
+		padding: var( --ms-space-2 ) var( --ms-space-3 );
+	}
+}

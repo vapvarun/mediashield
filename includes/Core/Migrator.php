@@ -83,6 +83,12 @@ class Migrator {
 		// them already.
 		self::offer_new_defaults( $installed );
 
+		// v14 - store which existing videos have nothing to play, for the
+		// Videos list status and counts. Local checks only.
+		if ( $installed > 0 && $installed < 14 ) {
+			\MediaShield\CPT\VideoStatus::backfill();
+		}
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
 	}
 

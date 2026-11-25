@@ -62,7 +62,7 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-platform {
-	width: 124px;
+	width: 132px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-duration {
@@ -186,6 +186,82 @@
 	margin-block-start: 2px;
 }
 
+/* Status chips with counts, and the needs-attention line (Basecamp 10545260458). */
+.ms-videos__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --ms-space-2 );
+	margin-bottom: var( --ms-space-4 );
+}
+
+.ms-videos__chip-count {
+	margin-inline-start: var( --ms-space-2 );
+	font-variant-numeric: tabular-nums;
+	opacity: 0.85;
+}
+
+.ms-videos__attention {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-1 ) var( --ms-space-2 );
+	margin-bottom: var( --ms-space-3 );
+	padding: var( --ms-space-2 ) var( --ms-space-4 );
+	border: 1px solid var( --ms-palette-yellow-border );
+	border-radius: var( --ms-radius-md );
+	background: var( --ms-color-warning-light );
+	color: var( --ms-palette-yellow-text );
+}
+
+.ms-videos__attention .components-button.is-link {
+	min-height: 40px;
+}
+
+.ms-videos__hint {
+	display: block;
+	margin-block-start: var( --ms-space-1 );
+	font-size: var( --ms-font-size-sm );
+	color: var( --ms-color-text-secondary );
+	white-space: normal;
+}
+
+.ms-videos__file {
+	display: block;
+	margin-inline-start: 14px;
+	font-size: var( --ms-font-size-sm );
+	color: var( --ms-color-text-secondary );
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.ms-videos__title-link {
+	color: var( --ms-color-text );
+	text-decoration: none;
+}
+
+.ms-videos__title-link:focus-visible {
+	outline: 2px solid var( --ms-color-primary );
+	outline-offset: 2px;
+}
+
+@media ( hover: hover ) {
+	.ms-videos__title-link:hover {
+		color: var( --ms-color-primary );
+		text-decoration: underline;
+	}
+}
+
+/* Shown only on a phone, where the Source, Length and Protection columns hide. */
+.ms-videos__phone-meta {
+	display: none;
+	font-size: var( --ms-font-size-sm );
+	color: var( --ms-color-text-secondary );
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-status {
+	width: 176px;
+}
+
 @media ( max-width: 782px ) {
 	.ms-videos__search {
 		max-width: none;
@@ -208,5 +284,91 @@
 	.ms-videos__table td.ms-videos__col-title::before,
 	.ms-videos__table td.ms-videos__col-check::before {
 		content: none;
+	}
+}
+
+/* Phone (Basecamp 10545260681): one compact card per video, the status on the
+   title line and one meta line under it; no sideways scroll at 390. */
+@media ( max-width: 480px ) {
+	.mediashield-videos .ms-videos__table tbody tr {
+		display: grid;
+		grid-template-columns: auto minmax( 0, 1fr ) auto;
+		gap: var( --ms-space-1 ) var( --ms-space-2 );
+		align-items: start;
+		padding: var( --ms-space-3 );
+	}
+
+	.mediashield-videos .ms-videos__table td {
+		padding: 0;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-platform,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-duration,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-protection,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-used {
+		display: none;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-check {
+		grid-column: 1;
+		grid-row: 1;
+		width: auto;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-title {
+		grid-column: 2;
+		grid-row: 1;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-status {
+		grid-column: 3;
+		grid-row: 1;
+		flex-direction: column;
+		align-items: flex-end;
+		width: auto;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-status::before,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-actions::before {
+		content: none;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-actions {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+		gap: var( --ms-space-2 );
+		padding-top: var( --ms-space-2 );
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-actions .mediashield-action-btn {
+		flex: 1 1 0;
+		width: auto;
+		min-height: 40px;
+		justify-content: center;
+	}
+
+	.mediashield-videos .ms-videos__thumb {
+		display: none;
+	}
+
+	.mediashield-videos .ms-videos__phone-meta {
+		display: block;
+	}
+
+	.mediashield-videos .ms-videos__col-status .ms-videos__hint {
+		display: none;
+	}
+
+	.mediashield-videos .ms-videos__phone-meta a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+	}
+
+	.ms-videos__toolbar .components-base-control {
+		flex-basis: 100%;
 	}
 }

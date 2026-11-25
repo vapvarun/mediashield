@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useMemo } from '@wordpress/element';
 import { Button, Modal, Spinner, TextControl, SelectControl, CheckboxControl } from '@wordpress/components';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import { applyFilters } from '@wordpress/hooks';
 import { decodeEntities } from '@wordpress/html-entities';
@@ -17,7 +17,9 @@ import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import Icon from '../components/Icon';
 import { formatDuration } from '../utils/time';
+import { protectionLevels, siteDefaultLabel, protectionOptions } from '../utils/protection';
 import './videos.css';
+import '../components/upsell.css';
 
 const config = window.mediashieldAdmin || {};
 const PER_PAGE = 20;
@@ -27,8 +29,8 @@ const PLATFORM_LABELS = {
 	vimeo: 'Vimeo',
 	bunny: 'Bunny Stream',
 	wistia: 'Wistia',
-	self: 'Self-hosted',
-	iframe: 'Custom',
+	self: __( 'Video file', 'mediashield' ),
+	iframe: __( 'Not a video link', 'mediashield' ),
 };
 
 /**
@@ -119,43 +121,53 @@ const PreviewModal = ( { video, onClose } ) => {
 };
 
 const ProtectionBadge = ( { level } ) => {
-	const map = {
-		none: __( 'None', 'mediashield' ),
-		basic: __( 'Basic', 'mediashield' ),
-		standard: __( 'Standard', 'mediashield' ),
-		strict: __( 'Strict', 'mediashield' ),
-	};
-
+	const levels = protectionLevels();
 	// An empty level means the video follows the site default; say so,
 	// instead of showing "None" for a video that is actually protected.
 	if ( ! level ) {
 		const def = window.mediashieldAdmin?.defaultProtection || 'standard';
-		return (
-			<span className={ `mediashield-badge mediashield-badge--${ def }` }>
-				{ sprintf(
-					/* translators: %s: the site's default protection level, e.g. Standard. */
-					__( 'Default (%s)', 'mediashield' ),
-					map[ def ] || def
-				) }
-			</span>
-		);
+		return <span className={ `mediashield-badge mediashield-badge--${ def }` }>{ siteDefaultLabel() }</span>;
 	}
-
 	return (
 		<span className={ `mediashield-badge mediashield-badge--${ level }` }>
-			{ map[ level ] || level }
+			{ levels[ level ]?.label || level }
 		</span>
 	);
 };
 
-const PlatformLabel = ( { platform } ) => {
+/**
+ * Where the video comes from: the platform, or for a file this site holds,
+ * "Uploaded file" and its name instead of the signed stream address.
+ *
+ * @param {Object} props
+ * @param {string} props.platform Platform slug.
+ * @param {string} props.file     Uploaded file name, '' for a link.
+ * @return {JSX.Element} Label.
+ */
+const PlatformLabel = ( { platform, file } ) => {
 	const p = platform || 'self';
 	return (
 		<span className={ `mediashield-platform mediashield-platform--${ p }` }>
 			<span className="mediashield-platform__dot" />
-			{ PLATFORM_LABELS[ p ] || p }
+			{ platformName( p, file ) }
+			{ file && <span className="ms-videos__file">{ file }</span> }
 		</span>
 	);
+};
+
+/**
+ * The platform's name on every screen; a self-hosted video is an uploaded
+ * file or a link to a file.
+ *
+ * @param {string} p    Platform slug.
+ * @param {string} file Uploaded file name.
+ * @return {string} Name.
+ */
+const platformName = ( p, file ) => {
+	if ( 'self' === p ) {
+		return file ? __( 'Uploaded file', 'mediashield' ) : __( 'Video file link', 'mediashield' );
+	}
+	return PLATFORM_LABELS[ p ] || p;
 };
 
 const STATUS_LABELS = {
@@ -164,20 +176,42 @@ const STATUS_LABELS = {
 	failed: __( 'Failed', 'mediashield' ),
 	// The platform says the video is private, removed or not embeddable.
 	unavailable: __( 'Unavailable at platform', 'mediashield' ),
+	no_source: __( 'No source', 'mediashield' ),
+	draft: __( 'Draft', 'mediashield' ),
 };
 
-const PROTECTION_OPTIONS = [
-	{ value: 'default', label: __( 'Site default', 'mediashield' ) },
-	{ value: 'none', label: __( 'None', 'mediashield' ) },
-	{ value: 'basic', label: __( 'Basic', 'mediashield' ) },
-	{ value: 'standard', label: __( 'Standard', 'mediashield' ) },
-	{ value: 'strict', label: __( 'Strict', 'mediashield' ) },
-];
+const PROTECTION_OPTIONS = protectionOptions();
 
-const StatusBadge = ( { status } ) => {
+/**
+ * The status badge, and for a video that cannot play, the next step.
+ *
+ * @param {Object} props
+ * @param {string} props.status   ready, encoding, failed, unavailable, no_source or draft.
+ * @param {string} props.platform Platform slug.
+ * @param {string} props.editUrl  The video's edit screen.
+ * @return {JSX.Element} Badge.
+ */
+const StatusBadge = ( { status, platform, editUrl } ) => {
 	const s = STATUS_LABELS[ status ] ? status : 'ready';
-	const tone = { ready: 'success', encoding: 'warn', failed: 'danger', unavailable: 'danger' }[ s ];
-	return <span className={ `mediashield-badge mediashield-badge--${ tone }` }>{ STATUS_LABELS[ s ] }</span>;
+	const tone = { ready: 'success', encoding: 'warn', failed: 'danger', unavailable: 'danger', no_source: 'danger', draft: 'muted' }[ s ];
+	let label = STATUS_LABELS[ s ];
+	if ( 'unavailable' === s && PLATFORM_LABELS[ platform ] && 'self' !== platform ) {
+		/* translators: %s: platform name, e.g. YouTube. */
+		label = sprintf( __( 'Unavailable at %s', 'mediashield' ), PLATFORM_LABELS[ platform ] );
+	}
+	return (
+		<>
+			<span className={ `mediashield-badge mediashield-badge--${ tone }` }>{ label }</span>
+			{ 'unavailable' === s && (
+				<span className="ms-videos__hint">
+					{ __( 'Removed or made private there.', 'mediashield' ) } <a href={ editUrl }>{ __( 'Replace link', 'mediashield' ) }</a>
+				</span>
+			) }
+			{ 'no_source' === s && (
+				<span className="ms-videos__hint"><a href={ editUrl }>{ __( 'Add a link or upload', 'mediashield' ) }</a></span>
+			) }
+		</>
+	);
 };
 
 const UsedIn = ( { places } ) => {
@@ -212,6 +246,13 @@ const Videos = () => {
 	const [ platform, setPlatform ] = useState( '' );
 	const [ protection, setProtection ] = useState( '' );
 	const [ view, setView ] = useState( 'all' );
+	// Status chip: '' (all), ready, attention or draft. #/videos/attention
+	// (the Dashboard's link) opens on that chip.
+	const [ state, setState ] = useState( () => {
+		const m = window.location.hash.match( /^#\/videos\/(ready|attention|draft)/ );
+		return m ? m[ 1 ] : '';
+	} );
+	const [ counts, setCounts ] = useState( null );
 	const [ totalPages, setTotalPages ] = useState( 1 );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
@@ -292,6 +333,9 @@ const Videos = () => {
 		if ( protection ) {
 			params.set( 'ms_protection', protection );
 		}
+		if ( state && 'trash' !== view ) {
+			params.set( 'ms_state', state );
+		}
 		params.set( 'status', 'trash' === view ? 'trash' : 'publish,draft,pending,private,future' );
 
 		apiFetch( {
@@ -320,7 +364,28 @@ const Videos = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [ page, debouncedSearch, platform, protection, view, attempt ] );
+	}, [ page, debouncedSearch, platform, protection, view, state, attempt ] );
+
+	// Chip counts: one COUNT(*) on the server (Basecamp 10545260458). Fetched
+	// again after a bulk action or a retry, not per page.
+	useEffect( () => {
+		apiFetch( { path: '/mediashield/v1/videos/counts' } )
+			.then( setCounts )
+			.catch( () => setCounts( null ) );
+	}, [ attempt ] );
+
+	const pickState = ( next ) => {
+		setState( next );
+		setView( 'all' );
+		setPage( 1 );
+		window.history.replaceState( null, '', next ? `#/videos/${ next }` : '#/videos' );
+	};
+	const chips = [
+		{ key: '', label: __( 'All', 'mediashield' ), count: counts?.all },
+		{ key: 'ready', label: __( 'Ready', 'mediashield' ), count: counts?.ready },
+		{ key: 'attention', label: __( 'Needs attention', 'mediashield' ), count: counts?.attention },
+		{ key: 'draft', label: __( 'Draft', 'mediashield' ), count: counts?.draft },
+	];
 
 	const toggle = ( id ) => setSelected( ( prev ) => ( prev.includes( id ) ? prev.filter( ( x ) => x !== id ) : [ ...prev, id ] ) );
 	const allSelected = videos.length > 0 && videos.every( ( v ) => selected.includes( v.id ) );
@@ -368,7 +433,7 @@ const Videos = () => {
 			.finally( () => setApplying( false ) );
 	};
 
-	const filtered = !! ( debouncedSearch || platform || protection );
+	const filtered = !! ( debouncedSearch || platform || protection || state );
 
 	return (
 		<div className="mediashield-page mediashield-videos">
@@ -430,20 +495,45 @@ const Videos = () => {
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
-				<div className="ms-videos__views" role="group" aria-label={ __( 'Show', 'mediashield' ) }>
-					<Button variant={ 'all' === view ? 'primary' : 'secondary' } aria-pressed={ 'all' === view } onClick={ () => {
-						setView( 'all' );
-						setPage( 1 );
-					} }>
-						{ __( 'All', 'mediashield' ) }
+			</div>
+
+			{ 'trash' !== view && counts?.attention > 0 && 'attention' !== state && (
+				<div className="ms-videos__attention" role="status">
+					<strong>
+						{ sprintf(
+							/* translators: %d: number of videos that cannot play. */
+							_n( '%d video needs attention.', '%d videos need attention.', counts.attention, 'mediashield' ),
+							counts.attention
+						) }
+					</strong>{ ' ' }
+					<span>{ __( 'Members cannot play them until they are fixed.', 'mediashield' ) }</span>{ ' ' }
+					<Button variant="link" onClick={ () => pickState( 'attention' ) }>{ __( 'Show only these', 'mediashield' ) }</Button>
+				</div>
+			) }
+
+			<div className="ms-videos__chips" role="group" aria-label={ __( 'Show videos by status', 'mediashield' ) }>
+				{ chips.map( ( c ) => (
+					<Button
+						key={ c.key || 'all' }
+						variant={ 'trash' !== view && state === c.key ? 'primary' : 'secondary' }
+						aria-pressed={ 'trash' !== view && state === c.key }
+						onClick={ () => pickState( c.key ) }
+						__next40pxDefaultSize
+					>
+						{ c.label }{ undefined !== c.count && <span className="ms-videos__chip-count">{ c.count }</span> }
 					</Button>
-					<Button variant={ 'trash' === view ? 'primary' : 'secondary' } aria-pressed={ 'trash' === view } onClick={ () => {
+				) ) }
+				<Button
+					variant={ 'trash' === view ? 'primary' : 'tertiary' }
+					aria-pressed={ 'trash' === view }
+					onClick={ () => {
 						setView( 'trash' );
 						setPage( 1 );
-					} }>
-						{ __( 'Trash', 'mediashield' ) }
-					</Button>
-				</div>
+					} }
+					__next40pxDefaultSize
+				>
+					{ __( 'Trash', 'mediashield' ) }
+				</Button>
 			</div>
 
 			{ loading && (
@@ -495,11 +585,11 @@ const Videos = () => {
 							<tr>
 								<th className="ms-videos__col-check"><span className="screen-reader-text">{ __( 'Select', 'mediashield' ) }</span></th>
 								<th className="ms-videos__col-title">{ __( 'Video', 'mediashield' ) }</th>
-								<th className="ms-videos__col-platform">{ __( 'Platform', 'mediashield' ) }</th>
-								<th className="ms-videos__col-duration">{ __( 'Duration', 'mediashield' ) }</th>
-								<th className="ms-videos__col-status">{ __( 'Status', 'mediashield' ) }</th>
+								<th className="ms-videos__col-platform">{ __( 'Source', 'mediashield' ) }</th>
+								<th className="ms-videos__col-duration">{ __( 'Length', 'mediashield' ) }</th>
 								<th className="ms-videos__col-protection">{ __( 'Protection', 'mediashield' ) }</th>
 								<th className="ms-videos__col-used">{ __( 'Used in', 'mediashield' ) }</th>
+								<th className="ms-videos__col-status">{ __( 'Status', 'mediashield' ) }</th>
 								<th className="ms-videos__col-actions">{ __( 'Actions', 'mediashield' ) }</th>
 							</tr>
 						</thead>
@@ -513,21 +603,20 @@ const Videos = () => {
 											: ( filtered
 												? __( 'No videos match these filters.', 'mediashield' )
 												: __( 'No videos yet. Create your first protected video.', 'mediashield' ) ) }
-										{ ! filtered && 'all' === view && ! config.isProActive && (
-											<div className="ms-upsell-inline" style={ { marginTop: '16px', justifyContent: 'center' } }>
-												<Icon name="cloud" />
-												<span>
-													{ __( 'With', 'mediashield' ) } <strong>{ __( 'Pro', 'mediashield' ) }</strong>{ __( ', browse & import videos directly from Bunny Stream, YouTube, Vimeo, or Wistia.', 'mediashield' ) }
-												</span>
-												<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer">{ __( 'Learn more', 'mediashield' ) } &rarr;</a>
-											</div>
-										) }
 									</td>
 								</tr>
 							) }
 							{ videos.map( ( video ) => {
 								const list = video.ms_list || {};
 								const title = decodeEntities( video.title?.raw ?? video.title?.rendered ?? '' ) || __( '(no title)', 'mediashield' );
+								const editUrl = `${ config.adminUrl }post.php?post=${ video.id }&action=edit`;
+								const level = video.meta?._ms_protection_level;
+								// One line under the title on a phone, where the other columns hide.
+								const phoneMeta = [
+									'no_source' === list.status && ! list.source ? null : ( list.source || platformName( video.meta?._ms_platform || 'self', list.source ) ),
+									( list.duration ?? video.meta?._ms_duration ) > 0 ? formatDuration( list.duration ?? video.meta?._ms_duration ) : null,
+									level ? protectionLevels()[ level ]?.label : siteDefaultLabel(),
+								].filter( Boolean ).join( ' · ' );
 								return (
 									<tr key={ video.id } className={ selected.includes( video.id ) ? 'is-selected' : '' }>
 										<td className="ms-videos__col-check" data-label={ __( 'Select', 'mediashield' ) }>
@@ -546,19 +635,22 @@ const Videos = () => {
 													<span className="ms-videos__thumb ms-videos__thumb--empty" aria-hidden="true"><Icon name="format-video" /></span>
 												) }
 												<span className="ms-videos__title-text">
-													<strong>{ title }</strong>
-													{ 'draft' === video.status && <span className="ms-videos__muted"> { __( 'Draft', 'mediashield' ) }</span> }
+													<a className="ms-videos__title-link" href={ editUrl }><strong>{ title }</strong></a>
+													<span className="ms-videos__phone-meta">
+														{ 'unavailable' === list.status && <>{ __( 'Removed or made private there.', 'mediashield' ) } <a href={ editUrl }>{ __( 'Replace link', 'mediashield' ) }</a></> }
+														{ 'no_source' === list.status && <a href={ editUrl }>{ __( 'Add a link or upload', 'mediashield' ) }</a> }
+														{ 'unavailable' !== list.status && 'no_source' !== list.status && phoneMeta }
+													</span>
 												</span>
 											</div>
 										</td>
-										<td data-label={ __( 'Platform', 'mediashield' ) } className="ms-videos__col-platform">
-											<PlatformLabel platform={ video.meta?._ms_platform } />
+										<td data-label={ __( 'Source', 'mediashield' ) } className="ms-videos__col-platform">
+											{ 'no_source' === list.status && ! list.source
+												? <span className="ms-videos__muted">{ __( 'None', 'mediashield' ) }</span>
+												: <PlatformLabel platform={ video.meta?._ms_platform } file={ list.source } /> }
 										</td>
-										<td data-label={ __( 'Duration', 'mediashield' ) } className="ms-videos__num ms-videos__col-duration">
+										<td data-label={ __( 'Length', 'mediashield' ) } className="ms-videos__num ms-videos__col-duration">
 											{ formatDuration( list.duration ?? video.meta?._ms_duration ) }
-										</td>
-										<td data-label={ __( 'Status', 'mediashield' ) } className="ms-videos__col-status">
-											<StatusBadge status={ list.status } />
 										</td>
 										<td data-label={ __( 'Protection', 'mediashield' ) } className="ms-videos__col-protection">
 											<ProtectionBadge level={ video.meta?._ms_protection_level } />
@@ -566,9 +658,12 @@ const Videos = () => {
 										<td data-label={ __( 'Used in', 'mediashield' ) } className="ms-videos__col-used">
 											<UsedIn places={ list.used_in } />
 										</td>
+										<td data-label={ __( 'Status', 'mediashield' ) } className="ms-videos__col-status">
+											<StatusBadge status={ list.status } platform={ video.meta?._ms_platform } editUrl={ editUrl } />
+										</td>
 										<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions ms-videos__col-actions">
 											<a
-												href={ `${ config.adminUrl }post.php?post=${ video.id }&action=edit` }
+												href={ editUrl }
 												className="mediashield-action-btn mediashield-action-btn--edit"
 											>
 												{ __( 'Edit', 'mediashield' ) }
@@ -628,6 +723,14 @@ const Videos = () => {
 						</nav>
 					) }
 				</div>
+			) }
+
+			{ /* One line, at the end, never a box above the list (Basecamp 10545260681). */ }
+			{ ! config.isProActive && ! loading && 'trash' !== view && (
+				<p className="ms-upsell-line">
+					{ __( 'Pro adds Bunny Stream: browse your Bunny library and import videos in one step.', 'mediashield' ) }{ ' ' }
+					<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer">{ __( 'See MediaShield Pro', 'mediashield' ) }</a>
+				</p>
 			) }
 
 			{ /* Preview Lightbox */ }
