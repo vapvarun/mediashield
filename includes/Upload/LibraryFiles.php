@@ -110,6 +110,54 @@ class LibraryFiles {
 	private const REPAIR_JOB = 'ms_repair_library_files';
 
 	/**
+	 * The one reference the in-use check skips while another plugin switches
+	 * it to a new video: { type: 'post'|'learnomy_lesson'|…, id: int }, or
+	 * empty (while_replacing()).
+	 *
+	 * @var array
+	 */
+	private static $replacing = array();
+
+	/**
+	 * Run $work while the in-use check skips one reference: the post or row
+	 * that is about to play the new video instead of the file
+	 * (mediashield_create_video's `replacing`). Every other use still keeps
+	 * the file in place.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param array    $replacing { type: string, id: int }; empty skips nothing.
+	 * @param callable $work      What to run.
+	 * @return mixed What $work returned.
+	 */
+	public static function while_replacing( array $replacing, callable $work ) {
+		$before          = self::$replacing;
+		self::$replacing = $replacing;
+		try {
+			return $work();
+		} finally {
+			self::$replacing = $before;
+		}
+	}
+
+	/**
+	 * Check a video left 'in_use' again (inside while_replacing(), once the
+	 * reference that kept it is the one being switched).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $video_id Video post ID.
+	 */
+	public static function recheck_in_use( int $video_id ): void {
+		if ( 'in_use' !== get_post_meta( $video_id, self::STATE, true ) ) {
+			return;
+		}
+		delete_post_meta( $video_id, self::STATE );
+		self::report( $video_id, null );
+		self::protect( $video_id, true );
+	}
+
+	/**
 	 * Register hooks.
 	 */
 	public static function register(): void {
@@ -438,6 +486,7 @@ class LibraryFiles {
 		$like     = '%' . $wpdb->esc_like( $paths[0] ) . '%';
 		$like_esc = '%' . $wpdb->esc_like( $paths[1] ) . '%';
 		$id       = (string) $attachment;
+		$skip     = 'post' === ( self::$replacing['type'] ?? '' ) ? absint( self::$replacing['id'] ?? 0 ) : 0; // The post switching to the new video is not a use.
 		$unsure   = __( 'a part of your site MediaShield could not check', 'mediashield' );
 		$acf      = $wpdb->esc_like( 'field_' ) . '%'; // An ACF field key, in a value's "_" twin row.
 		$limit    = 50;
@@ -446,8 +495,8 @@ class LibraryFiles {
 		$args  = array( $like, $like_esc, '%' . $wpdb->esc_like( '"id":' . $id ) . '%', '%' . $wpdb->esc_like( '"mediaId":' . $id ) . '%' );
 		$posts = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT ID, post_content FROM {$wpdb->posts} WHERE ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s ) AND post_type <> 'revision' AND post_status NOT IN ('trash', 'auto-draft') AND ID NOT IN (%d, %d) LIMIT {$limit}",
-				...array_merge( $args, array( $video_id, $attachment ) )
+				"SELECT ID, post_content FROM {$wpdb->posts} WHERE ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s ) AND post_type <> 'revision' AND post_status NOT IN ('trash', 'auto-draft') AND ID NOT IN (%d, %d, %d) LIMIT {$limit}",
+				...array_merge( $args, array( $video_id, $attachment, $skip ) )
 			)
 		);
 		if ( self::query_failed() ) {
@@ -477,13 +526,14 @@ class LibraryFiles {
 				"SELECT m.post_id FROM {$wpdb->postmeta} m WHERE ( meta_value LIKE %s OR meta_value LIKE %s
 					OR ( meta_key = '_thumbnail_id' AND meta_value = %s )
 					OR ( meta_key = '_elementor_data' AND ( meta_value LIKE %s OR meta_value LIKE %s ) )
-					OR ( ( meta_value = %s OR meta_value LIKE %s ) AND EXISTS ( SELECT 1 FROM {$wpdb->postmeta} f WHERE f.post_id = m.post_id AND f.meta_key = CONCAT( '_', m.meta_key ) AND f.meta_value LIKE %s ) ) ) AND meta_key <> %s AND post_id NOT IN (%d, %d) LIMIT 1",
+					OR ( ( meta_value = %s OR meta_value LIKE %s ) AND EXISTS ( SELECT 1 FROM {$wpdb->postmeta} f WHERE f.post_id = m.post_id AND f.meta_key = CONCAT( '_', m.meta_key ) AND f.meta_value LIKE %s ) ) ) AND meta_key <> %s AND post_id NOT IN (%d, %d, %d) LIMIT 1",
 				...array_merge(
 					$args,
 					array(
 						self::RESTORE, // Our own record of where an earlier file came from is not a use.
 						$video_id,
 						$attachment,
+						$skip,
 					)
 				)
 			)
@@ -529,8 +579,12 @@ class LibraryFiles {
 		 * @param string $relative   File path relative to the uploads folder.
 		 * @param int    $attachment Media Library item (always set since 1.4.3: a file with none is never moved).
 		 * @param int    $video_id   Video being protected.
+		 * @param array  $replacing  Since 1.4.4. { type: string, id: int } of the one
+		 *                           reference being switched to this video, which
+		 *                           is not a use (skip your own row of that type
+		 *                           and id); empty otherwise.
 		 */
-		return (string) apply_filters( 'mediashield_library_file_in_use', '', $relative, $attachment, $video_id );
+		return (string) apply_filters( 'mediashield_library_file_in_use', '', $relative, $attachment, $video_id, self::$replacing );
 	}
 
 	/**
@@ -554,9 +608,10 @@ class LibraryFiles {
 	 * @param string   $table    Full table name.
 	 * @param string[] $columns  Columns that may hold the file URL.
 	 * @param string   $relative File path relative to the uploads folder.
+	 * @param int      $skip_id  Since 1.4.4. A row (by its `id` column) that is not a use, 0 for none.
 	 * @return bool True when a row names the file, or the query failed: when in doubt the file stays.
 	 */
-	public static function table_mentions_file( string $table, array $columns, string $relative ): bool {
+	public static function table_mentions_file( string $table, array $columns, string $relative, int $skip_id = 0 ): bool {
 		global $wpdb;
 		$like = '%' . $wpdb->esc_like( $relative ) . '%';
 		$args = array( $table );
@@ -564,6 +619,10 @@ class LibraryFiles {
 			array_push( $args, $column, $like );
 		}
 		$where = implode( ' OR ', array_fill( 0, count( $columns ), '%i LIKE %s' ) );
+		if ( $skip_id > 0 ) {
+			$where  = '( ' . $where . ' ) AND id <> %d';
+			$args[] = $skip_id;
+		}
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Reference scan, results must be live; $where is only %i/%s placeholders.
 		$found = $wpdb->get_var( $wpdb->prepare( "SELECT 1 FROM %i WHERE {$where} LIMIT 1", ...$args ) );
@@ -581,11 +640,16 @@ class LibraryFiles {
 	 *
 	 * @param string $table  Full table name.
 	 * @param string $column Column holding the id.
-	 * @param int    $id     Id to look for, such as a Media Library item.
+	 * @param int    $id      Id to look for, such as a Media Library item.
+	 * @param int    $skip_id Since 1.4.4. A row (by its `id` column) that is not a use, 0 for none.
 	 * @return bool
 	 */
-	public static function table_has_value( string $table, string $column, int $id ): bool {
+	public static function table_has_value( string $table, string $column, int $id, int $skip_id = 0 ): bool {
 		global $wpdb;
+		if ( $skip_id > 0 ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reference scan; results must be live.
+			return (bool) $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM %i WHERE %i = %d AND id <> %d LIMIT 1', $table, $column, $id, $skip_id ) );
+		}
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reference scan; results must be live.
 		return (bool) $wpdb->get_var( $wpdb->prepare( 'SELECT 1 FROM %i WHERE %i = %d LIMIT 1', $table, $column, $id ) );
 	}

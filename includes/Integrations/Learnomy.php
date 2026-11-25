@@ -45,7 +45,7 @@ class Learnomy {
 	 */
 	public static function register(): void {
 		add_filter( 'learnomy_rest_lesson_payload', array( __CLASS__, 'add_embed_to_payload' ), 10, 3 );
-		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 3 );
+		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 5 );
 		add_filter( 'learnomy_lesson_completion_rules', array( __CLASS__, 'require_watch' ), 10, 3 );
 		add_filter( 'mediashield_video_access_link', array( __CLASS__, 'course_link' ), 10, 2 );
 		// Learnomy 2.4.1 owns "watch the video to complete" on each lesson;
@@ -287,17 +287,22 @@ class Learnomy {
 	 * @param string $where      Where it is used so far, '' when nowhere.
 	 * @param string $relative   File path relative to the uploads folder.
 	 * @param int    $attachment Media Library item.
+	 * @param int    $video_id   Video being protected (unused).
+	 * @param array  $replacing  { type, id }: a lesson being switched to this
+	 *                           video ('learnomy_lesson') is not a use (1.4.4).
 	 * @return string
 	 */
-	public static function library_file_in_use( $where, $relative, $attachment ): string {
+	public static function library_file_in_use( $where, $relative, $attachment, $video_id = 0, $replacing = array() ): string {
+		unset( $video_id );
 		if ( '' !== (string) $where || ! function_exists( '\\Learnomy\\table' ) ) {
 			return (string) $where;
 		}
 		$relative = (string) $relative;
 		$lessons  = \Learnomy\table( 'lessons' );
+		$skip     = 'learnomy_lesson' === ( $replacing['type'] ?? '' ) ? absint( $replacing['id'] ?? 0 ) : 0;
 		// Older Learnomy schemas have no media_id; that query's error is ignored, the URL check stands.
-		if ( LibraryFiles::table_mentions_file( $lessons, array( 'video_url', 'content' ), $relative )
-			|| LibraryFiles::table_has_value( $lessons, 'media_id', (int) $attachment ) ) {
+		if ( LibraryFiles::table_mentions_file( $lessons, array( 'video_url', 'content' ), $relative, $skip )
+			|| LibraryFiles::table_has_value( $lessons, 'media_id', (int) $attachment, $skip ) ) {
 			return __( 'a Learnomy lesson', 'mediashield' );
 		}
 		return LibraryFiles::table_mentions_file( \Learnomy\table( 'courses' ), array( 'video_url', 'content', 'description' ), $relative )

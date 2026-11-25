@@ -300,13 +300,20 @@ add_filter( 'mediashield_upload_drivers', function( $drivers ) {
 
 *Since 1.4.2.* Report a use of a Media Library file that MediaShield cannot see, so the file is left in place instead of being moved into the protected folder. Return where it is used, in a few words the owner will read in the notice (for example `a Learnomy lesson`). MediaShield's Learnomy integration uses it for lesson and course URLs.
 
-**Parameters:** `$where` (string, '' when unused so far), `$relative` (string, path below the uploads folder), `$attachment_id` (int; since 1.4.3 always set, because a file with no Media Library item is never moved), `$video_id` (int)
+**Parameters:** `$where` (string, '' when unused so far), `$relative` (string, path below the uploads folder), `$attachment_id` (int; since 1.4.3 always set, because a file with no Media Library item is never moved), `$video_id` (int), `$replacing` (array, since 1.4.4: `array( 'type' => string, 'id' => int )` naming the one reference that is about to switch to this video, or an empty array; see `replacing` under [mediashield_create_video](#mediashield_create_video))
 
 ```php
-add_filter( 'mediashield_library_file_in_use', function( $where, $relative ) {
-    return '' === $where && my_plugin_uses_file( $relative ) ? 'a My Plugin page' : $where;
-}, 10, 2 );
+add_filter( 'mediashield_library_file_in_use', function( $where, $relative, $attachment_id, $video_id, $replacing ) {
+    if ( '' !== $where ) {
+        return $where;
+    }
+    // The page that is switching to the new video is not a use.
+    $skip = 'my_page' === ( $replacing['type'] ?? '' ) ? (int) $replacing['id'] : 0;
+    return my_plugin_uses_file( $relative, $skip ) ? 'a My Plugin page' : $where;
+}, 10, 5 );
 ```
+
+If you keep file URLs in your own table, `\MediaShield\Upload\LibraryFiles::table_mentions_file( $table, $columns, $relative, $skip_id )` and `table_has_value( $table, $column, $id, $skip_id )` do the lookup; `$skip_id` (since 1.4.4) leaves out the row whose `id` column has that value.
 
 ---
 
@@ -651,6 +658,7 @@ if ( is_wp_error( $video_id ) ) {
 | `source_url` | string | A link MediaShield can play: YouTube, Vimeo, Wistia, Bunny Stream (with Pro), or a link to a video file. |
 | `attachment_id` | int | A video file already in the Media Library. Used instead of `source_url` when both are given. |
 | `title` | string | Optional. Empty: the platform's title (or "Video 123"), or the Media Library item's title for a file. |
+| `replacing` | array | Optional, since 1.4.4. `array( 'type' => 'post', 'id' => 123 )` or `array( 'type' => 'learnomy_lesson', 'id' => 42 )`: the one thing that still uses the file and is about to switch to the new video. |
 
 **Returns** the video ID (`int`), or a `WP_Error`:
 
@@ -665,7 +673,19 @@ A video added by someone who may publish posts is published at once; anyone else
 
 It takes the same path as **Videos > Add New**: the same link check, the same save (platform and id stored in one shape, the platform's title fetched when none is given, the Videos list status), no protection level stamped (the video follows the site default), and a Media Library file is moved into the protected folder with its Media Library item made private, as when an owner pastes that file's link. A file keeps the name it was uploaded with and its length is read from it. A link already in the library, however it is written (`youtu.be/…` or `watch?v=…`), returns that video instead of adding a copy, as the Video block does; so does the same Media Library file twice.
 
-A file the site still uses somewhere else (a lesson's own video field, a post) is left where it is and played from there. Point that use at the new video first if the file should be protected.
+A file the site still uses somewhere else (a lesson's own video field, a post) is left where it is and played from there. Point that use at the new video first if the file should be protected, or name it in `replacing` when you switch it only after MediaShield succeeds:
+
+```php
+$video_id = apply_filters( 'mediashield_create_video', null, array(
+    'attachment_id' => $lesson->media_id,
+    'replacing'     => array( 'type' => 'learnomy_lesson', 'id' => (int) $lesson->id ),
+) );
+if ( is_int( $video_id ) ) {
+    // Now point the lesson at $video_id.
+}
+```
+
+With `replacing` set, the check that decides whether the file may move does not count that one reference: for `post`, that WordPress post's content and meta; for `learnomy_lesson`, that row in Learnomy's lessons table (MediaShield's Learnomy integration). Any other type is passed to `mediashield_library_file_in_use` for the integration that owns it. Every other use still keeps the file in place, and the video then plays it from where it is. A video MediaShield already made for the file, left in place because of that reference, is checked again.
 
 ---
 

@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Support\Platforms;
 use MediaShield\Upload\Drivers\SelfHosted;
+use MediaShield\Upload\LibraryFiles;
 use WP_Error;
 use WP_Query;
 
@@ -27,6 +28,7 @@ use WP_Query;
  *         'source_url'    => 'https://youtu.be/…', // or
  *         'attachment_id' => 123,                   // an uploaded video file
  *         'title'         => 'Lesson 1',            // optional
+ *         'replacing'     => array( 'type' => 'learnomy_lesson', 'id' => 42 ), // optional
  *     ) );
  *     // int video id, or WP_Error (status 400 / 403 / 404 / 500).
  *
@@ -64,10 +66,56 @@ class VideoCreator {
 	/**
 	 * Create (or find) the video.
 	 *
-	 * @param array $args { source_url?: string, attachment_id?: int, title?: string }.
+	 * `replacing` names the one reference about to switch from the file to
+	 * this video ({ type: 'post'|'learnomy_lesson'|…, id: int }): the in-use
+	 * check that decides whether a Media Library file may move does not count
+	 * it (LibraryFiles::while_replacing()); every other use keeps the file in
+	 * place. The caller switches its reference only after an int comes back.
+	 *
+	 * @param array $args { source_url?: string, attachment_id?: int, title?: string, replacing?: array{type: string, id: int} }.
 	 * @return int|WP_Error Video ID, or why not.
 	 */
 	public static function create( array $args ) {
+		$replacing = self::replacing( $args['replacing'] ?? null );
+		return LibraryFiles::while_replacing(
+			$replacing,
+			static function () use ( $args, $replacing ) {
+				$id = self::create_video( $args );
+				// A video already made for this file may have been left in
+				// place because of the very reference now switching.
+				if ( is_int( $id ) && $replacing ) {
+					LibraryFiles::recheck_in_use( $id );
+				}
+				return $id;
+			}
+		);
+	}
+
+	/**
+	 * The `replacing` arg, cleaned: { type, id }, or empty.
+	 *
+	 * @param mixed $replacing Raw arg.
+	 * @return array{type?: string, id?: int}
+	 */
+	private static function replacing( $replacing ): array {
+		if ( ! is_array( $replacing ) ) {
+			return array();
+		}
+		$type = sanitize_key( (string) ( $replacing['type'] ?? '' ) );
+		$id   = absint( $replacing['id'] ?? 0 );
+		return ( '' !== $type && $id > 0 ) ? array(
+			'type' => $type,
+			'id'   => $id,
+		) : array();
+	}
+
+	/**
+	 * Create (or find) the video (create(), inside the replacing context).
+	 *
+	 * @param array $args See create().
+	 * @return int|WP_Error Video ID, or why not.
+	 */
+	private static function create_video( array $args ) {
 		$type = get_post_type_object( 'mediashield_video' );
 		if ( ! $type || ! current_user_can( $type->cap->create_posts ) ) {
 			return new WP_Error( 'mediashield_cannot_create_video', __( 'You are not allowed to add videos.', 'mediashield' ), array( 'status' => 403 ) );
