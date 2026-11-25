@@ -211,6 +211,18 @@ class Settings {
 				'type'    => 'string',
 				'default' => 'This video is unavailable.',
 			),
+			// Where a logged-in member who may not watch a video can get access:
+			// the owner's membership or pricing page. Empty = no button
+			// (Basecamp 10545260568). A course link from an LMS wins.
+			'ms_access_denied_url'       => array(
+				'type'     => 'string',
+				'default'  => '',
+				'validate' => $url_or_empty,
+			),
+			'ms_access_denied_button_text' => array(
+				'type'    => 'string',
+				'default' => 'See membership options',
+			),
 
 			// Player controls.
 			'ms_player_speed_control'    => array(
@@ -525,6 +537,17 @@ class Settings {
 				'accessDenied'    => self::message( 'ms_access_denied_text', __( 'You do not have access to this video', 'mediashield' ) ),
 				'unavailable'     => self::message( 'ms_unavailable_text', __( 'This video is unavailable.', 'mediashield' ) ),
 				'viewCourse'      => self::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
+				// The second line of each state (Basecamp 10545260568).
+				'loginSub'        => __( 'It is for members of this site.', 'mediashield' ),
+				'unavailableSub'  => __( 'The site owner has been told. Please try again later.', 'mediashield' ),
+				// Shown only to someone who may edit the video, with an Edit video link.
+				'adminNote'       => __( 'Only editors see this:', 'mediashield' ),
+				'editVideo'       => __( 'Edit video', 'mediashield' ),
+				/* translators: %s: video platform, for example YouTube. */
+				'causeRemoved'    => __( '%s says this video was removed or is private.', 'mediashield' ),
+				/* translators: %s: video platform, for example YouTube. */
+				'causeNoEmbed'    => __( 'The owner of this video on %s does not allow it to play on other sites.', 'mediashield' ),
+				'thePlatform'     => __( 'The video platform', 'mediashield' ),
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL
 				// produces. Without it the viewer just stares at a dead player.
@@ -553,7 +576,7 @@ class Settings {
 				'auto'            => __( 'Auto', 'mediashield' ),
 				/* translators: %s: playback position, for example 12:34. */
 				'resumeFrom'      => __( 'Resume from %s', 'mediashield' ),
-				'dismiss'         => __( 'Dismiss', 'mediashield' ),
+				'startOver'       => __( 'Start over', 'mediashield' ),
 				'adBreaks'        => __( 'Ad breaks', 'mediashield' ),
 				'ad'              => __( 'Ad', 'mediashield' ),
 				'advertisement'   => __( 'Advertisement', 'mediashield' ),

@@ -73,6 +73,8 @@ class Plugin {
 		VideoPostType::register();
 		PlaylistPostType::register();
 		Thumbnail::register();
+		// A video the platform no longer plays (Basecamp 10545260568).
+		\MediaShield\CPT\SourceStatus::register();
 
 		// REST API.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
@@ -153,6 +155,8 @@ class Plugin {
 		// Videos list: columns, filters, bulk actions (Basecamp 10530930295).
 		( new VideoListController() )->register_routes();
 		VideoListController::register_hooks();
+		// The player reports a video its platform refuses (Basecamp 10545260568).
+		( new \MediaShield\REST\SourceReportController() )->register_routes();
 	}
 
 	/**

@@ -166,6 +166,18 @@ else
   fi
 fi
 
+# 1.5 - the player's behaviour (tests/js): resume, refusals, unavailable. They
+# press the real buttons in jsdom, so a text match cannot pass for a working
+# player. Needs node_modules (npm ci, or the ../mediashield symlink).
+if [ "$MODE" != "quick" ] && [ -d tests/js ]; then
+  if [ -x node_modules/.bin/wp-scripts ]; then
+    run_stage "1.5" "Player behaviour (jest)" npm run -s test:js
+  else
+    warn "1.5 Player behaviour skipped - node_modules not present"
+    SKIPPED+=("1.5 Player behaviour")
+  fi
+fi
+
 # ─── 2.x — Security + Architecture (always cheap) ────────────────────────────
 
 if [ -x bin/coding-rules-check.sh ]; then

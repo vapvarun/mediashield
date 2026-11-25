@@ -91,7 +91,7 @@ class VideoListController extends WP_REST_Controller {
 			array(
 				'get_callback' => array( $this, 'list_field' ),
 				'schema'       => array(
-					'description' => 'Videos list columns: thumbnail, duration, status, used_in. Null for users who cannot edit the video.',
+					'description' => 'Videos list columns: thumbnail, duration, status (ready, encoding, failed, unavailable), used_in. Null for users who cannot edit the video.',
 					'type'        => array( 'object', 'null' ),
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -236,7 +236,7 @@ class VideoListController extends WP_REST_Controller {
 		 *
 		 * @since 1.4.3
 		 *
-		 * @param string $status   'ready', 'encoding' or 'failed'.
+		 * @param string $status   'ready', 'encoding', 'failed' or 'unavailable' (the platform refuses it, CPT\SourceStatus).
 		 * @param int    $video_id Video ID.
 		 * @param string $platform Platform slug.
 		 */
@@ -245,7 +245,7 @@ class VideoListController extends WP_REST_Controller {
 		return array(
 			'thumbnail' => Thumbnail::poster_url( $id, 'thumbnail', true ),
 			'duration'  => (int) get_post_meta( $id, '_ms_duration', true ),
-			'status'    => in_array( $status, array( 'ready', 'encoding', 'failed' ), true ) ? $status : 'ready',
+			'status'    => in_array( $status, array( 'ready', 'encoding', 'failed', 'unavailable' ), true ) ? $status : 'ready',
 			'used_in'   => VideoUsage::for_video( $id ),
 		);
 	}

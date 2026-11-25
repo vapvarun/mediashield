@@ -87,7 +87,7 @@
 						// turned embedding off. Either way it will not play here.
 						onError: function ( e ) {
 							if ( playerEl && [ 100, 101, 150 ].indexOf( e.data ) > -1 ) {
-								showUnavailable( playerEl );
+								showUnavailable( playerEl, 100 === e.data ? 'removed' : 'not_embeddable', 'YouTube' );
 							}
 						},
 						onStateChange: function ( e ) {
@@ -179,7 +179,7 @@
 					} ).catch( function () {
 						// Vimeo refuses a removed or private video here.
 						var vimeoEl = target.closest( '.ms-protected-player' );
-						if ( vimeoEl ) showUnavailable( vimeoEl );
+						if ( vimeoEl ) showUnavailable( vimeoEl, 'private', 'Vimeo' );
 					} );
 				} )
 				.catch( function ( err ) {
@@ -1388,6 +1388,13 @@
 		if ( el.dataset.msInitialized ) return;
 		el.dataset.msInitialized = '1';
 
+		// The markup as printed, so Try again can start the player afresh
+		// after a platform has replaced the target with its iframe.
+		if ( ! el._msTarget ) {
+			var printed = el.querySelector( '.ms-player-target' );
+			if ( printed ) el._msTarget = printed.cloneNode( true );
+		}
+
 		var protectionLevel = el.dataset.protectionLevel || 'standard';
 		var videoId = parseInt( el.dataset.videoId, 10 ) || 0;
 
@@ -1835,7 +1842,22 @@
 	// access denied when no upstream listener handles the dispatch, etc. Sits
 	// on top of the player container so the viewer can read why the player
 	// isn't loading. Single instance per container — repeated calls replace.
-	function showErrorOverlay( el, message, onRetry ) {
+	/**
+	 * Show a state over the player: what happened, and one next step.
+	 *
+	 * Every refusal and failure goes through here (Basecamp 10545260568):
+	 * the message, an optional second line, a Try again button when the
+	 * failure may pass, and for someone who may edit the video (the server
+	 * printed data-edit-url) the cause and an Edit video link. A notice, not
+	 * a dialog: it never takes focus or traps Tab.
+	 *
+	 * @param {HTMLElement} el       Player container.
+	 * @param {string}      message  What happened.
+	 * @param {Function}    [onRetry] Offers Try again when given.
+	 * @param {Object}      [extra]   { sub: second line, cause: admin-only cause }.
+	 */
+	function showErrorOverlay( el, message, onRetry, extra ) {
+		extra = extra || {};
 		// The stall watchdog is reconnecting: a load or refresh failure seen in
 		// the meantime is part of that attempt, not a verdict. Keep showing
 		// "Reconnecting…"; the watchdog shows the error itself if it gives up.
@@ -1857,9 +1879,17 @@
 		inner.className = 'ms-error-message';
 
 		var text = document.createElement( 'p' );
+		text.className = 'ms-error-title';
 		text.textContent = String( message || '' );
 
 		inner.appendChild( text );
+
+		if ( extra.sub ) {
+			var sub = document.createElement( 'p' );
+			sub.className = 'ms-error-sub';
+			sub.textContent = String( extra.sub );
+			inner.appendChild( sub );
+		}
 
 		// A failure that may pass (a dropped connection, an expired stream
 		// address) offers a retry instead of a dead end.
@@ -1875,8 +1905,35 @@
 			inner.appendChild( retry );
 		}
 
+		addAdminNote( el, inner, extra.cause );
+
 		overlay.appendChild( inner );
 		el.appendChild( overlay );
+	}
+
+	/**
+	 * For someone who may edit the video: the cause, and a link to fix it.
+	 *
+	 * The server prints data-edit-url only for a user with edit_post on the
+	 * video, so viewers never see it.
+	 *
+	 * @param {HTMLElement} el    Player container.
+	 * @param {HTMLElement} inner Message box to add to.
+	 * @param {string}      cause What went wrong, '' when not known.
+	 */
+	function addAdminNote( el, inner, cause ) {
+		var editUrl = el.dataset ? el.dataset.editUrl : '';
+		if ( ! editUrl ) return;
+		var note = document.createElement( 'p' );
+		note.className = 'ms-error-admin';
+		var label = document.createElement( 'span' );
+		label.textContent = t( 'adminNote', 'Only editors see this:' ) + ' ' + ( cause ? String( cause ) + ' ' : '' );
+		note.appendChild( label );
+		var link = document.createElement( 'a' );
+		link.href = editUrl;
+		link.textContent = t( 'editVideo', 'Edit video' );
+		note.appendChild( link );
+		inner.appendChild( note );
 	}
 
 	/**
@@ -1893,19 +1950,76 @@
 		link.className = 'ms-error-action';
 		link.href = url;
 		link.textContent = label;
-		inner.appendChild( link );
+		inner.insertBefore( link, inner.querySelector( '.ms-error-admin' ) );
 	}
 
 	/**
-	 * The host removed the video or made it private (Basecamp 10530930631).
+	 * The platform removed the video, made it private or refuses to embed it
+	 * (Basecamp 10530930631, 10545260568).
 	 *
-	 * @param {HTMLElement} el Player container.
+	 * The viewer reads that the owner has been told and can try again; the
+	 * owner also reads the cause. The report lets the Videos list show
+	 * "Unavailable at platform"; the server checks with the platform before
+	 * it records anything.
+	 *
+	 * @param {HTMLElement} el       Player container.
+	 * @param {string}      code     'removed', 'private', 'not_embeddable' or 'unknown'.
+	 * @param {string}      platform Platform name for the cause, e.g. 'YouTube'.
 	 */
-	function showUnavailable( el ) {
-		showErrorOverlay( el, t( 'unavailable', 'This video is unavailable.' ) );
+	function showUnavailable( el, code, platform ) {
+		code = code || 'unknown';
+		var cause = 'not_embeddable' === code
+			? t( 'causeNoEmbed', 'The owner of this video on %s does not allow it to play on other sites.' )
+			: t( 'causeRemoved', '%s says this video was removed or is private.' );
+		showErrorOverlay(
+			el,
+			t( 'unavailable', 'This video is unavailable.' ),
+			function () { rebuildPlayer( el ); },
+			{
+				sub: t( 'unavailableSub', 'The site owner has been told. Please try again later.' ),
+				cause: cause.replace( '%s', platform || t( 'thePlatform', 'The video platform' ) ),
+			}
+		);
 		// Opaque, so the host's own error text does not show through.
 		var overlay = el.querySelector( '.ms-error-overlay' );
 		if ( overlay ) overlay.classList.add( 'ms-error-overlay--solid' );
+
+		// A beacon: nothing waits on the answer, and the viewer's screen is
+		// the same whatever the server decides. The nonce rides in the URL so
+		// a logged-in editor's report counts as theirs.
+		var videoId = parseInt( el.dataset.videoId, 10 ) || 0;
+		if ( videoId && config.restUrl && navigator.sendBeacon && ! el._msReported ) {
+			el._msReported = true;
+			var reportUrl = config.restUrl + 'videos/' + videoId + '/unavailable';
+			reportUrl += ( reportUrl.indexOf( '?' ) > -1 ? '&' : '?' ) + '_wpnonce=' + encodeURIComponent( config.nonce || '' );
+			navigator.sendBeacon( reportUrl, new Blob( [ JSON.stringify( { code: code } ) ], { type: 'application/json' } ) );
+		}
+	}
+
+	/**
+	 * Start a player again from the markup the page printed (Try again).
+	 *
+	 * @param {HTMLElement} el Player container.
+	 */
+	function rebuildPlayer( el ) {
+		if ( el._msAdapter && el._msAdapter.destroy ) {
+			try { el._msAdapter.destroy(); } catch ( e ) {}
+		}
+		el._msAdapter = null;
+		var fresh = el._msTarget ? el._msTarget.cloneNode( true ) : null;
+		if ( ! fresh ) {
+			window.location.reload();
+			return;
+		}
+		// The platform swapped its iframe in for the target; put the target back.
+		Array.prototype.forEach.call( el.children, function ( child ) {
+			if ( child.matches( '.ms-player-target, iframe, .ms-iframe-poster, .ms-error-overlay' ) ) {
+				child.remove();
+			}
+		} );
+		el.insertBefore( fresh, el.firstChild );
+		delete el.dataset.msInitialized;
+		initPlayer( el );
 	}
 
 	// ─── Login Overlay ───────────────────────────────────────────
@@ -1941,7 +2055,13 @@
 		link.className = 'ms-login-button';
 		link.textContent = t( 'loginButton', 'Log In' );
 
+		// Who it is for, so the viewer knows logging in is the way in.
+		var sub = document.createElement( 'p' );
+		sub.className = 'ms-login-sub';
+		sub.textContent = t( 'loginSub', 'It is for members of this site.' );
+
 		message.appendChild( text );
+		message.appendChild( sub );
 		message.appendChild( link );
 		overlay.appendChild( message );
 		el.appendChild( overlay );
@@ -1966,14 +2086,28 @@
 	}
 
 	/**
-	 * A small "Resume from 2:00" chip just above the control bar, never on
-	 * it. It goes away on its own after about 8 seconds, as soon as the video
-	 * plays, or with its close button.
+	 * "Resume from 4:12 · Start over", above the control bar (Basecamp 10545260660).
+	 *
+	 * Play means resume: the big Play, the poster, the keyboard and the
+	 * platform's own play button all continue from the saved position. The
+	 * chip stays until the member picks: Resume, Start over, or Play.
+	 *
+	 * @param {HTMLElement} el       Player container.
+	 * @param {number}      position Saved position in seconds.
+	 * @param {Object}      adapter  Player adapter.
 	 */
 	function showResumePrompt( el, position, adapter ) {
 		var target = el.querySelector( '.ms-player-target' );
 		var duration = adapter.getDuration() || parseFloat( target ? target.dataset.duration : 0 ) || 0;
 		if ( ! resumeWorthOffering( position, duration ) ) return;
+
+		var label = t( 'resumeFrom', 'Resume from %s' ).replace( '%s', clock( position ) );
+		var pending = true;
+		var watch = null;
+		var play = adapter.play;
+		var big = el.querySelector( '.ms-bigplay' );
+		var cover = el.querySelector( '.ms-iframe-poster' );
+		var labels = [];
 
 		var chip = document.createElement( 'div' );
 		chip.className = 'ms-resume-chip';
@@ -1981,29 +2115,47 @@
 		var go = document.createElement( 'button' );
 		go.type = 'button';
 		go.className = 'ms-resume-chip__go';
-		go.textContent = t( 'resumeFrom', 'Resume from %s' ).replace( '%s', clock( position ) );
+		go.textContent = label;
 
-		var close = document.createElement( 'button' );
-		close.type = 'button';
-		close.className = 'ms-resume-chip__close';
-		close.setAttribute( 'aria-label', t( 'dismiss', 'Dismiss' ) );
-		close.textContent = '×';
+		var over = document.createElement( 'button' );
+		over.type = 'button';
+		over.className = 'ms-resume-chip__over';
+		over.textContent = t( 'startOver', 'Start over' );
 
-		var watch = null;
 		var done = function () {
+			pending = false;
 			clearInterval( watch );
+			adapter.play = play;
+			labels.forEach( function ( pair ) { pair[ 0 ].setAttribute( 'aria-label', pair[ 1 ] ); } );
 			el.classList.remove( 'ms-has-resume' );
 			if ( chip.parentNode ) chip.remove();
 		};
-		go.addEventListener( 'click', function () {
+
+		// Every play while the choice is open starts at the saved position.
+		adapter.play = function () {
+			if ( pending ) {
+				done();
+				adapter.seekTo( position );
+			}
+			return play.apply( adapter, arguments );
+		};
+
+		go.addEventListener( 'click', function () { adapter.play(); } );
+		over.addEventListener( 'click', function () {
 			done();
-			adapter.seekTo( position );
+			adapter.seekTo( 0 );
 			adapter.play();
 		} );
-		close.addEventListener( 'click', done );
 
 		chip.appendChild( go );
-		chip.appendChild( close );
+		chip.appendChild( over );
+
+		// The big Play and the poster say what they do.
+		[ big, cover ].forEach( function ( button ) {
+			if ( ! button ) return;
+			labels.push( [ button, button.getAttribute( 'aria-label' ) || '' ] );
+			button.setAttribute( 'aria-label', label );
+		} );
 
 		// Above MediaShield's control bar when there is one; platform players
 		// keep their own bar in the bottom 52px, which the CSS default clears.
@@ -2014,9 +2166,13 @@
 		el.appendChild( chip );
 		el.classList.add( 'ms-has-resume' );
 
-		var started = Date.now();
+		// Started some other way (the platform's own button inside its iframe,
+		// autoplay): jump to the saved position once it plays.
 		watch = setInterval( function () {
-			if ( adapter.isPlaying() || Date.now() - started > 8000 ) done();
+			if ( pending && adapter.isPlaying() ) {
+				done();
+				if ( adapter.getPosition() < position - 2 ) adapter.seekTo( position );
+			}
 		}, 250 );
 	}
 

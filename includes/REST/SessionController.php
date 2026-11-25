@@ -323,7 +323,16 @@ class SessionController extends WP_REST_Controller {
 					)
 				);
 			}
-			return new WP_Error( $code, $access['reason'], array( 'status' => 403 ) );
+			// A member who may not watch gets one next step: the owner's
+			// membership page, when Messages names one (Basecamp 10545260568).
+			// A guest is asked to log in instead, so gets no link here.
+			$data = array( 'status' => 403 );
+			$url  = (string) Settings::get( 'ms_access_denied_url' );
+			if ( $user_id && '' !== $url ) {
+				$data['access_url']   = $url;
+				$data['access_label'] = Settings::message( 'ms_access_denied_button_text', __( 'See membership options', 'mediashield' ) );
+			}
+			return new WP_Error( $code, $access['reason'], $data );
 		}
 
 		// Start session.

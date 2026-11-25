@@ -252,6 +252,26 @@ iframe.ms-player-target {
 	background: var(--ms-accent-hover);
 }
 
+/* Second line of a state: who it is for, what happens next (Basecamp 10545260568). */
+.ms-error-message .ms-error-sub,
+.ms-login-message .ms-login-sub {
+	margin-block: var(--ms-space-2) 0;
+	font-size: var(--ms-font-size-base);
+	color: var(--ms-on-overlay-muted);
+}
+
+/* The cause and an Edit video link, for someone who may edit the video. */
+.ms-error-message .ms-error-admin {
+	margin-block-start: var(--ms-space-4);
+	font-size: var(--ms-font-size-sm);
+	color: var(--ms-on-overlay-muted);
+}
+
+.ms-error-admin a {
+	color: var(--ms-on-overlay) !important;
+	text-decoration: underline;
+}
+
 /* A video the host removed: cover the host's own error page completely. */
 .ms-error-overlay--solid {
 	background: var(--ms-player-bg);
@@ -310,11 +330,12 @@ iframe.ms-player-target {
 
 .ms-login-message p {
 	font-size: 1.125rem;
-	margin: 0 0 1rem;
+	margin: 0;
 }
 
 .ms-login-button {
 	display: inline-block;
+	margin-block-start: var(--ms-space-4);
 	padding: 0.75rem 2rem;
 	background: var(--ms-accent);
 	color: #fff !important;
@@ -345,7 +366,7 @@ iframe.ms-player-target {
 }
 
 .ms-resume-chip__go,
-.ms-resume-chip__close {
+.ms-resume-chip__over {
 	min-height: var(--ms-tap-min);
 	border: 0;
 	background: transparent;
@@ -362,11 +383,12 @@ iframe.ms-player-target {
 	text-overflow: ellipsis;
 }
 
-.ms-resume-chip__close {
-	min-width: var(--ms-tap-min);
-	padding: 0;
-	font-size: var(--ms-font-size-md);
+.ms-resume-chip__over {
+	padding-inline: var(--ms-space-2) var(--ms-space-4);
 	color: var(--ms-on-overlay-muted);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	white-space: nowrap;
 }
 
 /* "Protected by MediaShield" badge (off by default; the owner turns it on).
@@ -736,7 +758,7 @@ iframe.ms-player-target {
 	}
 
 	.ms-resume-chip__go:hover,
-	.ms-resume-chip__close:hover {
+	.ms-resume-chip__over:hover {
 		color: var(--ms-accent);
 	}
 }
@@ -830,7 +852,8 @@ iframe.ms-player-target {
 .ms-playlist-item:focus-visible,
 .ms-error-action:focus-visible,
 .ms-resume-chip__go:focus-visible,
-.ms-resume-chip__close:focus-visible,
+.ms-resume-chip__over:focus-visible,
+.ms-error-admin a:focus-visible,
 .ms-endscreen__replay:focus-visible {
 	outline: 2px solid var(--ms-accent);
 	outline-offset: 2px;

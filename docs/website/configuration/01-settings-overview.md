@@ -51,12 +51,14 @@ There are 35 settings in Free. "Default" is the value a new install starts with.
 | Login Overlay Text | Please log in to watch this video | Message on the video for visitors who are not logged in. |
 | Login Button Text | Log In | Label of the login button. |
 | Access Denied Text | You do not have access to this video | Message for signed-in viewers who lack the role, or whose domain is not allowed. |
+| Membership Page | Empty | Your membership or pricing page. When set, a signed-in viewer who may not watch gets a button to it under the message. Empty shows no button. A course link from your LMS is used instead when there is one. |
+| Membership Button Text | See membership options | Label of that button. Shown once a Membership Page is set. |
 | Course Access Text | This video is part of %s. Enroll to watch it. | Shown to a member not enrolled in the course a video belongs to (Learnomy, or with Pro a linked LearnDash lesson). %s becomes the course name. A button to the course sits under it. |
 | Course Button Text | View course | Label of that button. |
-| Unavailable Video Text | This video is unavailable. | Shown when YouTube or Vimeo says the video was removed or made private. |
+| Unavailable Video Text | This video is unavailable. | Shown when YouTube or Vimeo says the video was removed, made private or may not be embedded, with "The site owner has been told. Please try again later." and a Try again button. You and your editors also see the cause and an Edit video link. |
 | Speed Control | On | Speed selector, 0.5x to 2x. Self-hosted, and Bunny with Pro direct playback. |
 | Keyboard Shortcuts | On | Space, arrows, M and F while the player has focus. |
-| Resume Playback | On | Offers to continue exactly where the viewer stopped, rewinds included. |
+| Resume Playback | On | Offers to continue exactly where the viewer stopped, rewinds included. Play resumes; Start over plays from the beginning. |
 | Prevent Skipping Ahead | Off | Blocks seeking beyond the furthest point watched. |
 | Sticky Player | Off | Keeps the player floating in a corner while the viewer scrolls. |
 | End Screen | Off | Shows a message and button when the video ends. |

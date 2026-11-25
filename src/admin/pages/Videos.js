@@ -162,6 +162,8 @@ const STATUS_LABELS = {
 	ready: __( 'Ready', 'mediashield' ),
 	encoding: __( 'Encoding', 'mediashield' ),
 	failed: __( 'Failed', 'mediashield' ),
+	// The platform says the video is private, removed or not embeddable.
+	unavailable: __( 'Unavailable at platform', 'mediashield' ),
 };
 
 const PROTECTION_OPTIONS = [
@@ -174,7 +176,7 @@ const PROTECTION_OPTIONS = [
 
 const StatusBadge = ( { status } ) => {
 	const s = STATUS_LABELS[ status ] ? status : 'ready';
-	const tone = { ready: 'success', encoding: 'warn', failed: 'danger' }[ s ];
+	const tone = { ready: 'success', encoding: 'warn', failed: 'danger', unavailable: 'danger' }[ s ];
 	return <span className={ `mediashield-badge mediashield-badge--${ tone }` }>{ STATUS_LABELS[ s ] }</span>;
 };
 

@@ -80,6 +80,7 @@ includes/
     Watermark.php            Dynamic watermark overlay
     Renderer.php             Shared .ms-protected-player container output for a single video (used by [mediashield] shortcode, video block, single template). Validates the CPT + source URLs and enqueues assets only when output will be produced. Emits per-video playback options (`data-autoplay`/`data-loop`/`data-muted`/`data-controls`) from `_ms_autoplay`/`_ms_loop`/`_ms_muted`/`_ms_show_controls` meta.
     PlaylistRenderer.php     Shared playlist output (used by [mediashield_playlist] shortcode and the playlist Gutenberg block): the queue markup around ONE Renderer::render() player. It never builds a player of its own - the playlist script swaps in /playlists/{id}/player/{video_id} markup and player-wrapper.js initialises it like any other player.
+  CPT/SourceStatus.php       (1.4.4) The one record of "the platform no longer plays this video" (video meta `_ms_source_unavailable`). The player reports YouTube/Vimeo refusals to POST /videos/{id}/unavailable (REST/SourceReportController.php); report() confirms with the platform's oEmbed (or believes only an editor where there is no check), the Videos list shows "Unavailable at platform", saving the video clears it.
   Milestones/
     MilestoneTracker.php     25/50/75/100% completion tracking. When a milestone with a configured tag fires, the tag is promoted into the unified `ms_tags` dictionary (via `TagManager::ensure()`) and the video↔tag link recorded in `ms_video_tags`. The per-user earn record stays in `_ms_video_tags` user meta but now carries `tag_id` alongside the display string for cross-reference.
   Upload/
@@ -364,7 +365,7 @@ Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `media
 ## JavaScript Architecture
 
 ### Vanilla JS (assets/js/) -- no build required
-- **player-wrapper.js** -- Detects video/iframe elements, wraps with protection container
+- **player-wrapper.js** -- Detects video/iframe elements, wraps with protection container. Every refusal or failure goes through `showErrorOverlay( el, message, onRetry, { sub, cause } )`: one message, one next step (Log in, the membership/course link, or Try again), and for users the server marked with `data-edit-url` the cause plus an Edit video link. The resume chip ("Resume from m:ss · Start over") stays until the member picks; Play resumes. Behaviour tests: `tests/js/` (`npm run test:js`, local-ci 1.5).
 - **watermark.js** -- Renders dynamic user watermark overlay (email/name + timestamp)
 - **tracker.js** -- Sends heartbeat POST to /session/heartbeat every 30s (`config.interval`, default 30000ms)
 - **protection.js** -- Disables right-click context menu, detects devtools open
@@ -453,7 +454,7 @@ Schema covers **34 keys** (this list is the full set — verified against `Setti
 
 - **Core:** `ms_enabled`, `ms_default_protection`, `ms_require_login`, `ms_allowed_domains`, `ms_max_concurrent_streams`, `ms_session_retention_months`, `ms_show_badge`
 - **Watermark:** `ms_watermark_opacity`, `ms_watermark_color`, `ms_watermark_swap_interval`
-- **Messages:** `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`
+- **Messages:** `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`, `ms_access_denied_url` + `ms_access_denied_button_text` (1.4.4: the refused member's membership button; empty URL = no button)
 - **Player:** `ms_player_speed_control`, `ms_player_prevent_forward_seek`, `ms_player_sticky`, `ms_player_keyboard`, `ms_player_resume`, `ms_player_endscreen`, `ms_player_endscreen_text`, `ms_player_endscreen_url`
 - **Ads:** `ms_ads_enabled`, `ms_ads_require_full_view`, `ms_ads_skip_after`, `ms_ads_preroll`, `ms_ads_midroll_count`, `ms_ads_show_markers`
 - **Protection:** `ms_block_right_click`, `ms_block_keyboard`, `ms_hide_source`, `ms_detect_devtools`, `ms_pause_on_devtools`, `ms_devtools_title`, `ms_devtools_message`

@@ -837,6 +837,24 @@ const Settings = () => {
 					placeholder={ __( 'You do not have access to this video', 'mediashield' ) }
 					__nextHasNoMarginBottom
 				/>
+				<TextControl
+					label={ __( 'Membership Page', 'mediashield' ) }
+					help={ __( 'Where a logged-in member who may not watch a video can get access, such as your membership or pricing page. Leave empty to show no button. A course link from your LMS is used instead when there is one.', 'mediashield' ) }
+					type="url"
+					value={ settings?.ms_access_denied_url || '' }
+					onChange={ ( val ) => updateSetting( 'ms_access_denied_url', val ) }
+					placeholder="https://..."
+					__nextHasNoMarginBottom
+				/>
+				{ !! settings?.ms_access_denied_url && (
+					<TextControl
+						label={ __( 'Membership Button Text', 'mediashield' ) }
+						value={ settings?.ms_access_denied_button_text || '' }
+						onChange={ ( val ) => updateSetting( 'ms_access_denied_button_text', val ) }
+						placeholder={ __( 'See membership options', 'mediashield' ) }
+						__nextHasNoMarginBottom
+					/>
+				) }
 				{ /* Course words only where a course plugin can link a video to a course (Basecamp 10536749905). */ }
 				{ ( config.isLearnomyActive || lmsConfig.isLMSActive ) && (
 				<>

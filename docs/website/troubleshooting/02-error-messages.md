@@ -7,7 +7,8 @@
 | Message | Meaning | Fix |
 |---------|---------|-----|
 | Please log in to watch this video | Require Login is on, or the video needs a role, and the visitor is logged out. | Log in, or turn Require Login off. Edit the text under Settings > Login and Access Messages. |
-| You do not have access to this video | Logged in but missing the role, or the page's domain is not in Allowed Domains, or the request had no Referer. | Give the user the role, add the domain, or clear Allowed Domains. |
+| You do not have access to this video | Logged in but missing the role, or the page's domain is not in Allowed Domains, or the request had no Referer. | Give the user the role, add the domain, or clear Allowed Domains. Set a Membership Page under Settings > Login and Access Messages so members get a button to join. |
+| This video is unavailable. The site owner has been told. Please try again later. | YouTube or Vimeo says the video was removed, is private, or may not be embedded on other sites. MediaShield checks with the platform and marks the video **Unavailable at platform** in the Videos list. | As an administrator or editor, open the page: the player names the cause and links to Edit video. Make the video public or embeddable at the platform, or paste a new link. Saving the video clears the mark. |
 | Too many active streams. Please close another video first. | The account is at Max Concurrent Streams. | Close another video, wait 5 minutes, or raise the limit. |
 | This video could not be loaded. If you are the site owner, check the video URL in the admin. | The source address is not a playable video. Often a Bunny dashboard address or a page of HTML. | Open the video, check Detected Platform, paste the right address. See [Video Hosts](../using-mediashield/10-video-hosts.md). |
 | This video could not be loaded. Please try again. | A playlist item failed to load. | Reload. If it repeats, check the item is published. |

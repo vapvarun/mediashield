@@ -343,6 +343,11 @@ class Renderer {
 			if ( $access_denied ) {
 				echo ' data-access-denied="1"';
 			}
+			// Someone who may edit the video reads the cause of a failure and
+			// gets an Edit video link under it (Basecamp 10545260568).
+			if ( current_user_can( 'edit_post', $video_id ) ) {
+				printf( ' data-edit-url="%s"', esc_url( (string) get_edit_post_link( $video_id, 'raw' ) ) );
+			}
 			if ( $wrapper_attrs ) {
 				echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
 			}
