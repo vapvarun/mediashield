@@ -250,30 +250,49 @@ const SettingsNav = ( { groups } ) => {
 
 	// The nav follows the scroll: the item lit is the card at the top of the
 	// screen, not the last one clicked (Basecamp 10545260577).
+	// A picked item stays lit while the page scrolls to it, until the owner
+	// scrolls by hand: the last cards cannot reach the top of the screen, so
+	// the spy alone lit the card above them.
+	const pickedRef = useRef( false );
 	useEffect( () => {
 		let frame = 0;
 		const spy = () => {
+			if ( pickedRef.current ) {
+				return;
+			}
 			cancelAnimationFrame( frame );
 			frame = requestAnimationFrame( () => {
+				const cards = [ ...document.querySelectorAll( '.mediashield-settings__sections [data-group]:not([hidden])' ) ];
 				let current = '';
-				document.querySelectorAll( '.mediashield-settings__sections [data-group]:not([hidden])' ).forEach( ( card ) => {
+				cards.forEach( ( card ) => {
 					if ( card.getBoundingClientRect().top <= 140 ) {
 						current = card.dataset.group;
 					}
 				} );
+				// At the bottom of the page the last card is the one in view.
+				if ( cards.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2 ) {
+					current = cards[ cards.length - 1 ].dataset.group;
+				}
 				if ( current ) {
 					setActive( current );
 				}
 			} );
 		};
+		const release = () => {
+			pickedRef.current = false;
+		};
+		const events = [ 'wheel', 'touchstart', 'keydown' ];
 		window.addEventListener( 'scroll', spy, { passive: true } );
+		events.forEach( ( ev ) => window.addEventListener( ev, release, { passive: true } ) );
 		return () => {
 			cancelAnimationFrame( frame );
 			window.removeEventListener( 'scroll', spy );
+			events.forEach( ( ev ) => window.removeEventListener( ev, release ) );
 		};
 	}, [] );
 
 	const pick = ( key ) => {
+		pickedRef.current = true;
 		setActive( key );
 		goToGroup( key );
 		// The address names the section, so it can be copied and shared.
@@ -386,7 +405,7 @@ const SectionCard = ( { icon, title, description, group, children } ) => (
 				<Icon name={ icon } />
 			</div>
 			<div>
-				<div className="mediashield-settings__section-title">{ title }</div>
+				<h2 className="mediashield-settings__section-title">{ title }</h2>
 				{ description && (
 					<div className="mediashield-settings__section-desc">{ description }</div>
 				) }
@@ -1141,15 +1160,19 @@ const Settings = () => {
 					description={ __( 'When a lesson that plays a protected video counts as complete.', 'mediashield' ) }
 				>
 					{ learnomyOwnsWatchRule && (
-						<p className="mediashield-settings__rule-note">
-							{ ( settings?.ms_lms_require_watch_pct ?? 0 ) > 0
-								? sprintf(
-									/* translators: %d: percent of the video to watch, for example 80. */
-									__( 'Learnomy: set this on each lesson (Completion: Auto: video watched). New protected video lessons start at %d%%.', 'mediashield' ),
-									settings.ms_lms_require_watch_pct
-								)
-								: __( 'Learnomy: set this on each lesson (Completion: Auto: video watched).', 'mediashield' ) }
-						</p>
+						<>
+							<p className="mediashield-settings__rule-note">
+								{ __( 'Learnomy: set this on each lesson (Completion: Auto: video watched).', 'mediashield' ) }
+							</p>
+							<NumberField
+								label={ __( 'Default for new protected video lessons (%)', 'mediashield' ) }
+								help={ __( 'The share a new Learnomy lesson that plays a protected video starts with. It changes only lessons created from now on; each existing lesson keeps its own % in Learnomy. 0 leaves the choice to the author.', 'mediashield' ) }
+								value={ settings?.ms_learnomy_new_lesson_pct ?? 80 }
+								onCommit={ ( val ) => updateSetting( 'ms_learnomy_new_lesson_pct', val ) }
+								min={ 0 }
+								max={ 100 }
+							/>
+						</>
 					) }
 					{ ( ( config.isLearnomyActive && ! learnomyOwnsWatchRule ) || lmsConfig.enforcesWatchRule ) && (
 					<NumberField

@@ -29,7 +29,8 @@ class Settings {
 	 * Each entry: `array( 'type' => <scalar>, 'default' => <value>, 'validate' => ?callable, 'upgrade_default' => ?<value> )`.
 	 *
 	 * `upgrade_default` is the value a site that updates from an older version
-	 * starts with when the setting is new to it (seed_defaults()).
+	 * starts with when the setting is new to it (seed_defaults()); a Closure is
+	 * called for it, to start from what the site stored.
 	 *
 	 * Translatable defaults must be returned from a method (not a const) so the
 	 * text domain is loaded before the strings are read.
@@ -164,6 +165,19 @@ class Settings {
 				'type'     => 'integer',
 				'default'  => 0,
 				'validate' => static function ( $v ) {
+					return max( 0, min( 100, (int) $v ) );
+				},
+			),
+			// Where a new Learnomy protected video lesson starts its "watch %"
+			// (answers learnomy_protected_video_default_watch_pct). 80 on a new
+			// install, as the Lesson completion card says; a site that updates
+			// starts from its Require X% watched, which is also what Learnomy's
+			// one-time move copies onto existing lessons (Basecamp 10545260590).
+			'ms_learnomy_new_lesson_pct' => array(
+				'type'            => 'integer',
+				'default'         => 80,
+				'upgrade_default' => static fn() => (int) get_option( 'ms_lms_require_watch_pct', 0 ),
+				'validate'        => static function ( $v ) {
 					return max( 0, min( 100, (int) $v ) );
 				},
 			),
@@ -416,6 +430,10 @@ class Settings {
 		foreach ( self::schema() as $key => $entry ) {
 			if ( false === get_option( $key, false ) ) {
 				$value = $updating && array_key_exists( 'upgrade_default', $entry ) ? $entry['upgrade_default'] : $entry['default'];
+				// An upgrade_default may be worked out from what the site stored.
+				if ( $value instanceof \Closure ) {
+					$value = $value();
+				}
 				add_option( $key, false === $value ? '0' : $value );
 			}
 		}

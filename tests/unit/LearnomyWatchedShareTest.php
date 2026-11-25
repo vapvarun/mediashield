@@ -78,8 +78,11 @@ class LearnomyWatchedShareTest extends WP_UnitTestCase {
 	}
 
 	public function test_default_share_for_new_lessons_is_the_setting(): void {
+		// Test change (QA on Basecamp 10545260590): the answer is its own
+		// setting, Default for new protected video lessons, 0 = Learnomy's own.
+		update_option( 'ms_learnomy_new_lesson_pct', 0 );
 		$this->assertSame( 0, apply_filters( 'learnomy_protected_video_default_watch_pct', 0 ) );
-		update_option( 'ms_lms_require_watch_pct', 80 );
+		update_option( 'ms_learnomy_new_lesson_pct', 80 );
 		$this->assertSame( 80, apply_filters( 'learnomy_protected_video_default_watch_pct', 0 ) );
 	}
 

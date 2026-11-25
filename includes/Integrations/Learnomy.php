@@ -87,7 +87,7 @@ class Learnomy {
 		if ( ! function_exists( '\\Learnomy\\protected_video_measured' ) ) {
 			return false;
 		}
-		return ! empty( get_option( 'learnomy_protected_video_rule_moved' ) )
+		return ! empty( get_option( self::RULE_MOVED_OPTION ) )
 			|| (int) Settings::get( 'ms_lms_require_watch_pct' ) <= 0;
 	}
 
@@ -143,8 +143,9 @@ class Learnomy {
 	 * Starting "watch %" for a new Learnomy protected video lesson.
 	 *
 	 * Answers `learnomy_protected_video_default_watch_pct` with Settings >
-	 * Integrations "Require X% watched", so a site that chose a share keeps
-	 * it on new lessons; 0 (off) leaves Learnomy's own default.
+	 * Lesson completion "Default for new protected video lessons"
+	 * (ms_learnomy_new_lesson_pct: 80 on a new install, the stored Require X%
+	 * watched on a site that updates); 0 leaves Learnomy's own default.
 	 *
 	 * @since 1.4.4
 	 *
@@ -152,9 +153,37 @@ class Learnomy {
 	 * @return int
 	 */
 	public static function default_watch_pct( $pct ): int {
-		$setting = (int) Settings::get( 'ms_lms_require_watch_pct' );
+		$setting = (int) Settings::get( 'ms_learnomy_new_lesson_pct' );
 		return $setting > 0 ? $setting : (int) $pct;
 	}
+
+	/**
+	 * On a new install there are no lessons held to an old site-wide rule,
+	 * so Learnomy's one-time move is recorded as done with nothing moved.
+	 *
+	 * Without this, Learnomy would read the new-lesson default (80) as the
+	 * old rule and copy it onto lessons that never had one. A site that
+	 * updates keeps the move: it starts from its stored Require X% watched.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function finish_move_on_install(): void {
+		if ( false === get_option( self::RULE_MOVED_OPTION ) ) {
+			add_option(
+				self::RULE_MOVED_OPTION,
+				array(
+					'pct'   => 0,
+					'moved' => 0,
+					'at'    => time(),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Learnomy's record of its one-time move of the site-wide watch rule.
+	 */
+	public const RULE_MOVED_OPTION = 'learnomy_protected_video_rule_moved';
 
 	/**
 	 * The Learnomy course a refused viewer can enrol in to watch this video.
