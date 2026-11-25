@@ -149,6 +149,11 @@ class PlayerWrapper {
 			'player.mediadelivery.net'   => 'bunny',
 			'wistia_async_'              => 'wistia',
 			'<video'                     => Platforms::SELF_HOSTED,
+			// Core's [video] shortcode stores no tag: its <video> is
+			// printed at render time, so without this a post holding
+			// only the shortcode was never buffered and a guest got the
+			// file's address and a download link.
+			'[video'                     => Platforms::SELF_HOSTED,
 		);
 
 		if ( (bool) apply_filters( 'mediashield_force_output_buffer', false ) ) {
