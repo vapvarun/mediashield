@@ -105,17 +105,13 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 		<p class="ms-my-videos__empty"><?php echo esc_html( $filters[ $filter ][2] ); ?></p>
 	<?php endif; ?>
 	<div class="ms-my-videos__grid">
-		<?php \MediaShield\CPT\VideoUsage::prime( array_map( 'intval', wp_list_pluck( $videos, 'video_id' ) ) ); // One scan for the whole page. ?>
-		<?php foreach ( $videos as $video ) : ?>
-			<?php
-			$video_post = get_post( (int) $video->video_id );
-			if ( ! $video_post ) {
-				continue;
-			}
-			$completion  = round( (float) $video->completion_pct, 1 );
-			$is_complete = $completion >= 100;
-			$thumbnail   = get_the_post_thumbnail_url( $video_post->ID, 'medium' );
-
+		<?php
+		// The page where the member watches each video. An integration (an
+		// LMS lesson) answers first; only the videos it leaves without a page
+		// are looked up in the content, in one batch (VideoUsage::prime()).
+		$watch_urls = array();
+		foreach ( $videos as $video ) {
+			$video_id = (int) $video->video_id;
 			/**
 			 * Filter the page where a member watches this video.
 			 *
@@ -135,7 +131,21 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 			 * @param int    $video_id Video CPT post ID.
 			 * @param int    $user_id  Member the list is for.
 			 */
-			$watch_url = (string) apply_filters( 'mediashield_video_watch_url', '', $video_post->ID, $current_user_id );
+			$watch_urls[ $video_id ] = (string) apply_filters( 'mediashield_video_watch_url', '', $video_id, $current_user_id );
+		}
+		\MediaShield\CPT\VideoUsage::prime( array_keys( array_filter( $watch_urls, static fn( $url ) => '' === $url ) ) );
+		?>
+		<?php foreach ( $videos as $video ) : ?>
+			<?php
+			$video_post = get_post( (int) $video->video_id );
+			if ( ! $video_post ) {
+				continue;
+			}
+			$completion  = round( (float) $video->completion_pct, 1 );
+			$is_complete = $completion >= 100;
+			$thumbnail   = get_the_post_thumbnail_url( $video_post->ID, 'medium' );
+
+			$watch_url = $watch_urls[ $video_post->ID ] ?? '';
 			if ( '' === $watch_url ) {
 				$watch_url = \MediaShield\CPT\VideoUsage::page_for_viewer( $video_post->ID, $current_user_id );
 			}

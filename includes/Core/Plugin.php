@@ -79,6 +79,8 @@ class Plugin {
 		\MediaShield\CPT\VideoCreator::register();
 		// Each video's library status, stored when it can change (Basecamp 10545260458).
 		\MediaShield\CPT\VideoStatus::register();
+		// Where each video is placed, cached until an embed changes.
+		\MediaShield\CPT\VideoUsage::register();
 
 		// REST API.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );

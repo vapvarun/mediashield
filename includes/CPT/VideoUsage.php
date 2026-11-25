@@ -45,12 +45,11 @@ class VideoUsage {
 	/**
 	 * Look up several videos with one query and remember the answers.
 	 *
-	 * One indexed read of the playlist items table for the playlists that
-	 * hold these videos, then one scan of post_content (not indexed) for
-	 * exactly these videos and those playlists (scan()). It runs once per
-	 * Videos list page (20 videos), never per row, and has no cap on the
-	 * posts it reads, so an old page is never missed. Pages that show one
-	 * of the playlists become the video's pages via a playlist.
+	 * The places come from the object cache, or for the videos not cached
+	 * from one playlist read and one content scan for the whole batch
+	 * (found()); never per row. The scan has no cap on the posts it reads,
+	 * so an old page is never missed. Pages that show one of the playlists
+	 * become the video's pages via a playlist.
 	 *
 	 * @param int[] $video_ids Video IDs.
 	 */
@@ -61,65 +60,15 @@ class VideoUsage {
 			return;
 		}
 
-		foreach ( $video_ids as $id ) {
+		$wanted = array_flip( $video_ids );
+		foreach ( self::found( $video_ids ) as $id => $found ) {
 			self::$cache[ $id ]        = array();
 			self::$via_playlist[ $id ] = array();
-		}
-
-		global $wpdb;
-
-		// Playlists that hold these videos: one indexed read of the playlist
-		// table. A video added to a playlist is shown wherever the playlist
-		// is placed (a playlist has no page of its own since 1.4.4), so the
-		// playlist is a place, and the pages that show it are the video's
-		// pages via a playlist.
-		$placeholders = implode( ', ', array_fill( 0, count( $video_ids ), '%d' ) );
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- One batched read per list page; placeholders built above.
-		$playlists = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT DISTINCT pi.video_id, p.ID, p.post_title, p.post_type, p.post_modified_gmt
-				FROM {$wpdb->prefix}ms_playlist_items pi
-				INNER JOIN {$wpdb->posts} p ON p.ID = pi.playlist_id
-				WHERE pi.video_id IN ( {$placeholders} )
-				AND p.post_type = 'mediashield_playlist'
-				AND p.post_status IN ( 'publish', 'future', 'draft', 'private' )
-				ORDER BY p.post_modified_gmt DESC",
-				$video_ids
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-		$playlist_ids = array_values( array_unique( array_map( static fn( $row ) => (int) $row->ID, (array) $playlists ) ) );
-
-		// One scan of post_content for exactly these videos and playlists,
-		// with no cap: a video shown only on an old page must still say
-		// where.
-		$hits = self::scan( $video_ids, $playlist_ids, array( 'publish', 'future', 'draft', 'private' ) );
-
-		$wanted            = array_flip( $video_ids );
-		$pages_by_playlist = array();
-		foreach ( $hits as $hit ) {
-			foreach ( $hit['playlists'] as $playlist_id ) {
-				$pages_by_playlist[ $playlist_id ][] = $hit;
+			foreach ( $found['places'] as $place ) {
+				self::$cache[ $id ][] = self::entry( $place[0], $place[1], $place[2] );
 			}
-			foreach ( $hit['videos'] as $id ) {
-				if ( count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
-					self::$cache[ $id ][] = self::entry( $hit['id'], $hit['title'], $hit['type'] );
-				}
-			}
-		}
-
-		foreach ( (array) $playlists as $row ) {
-			$id = (int) $row->video_id;
-			if ( ! isset( $wanted[ $id ] ) ) {
-				continue;
-			}
-			if ( count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
-				self::$cache[ $id ][] = self::entry( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
-			}
-			foreach ( $pages_by_playlist[ (int) $row->ID ] ?? array() as $page ) {
-				if ( count( self::$via_playlist[ $id ] ) < self::MAX_PER_VIDEO ) {
-					self::$via_playlist[ $id ][] = self::entry( $page['id'], $page['title'], $page['type'] );
-				}
+			foreach ( $found['via'] as $page ) {
+				self::$via_playlist[ $id ][] = self::entry( $page[0], $page[1], $page[2] );
 			}
 		}
 
@@ -141,6 +90,176 @@ class VideoUsage {
 				self::$cache[ (int) $id ] = array_slice( (array) $places, 0, self::MAX_PER_VIDEO );
 			}
 		}
+	}
+
+	/**
+	 * Object cache group for the places found; its last_changed moves on
+	 * every write that can change them (forget()).
+	 */
+	const CACHE_GROUP = 'mediashield_usage';
+
+	/**
+	 * Where each video is placed, as [ post ID, title, post type ] lists:
+	 * `places` (posts and playlists that show it) and `via` (pages that show
+	 * a playlist holding it). From the object cache, or, for the videos not
+	 * cached, from one playlist read and one content scan, then cached.
+	 *
+	 * Raw rows, not entry(): an entry's link depends on who is looking.
+	 *
+	 * @param int[] $video_ids Video IDs.
+	 * @return array<int, array{places: array<int, array{0:int,1:string,2:string}>, via: array<int, array{0:int,1:string,2:string}>}>
+	 */
+	private static function found( array $video_ids ): array {
+		$changed = wp_cache_get_last_changed( self::CACHE_GROUP );
+		$keys    = array();
+		foreach ( $video_ids as $id ) {
+			$keys[ $id ] = 'video_' . $id . ':' . $changed;
+		}
+		$cached = wp_cache_get_multiple( array_values( $keys ), self::CACHE_GROUP );
+
+		$out    = array();
+		$misses = array();
+		foreach ( $keys as $id => $key ) {
+			if ( is_array( $cached[ $key ] ?? null ) ) {
+				$out[ $id ] = $cached[ $key ];
+			} else {
+				$misses[]   = $id;
+				$out[ $id ] = array(
+					'places' => array(),
+					'via'    => array(),
+				);
+			}
+		}
+		if ( ! $misses ) {
+			return $out;
+		}
+
+		global $wpdb;
+
+		// Playlists that hold these videos: one indexed read of the playlist
+		// table. A video added to a playlist is shown wherever the playlist
+		// is placed (a playlist has no page of its own since 1.4.4), so the
+		// playlist is a place, and the pages that show it are the video's
+		// pages via a playlist.
+		$placeholders = implode( ', ', array_fill( 0, count( $misses ), '%d' ) );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Cached per video below; placeholders built above.
+		$playlists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DISTINCT pi.video_id, p.ID, p.post_title, p.post_type, p.post_modified_gmt
+				FROM {$wpdb->prefix}ms_playlist_items pi
+				INNER JOIN {$wpdb->posts} p ON p.ID = pi.playlist_id
+				WHERE pi.video_id IN ( {$placeholders} )
+				AND p.post_type = 'mediashield_playlist'
+				AND p.post_status IN ( 'publish', 'future', 'draft', 'private' )
+				ORDER BY p.post_modified_gmt DESC",
+				$misses
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$playlist_ids = array_values( array_unique( array_map( static fn( $row ) => (int) $row->ID, (array) $playlists ) ) );
+
+		// One scan of post_content for exactly these videos and playlists,
+		// with no cap: a video shown only on an old page must still say
+		// where.
+		$hits = self::scan( $misses, $playlist_ids, array( 'publish', 'future', 'draft', 'private' ) );
+
+		$pages_by_playlist = array();
+		foreach ( $hits as $hit ) {
+			foreach ( $hit['playlists'] as $playlist_id ) {
+				$pages_by_playlist[ $playlist_id ][] = $hit;
+			}
+			foreach ( $hit['videos'] as $id ) {
+				if ( isset( $out[ $id ] ) && count( $out[ $id ]['places'] ) < self::MAX_PER_VIDEO ) {
+					$out[ $id ]['places'][] = array( $hit['id'], $hit['title'], $hit['type'] );
+				}
+			}
+		}
+
+		foreach ( (array) $playlists as $row ) {
+			$id = (int) $row->video_id;
+			if ( ! isset( $out[ $id ] ) ) {
+				continue;
+			}
+			if ( count( $out[ $id ]['places'] ) < self::MAX_PER_VIDEO ) {
+				$out[ $id ]['places'][] = array( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
+			}
+			foreach ( $pages_by_playlist[ (int) $row->ID ] ?? array() as $page ) {
+				if ( count( $out[ $id ]['via'] ) < self::MAX_PER_VIDEO ) {
+					$out[ $id ]['via'][] = array( $page['id'], $page['title'], $page['type'] );
+				}
+			}
+		}
+
+		$store = array();
+		foreach ( $misses as $id ) {
+			$store[ $keys[ $id ] ] = $out[ $id ];
+		}
+		wp_cache_set_multiple( $store, self::CACHE_GROUP, DAY_IN_SECONDS );
+
+		return $out;
+	}
+
+	/**
+	 * Hook the writes that can change where a video is placed.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function register(): void {
+		add_action( 'post_updated', array( __CLASS__, 'on_post_updated' ), 10, 3 );
+		add_action( 'save_post', array( __CLASS__, 'on_post_changed' ), 10, 2 );
+		add_action( 'deleted_post', array( __CLASS__, 'on_post_changed' ), 10, 2 );
+		add_action( 'trashed_post', array( __CLASS__, 'on_post_changed' ) );
+	}
+
+	/**
+	 * A post saved, deleted or trashed: forget the places if it shows a video
+	 * or playlist, or is one.
+	 *
+	 * @param int           $post_id Post ID.
+	 * @param \WP_Post|null $post    Post, when the hook passes it.
+	 */
+	public static function on_post_changed( $post_id, $post = null ): void {
+		$post = $post instanceof \WP_Post ? $post : get_post( (int) $post_id );
+		if ( $post && self::matters( $post ) ) {
+			self::forget();
+		}
+	}
+
+	/**
+	 * An update that took the last MediaShield embed out of a post.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $after   Post after the update.
+	 * @param \WP_Post $before  Post before the update.
+	 */
+	public static function on_post_updated( $post_id, $after, $before ): void {
+		if ( $before instanceof \WP_Post && self::matters( $before ) ) {
+			self::forget();
+		}
+	}
+
+	/**
+	 * Can this post change an answer? A video or playlist, or content that
+	 * names MediaShield.
+	 *
+	 * @param \WP_Post $post Post.
+	 * @return bool
+	 */
+	private static function matters( \WP_Post $post ): bool {
+		return in_array( $post->post_type, array( 'mediashield_video', 'mediashield_playlist' ), true )
+			|| false !== stripos( (string) $post->post_content, 'mediashield' );
+	}
+
+	/**
+	 * Forget every cached answer (moves the group's last_changed), and this
+	 * request's. Called on any write above and when a playlist gains or
+	 * loses a video.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function forget(): void {
+		wp_cache_set_last_changed( self::CACHE_GROUP );
+		self::flush();
 	}
 
 	/**
@@ -191,14 +310,16 @@ class VideoUsage {
 	 * @return string
 	 */
 	public static function page_for_playlist( int $playlist_id ): string {
-		// One scan for exactly this playlist, like prime(); this runs only on a
-		// request for an old address.
-		$places = array();
-		foreach ( self::scan( array(), array( $playlist_id ), array( 'publish' ) ) as $hit ) {
-			$places[] = array( 'id' => $hit['id'] );
+		// One scan for exactly this playlist, like prime(), cached until a
+		// post that names MediaShield changes (forget()).
+		$key = 'playlist_' . $playlist_id . ':' . wp_cache_get_last_changed( self::CACHE_GROUP );
+		$ids = wp_cache_get( $key, self::CACHE_GROUP );
+		if ( ! is_array( $ids ) ) {
+			$ids = wp_list_pluck( self::scan( array(), array( $playlist_id ), array( 'publish' ) ), 'id' );
+			wp_cache_set( $key, $ids, self::CACHE_GROUP, DAY_IN_SECONDS );
 		}
 
-		return self::first_readable( $places, 0 );
+		return self::first_readable( array_map( static fn( $id ) => array( 'id' => (int) $id ), $ids ), 0 );
 	}
 
 	/**
