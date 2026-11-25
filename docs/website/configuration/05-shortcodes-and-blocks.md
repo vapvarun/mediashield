@@ -56,7 +56,13 @@ All three blocks are available in the block inserter by searching for "MediaShie
 
 ### MediaShield Video block
 
-Embeds a single protected video. In the block editor it opens a video picker, and you can also paste a video URL to create a library entry on the fly. The editor shows a preview, and the block sidebar exposes the video's protection level and duration so you can change them without leaving the page.
+Embeds a single protected video. Paste a video link into the block, or click **Choose from library**.
+
+- **A link already in your library.** The block says "This link is already in your library" with the video's title, platform, length and protection, and offers **Use this video** first. Choose **Add as a new video** only when you really want a second copy, for example to give it different protection. A YouTube link matches however it is written (`youtu.be/...`, `watch?v=...`, with or without a start time).
+- **A new link.** The video is added to your library and placed in the block.
+- **A link that is not a video.** The block says so and adds nothing.
+
+Once a video is chosen, the block shows its poster, title, platform and length. The block sidebar shows the same, the video's protection level with a **Change on the video** link, and the other pages that show the video. Protection is set once, on the video, so every page that shows it is protected the same way. **Pick a different video** and **Remove video** are at the bottom of the sidebar.
 
 Frontend output includes the player, watermark, session tracking, and the login overlay when required.
 

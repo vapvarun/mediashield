@@ -1,292 +1,350 @@
 /**
  * MediaShield Video Block — Editor Component (React).
  *
- * Two insertion modes:
- *   1. "Choose from library" — opens VideoPickerModal
- *   2. "Paste URL" — auto-detects platform, creates CPT via REST
+ * Two ways in:
+ *   1. "Choose from library" — opens VideoPickerModal.
+ *   2. Paste a link — the server says whether the link is already a video in
+ *      the library (GET /videos/match); if so the block offers "Use this
+ *      video" first, so a second copy is never made by accident
+ *      (Basecamp 10545260523). A new link is added to the library.
+ *
+ * Once chosen, the block and its sidebar name the video (title, platform,
+ * length) from GET /videos/{id}/summary. Protection is the video's own
+ * setting: the sidebar shows it and links to the video, with no second
+ * control here.
  *
  * Pro extension: <Slot name="mediashield-video-access-controls" /> in sidebar.
  */
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	Placeholder,
 	Button,
 	TextControl,
-	SelectControl,
+	Notice,
+	PanelBody,
 	Spinner,
 	Slot,
+	ExternalLink,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import VideoPickerModal from '../../admin/components/VideoPickerModal';
 import { detectPlatform, extractVideoId } from '../../admin/utils/platform';
+import { formatDuration } from '../../admin/utils/time';
 import { Video } from 'lucide-react';
 
+/**
+ * "YouTube · 12:04 · Standard": what a video is, in one line.
+ *
+ * @param {Object}  summary        From /videos/{id}/summary or /videos/match.
+ * @param {boolean} withProtection Add the protection level.
+ * @return {string} The line.
+ */
+function describe( summary, withProtection ) {
+	const parts = [ summary.platform_label ];
+	if ( summary.duration > 0 ) {
+		parts.push( formatDuration( summary.duration ) );
+	}
+	if ( withProtection ) {
+		parts.push( summary.protection_label );
+	}
+	return parts.filter( Boolean ).join( ' · ' );
+}
+
+/**
+ * A failed request, in the calm words every MediaShield screen uses.
+ *
+ * @param {Object} err apiFetch rejection.
+ * @return {string} Message.
+ */
+function failure( err ) {
+	return window.mediashieldRequest ? window.mediashieldRequest.message( err ) : __( 'Something went wrong. Please try again.', 'mediashield' );
+}
+
 export default function Edit( { attributes, setAttributes } ) {
-	const { videoId, url } = attributes;
+	const { videoId } = attributes;
 	const [ isModalOpen, setModalOpen ] = useState( false );
-	const [ isCreating, setCreating ] = useState( false );
-	const [ video, setVideo ] = useState( null );
+	const [ busy, setBusy ] = useState( false );
+	const [ summary, setSummary ] = useState( null );
+	const [ loadFailed, setLoadFailed ] = useState( false );
 	const [ pasteUrl, setPasteUrl ] = useState( '' );
+	const [ found, setFound ] = useState( null );
+	const [ error, setError ] = useState( '' );
 	const blockProps = useBlockProps();
+	// The post being edited, left out of "used on N other pages". By name, so
+	// the block also works where the post editor store is not loaded (widgets).
+	const postId = useSelect( ( select ) => select( 'core/editor' )?.getCurrentPostId?.() || 0, [] );
 
-	// Fetch video data when videoId changes.
+	// What the chosen video is, and where else it is shown.
 	useEffect( () => {
-		if ( videoId > 0 ) {
-			// _embed brings the featured image, so the preview shows the poster
-			// instead of the live platform iframe.
-			apiFetch( { path: `/wp/v2/mediashield-videos/${ videoId }?_embed=wp:featuredmedia` } )
-				.then( ( data ) => setVideo( data ) )
-				.catch( () => setVideo( null ) );
+		if ( ! ( videoId > 0 ) ) {
+			setSummary( null );
+			return;
 		}
-	}, [ videoId ] );
-
-	/**
-	 * Handle URL paste — auto-create video CPT.
-	 */
-	const handleUrlPaste = async () => {
-		if ( ! pasteUrl.trim() ) return;
-
-		setCreating( true );
-		const platform = detectPlatform( pasteUrl );
-		const platformVideoId = extractVideoId( pasteUrl, platform );
-
-		try {
-			const newVideo = await apiFetch( {
-				path: '/wp/v2/mediashield-videos',
-				method: 'POST',
-				data: {
-					// Never the platform ID: the server gives the video the platform's
-					// title or "Video 123", and a slug to match.
-					title: platformVideoId ? '' : pasteUrl.substring( 0, 60 ),
-					status: 'publish',
-					meta: {
-						_ms_platform: platform,
-						_ms_platform_video_id: platformVideoId,
-						// No protection level: the video follows the site default.
-						_ms_source_url: pasteUrl,
-					},
-				},
+		setLoadFailed( false );
+		apiFetch( { path: `/mediashield/v1/videos/${ videoId }/summary?post_id=${ postId }` } )
+			.then( setSummary )
+			.catch( () => {
+				setSummary( null );
+				setLoadFailed( true );
 			} );
+	}, [ videoId, postId ] );
 
-			setAttributes( { videoId: newVideo.id, url: pasteUrl } );
-			setVideo( newVideo );
-		} catch ( err ) {
-			// eslint-disable-next-line no-console
-			console.error( 'MediaShield: Failed to create video', err );
-		}
-
-		setCreating( false );
+	const choose = ( id, url ) => {
+		setAttributes( { videoId: id, url: url || '' } );
+		setFound( null );
+		setPasteUrl( '' );
+		setError( '' );
 	};
 
 	/**
-	 * Handle video selection from picker modal.
+	 * Add the link to the library as a new video and place it.
+	 *
+	 * @param {string} link Pasted link.
 	 */
-	const handleSelect = ( selectedVideo ) => {
-		setAttributes( {
-			videoId: selectedVideo.id,
-			url: selectedVideo.meta?._ms_source_url || '',
+	const addNew = async ( link ) => {
+		const platform = detectPlatform( link );
+		const platformVideoId = extractVideoId( link, platform );
+		const created = await apiFetch( {
+			path: '/wp/v2/mediashield-videos',
+			method: 'POST',
+			data: {
+				// Never the platform ID: the server gives the video the platform's
+				// title or "Video 123", and a slug to match.
+				title: platformVideoId ? '' : link.substring( 0, 60 ),
+				status: 'publish',
+				meta: {
+					_ms_platform: platform,
+					_ms_platform_video_id: platformVideoId,
+					// No protection level: the video follows the site default.
+					_ms_source_url: link,
+				},
+			},
 		} );
-		setVideo( selectedVideo );
+		choose( created.id, link );
+	};
+
+	/**
+	 * A pasted link: use the library video it already is, or add it.
+	 */
+	const handlePaste = async () => {
+		const link = pasteUrl.trim();
+		if ( ! link ) return;
+		setBusy( true );
+		setError( '' );
+		setFound( null );
+		try {
+			const res = await apiFetch( { path: `/mediashield/v1/videos/match?url=${ encodeURIComponent( link ) }` } );
+			if ( res.match ) {
+				setFound( res.match );
+			} else {
+				await addNew( link );
+			}
+		} catch ( err ) {
+			setError( failure( err ) );
+		}
+		setBusy( false );
+	};
+
+	const addAnyway = async () => {
+		setBusy( true );
+		setError( '' );
+		try {
+			await addNew( pasteUrl.trim() );
+		} catch ( err ) {
+			setError( failure( err ) );
+		}
+		setBusy( false );
+	};
+
+	const handleSelect = ( selectedVideo ) => {
+		choose( selectedVideo.id, selectedVideo.meta?._ms_source_url || '' );
 		setModalOpen( false );
 	};
 
-	// -- Render --
+	const picker = isModalOpen && (
+		<VideoPickerModal
+			onSelect={ handleSelect }
+			onClose={ () => setModalOpen( false ) }
+		/>
+	);
 
-	// No video selected — show placeholder.
-	if ( ! videoId || ! video ) {
+	// -- No video yet: paste or pick. --
+	if ( ! ( videoId > 0 ) ) {
 		return (
 			<div { ...blockProps }>
 				<Placeholder
 					icon="video-alt3"
 					label={ __( 'MediaShield Video', 'mediashield' ) }
-					instructions={ __(
-						'Choose a video from your library or paste a URL.',
-						'mediashield'
-					) }
+					instructions={ __( 'Paste a video link, or choose a video from your library.', 'mediashield' ) }
 				>
-					<div style={ { display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' } }>
-						<Button variant="primary" onClick={ () => setModalOpen( true ) }>
-							{ __( 'Choose from Library', 'mediashield' ) }
-						</Button>
-
-						<div style={ { display: 'flex', gap: '8px', alignItems: 'flex-end' } }>
+					<div className="ms-block-paste">
+						<div className="ms-block-paste__row">
 							<TextControl
-								label={ __( 'Or paste a video URL', 'mediashield' ) }
+								label={ __( 'Video link', 'mediashield' ) }
 								value={ pasteUrl }
-								onChange={ setPasteUrl }
-								placeholder="https://youtube.com/watch?v=..."
-								style={ { flex: 1 } }
+								onChange={ ( value ) => {
+									setPasteUrl( value );
+									setFound( null );
+									setError( '' );
+								} }
+								placeholder="https://www.youtube.com/watch?v=…"
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
 							/>
 							<Button
-								variant="secondary"
-								onClick={ handleUrlPaste }
-								disabled={ isCreating || ! pasteUrl.trim() }
+								variant="primary"
+								onClick={ handlePaste }
+								disabled={ busy || ! pasteUrl.trim() }
+								isBusy={ busy }
+								__next40pxDefaultSize
 							>
-								{ isCreating ? <Spinner /> : __( 'Embed', 'mediashield' ) }
+								{ __( 'Add', 'mediashield' ) }
 							</Button>
 						</div>
+
+						{ error && (
+							<Notice status="error" isDismissible={ false }>{ error }</Notice>
+						) }
+
+						{ found && (
+							<div className="ms-block-found" role="status">
+								{ found.thumbnail ? (
+									<img className="ms-block-found__thumb" src={ found.thumbnail } alt="" />
+								) : (
+									<span className="ms-block-found__thumb" aria-hidden="true" />
+								) }
+								<div className="ms-block-found__text">
+									<strong>{ __( 'This link is already in your library', 'mediashield' ) }</strong>
+									<span>
+										{ sprintf(
+											/* translators: 1: video title, 2: platform, length and protection, e.g. "YouTube · 12:04 · Standard". */
+											__( '"%1$s" · %2$s', 'mediashield' ),
+											found.title,
+											describe( found, true )
+										) }
+									</span>
+								</div>
+								<div className="ms-block-found__actions">
+									<Button variant="primary" onClick={ () => choose( found.id, pasteUrl.trim() ) } __next40pxDefaultSize>
+										{ __( 'Use this video', 'mediashield' ) }
+									</Button>
+									<Button variant="secondary" onClick={ addAnyway } disabled={ busy } __next40pxDefaultSize>
+										{ __( 'Add as a new video', 'mediashield' ) }
+									</Button>
+								</div>
+							</div>
+						) }
+
+						<Button variant="secondary" onClick={ () => setModalOpen( true ) } __next40pxDefaultSize>
+							{ __( 'Choose from library', 'mediashield' ) }
+						</Button>
 					</div>
 				</Placeholder>
-
-				{ isModalOpen && (
-					<VideoPickerModal
-						onSelect={ handleSelect }
-						onClose={ () => setModalOpen( false ) }
-					/>
-				) }
+				{ picker }
 			</div>
 		);
 	}
 
-	// Video selected — show preview.
-	const platform = video.meta?._ms_platform || 'unknown';
-	const sourceUrl = video.meta?._ms_source_url || url;
-	const platformVideoId = video.meta?._ms_platform_video_id || '';
-
-	// Resolve a preview thumbnail:
-	// 1. WP featured image when the editor has set one.
-	// 2. Otherwise derive a free CDN URL for YouTube — its `hqdefault.jpg` is
-	//    reliably reachable. Bunny/Vimeo/Wistia fall through to the iframe
-	//    embed branch below so the actual player renders in the editor.
-	const derivedThumbnail = ( () => {
-		if ( platform === 'youtube' && platformVideoId ) {
-			return `https://i.ytimg.com/vi/${ platformVideoId }/hqdefault.jpg`;
-		}
-		return '';
-	} )();
-
-	const thumbnailUrl = video.featured_media_src_url
-		|| video._embedded?.[ 'wp:featuredmedia' ]?.[ 0 ]?.source_url
-		|| derivedThumbnail;
+	// -- A video is chosen. --
+	const others = summary ? summary.used_in : [];
+	let usedLabel = __( 'Not used on any other page yet.', 'mediashield' );
+	if ( others.length ) {
+		usedLabel = summary.used_in_more
+			? sprintf(
+				/* translators: %d: number of pages. */
+				_n( 'Used on %d or more other page:', 'Used on %d or more other pages:', others.length, 'mediashield' ),
+				others.length
+			)
+			: sprintf(
+				/* translators: %d: number of pages. */
+				_n( 'Used on %d other page:', 'Used on %d other pages:', others.length, 'mediashield' ),
+				others.length
+			);
+	}
 
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
-				<div style={ { padding: '16px' } }>
-					<h3>{ __( 'Video Settings', 'mediashield' ) }</h3>
-					<p>
-						<strong>{ __( 'Platform:', 'mediashield' ) }</strong>{ ' ' }
-						{ platform }
-					</p>
-					<p>
-						<strong>{ __( 'ID:', 'mediashield' ) }</strong>{ ' ' }
-						{ videoId }
-					</p>
-
-					<SelectControl
-						label={ __( 'Protection Level', 'mediashield' ) }
-						value={ video.meta?._ms_protection_level || '' }
-						options={ [
-							// Empty = follow MediaShield > Settings > Default protection.
-							{ label: __( 'Site default', 'mediashield' ), value: '' },
-							{ label: __( 'None — No extra protection', 'mediashield' ), value: 'none' },
-							{ label: __( 'Basic — Login + right-click block', 'mediashield' ), value: 'basic' },
-							{ label: __( 'Standard — Watermark + tracking', 'mediashield' ), value: 'standard' },
-							{ label: __( 'Strict — Devtools detection + source hiding', 'mediashield' ), value: 'strict' },
-						] }
-						onChange={ ( value ) => {
-							apiFetch( {
-								path: `/wp/v2/mediashield-videos/${ videoId }`,
-								method: 'POST',
-								data: { meta: { _ms_protection_level: value } },
-							} );
-							setVideo( {
-								...video,
-								meta: { ...video.meta, _ms_protection_level: value },
-							} );
-						} }
-					/>
-
-					<TextControl
-						type="number"
-						min={ 0 }
-						label={ __( 'Duration (seconds)', 'mediashield' ) }
-						help={ __(
-							'Used to validate watch progress. Leave 0 if unknown.',
-							'mediashield'
-						) }
-						value={ video.meta?._ms_duration ?? 0 }
-						onChange={ ( value ) => {
-							const seconds = Math.max( 0, parseInt( value, 10 ) || 0 );
-							setVideo( {
-								...video,
-								meta: { ...video.meta, _ms_duration: seconds },
-							} );
-						} }
-						onBlur={ () => {
-							apiFetch( {
-								path: `/wp/v2/mediashield-videos/${ videoId }`,
-								method: 'POST',
-								data: {
-									meta: {
-										_ms_duration:
-											video.meta?._ms_duration ?? 0,
-									},
-								},
-							} );
-						} }
-					/>
+				<PanelBody title={ __( 'Video', 'mediashield' ) }>
+					{ ! summary && ! loadFailed && <Spinner /> }
+					{ loadFailed && (
+						<Notice status="warning" isDismissible={ false }>
+							{ __( 'This video could not be found. It may have been deleted. Pick a different video.', 'mediashield' ) }
+						</Notice>
+					) }
+					{ summary && (
+						<div className="ms-block-sidebar">
+							<p>
+								<strong>{ summary.title }</strong>
+								<br />
+								<span className="ms-block-sidebar__muted">{ describe( summary, false ) }</span>
+							</p>
+							<p>
+								{ sprintf(
+									/* translators: %s: protection level, e.g. Standard. */
+									summary.follows_default ? __( 'Protection: %s (site default)', 'mediashield' ) : __( 'Protection: %s', 'mediashield' ),
+									summary.protection_label
+								) }
+								{ summary.edit_url && (
+									<>
+										<br />
+										<a href={ summary.edit_url } target="_blank" rel="noreferrer">
+											{ __( 'Change on the video', 'mediashield' ) }
+										</a>
+									</>
+								) }
+							</p>
+							<p>{ usedLabel }</p>
+							{ others.length > 0 && (
+								<ul className="ms-block-sidebar__places">
+									{ others.map( ( place ) => (
+										<li key={ place.id }>
+											<ExternalLink href={ place.url }>{ place.title }</ExternalLink>
+											<span className="ms-block-sidebar__muted"> · { place.type }</span>
+										</li>
+									) ) }
+								</ul>
+							) }
+						</div>
+					) }
 
 					{ /* Pro extension point for access controls */ }
 					<Slot name="mediashield-video-access-controls" />
 
-					<Button
-						variant="link"
-						isDestructive
-						onClick={ () => {
-							setAttributes( { videoId: 0, url: '' } );
-							setVideo( null );
-						} }
-						style={ { marginTop: '12px' } }
-					>
-						{ __( 'Remove Video', 'mediashield' ) }
-					</Button>
-				</div>
+					<div className="ms-block-sidebar__actions">
+						<Button variant="secondary" onClick={ () => setModalOpen( true ) } __next40pxDefaultSize>
+							{ __( 'Pick a different video', 'mediashield' ) }
+						</Button>
+						<Button variant="link" isDestructive onClick={ () => choose( 0, '' ) }>
+							{ __( 'Remove video', 'mediashield' ) }
+						</Button>
+					</div>
+				</PanelBody>
 			</InspectorControls>
 
 			<div className="ms-block-preview">
-				{ thumbnailUrl ? (
-					<div className="ms-block-thumbnail" style={ { position: 'relative' } }>
-						<img
-							src={ thumbnailUrl }
-							alt={ video.title?.rendered || '' }
-							style={ { width: '100%', display: 'block' } }
-						/>
-						<span className="ms-block-platform-badge">{ platform }</span>
-					</div>
+				{ summary && summary.thumbnail ? (
+					<img className="ms-block-preview__poster" src={ summary.thumbnail } alt="" />
 				) : (
-					<div className="ms-block-embed-preview">
-						{ platform === 'self' && sourceUrl ? (
-							<video
-								src={ sourceUrl }
-								preload="metadata"
-								controls
-								style={ { width: '100%', display: 'block' } }
-							/>
-						) : platform === 'vimeo' && platformVideoId ? (
-							<iframe
-								src={ `https://player.vimeo.com/video/${ platformVideoId }` }
-								title={ video.title?.rendered || 'Video' }
-								style={ { width: '100%', aspectRatio: '16/9', border: 'none' } }
-								allow="autoplay; fullscreen; picture-in-picture"
-							/>
-						) : sourceUrl && /^https?:\/\//.test( sourceUrl ) ? (
-							<iframe
-								src={ sourceUrl }
-								title={ video.title?.rendered || 'Video' }
-								style={ { width: '100%', aspectRatio: '16/9', border: 'none' } }
-							/>
-						) : (
-							<div className="ms-block-placeholder-preview">
-								<Video size={ 48 } strokeWidth={ 1.75 } className="ms-icon" />
-								<span>{ video.title?.rendered || __( 'Video', 'mediashield' ) }</span>
-							</div>
-						) }
+					<div className="ms-block-placeholder-preview">
+						<Video size={ 48 } strokeWidth={ 1.75 } className="ms-icon" aria-hidden="true" />
 					</div>
 				) }
+				<div className="ms-block-preview__caption">
+					{ summary ? (
+						<>
+							<strong>{ summary.title }</strong>
+							<span>{ describe( summary, false ) }</span>
+						</>
+					) : (
+						<span>{ loadFailed ? __( 'Video not found', 'mediashield' ) : __( 'Loading video…', 'mediashield' ) }</span>
+					) }
+				</div>
 			</div>
+			{ picker }
 		</div>
 	);
 }

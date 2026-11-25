@@ -205,6 +205,27 @@ class Platforms {
 	}
 
 	/**
+	 * A platform's name as people read it, for any screen that shows one.
+	 *
+	 * The same words as the Videos list's platform column.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param string $platform Platform slug as stored in `_ms_platform`.
+	 * @return string
+	 */
+	public static function label( string $platform ): string {
+		$labels = array(
+			'youtube'         => 'YouTube',
+			'vimeo'           => 'Vimeo',
+			'wistia'          => 'Wistia',
+			'bunny'           => 'Bunny Stream',
+			self::SELF_HOSTED => __( 'Video file', 'mediashield' ),
+		);
+		return $labels[ '' !== $platform ? $platform : self::SELF_HOSTED ] ?? $platform;
+	}
+
+	/**
 	 * This site's Bunny pull-zone hostnames, mapped to their library ids.
 	 *
 	 * Empty in Free. Pro fills it from the connected Bunny library, which is

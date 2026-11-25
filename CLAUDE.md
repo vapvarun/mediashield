@@ -274,7 +274,7 @@ That is 25 routes in `mediashield/v1`. Registering the two CPTs with `show_in_re
 
 | Block | Slug | Description |
 |-------|------|-------------|
-| Video | `mediashield/video` | Embed protected video with player wrapper |
+| Video | `mediashield/video` | Embed protected video with player wrapper. Paste asks GET /videos/match first ("Use this video" before a second copy); the block and sidebar read GET /videos/{id}/summary (title, platform, length, protection with a link to the video, other pages using it). Protection is set on the video only. (`REST/VideoSummaryController.php`) |
 | Playlist | `mediashield/playlist` | Playlist with autoplay/countdown |
 | My Videos | `mediashield/my-videos` | Logged-in user's watch history |
 
