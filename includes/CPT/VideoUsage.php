@@ -95,8 +95,9 @@ class VideoUsage {
 		}
 
 		// Playlists: a video added to a playlist is shown wherever the playlist
-		// is, and the playlist's own page shows it too, so the playlist is a
-		// place. Its items live in the playlist table, not in post_content.
+		// is placed (a playlist has no page of its own since 1.4.4), so the
+		// playlist is a place. Its items live in the playlist table, not in
+		// post_content.
 		// One read for the list page, on the indexed video_id.
 		$placeholders = implode( ', ', array_fill( 0, count( $video_ids ), '%d' ) );
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- One batched read per list page; placeholders built above.
