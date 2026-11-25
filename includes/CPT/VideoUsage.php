@@ -45,11 +45,10 @@ class VideoUsage {
 	/**
 	 * Look up several videos with one query and remember the answers.
 	 *
-	 * The places come from the object cache, or for the videos not cached
-	 * from one playlist read and one content scan for the whole batch
-	 * (found()); never per row. The scan has no cap on the posts it reads,
-	 * so an old page is never missed. Pages that show one of the playlists
-	 * become the video's pages via a playlist.
+	 * The places come from the usage index (USED_IN rows written when a
+	 * post is saved) in one read for the whole batch (found()), never per
+	 * row and never a content scan once the index is built. Pages that show
+	 * one of the playlists become the video's pages via a playlist.
 	 *
 	 * @param int[] $video_ids Video IDs.
 	 */
@@ -93,16 +92,42 @@ class VideoUsage {
 	}
 
 	/**
-	 * Object cache group for the places found; its last_changed moves on
-	 * every write that can change them (forget()).
+	 * Video and playlist meta, one row per post that shows it (the index).
 	 */
-	const CACHE_GROUP = 'mediashield_usage';
+	const USED_IN = '_ms_used_in';
+
+	/**
+	 * Meta on a post that shows MediaShield: what it shows, as
+	 * { v: video IDs, p: playlist IDs }. What the index was last written from.
+	 */
+	const EMBEDS = '_ms_embeds';
+
+	/**
+	 * Option: the index of existing content is still being built; its value
+	 * is the last post ID done. Reads scan post content until it is gone.
+	 */
+	const INDEX_PENDING = 'ms_usage_index_pending';
+
+	/**
+	 * Posts indexed per background run.
+	 */
+	const INDEX_BATCH = 100;
+
+	/**
+	 * Statuses whose embeds count as places.
+	 */
+	const PLACE_STATUSES = array( 'publish', 'future', 'draft', 'private' );
+
+	/**
+	 * Post types that are never a place.
+	 */
+	const NOT_PLACES = array( 'revision', 'mediashield_video', 'mediashield_playlist', 'nav_menu_item', 'attachment', 'wp_global_styles' );
 
 	/**
 	 * Where each video is placed, as [ post ID, title, post type ] lists:
 	 * `places` (posts and playlists that show it) and `via` (pages that show
-	 * a playlist holding it). From the object cache, or, for the videos not
-	 * cached, from one playlist read and one content scan, then cached.
+	 * a playlist holding it). One read of the playlist items table, then one
+	 * read of the index (or, while it is being built, one content scan).
 	 *
 	 * Raw rows, not entry(): an entry's link depends on who is looking.
 	 *
@@ -110,28 +135,12 @@ class VideoUsage {
 	 * @return array<int, array{places: array<int, array{0:int,1:string,2:string}>, via: array<int, array{0:int,1:string,2:string}>}>
 	 */
 	private static function found( array $video_ids ): array {
-		$changed = wp_cache_get_last_changed( self::CACHE_GROUP );
-		$keys    = array();
+		$out = array();
 		foreach ( $video_ids as $id ) {
-			$keys[ $id ] = 'video_' . $id . ':' . $changed;
-		}
-		$cached = wp_cache_get_multiple( array_values( $keys ), self::CACHE_GROUP );
-
-		$out    = array();
-		$misses = array();
-		foreach ( $keys as $id => $key ) {
-			if ( is_array( $cached[ $key ] ?? null ) ) {
-				$out[ $id ] = $cached[ $key ];
-			} else {
-				$misses[]   = $id;
-				$out[ $id ] = array(
-					'places' => array(),
-					'via'    => array(),
-				);
-			}
-		}
-		if ( ! $misses ) {
-			return $out;
+			$out[ $id ] = array(
+				'places' => array(),
+				'via'    => array(),
+			);
 		}
 
 		global $wpdb;
@@ -141,8 +150,8 @@ class VideoUsage {
 		// is placed (a playlist has no page of its own since 1.4.4), so the
 		// playlist is a place, and the pages that show it are the video's
 		// pages via a playlist.
-		$placeholders = implode( ', ', array_fill( 0, count( $misses ), '%d' ) );
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Cached per video below; placeholders built above.
+		$placeholders = implode( ', ', array_fill( 0, count( $video_ids ), '%d' ) );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- One batched read per list page; placeholders built above.
 		$playlists = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT DISTINCT pi.video_id, p.ID, p.post_title, p.post_type, p.post_modified_gmt
@@ -152,16 +161,13 @@ class VideoUsage {
 				AND p.post_type = 'mediashield_playlist'
 				AND p.post_status IN ( 'publish', 'future', 'draft', 'private' )
 				ORDER BY p.post_modified_gmt DESC",
-				$misses
+				$video_ids
 			)
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$playlist_ids = array_values( array_unique( array_map( static fn( $row ) => (int) $row->ID, (array) $playlists ) ) );
 
-		// One scan of post_content for exactly these videos and playlists,
-		// with no cap: a video shown only on an old page must still say
-		// where.
-		$hits = self::scan( $misses, $playlist_ids, array( 'publish', 'future', 'draft', 'private' ) );
+		$hits = self::places( $video_ids, $playlist_ids, self::PLACE_STATUSES );
 
 		$pages_by_playlist = array();
 		foreach ( $hits as $hit ) {
@@ -190,76 +196,223 @@ class VideoUsage {
 			}
 		}
 
-		$store = array();
-		foreach ( $misses as $id ) {
-			$store[ $keys[ $id ] ] = $out[ $id ];
-		}
-		wp_cache_set_multiple( $store, self::CACHE_GROUP, DAY_IN_SECONDS );
-
 		return $out;
 	}
 
 	/**
-	 * Hook the writes that can change where a video is placed.
+	 * The posts that show these videos or playlists, newest edit first: from
+	 * the index, or from a content scan while the index is being built.
+	 *
+	 * @param int[]    $video_ids    Video IDs.
+	 * @param int[]    $playlist_ids Playlist IDs.
+	 * @param string[] $statuses     Post statuses that count.
+	 * @return array<int, array{id:int, title:string, type:string, videos:int[], playlists:int[]}>
+	 */
+	private static function places( array $video_ids, array $playlist_ids, array $statuses ): array {
+		if ( false !== get_option( self::INDEX_PENDING ) ) {
+			return self::scan( $video_ids, $playlist_ids, $statuses );
+		}
+
+		$video_ids    = array_values( array_filter( array_map( 'intval', $video_ids ) ) );
+		$playlist_ids = array_values( array_filter( array_map( 'intval', $playlist_ids ) ) );
+		$targets      = array_merge( $video_ids, $playlist_ids );
+		if ( ! $targets ) {
+			return array();
+		}
+
+		global $wpdb;
+		$in_targets  = implode( ', ', array_fill( 0, count( $targets ), '%d' ) );
+		$in_statuses = implode( ', ', array_fill( 0, count( $statuses ), '%s' ) );
+		$not_places  = implode( ', ', array_fill( 0, count( self::NOT_PLACES ), '%s' ) );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Index read on postmeta.post_id and the posts primary key; placeholders built above.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT m.post_id AS target, p.ID, p.post_title, p.post_type
+				FROM {$wpdb->postmeta} m
+				INNER JOIN {$wpdb->posts} p ON p.ID = CAST( m.meta_value AS UNSIGNED )
+				WHERE m.meta_key = %s AND m.post_id IN ( {$in_targets} )
+				AND p.post_status IN ( {$in_statuses} )
+				AND p.post_type NOT IN ( {$not_places} )
+				ORDER BY p.post_modified_gmt DESC",
+				array_merge( array( self::USED_IN ), $targets, $statuses, self::NOT_PLACES )
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		$is_video = array_flip( $video_ids );
+		$hits     = array();
+		foreach ( (array) $rows as $row ) {
+			$id = (int) $row->ID;
+			if ( ! isset( $hits[ $id ] ) ) {
+				$hits[ $id ] = array(
+					'id'        => $id,
+					'title'     => (string) $row->post_title,
+					'type'      => (string) $row->post_type,
+					'videos'    => array(),
+					'playlists' => array(),
+				);
+			}
+			$hits[ $id ][ isset( $is_video[ (int) $row->target ] ) ? 'videos' : 'playlists' ][] = (int) $row->target;
+		}
+		return array_values( $hits );
+	}
+
+	/**
+	 * Keep the index current, and build it for existing content.
 	 *
 	 * @since 1.4.4
 	 */
 	public static function register(): void {
-		add_action( 'post_updated', array( __CLASS__, 'on_post_updated' ), 10, 3 );
-		add_action( 'save_post', array( __CLASS__, 'on_post_changed' ), 10, 2 );
-		add_action( 'deleted_post', array( __CLASS__, 'on_post_changed' ), 10, 2 );
-		add_action( 'trashed_post', array( __CLASS__, 'on_post_changed' ) );
+		add_action( 'save_post', array( __CLASS__, 'on_save' ), 20, 2 );
+		add_action( 'trashed_post', array( __CLASS__, 'on_trash' ) );
+		add_action( 'before_delete_post', array( __CLASS__, 'on_delete' ) );
+		add_action( 'ms_index_usage', array( __CLASS__, 'build_index' ) );
+		add_action( 'init', array( __CLASS__, 'ensure_index_job' ), 20 );
 	}
 
 	/**
-	 * A post saved, deleted or trashed: forget the places if it shows a video
-	 * or playlist, or is one.
-	 *
-	 * @param int           $post_id Post ID.
-	 * @param \WP_Post|null $post    Post, when the hook passes it.
-	 */
-	public static function on_post_changed( $post_id, $post = null ): void {
-		$post = $post instanceof \WP_Post ? $post : get_post( (int) $post_id );
-		if ( $post && self::matters( $post ) ) {
-			self::forget();
-		}
-	}
-
-	/**
-	 * An update that took the last MediaShield embed out of a post.
+	 * A post saved (any status change included): index what it shows now.
 	 *
 	 * @param int      $post_id Post ID.
-	 * @param \WP_Post $after   Post after the update.
-	 * @param \WP_Post $before  Post before the update.
+	 * @param \WP_Post $post    Post.
 	 */
-	public static function on_post_updated( $post_id, $after, $before ): void {
-		if ( $before instanceof \WP_Post && self::matters( $before ) ) {
-			self::forget();
+	public static function on_save( $post_id, $post ): void {
+		if ( $post instanceof \WP_Post ) {
+			self::index( $post );
 		}
 	}
 
 	/**
-	 * Can this post change an answer? A video or playlist, or content that
-	 * names MediaShield.
+	 * A post trashed: it is no longer a place.
 	 *
-	 * @param \WP_Post $post Post.
-	 * @return bool
+	 * @param int $post_id Post ID.
 	 */
-	private static function matters( \WP_Post $post ): bool {
-		return in_array( $post->post_type, array( 'mediashield_video', 'mediashield_playlist' ), true )
-			|| false !== stripos( (string) $post->post_content, 'mediashield' );
+	public static function on_trash( $post_id ): void {
+		self::write( (int) $post_id, array() );
 	}
 
 	/**
-	 * Forget every cached answer (moves the group's last_changed), and this
-	 * request's. Called on any write above and when a playlist gains or
-	 * loses a video.
+	 * A post about to be deleted: take it out of the index.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public static function on_delete( $post_id ): void {
+		self::write( (int) $post_id, array() );
+	}
+
+	/**
+	 * Index one post from its content.
+	 *
+	 * @param \WP_Post $post Post.
+	 */
+	public static function index( \WP_Post $post ): void {
+		if ( in_array( $post->post_type, self::NOT_PLACES, true ) ) {
+			return;
+		}
+		$content = (string) $post->post_content;
+		$shows   = array();
+		if ( in_array( $post->post_status, self::PLACE_STATUSES, true ) && false !== stripos( $content, 'mediashield' ) ) {
+			$shows = array(
+				'v' => self::ids_in( $content ),
+				'p' => self::playlist_ids_in( $content ),
+			);
+		}
+		self::write( (int) $post->ID, $shows );
+	}
+
+	/**
+	 * Store what a post shows and move the difference onto the videos and
+	 * playlists (USED_IN rows).
+	 *
+	 * @param int                     $post_id Post ID.
+	 * @param array{v?:int[],p?:int[]} $shows   What it shows now ([] for nothing).
+	 */
+	private static function write( int $post_id, array $shows ): void {
+		if ( $post_id <= 0 ) {
+			return;
+		}
+		$old   = get_post_meta( $post_id, self::EMBEDS, true );
+		$old   = is_array( $old ) ? $old : array();
+		$types = array(
+			'v' => 'mediashield_video',
+			'p' => 'mediashield_playlist',
+		);
+		$now   = array();
+		foreach ( $types as $kind => $type ) {
+			$was = array_map( 'intval', (array) ( $old[ $kind ] ?? array() ) );
+			$is  = array_values( array_filter( array_map( 'intval', (array) ( $shows[ $kind ] ?? array() ) ), static fn( $id ) => $id > 0 && get_post_type( $id ) === $type ) );
+			foreach ( array_diff( $was, $is ) as $target ) {
+				delete_post_meta( $target, self::USED_IN, (string) $post_id );
+			}
+			foreach ( array_diff( $is, $was ) as $target ) {
+				add_post_meta( $target, self::USED_IN, (string) $post_id );
+			}
+			$now[ $kind ] = $is;
+		}
+
+		if ( $now['v'] || $now['p'] ) {
+			update_post_meta( $post_id, self::EMBEDS, $now );
+		} elseif ( $old ) {
+			delete_post_meta( $post_id, self::EMBEDS );
+		}
+		self::flush();
+	}
+
+	/**
+	 * Queue the next index run while the index of existing content is
+	 * being built (init).
 	 *
 	 * @since 1.4.4
 	 */
-	public static function forget(): void {
-		wp_cache_set_last_changed( self::CACHE_GROUP );
-		self::flush();
+	public static function ensure_index_job(): void {
+		if ( false !== get_option( self::INDEX_PENDING ) ) {
+			\MediaShield\Cron\Cleanup::schedule_single( 'ms_index_usage', time() + MINUTE_IN_SECONDS );
+		}
+	}
+
+	/**
+	 * Index existing content, 100 posts that name MediaShield a run, by post
+	 * ID above the cursor (`ms_index_usage`, queued by Migrator v18). The
+	 * last run deletes INDEX_PENDING, and reads switch to the index.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function build_index(): void {
+		$cursor = get_option( self::INDEX_PENDING );
+		if ( false === $cursor ) {
+			return;
+		}
+
+		global $wpdb;
+		$not_places = implode( ', ', array_fill( 0, count( self::NOT_PLACES ), '%s' ) );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- One-off walk on the primary key, one batch.
+		$ids = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT ID FROM {$wpdb->posts}
+					WHERE ID > %d AND post_type NOT IN ( {$not_places} ) AND post_content LIKE %s
+					ORDER BY ID ASC LIMIT %d",
+					array_merge( array( (int) $cursor ), self::NOT_PLACES, array( '%' . $wpdb->esc_like( 'mediashield' ) . '%', self::INDEX_BATCH ) )
+				)
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		_prime_post_caches( $ids, false, false );
+		foreach ( $ids as $id ) {
+			$post = get_post( $id );
+			if ( $post ) {
+				self::index( $post );
+			}
+		}
+
+		if ( count( $ids ) < self::INDEX_BATCH ) {
+			delete_option( self::INDEX_PENDING );
+			return;
+		}
+		update_option( self::INDEX_PENDING, (string) end( $ids ), false );
+		\MediaShield\Cron\Cleanup::schedule_single( 'ms_index_usage', time() + MINUTE_IN_SECONDS );
 	}
 
 	/**
@@ -310,14 +463,8 @@ class VideoUsage {
 	 * @return string
 	 */
 	public static function page_for_playlist( int $playlist_id ): string {
-		// One scan for exactly this playlist, like prime(), cached until a
-		// post that names MediaShield changes (forget()).
-		$key = 'playlist_' . $playlist_id . ':' . wp_cache_get_last_changed( self::CACHE_GROUP );
-		$ids = wp_cache_get( $key, self::CACHE_GROUP );
-		if ( ! is_array( $ids ) ) {
-			$ids = wp_list_pluck( self::scan( array(), array( $playlist_id ), array( 'publish' ) ), 'id' );
-			wp_cache_set( $key, $ids, self::CACHE_GROUP, DAY_IN_SECONDS );
-		}
+		// From the index (a content scan while it is being built).
+		$ids = wp_list_pluck( self::places( array(), array( $playlist_id ), array( 'publish' ) ), 'id' );
 
 		return self::first_readable( array_map( static fn( $id ) => array( 'id' => (int) $id ), $ids ), 0 );
 	}
@@ -366,7 +513,7 @@ class VideoUsage {
 
 		$any      = implode( ' OR ', array_fill( 0, count( $patterns ), 'post_content REGEXP %s' ) );
 		$in       = implode( ', ', array_fill( 0, count( $statuses ), '%s' ) );
-		$excluded = "'revision', 'mediashield_video', 'mediashield_playlist', 'nav_menu_item', 'attachment', 'wp_global_styles'";
+		$excluded = "'" . implode( "', '", self::NOT_PLACES ) . "'";
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Placeholders built above; every value is prepared.
 		$rows = $wpdb->get_results(

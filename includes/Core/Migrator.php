@@ -111,6 +111,15 @@ class Migrator {
 			\MediaShield\CPT\VideoStatus::clear_played_links();
 		}
 
+		// v18 - index where each video and playlist is placed (VideoUsage),
+		// so My Videos and "Used in" never scan post content. Background job
+		// over existing content (ms_index_usage, 100 posts a run); a fresh
+		// install's first run finds nothing and finishes. Reads scan until
+		// it is done.
+		if ( $installed < 18 ) {
+			add_option( \MediaShield\CPT\VideoUsage::INDEX_PENDING, '0', '', false );
+		}
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
 	}
 

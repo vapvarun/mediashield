@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Plugin constants.
 define( 'MEDIASHIELD_VERSION', '1.4.3' );
-define( 'MEDIASHIELD_DB_VERSION', 17 ); // v17: links saved by 1.4.3 with a platform are not "No source".
+define( 'MEDIASHIELD_DB_VERSION', 18 ); // v18: index where each video and playlist is placed.
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );

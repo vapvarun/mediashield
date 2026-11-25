@@ -48,6 +48,9 @@ class UsageNoCapTest extends WP_UnitTestCase {
 	 */
 	public function test_old_page_is_found_behind_600_newer_embeds(): void {
 		global $wpdb;
+		// Labelled change: rows inserted by SQL are not indexed, so this
+		// covers the scan that answers while the usage index is being built.
+		update_option( VideoUsage::INDEX_PENDING, '0' );
 		$video    = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
 		$in_list  = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
 		$other    = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );

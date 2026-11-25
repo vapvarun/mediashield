@@ -31,6 +31,8 @@ Saved from the video edit screen. Not registered for REST.
 | `_ms_player_endscreen_text`, `_ms_player_endscreen_url` | string | Per-video end screen message and link. |
 | `_ms_library_id` | string | Bunny library ID, read from the pasted URL. |
 | `_ms_owned_file` | string | File name this video owns in `uploads/mediashield/`. An empty string means "claimed, no file". The stream endpoint serves only the owner's file. |
+| `_ms_used_in` | post ID, one row each | Since 1.4.4. On a video or playlist: each published, scheduled, draft or private post that shows it by shortcode or block. Written when that post is saved, trashed or deleted. |
+| `_ms_embeds` | array `{ v: int[], p: int[] }` | Since 1.4.4. On a post that shows MediaShield: the video and playlist IDs it showed when last saved, so the next save moves only the difference onto `_ms_used_in`. |
 | `_ms_length_unreadable` | `1` | Since 1.4.4. The length backfill could not read this uploaded file; it is not tried again. |
 | `_ms_library_file` | `moved`, `in_use`, `not_in_library`, `none`, `restored` | Since 1.4.2. Whether this video's Media Library file was moved into `uploads/mediashield/`, left because the file is used elsewhere, left because it has no Media Library item (1.4.3), needed nothing, or was moved back. Its presence marks the video as checked. |
 | `_ms_library_kept` | string | Since 1.4.2. The source URL the owner moved back with restore. While the video still plays it, saving does not move it again. |
@@ -109,6 +111,7 @@ Options in the schema are deleted on uninstall automatically. Do not add your ow
 | `ms_activated_at` | Activator, admin notice | Activation time (Unix), used to delay the Pro notice by 7 days. |
 | `ms_pro_notice_dismissed` | `ms_dismiss_pro_notice` AJAX | Pro upsell notice dismissed. |
 | `ms_library_files_repair_pending` | Migrator, repair job | Since 1.4.3. Last video ID the one-off `ms_repair_library_files` job checked; deleted when the job finishes. |
+| `ms_usage_index_pending` | Migrator, `ms_index_usage` job | Since 1.4.4. Last post ID the usage index job read; deleted when it finishes. |
 | `ms_lengths_pending` | Migrator, `ms_backfill_lengths` job | Since 1.4.4. Last video ID the length backfill read; deleted when the job finishes. |
 | `ms_file_claims_pending` | Migrator, cleanup job | Highest video ID the 1.4.0 ownership backfill must still cover; deleted when the job finishes. |
 | `ms_default_upload_target` | Pro (settings filter) | `auto`, `self`, or a driver name. Free reads it in `UploadManager::resolve_default_driver()`; without Pro it is unset and behaves as `auto`. |

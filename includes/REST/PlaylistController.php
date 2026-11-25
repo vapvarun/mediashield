@@ -333,8 +333,6 @@ class PlaylistController extends WP_REST_Controller {
 		if ( ! $inserted ) {
 			return new WP_Error( 'insert_failed', __( 'Could not add video to playlist.', 'mediashield' ), array( 'status' => 500 ) );
 		}
-		// The video is now placed wherever this playlist is.
-		\MediaShield\CPT\VideoUsage::forget();
 
 		return new WP_REST_Response(
 			array(
@@ -375,7 +373,6 @@ class PlaylistController extends WP_REST_Controller {
 		if ( ! $deleted ) {
 			return new WP_Error( 'not_found', __( 'Playlist item not found.', 'mediashield' ), array( 'status' => 404 ) );
 		}
-		\MediaShield\CPT\VideoUsage::forget();
 
 		return new WP_REST_Response( null, 204 );
 	}

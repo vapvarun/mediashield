@@ -53,8 +53,10 @@ class UsageScanOnlyForListTest extends WP_UnitTestCase {
 	 */
 	private function scans_for( array $params ): int {
 		$this->scans = 0;
-		// Cold cache (labelled change): since the usage cache, a repeat request reads the cache instead.
-		\MediaShield\CPT\VideoUsage::forget();
+		// Labelled change: the scan now runs only while the usage index is
+		// being built, so these requests run in that state.
+		update_option( \MediaShield\CPT\VideoUsage::INDEX_PENDING, '0' );
+		\MediaShield\CPT\VideoUsage::flush();
 		$request = new WP_REST_Request( 'GET', '/wp/v2/mediashield-videos' );
 		foreach ( $params as $k => $v ) {
 			$request->set_param( $k, $v );

@@ -73,6 +73,7 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			'ms_library_files_repair_pending',
 			'ms_poster_names_pending',
 			'ms_lengths_pending',
+			'ms_usage_index_pending',
 			'ms_new_defaults_decided',
 			'ms_protection_switches_kept',
 			'ms_custom_url_patterns', // Removed in 1.3.0.
@@ -83,6 +84,10 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 	foreach ( array_unique( $free_options ) as $option ) {
 		delete_option( $option );
 	}
+
+	// The usage index on the posts that showed a video (VideoUsage::EMBEDS);
+	// the rows on videos and playlists go with them.
+	delete_post_meta_by_key( '_ms_embeds' );
 }
 
 // Remove custom capability from all roles.
