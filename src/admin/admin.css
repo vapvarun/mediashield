@@ -2701,8 +2701,15 @@
 /* ── First Video URL input ───────────────────────── */
 .ms-wizard__url-input {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 10px;
 	align-items: flex-end;
+}
+
+/* The refusal and the upload link sit on their own lines under the field. */
+.ms-wizard__url-input > .ms-wizard__hint {
+	flex-basis: 100%;
+	margin: 0;
 }
 
 .ms-wizard__url-input .components-base-control {
@@ -2740,6 +2747,14 @@
 	height: 28px;
 	color: var( --ms-color-success );
 	flex-shrink: 0;
+}
+
+.ms-wizard__success-banner span {
+	display: block;
+}
+
+.ms-wizard__success-next {
+	margin-top: var( --ms-space-1 );
 }
 
 .ms-wizard__success-banner strong {

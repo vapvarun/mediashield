@@ -31,6 +31,9 @@ export default function Wizard() {
 	const [ saving, setSaving ] = useState( false );
 	const [ initialSettings, setInitialSettings ] = useState( null );
 	const [ loadingSettings, setLoadingSettings ] = useState( true );
+	// Where the owner hosts videos (step 2); step 3 names only those. Kept
+	// for this run of the wizard, not saved: nothing else reads it.
+	const [ hosts, setHosts ] = useState( [] );
 
 	const { createErrorNotice } = useDispatch( noticesStore );
 
@@ -168,7 +171,7 @@ export default function Wizard() {
 			</div>
 
 			<div className="ms-wizard__card">
-				<StepComponent onSave={ saveSettings } saving={ saving } initialData={ initialSettings } />
+				<StepComponent onSave={ saveSettings } saving={ saving } initialData={ initialSettings } hosts={ hosts } setHosts={ setHosts } />
 			</div>
 
 			<div className="ms-wizard__actions">

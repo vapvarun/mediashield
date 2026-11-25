@@ -6,35 +6,26 @@ Every control saves as soon as you change it, so nothing is lost if you close th
 
 ## Step 1 - General Settings
 
-Three site-wide switches:
+**Protect videos** - The master on/off switch for all MediaShield features. Leave this on. With it off, videos still play, but with no watermark, no protection layer, and no session tracking.
 
-**Enable video protection** - The master on/off switch for all MediaShield features. Leave this on. With it off, videos still play, but with no watermark, no protection layer, and no session tracking.
+**Protection level for your videos** - The four levels, in the same words as Settings and the video edit screen; each includes the one above it. Standard is picked to start with. A video can set its own level. See [Protection Settings](../configuration/02-protection-settings.md).
 
-**Require login to watch** - When on, visitors must be logged in before a protected video plays; they see a login overlay instead. When off, guests can watch and their sessions are still recorded. Per-video role restrictions and any custom access rules still apply either way.
+**Require login** - When on, visitors must be logged in before a protected video plays; they see a login overlay instead. It applies at every level. When off, guests can watch and their sessions are still recorded. Per-video role restrictions and any custom access rules still apply either way.
 
-**Default protection level** - The baseline for videos that have no per-video setting. The wizard offers the two ends of the range:
+## Step 2 - Where are your videos?
 
-- **Standard (Watermark + Tracking)** - recommended for gated content.
-- **None (No extra protection)** - plays as a normal embed with no extra per-video protection. The site-wide Require Login setting still applies.
+Tick every place you host videos: YouTube, Vimeo, Wistia (paste a link, no account needed) and Upload to this site (files stay private and play through a signed link). With Pro, Bunny Stream is a choice too; in Free it is shown as a Pro tile with one link. The ticks only shape the next step (which links it asks for, and an Upload a file instead link); nothing is saved, and any supported link works later.
 
-The full set of four levels (None, Basic, Standard, Strict) is available under **MediaShield > Settings** and on each video's edit screen. See [Protection Settings](../configuration/02-protection-settings.md) for what each level does.
+## Step 3 - Protect your first video (optional)
 
-## Step 2 - Connect a Platform
+Paste a link and click **Check and add**. The link is checked before anything is saved. A link MediaShield cannot play is refused with "This link is not a video MediaShield can play" and what to use instead, and no video is created. A good link shows the video as it now is in your library: its title, platform, protection level and Ready, with the shortcode to paste.
 
-An information screen. It lists the platforms MediaShield works with (YouTube, Vimeo, Bunny Stream, Wistia) and points out that direct API connections for browsing and importing libraries are a Pro feature.
-
-Nothing here is selectable and nothing is saved. You do not have to declare which platforms you use: MediaShield detects the platform from the URL when you add a video, and self-hosted files are supported as well. Skip this step.
-
-## Step 3 - First Video (Optional)
-
-Paste a video URL and click **Protect** to create your first library entry. MediaShield detects the platform from the URL and stores the platform's video ID alongside the original URL.
-
-Supported URL formats:
-- YouTube: `https://www.youtube.com/watch?v=...`
+Supported links:
+- YouTube: `https://www.youtube.com/watch?v=...`, `https://youtu.be/...`, Shorts
 - Vimeo: `https://vimeo.com/...`
-- Wistia: your Wistia embed URL
-- Bunny Stream: the video's embed URL, or its URL from the Bunny video page
-- Self-hosted: any direct `.mp4`, `.webm`, `.mov`, or `.m4v` URL
+- Wistia: your Wistia media or embed URL
+- Bunny Stream (Pro): the video's embed URL, or its URL from the Bunny video page
+- A video file: any direct `.mp4`, `.webm`, `.mov`, `.m4v` or `.m3u8` URL
 
 If you skip this step, you can add videos any time from **MediaShield > Videos**.
 

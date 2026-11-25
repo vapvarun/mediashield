@@ -1,28 +1,52 @@
 /**
- * Wizard Step 3: Protect Your First Video.
+ * Wizard Step 3: Protect your first video.
  *
- * Paste a URL to auto-detect platform and create a video CPT post.
+ * The link is checked before anything is saved: in the browser
+ * (isPlayableLink) and again by the server, which refuses a link it cannot
+ * play (Platforms::recognise(), Basecamp 10545260436). On success the video
+ * is shown as it now is in the library: title, platform, length, level.
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { TextControl, Button, Spinner } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import { detectPlatform, extractVideoId } from '../../utils/platform';
+import { decodeEntities } from '@wordpress/html-entities';
+import { detectPlatform, extractVideoId, isPlayableLink } from '../../utils/platform';
+import { protectionLevels, defaultLevel } from '../../utils/protection';
+import { formatDuration } from '../../utils/time';
 import Icon from '../../components/Icon';
 
-export default function FirstVideoStep( { initialData } ) { // eslint-disable-line no-unused-vars
+const config = window.mediashieldAdmin || {};
+
+const PLATFORM_NAMES = {
+	youtube: 'YouTube',
+	vimeo: 'Vimeo',
+	wistia: 'Wistia',
+	bunny: 'Bunny Stream',
+	self: __( 'Video file', 'mediashield' ),
+};
+
+export default function FirstVideoStep( { hosts = [] } ) {
 	const [ url, setUrl ] = useState( '' );
 	const [ creating, setCreating ] = useState( false );
 	const [ created, setCreated ] = useState( null );
 	const [ failed, setFailed ] = useState( '' );
 
+	const refusal = config.unplayableMessage || __( 'This link is not a video MediaShield can play. Use a YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file.', 'mediashield' );
+
 	const handleCreate = async () => {
-		if ( ! url.trim() ) return;
+		const link = url.trim();
+		if ( ! link ) return;
+
+		setFailed( '' );
+		if ( ! isPlayableLink( link ) ) {
+			setFailed( refusal );
+			return;
+		}
 
 		setCreating( true );
-		setFailed( '' );
-		const platform = detectPlatform( url );
-		const platformVideoId = extractVideoId( url, platform );
+		const platform = detectPlatform( link );
+		const platformVideoId = extractVideoId( link, platform );
 
 		try {
 			const video = await apiFetch( {
@@ -31,33 +55,49 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 				data: {
 					// Never the platform ID: the server gives the video the platform's
 					// title or "Video 123", and a slug to match.
-					title: platformVideoId ? '' : url.substring( 0, 60 ),
+					title: platformVideoId ? '' : link.substring( 0, 60 ),
 					status: 'publish',
 					meta: {
 						_ms_platform: platform,
 						_ms_platform_video_id: platformVideoId,
 						// No protection level: the video follows the site default.
-						_ms_source_url: url,
+						_ms_source_url: link,
 					},
 				},
 			} );
 
-			setCreated( { id: video.id, platform } );
+			setCreated( {
+				id: video.id,
+				title: decodeEntities( video.title?.raw ?? video.title?.rendered ?? '' ),
+				platform: video.meta?._ms_platform || platform,
+				duration: video.meta?._ms_duration || 0,
+			} );
 		} catch ( err ) {
-			// It used to fail silently: the button just came back.
 			setFailed( window.mediashieldRequest.message( err, __( 'The video could not be added. Try again.', 'mediashield' ) ) );
 		}
 
 		setCreating( false );
 	};
 
+	const level = protectionLevels()[ defaultLevel() ];
+	const named = hosts.filter( ( h ) => PLATFORM_NAMES[ h ] && 'self' !== h ).map( ( h ) => PLATFORM_NAMES[ h ] );
+	const shortcode = created ? `[mediashield id="${ created.id }"]` : '';
+
 	return (
 		<div className="ms-wizard__step">
 			<div className="ms-wizard__step-header">
 				<Icon name="video-alt3" className="ms-wizard__step-icon" />
 				<div>
-					<h2>{ __( 'Protect Your First Video', 'mediashield' ) }</h2>
-					<p>{ __( 'Paste a video URL to see protection in action. You can skip this and add videos later.', 'mediashield' ) }</p>
+					<h2>{ __( 'Protect your first video', 'mediashield' ) }</h2>
+					<p>
+						{ named.length
+							? sprintf(
+								/* translators: %s: platform names the owner picked, e.g. "YouTube, Vimeo". */
+								__( 'Paste a %s link, or a link to an .mp4 file. You can skip this and add videos later.', 'mediashield' ),
+								named.join( ', ' )
+							)
+							: __( 'Paste a YouTube, Vimeo or Wistia link, or a link to an .mp4 file. You can skip this and add videos later.', 'mediashield' ) }
+					</p>
 				</div>
 			</div>
 
@@ -65,45 +105,61 @@ export default function FirstVideoStep( { initialData } ) { // eslint-disable-li
 				{ ! created ? (
 					<div className="ms-wizard__url-input">
 						<TextControl
-							label={ __( 'Video URL', 'mediashield' ) }
+							label={ __( 'Video link', 'mediashield' ) }
 							value={ url }
-							onChange={ setUrl }
-							placeholder="https://youtube.com/watch?v=..."
+							onChange={ ( v ) => {
+								setUrl( v );
+								setFailed( '' );
+							} }
+							placeholder="https://www.youtube.com/watch?v=..."
+							type="url"
+							aria-invalid={ failed ? 'true' : undefined }
+							aria-describedby={ failed ? 'ms-wizard-link-error' : undefined }
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 						/>
 						<Button
 							variant="primary"
 							onClick={ handleCreate }
 							disabled={ creating || ! url.trim() }
 							className="ms-wizard__btn--protect"
+							__next40pxDefaultSize
 						>
-							{ creating ? <Spinner /> : (
-								<>
-									<Icon name="shield" />
-									{ __( 'Protect', 'mediashield' ) }
-								</>
-							) }
+							{ creating ? <Spinner /> : __( 'Check and add', 'mediashield' ) }
 						</Button>
 						{ failed && (
-							<p className="ms-wizard__error" role="alert">{ failed }</p>
+							<p className="ms-wizard__error" id="ms-wizard-link-error" role="alert">{ failed }</p>
+						) }
+						{ hosts.includes( 'self' ) && (
+							<p className="ms-wizard__hint">
+								<a href={ `${ config.adminUrl }post-new.php?post_type=mediashield_video` }>{ __( 'Upload a file instead', 'mediashield' ) }</a>
+							</p>
 						) }
 					</div>
 				) : (
-					<div className="ms-wizard__success-banner">
+					<div className="ms-wizard__success-banner" role="status">
 						<Icon name="yes-alt" />
 						<div>
-							<strong>{ __( 'Video protected successfully!', 'mediashield' ) }</strong>
+							<strong>{ created.title || __( '(no title)', 'mediashield' ) }</strong>
 							<span>
-								{ __( 'Platform:', 'mediashield' ) } { created.platform } &middot;
-								{ __( 'ID:', 'mediashield' ) } #{ created.id }
+								{ [
+									PLATFORM_NAMES[ created.platform ] || created.platform,
+									created.duration ? formatDuration( created.duration ) : null,
+									level ? sprintf( /* translators: %s: protection level, e.g. Standard. */ __( '%s protection', 'mediashield' ), level.label ) : null,
+									__( 'Ready', 'mediashield' ),
+								].filter( Boolean ).join( ' · ' ) }
+							</span>
+							<span className="ms-wizard__success-next">
+								{ sprintf(
+									/* translators: %s: the video's shortcode. */
+									__( 'Paste %s on any page, or use the MediaShield Video block.', 'mediashield' ),
+									shortcode
+								) }
 							</span>
 						</div>
 					</div>
 				) }
 			</div>
-
-			<p className="ms-wizard__hint">
-				{ __( 'Supports YouTube, Vimeo, Bunny Stream, Wistia, and direct MP4/WebM URLs.', 'mediashield' ) }
-			</p>
 		</div>
 	);
 }
