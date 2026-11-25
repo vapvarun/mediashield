@@ -23,6 +23,9 @@ class VideoStatusTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		\MediaShield\CPT\VideoPostType::register_meta();
+		// The list filter is hooked on rest_api_init; an earlier test may have
+		// left the REST server without it (see VideoListFilterAccessTest).
+		\MediaShield\REST\VideoListController::register_hooks();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 	}
 
