@@ -752,7 +752,7 @@ class VideoPostType {
 		?>
 		<div class="ms-player-options">
 			<p class="description" style="margin-bottom: 12px;">
-				<?php esc_html_e( 'Autoplay, Loop and Start muted apply to self-hosted and Bunny videos. Show player controls applies to self-hosted videos and to Bunny videos played as a direct stream; a Bunny embed always shows Bunny\'s own controls. YouTube, Vimeo and Wistia use their own player settings.', 'mediashield' ); ?>
+				<?php esc_html_e( 'These options apply to every video source. Two exceptions for Show player controls: a Bunny embed always shows Bunny\'s own controls, and Vimeo hides its controls only on a paid Vimeo plan. Most browsers start a video automatically only when it is muted.', 'mediashield' ); ?>
 			</p>
 			<p>
 				<label>
