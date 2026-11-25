@@ -38,7 +38,7 @@ class Migrator {
 		}
 
 		Schema::create_tables();
-		Settings::seed_defaults();
+		Settings::seed_defaults( $installed > 0 );
 
 		// v3 — promote legacy free-form milestone tags into the unified
 		// `ms_tags` dictionary and record the canonical `tag_id` alongside

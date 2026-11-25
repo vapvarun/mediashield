@@ -132,4 +132,32 @@ class WatermarkDefaultsTest extends WP_UnitTestCase {
 
 		update_option( 'ms_db_version', $db );
 	}
+
+	/**
+	 * QA blocker: activating on an empty site ran seed_defaults() twice; the
+	 * false default was never stored, so the second run took the site for an
+	 * update and turned the email on. This runs the real activation.
+	 */
+	public function test_fresh_activation_leaves_email_off(): void {
+		global $wpdb;
+		$saved = $wpdb->get_results( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE 'ms\\_%'" );
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'ms\\_%'" ); // phpcs:ignore WordPress.DB
+		wp_cache_flush();
+
+		\MediaShield\Core\Activator::activate();
+
+		$this->assertFalse( Settings::get( 'ms_watermark_show_email' ), 'A new install shows the name only.' );
+		$this->assertSame( '0', $wpdb->get_var( "SELECT option_value FROM {$wpdb->options} WHERE option_name = 'ms_watermark_show_email'" ), 'Stored, so a later version bump cannot read it as missing.' );
+		$this->assertFalse( get_option( \MediaShield\Player\Protection::SWITCHES_KEPT ), 'A new install starts on the levels.' );
+
+		// A second activation (deactivate, activate) changes nothing.
+		\MediaShield\Core\Activator::activate();
+		$this->assertFalse( Settings::get( 'ms_watermark_show_email' ) );
+
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'ms\\_%'" ); // phpcs:ignore WordPress.DB
+		foreach ( $saved as $row ) {
+			$wpdb->insert( $wpdb->options, array( 'option_name' => $row->option_name, 'option_value' => $row->option_value ) ); // phpcs:ignore WordPress.DB
+		}
+		wp_cache_flush();
+	}
 }

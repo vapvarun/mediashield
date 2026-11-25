@@ -395,15 +395,28 @@ class Settings {
 	/**
 	 * Seed defaults for every option that does not yet exist. Idempotent — safe
 	 * to call on every activation.
+	 *
+	 * A site that already ran MediaShield is updating, not installing: a
+	 * setting new to it that declares `upgrade_default` starts at that value,
+	 * so an update never changes what the site did before. The caller decides
+	 * which, once, before anything is seeded (Migrator::run(), Activator),
+	 * because the version option is written by the first seeding run.
+	 *
+	 * A false default is stored as '0': WordPress does not store an
+	 * add_option() of false, so the row stayed missing and the next seeding
+	 * run read the site as one updating and stored the upgrade_default
+	 * instead (a fresh install got the watermark email on).
+	 *
+	 * @param bool|null $updating True for a site that ran MediaShield before; null reads ms_db_version.
 	 */
-	public static function seed_defaults(): void {
-		// A site that already ran MediaShield is updating, not installing. A
-		// setting new to it that declares `upgrade_default` starts at that
-		// value, so an update never changes what the site did before.
-		$updating = (int) get_option( 'ms_db_version', 0 ) > 0;
+	public static function seed_defaults( ?bool $updating = null ): void {
+		if ( null === $updating ) {
+			$updating = (int) get_option( 'ms_db_version', 0 ) > 0;
+		}
 		foreach ( self::schema() as $key => $entry ) {
 			if ( false === get_option( $key, false ) ) {
-				add_option( $key, $updating && array_key_exists( 'upgrade_default', $entry ) ? $entry['upgrade_default'] : $entry['default'] );
+				$value = $updating && array_key_exists( 'upgrade_default', $entry ) ? $entry['upgrade_default'] : $entry['default'];
+				add_option( $key, false === $value ? '0' : $value );
 			}
 		}
 	}
@@ -540,6 +553,8 @@ class Settings {
 				// The second line of each state (Basecamp 10545260568).
 				'loginSub'        => __( 'It is for members of this site.', 'mediashield' ),
 				'unavailableSub'  => __( 'The site owner has been told. Please try again later.', 'mediashield' ),
+				// A refused member with no course or membership page to go to.
+				'askOwner'        => __( 'Ask the site owner for access.', 'mediashield' ),
 				// Shown only to someone who may edit the video, with an Edit video link.
 				'adminNote'       => __( 'Only editors see this:', 'mediashield' ),
 				'editVideo'       => __( 'Edit video', 'mediashield' ),

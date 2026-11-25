@@ -11,13 +11,22 @@ export default function WatermarkStep( { onSave, initialData } ) {
 	const [ color, setColor ] = useState( initialData?.ms_watermark_color || '#ffffff' );
 	const [ swapInterval, setSwapInterval ] = useState( initialData?.ms_watermark_swap_interval ?? 30 );
 
+	// What this site's watermark shows: the name, and the email only where
+	// the owner (Free's switch, or Pro's Watermark fields) turned it on.
+	const proFields = Array.isArray( initialData?.ms_pro_watermark_fields ) ? initialData.ms_pro_watermark_fields : null;
+	const showsEmail = proFields ? proFields.includes( 'email' ) : !! initialData?.ms_watermark_show_email;
+
 	return (
 		<div className="ms-wizard__step">
 			<div className="ms-wizard__step-header">
 				<Icon name="art" className="ms-wizard__step-icon" />
 				<div>
 					<h2>{ __( 'Watermark Settings', 'mediashield' ) }</h2>
-					<p>{ __( 'Configure how the watermark appears on your videos. It shows the viewer\'s name and email. You can add their IP address later under Settings > Watermark.', 'mediashield' ) }</p>
+					<p>
+						{ showsEmail
+							? __( 'Configure how the watermark appears on your videos. It shows the viewer\'s name and email. You can change what it shows under Settings > Watermark.', 'mediashield' )
+							: __( 'Configure how the watermark appears on your videos. It shows the viewer\'s name. You can add their email or IP address under Settings > Watermark.', 'mediashield' ) }
+					</p>
 				</div>
 			</div>
 
@@ -65,7 +74,7 @@ export default function WatermarkStep( { onSave, initialData } ) {
 						className="ms-wizard__watermark-preview-text"
 						style={ { color, opacity } }
 					>
-						{ __( 'John Doe', 'mediashield' ) } &middot; john@example.com
+						{ __( 'John Doe', 'mediashield' ) }{ showsEmail && <> &middot; john@example.com</> }
 					</span>
 				</div>
 			</div>
