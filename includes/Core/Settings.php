@@ -555,7 +555,7 @@ class Settings {
 				// Shown while a stalled single-file stream is reset (Basecamp 10506484970).
 				'reconnecting'    => __( 'Reconnecting…', 'mediashield' ),
 				'loadFailed'      => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
-				'concurrentLimit' => __( 'Too many active streams. Please close another video first.', 'mediashield' ),
+				'concurrentLimit' => __( 'You are playing too many videos at once. Close another video first.', 'mediashield' ),
 				'playlistFailed'  => __( 'This video could not be loaded. Please try again.', 'mediashield' ),
 				'badge'           => __( 'Protected by MediaShield', 'mediashield' ),
 				'speed'           => __( 'Playback speed', 'mediashield' ),

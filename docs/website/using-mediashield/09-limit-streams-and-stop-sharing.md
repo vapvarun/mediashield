@@ -18,7 +18,7 @@ One paid login stays one viewer at a time, so sharing a password costs the share
 1. Go to **MediaShield > Settings > Access**.
 2. Set **Max Concurrent Streams**. The default is 2 and the lowest allowed is 1.
 
-A viewer who starts one more stream than allowed sees "Too many active streams. Please close another video first." The `mediashield_concurrent_limit_reached` action fires so you can log it.
+A viewer who starts one more stream than allowed sees "You are playing too many videos at once. Close another video first." The `mediashield_concurrent_limit_reached` action fires so you can log it.
 
 ## How a stream stops counting
 

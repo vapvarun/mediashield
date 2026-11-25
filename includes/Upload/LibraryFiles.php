@@ -727,7 +727,7 @@ class LibraryFiles {
 		};
 		?>
 		<div class="notice notice-info ms-library-notice">
-			<p><strong><?php esc_html_e( 'MediaShield now keeps self-hosted video files in its protected folder.', 'mediashield' ); ?></strong></p>
+			<p><strong><?php esc_html_e( 'MediaShield now keeps uploaded video files in its protected folder.', 'mediashield' ); ?></strong></p>
 			<?php if ( $moved ) : ?>
 				<p>
 					<?php

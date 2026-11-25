@@ -254,7 +254,7 @@ class PrivacyExporter {
 	private static function format_session( object $session ): array {
 		return array(
 			'group_id'    => 'mediashield-sessions',
-			'group_label' => __( 'MediaShield Watch Sessions', 'mediashield' ),
+			'group_label' => __( 'MediaShield Viewings', 'mediashield' ),
 			'item_id'     => "mediashield-session-{$session->id}",
 			'data'        => array(
 				array(

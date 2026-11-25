@@ -349,7 +349,7 @@ class SessionController extends WP_REST_Controller {
 		if ( false === $result ) {
 			return new WP_Error(
 				'concurrent_limit',
-				__( 'Too many active streams. Please close another video first.', 'mediashield' ),
+				__( 'You are playing too many videos at once. Close another video first.', 'mediashield' ),
 				array( 'status' => 429 )
 			);
 		}

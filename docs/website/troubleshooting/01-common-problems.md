@@ -142,7 +142,7 @@ Allowed Domains is filled in and the partner's page shows "You do not have acces
 2. Some browsers and privacy tools remove the Referer header. A request with no Referer is refused whenever the list is not empty. Developers can change that with the `mediashield_allow_empty_referer` filter.
 3. Clear the list to allow embeds from anywhere.
 
-## A member on a second device is told "Too many active streams"
+## A member on a second device is told "You are playing too many videos at once"
 
 The first stream may still count. A session stops counting 5 minutes after its last report. Close the other tab, or raise **Max Concurrent Streams**.
 

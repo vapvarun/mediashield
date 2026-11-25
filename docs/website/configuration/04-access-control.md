@@ -43,7 +43,7 @@ To change it: open **MediaShield > Settings**, find Max Concurrent Streams, ente
 
 The player sends a heartbeat every 30 seconds. A session that has not sent one for 5 minutes stops counting toward the limit, so a viewer who closes their laptop is not locked out for long. An hourly background job then marks sessions with no heartbeat for 10 minutes as finished, which is what clears them out of the Active Viewers count.
 
-When a viewer tries to start a stream beyond the limit, the request is refused with "Too many active streams. Please close another video first." The `mediashield_concurrent_limit_reached` action fires at the same moment, so you can hook logging or alerting.
+When a viewer tries to start a stream beyond the limit, the request is refused with "You are playing too many videos at once. Close another video first." The `mediashield_concurrent_limit_reached` action fires at the same moment, so you can hook logging or alerting.
 
 When a viewer closes a browser tab, MediaShield uses the browser's `sendBeacon` API to end the session immediately. If the beacon never arrives (a browser crash, for example) the 5-minute rule above covers it.
 

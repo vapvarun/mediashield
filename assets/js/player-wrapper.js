@@ -1512,7 +1512,7 @@
 				// REST handler returns the localised text in `data.message`.
 				if ( status === 429 || data.code === 'concurrent_limit' ) {
 					blockPlayback( el, adapter );
-					showErrorOverlay( el, data.message || t( 'concurrentLimit', 'Too many active streams. Please close another video first.' ) );
+					showErrorOverlay( el, data.message || t( 'concurrentLimit', 'You are playing too many videos at once. Close another video first.' ) );
 					window.dispatchEvent( new CustomEvent( 'mediashield:concurrent-limit', {
 						bubbles: true,
 						detail: { el: el, videoId: videoId, message: data.message },
