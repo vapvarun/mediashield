@@ -29,6 +29,15 @@ class VideoUsage {
 	private static $cache = array();
 
 	/**
+	 * Pages that show a video through a playlist, by video ID. Not shown as
+	 * "Used in" (the playlist is); read by page_for_viewer(), since a
+	 * playlist has no public page of its own.
+	 *
+	 * @var array<int, array<int, array{id:int,title:string,url:string,type:string}>>
+	 */
+	private static $via_playlist = array();
+
+	/**
 	 * Most places listed per video.
 	 */
 	const MAX_PER_VIDEO = 5;
@@ -36,11 +45,13 @@ class VideoUsage {
 	/**
 	 * Look up several videos with one query and remember the answers.
 	 *
-	 * One scan of post_content for the MediaShield shortcode and block, for the
-	 * whole list page. post_content is not indexed, so this is a table scan;
-	 * it runs once per Videos list page (20 videos), never per row, and is
-	 * capped at 500 matching posts. Then one indexed read of the playlist
-	 * items table for the playlists that hold these videos.
+	 * One scan of post_content for the MediaShield video and playlist
+	 * shortcodes and blocks, for the whole list page. post_content is not
+	 * indexed, so this is a table scan; it runs once per Videos list page
+	 * (20 videos), never per row, and is capped at 500 matching posts. Then
+	 * one indexed read of the playlist items table for the playlists that
+	 * hold these videos; the pages from the same scan that show those
+	 * playlists become each video's pages via a playlist.
 	 *
 	 * @param int[] $video_ids Video IDs.
 	 */
@@ -52,7 +63,8 @@ class VideoUsage {
 		}
 
 		foreach ( $video_ids as $id ) {
-			self::$cache[ $id ] = array();
+			self::$cache[ $id ]        = array();
+			self::$via_playlist[ $id ] = array();
 		}
 
 		global $wpdb;
@@ -62,14 +74,19 @@ class VideoUsage {
 			"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
 			WHERE post_status IN ( 'publish', 'future', 'draft', 'private' )
 			AND post_type NOT IN ( 'revision', 'mediashield_video', 'mediashield_playlist', 'nav_menu_item', 'attachment', 'wp_global_styles' )
-			AND ( post_content LIKE '%[mediashield %' OR post_content LIKE '%wp:mediashield/video%' )
+			AND ( post_content LIKE '%[mediashield %' OR post_content LIKE '%wp:mediashield/video%'
+				OR post_content LIKE '%[mediashield\\_playlist%' OR post_content LIKE '%wp:mediashield/playlist%' )
 			ORDER BY post_modified_gmt DESC
 			LIMIT 500"
 		);
 
 		$wanted = array_flip( $video_ids );
 
+		$pages_by_playlist = array();
 		foreach ( (array) $rows as $row ) {
+			foreach ( self::playlist_ids_in( (string) $row->post_content ) as $playlist_id ) {
+				$pages_by_playlist[ $playlist_id ][] = $row;
+			}
 			foreach ( self::ids_in( (string) $row->post_content ) as $id ) {
 				if ( isset( $wanted[ $id ] ) && count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
 					self::$cache[ $id ][] = self::entry( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
@@ -100,8 +117,16 @@ class VideoUsage {
 
 		foreach ( (array) $playlists as $row ) {
 			$id = (int) $row->video_id;
-			if ( isset( $wanted[ $id ] ) && count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
+			if ( ! isset( $wanted[ $id ] ) ) {
+				continue;
+			}
+			if ( count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
 				self::$cache[ $id ][] = self::entry( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
+			}
+			foreach ( $pages_by_playlist[ (int) $row->ID ] ?? array() as $page ) {
+				if ( count( self::$via_playlist[ $id ] ) < self::MAX_PER_VIDEO ) {
+					self::$via_playlist[ $id ][] = self::entry( (int) $page->ID, (string) $page->post_title, (string) $page->post_type );
+				}
 			}
 		}
 
@@ -151,7 +176,11 @@ class VideoUsage {
 	 * @return string
 	 */
 	public static function page_for_viewer( int $video_id, int $user_id ): string {
-		foreach ( self::for_video( $video_id ) as $place ) {
+		self::for_video( $video_id ); // Primes both lists.
+		// Pages that show the video itself first, then pages that show a
+		// playlist holding it. A playlist is never offered: it has no public
+		// page, and is_post_type_viewable() below says so.
+		foreach ( array_merge( self::$cache[ $video_id ] ?? array(), self::$via_playlist[ $video_id ] ?? array() ) as $place ) {
 			$post = get_post( (int) ( $place['id'] ?? 0 ) );
 			if ( ! $post || 'publish' !== $post->post_status || post_password_required( $post ) ) {
 				continue;
@@ -207,9 +236,30 @@ class VideoUsage {
 	}
 
 	/**
+	 * Playlist IDs a post's content shows, by shortcode or block.
+	 *
+	 * @param string $content Post content.
+	 * @return int[]
+	 */
+	private static function playlist_ids_in( string $content ): array {
+		$ids = array();
+
+		if ( preg_match_all( '/\[mediashield_playlist\s+[^\]]*\bid=["\']?(\d+)/', $content, $m ) ) {
+			$ids = array_merge( $ids, $m[1] );
+		}
+
+		if ( preg_match_all( '/<!--\s*wp:mediashield\/playlist\s+\{[^}]*"playlistId"\s*:\s*"?(\d+)/', $content, $m ) ) {
+			$ids = array_merge( $ids, $m[1] );
+		}
+
+		return array_values( array_unique( array_map( 'intval', $ids ) ) );
+	}
+
+	/**
 	 * Forget answers. Test seam.
 	 */
 	public static function flush(): void {
-		self::$cache = array();
+		self::$cache        = array();
+		self::$via_playlist = array();
 	}
 }
