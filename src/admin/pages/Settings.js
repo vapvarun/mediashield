@@ -307,10 +307,14 @@ const SettingsNav = ( { groups } ) => {
 		};
 		const follow = () => {
 			const key = linkedGroup();
+			const extra = key ? document.getElementById( 'mediashield-settings-' + key ) : null;
 			if ( key && groups.some( ( g ) => g.key === key ) ) {
 				setActive( key );
 				goToGroup( key, false );
 				hold( key );
+			} else if ( extra ) {
+				setActive( extra.dataset.group );
+				extra.scrollIntoView( { block: 'start' } );
 			} else if ( key ) {
 				window.history.replaceState( null, '', '#/settings' );
 				window.scrollTo( 0, 0 );
@@ -584,20 +588,20 @@ const Settings = () => {
 	};
 
 	// Sections other plugins add (Pro's Watermark fields) render inside the
-	// settings column, get a nav entry after the group they follow, and are
-	// covered by the search (Basecamp 10530930776).
+	// settings column under the nav item of the topic they follow (one
+	// Watermark item, not two), and are covered by the search (Basecamp
+	// 10530930776, 10545260577). #/settings/<their key> still opens them.
 	const extras = applyFilters( 'mediashield_settings_sections', [] ).filter( ( x ) => x && x.key && x.component );
 	const navGroups = [];
 	SETTINGS_GROUPS.filter( ( g ) => false !== shows[ g.key ] ).forEach( ( g ) => {
 		navGroups.push( g );
-		extras.filter( ( x ) => x.after === g.key ).forEach( ( x ) => navGroups.push( { key: x.key, label: x.label } ) );
 	} );
 	const renderExtras = ( after ) => extras
 		.filter( ( x ) => x.after === after )
 		.map( ( x ) => {
 			const Extra = x.component;
 			return (
-				<div key={ x.key } className="mediashield-settings__extra" data-group={ x.key }>
+				<div key={ x.key } id={ `mediashield-settings-${ x.key }` } className="mediashield-settings__extra" data-group={ x.after }>
 					<Extra />
 				</div>
 			);

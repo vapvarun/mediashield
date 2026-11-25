@@ -56,4 +56,4 @@ MediaShield uses one word for one thing on every screen: Settings, the video edi
 | Videos | MediaShield > Videos, the library list |
 | Viewers | Analytics > Viewers |
 | Security alerts | MediaShield > Security (Pro) |
-| Watermark fields | Settings > Watermark fields (Pro) |
+| Watermark fields | The Watermark fields card under Settings > Watermark (Pro) |
