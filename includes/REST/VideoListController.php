@@ -306,7 +306,7 @@ class VideoListController extends WP_REST_Controller {
 		if ( '' === $file ) {
 			$file = \MediaShield\REST\StreamController::resolve_file( $id );
 		}
-		return '' !== $file ? wp_basename( $file ) : '';
+		return '' !== $file ? \MediaShield\Upload\Drivers\SelfHosted::display_name( $id, $file ) : '';
 	}
 
 	/**

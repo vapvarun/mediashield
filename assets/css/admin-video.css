@@ -152,8 +152,15 @@
 }
 
 .ms-held-file__name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	font-size: 14px;
-	overflow-wrap: anywhere;
+}
+
+.ms-held-file {
+	min-width: 0;
 }
 
 .ms-held-file__meta {

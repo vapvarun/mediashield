@@ -62,7 +62,7 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-platform {
-	width: 132px;
+	width: 124px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-duration {
@@ -74,15 +74,15 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-protection {
-	width: 148px;
+	width: 124px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-used {
-	width: 104px;
+	width: 96px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-actions {
-	width: 120px;
+	width: 184px;
 }
 
 /* The title column (no width) takes what is left: about 300px at 1440. */
@@ -95,18 +95,32 @@
 	text-overflow: clip;
 }
 
-/* Actions stack in their column instead of needing 250px in a row. */
+/* Actions wrap into two short rows (34px, the dense-list floor), so a row
+   stays under about 80px instead of three stacked buttons. */
 @media ( min-width: 783px ) {
 	.ms-videos__table td.ms-videos__col-actions {
 		display: flex;
-		flex-direction: column;
-		align-items: stretch;
+		flex-direction: row;
+		flex-wrap: nowrap;
+		align-items: center;
 		gap: var( --ms-space-1 );
+	}
+
+	/* Copy shortcode is its icon on wide screens (named by aria-label and
+	   its tooltip), so Edit, Preview and Copy fit one 34px row. */
+	.ms-videos__table td.ms-videos__col-actions .ms-videos__copy-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect( 0, 0, 0, 0 );
+		white-space: nowrap;
 	}
 
 	.ms-videos__table td.ms-videos__col-actions .mediashield-action-btn {
 		justify-content: center;
-		width: 100%;
+		width: auto;
+		min-height: 34px;
 		margin: 0;
 		padding-inline: var( --ms-space-2 );
 		box-sizing: border-box;
@@ -117,7 +131,8 @@
    the title keeps room; both stay on the edit screen and the phone cards. */
 @media ( min-width: 783px ) and ( max-width: 1100px ) {
 	.ms-videos__table .ms-videos__col-duration,
-	.ms-videos__table .ms-videos__col-used {
+	.ms-videos__table .ms-videos__col-used,
+	.ms-videos__table .ms-videos__thumb {
 		display: none;
 	}
 }
@@ -129,9 +144,23 @@
 	vertical-align: middle;
 }
 
-.ms-videos__table .mediashield-badge,
 .ms-videos__table .mediashield-platform {
 	white-space: nowrap;
+}
+
+/* A long badge ("Site default (Standard)") wraps inside its cell. */
+.ms-videos__table .mediashield-badge {
+	white-space: normal;
+	max-width: 100%;
+}
+
+/* A long title stays on two lines; the full title is in its tooltip. */
+.ms-videos__title-link strong {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	overflow-wrap: anywhere;
 }
 
 .ms-videos__table tr.is-selected td {
@@ -225,12 +254,36 @@
 	white-space: normal;
 }
 
+/* A long uploaded file name is cut with an ellipsis; the full name is in
+   the title attribute. The platform cell may shrink below its content. */
+.ms-videos__table td.ms-videos__col-platform {
+	min-width: 0;
+}
+
+.ms-videos__table td.ms-videos__col-platform .mediashield-platform {
+	display: flex;
+	flex-wrap: wrap;
+	min-width: 0;
+	max-width: 100%;
+	white-space: normal;
+}
+
 .ms-videos__file {
 	display: block;
-	margin-inline-start: 14px;
+	flex-basis: 100%;
+	min-width: 0;
+	max-width: 100%;
+	padding-inline-start: 14px;
+	box-sizing: border-box;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	font-size: var( --ms-font-size-sm );
+	font-weight: 400;
 	color: var( --ms-color-text-secondary );
-	white-space: normal;
+}
+
+.ms-videos__used a {
 	overflow-wrap: anywhere;
 }
 
@@ -259,7 +312,7 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-status {
-	width: 176px;
+	width: 132px;
 }
 
 @media ( max-width: 782px ) {
@@ -344,18 +397,28 @@
 	}
 
 	.mediashield-videos .ms-videos__table td.ms-videos__col-actions .mediashield-action-btn {
-		flex: 1 1 0;
+		flex: 0 0 auto;
 		width: auto;
 		min-height: 40px;
+		padding-inline: var( --ms-space-3 );
 		justify-content: center;
+	}
+
+	/* The title is the Edit link on a phone. */
+	.mediashield-videos .ms-videos__table td.ms-videos__col-actions .mediashield-action-btn--edit {
+		display: none;
 	}
 
 	.mediashield-videos .ms-videos__thumb {
 		display: none;
 	}
 
+	/* One line: a long file name ends in an ellipsis. */
 	.mediashield-videos .ms-videos__phone-meta {
 		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.mediashield-videos .ms-videos__col-status .ms-videos__hint {

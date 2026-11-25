@@ -150,7 +150,7 @@ const PlatformLabel = ( { platform, file } ) => {
 		<span className={ `mediashield-platform mediashield-platform--${ p }` }>
 			<span className="mediashield-platform__dot" />
 			{ platformName( p, file ) }
-			{ file && <span className="ms-videos__file">{ file }</span> }
+			{ file && <span className="ms-videos__file" title={ file }>{ file }</span> }
 		</span>
 	);
 };
@@ -204,7 +204,7 @@ const StatusBadge = ( { status, platform, editUrl } ) => {
 			<span className={ `mediashield-badge mediashield-badge--${ tone }` }>{ label }</span>
 			{ 'unavailable' === s && (
 				<span className="ms-videos__hint">
-					{ __( 'Removed or made private there.', 'mediashield' ) } <a href={ editUrl }>{ __( 'Replace link', 'mediashield' ) }</a>
+					<a href={ editUrl } title={ __( 'Removed or made private there.', 'mediashield' ) }>{ __( 'Replace link', 'mediashield' ) }</a>
 				</span>
 			) }
 			{ 'no_source' === s && (
@@ -635,9 +635,9 @@ const Videos = () => {
 													<span className="ms-videos__thumb ms-videos__thumb--empty" aria-hidden="true"><Icon name="format-video" /></span>
 												) }
 												<span className="ms-videos__title-text">
-													<a className="ms-videos__title-link" href={ editUrl }><strong>{ title }</strong></a>
+													<a className="ms-videos__title-link" href={ editUrl } title={ title }><strong>{ title }</strong></a>
 													<span className="ms-videos__phone-meta">
-														{ 'unavailable' === list.status && <>{ __( 'Removed or made private there.', 'mediashield' ) } <a href={ editUrl }>{ __( 'Replace link', 'mediashield' ) }</a></> }
+														{ 'unavailable' === list.status && <a href={ editUrl } title={ __( 'Removed or made private there.', 'mediashield' ) }>{ __( 'Replace link', 'mediashield' ) }</a> }
 														{ 'no_source' === list.status && <a href={ editUrl }>{ __( 'Add a link or upload', 'mediashield' ) }</a> }
 														{ 'unavailable' !== list.status && 'no_source' !== list.status && phoneMeta }
 													</span>
@@ -683,7 +683,7 @@ const Videos = () => {
 												aria-label={ __( 'Copy shortcode to clipboard', 'mediashield' ) }
 											>
 												<Icon name="clipboard" className="mediashield-action-btn__icon" />
-												{ __( 'Shortcode', 'mediashield' ) }
+												<span className="ms-videos__copy-label">{ __( 'Shortcode', 'mediashield' ) }</span>
 											</button>
 										</td>
 									</tr>

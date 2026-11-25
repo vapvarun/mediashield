@@ -351,7 +351,8 @@ class VideoPostType {
 			if ( '' !== $held ) :
 				?>
 				<div class="ms-held-file">
-					<strong class="ms-held-file__name"><?php echo esc_html( wp_basename( $held ) ); ?></strong>
+					<?php $held_name = \MediaShield\Upload\Drivers\SelfHosted::display_name( $post->ID, $held ); ?>
+					<strong class="ms-held-file__name" title="<?php echo esc_attr( $held_name ); ?>"><?php echo esc_html( $held_name ); ?></strong>
 					<span class="ms-held-file__meta">
 						<?php
 						echo esc_html(

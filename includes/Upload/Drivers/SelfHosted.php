@@ -197,6 +197,10 @@ class SelfHosted implements DriverInterface {
 			}
 		}
 
+		// The name the owner uploaded, shown instead of the stored name with
+		// its random token (display_name()).
+		update_post_meta( (int) $post_id, self::ORIGINAL_NAME, sanitize_file_name( $original_name ) );
+
 		// The file's own length, so the Videos list and the edit screen show
 		// it and the watch rule has a duration (Basecamp 10545260613). A new
 		// file replaces the old file's length.
@@ -470,5 +474,34 @@ class SelfHosted implements DriverInterface {
 		foreach ( $ids as $id ) {
 			self::record_length( (int) $id, \MediaShield\REST\StreamController::resolve_file( (int) $id ) );
 		}
+	}
+
+	/**
+	 * Video meta: the file name as uploaded, before the random token was added.
+	 */
+	const ORIGINAL_NAME = '_ms_original_file_name';
+
+	/**
+	 * The name to show for an uploaded file: as the owner uploaded it.
+	 *
+	 * The stored name carries a random 20-character token (stored_name()),
+	 * which means nothing to an owner and made one unbroken 50-character word
+	 * in the Videos list. Uploads from 1.4.4 keep the original name in
+	 * ORIGINAL_NAME; for an older upload the token is taken off the stored
+	 * name here, the one place that knows its shape.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int    $video_id Video ID.
+	 * @param string $stored   Stored file name or path.
+	 * @return string
+	 */
+	public static function display_name( int $video_id, string $stored ): string {
+		$original = $video_id > 0 ? (string) get_post_meta( $video_id, self::ORIGINAL_NAME, true ) : '';
+		if ( '' !== $original ) {
+			return $original;
+		}
+		$name = wp_basename( $stored );
+		return (string) preg_replace( '/-[A-Za-z0-9]{20}(?:-\d+)?(\.[A-Za-z0-9]+)?$/', '$1', $name );
 	}
 }
