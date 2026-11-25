@@ -456,14 +456,28 @@ class PlayerWrapper {
 	 */
 	private static function extract_source_url( string $embed ): string {
 		if ( preg_match( '/<video[^>]*\ssrc=["\']([^"\']+)["\']/i', $embed, $m ) ) {
-			return $m[1];
+			return self::without_core_counter( $m[1] );
 		}
 
 		if ( preg_match( '/<source[^>]*\ssrc=["\']([^"\']+)["\']/i', $embed, $m ) ) {
-			return $m[1];
+			return self::without_core_counter( $m[1] );
 		}
 
 		return '';
+	}
+
+	/**
+	 * A source URL as the video's own address: without the `_` counter
+	 * core's [video] shortcode adds (`file.mp4?_=1`). With it the address
+	 * never matched the video's `_ms_source_url`, so a library file placed
+	 * with [video] played unprotected, its address and a download link in
+	 * the page for guests.
+	 *
+	 * @param string $url Source URL as found in the markup.
+	 * @return string
+	 */
+	private static function without_core_counter( string $url ): string {
+		return remove_query_arg( '_', html_entity_decode( $url, ENT_QUOTES ) );
 	}
 
 	/**
