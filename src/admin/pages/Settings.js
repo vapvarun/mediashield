@@ -27,6 +27,8 @@ import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
 const lmsConfig = window.mediashieldProLMS || {};
+// Learnomy 2.4.1+ owns "watch the video to complete" (Integrations\Learnomy::owns_watch_rule()).
+const learnomyOwnsWatchRule = !! ( config.isLearnomyActive && config.learnomyOwnsWatchRule );
 const DEBOUNCE_MS = 800;
 
 /**
@@ -1061,14 +1063,32 @@ const Settings = () => {
 				title={ __( 'Lesson Completion', 'mediashield' ) }
 					description={ __( 'Make students watch a lesson\'s protected video before they can complete the lesson.', 'mediashield' ) }
 				>
+					{ /* Learnomy 2.4.1+ sets the rule on each lesson; the % below is then only for the other LMSs and the starting % of a new Learnomy lesson. */ }
+					{ learnomyOwnsWatchRule && (
+						<p className="mediashield-settings__rule-note">
+							{ ( settings?.ms_lms_require_watch_pct ?? 0 ) > 0
+								? sprintf(
+									/* translators: %d: percent of the video to watch, for example 80. */
+									__( 'Set this on each lesson in Learnomy (Completion: Auto: video watched). New protected video lessons start at %d%%.', 'mediashield' ),
+									settings.ms_lms_require_watch_pct
+								)
+								: __( 'Set this on each lesson in Learnomy (Completion: Auto: video watched).', 'mediashield' ) }
+						</p>
+					) }
+					{ ( ! learnomyOwnsWatchRule || lmsConfig.isLMSActive ) && (
 					<NumberField
-						label={ __( 'Require this % of the video watched before Complete', 'mediashield' ) }
-						help={ __( '0 turns this off. With 80, the lesson\'s Complete button stays disabled with "Watch 80% to complete" until the student has watched 80% of the lesson video (time spent watching; skipping ahead does not count, and a part watched twice counts once), and a completion sent any other way is refused. Works with Learnomy lessons that play a protected video and, with Pro, LearnDash lessons linked to a video. Site administrators are not held back.', 'mediashield' ) }
+						label={ learnomyOwnsWatchRule
+							? __( 'LearnDash lessons: require this % of the video watched before Complete', 'mediashield' )
+							: __( 'Require this % of the video watched before Complete', 'mediashield' ) }
+						help={ learnomyOwnsWatchRule
+							? __( '0 turns this off. With 80, the Mark Complete button of a LearnDash lesson linked to a video stays disabled until the student has watched 80% of it (time spent watching; skipping ahead does not count, and a part watched twice counts once). Site administrators are not held back. It is also the starting % for new Learnomy protected video lessons.', 'mediashield' )
+							: __( '0 turns this off. With 80, the lesson\'s Complete button stays disabled with "Watch 80% to complete" until the student has watched 80% of the lesson video (time spent watching; skipping ahead does not count, and a part watched twice counts once), and a completion sent any other way is refused. Works with Learnomy lessons that play a protected video and, with Pro, LearnDash lessons linked to a video. Site administrators are not held back.', 'mediashield' ) }
 						value={ settings?.ms_lms_require_watch_pct ?? 0 }
 						onCommit={ ( val ) => updateSetting( 'ms_lms_require_watch_pct', val ) }
 						min={ 0 }
 						max={ 100 }
 					/>
+					) }
 				</SectionCard>
 			) }
 

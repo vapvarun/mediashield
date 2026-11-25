@@ -23,6 +23,8 @@ namespace MediaShield\Integrations;
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
+use MediaShield\Access\WatchedSpans;
+use MediaShield\Core\Settings;
 use MediaShield\Embed\EmbedLink;
 use MediaShield\Upload\LibraryFiles;
 
@@ -46,6 +48,101 @@ class Learnomy {
 		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 3 );
 		add_filter( 'learnomy_lesson_completion_rules', array( __CLASS__, 'require_watch' ), 10, 3 );
 		add_filter( 'mediashield_video_access_link', array( __CLASS__, 'course_link' ), 10, 2 );
+		// Learnomy 2.4.1 owns "watch the video to complete" on each lesson;
+		// MediaShield reports how much was watched and the starting %.
+		// Hooking the first filter is what tells Learnomy a provider measures
+		// protected videos (\Learnomy\protected_video_measured()).
+		add_filter( 'learnomy_lesson_watched_pct', array( __CLASS__, 'watched_pct' ), 10, 3 );
+		add_filter( 'learnomy_protected_video_default_watch_pct', array( __CLASS__, 'default_watch_pct' ) );
+		// Nothing listens to learnomy_protected_video_rule_moved: when Learnomy
+		// copies the % onto its Manual protected lessons, the setting
+		// ms_lms_require_watch_pct stays as it is. It still gates LearnDash
+		// lessons (Pro), feeds the player's early report (SessionController)
+		// and is the starting % for new Learnomy lessons (default_watch_pct()),
+		// so clearing it would change those, and require_watch() already
+		// stands down for Learnomy without it.
+	}
+
+	/**
+	 * Does Learnomy decide "watch the video to complete" on each lesson?
+	 *
+	 * True from Learnomy 2.4.1, which defines protected_video_measured(); then
+	 * the lesson's own Completion rule decides and MediaShield only reports
+	 * the watched share (watched_pct()). False with Learnomy 2.4.0 or older,
+	 * where the site-wide "Require X% watched" applies (require_watch()). The
+	 * admin Settings screen reads the same answer (Admin\Menu).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return bool
+	 */
+	public static function owns_watch_rule(): bool {
+		return function_exists( '\\Learnomy\\protected_video_measured' );
+	}
+
+	/**
+	 * The MediaShield video a protected video lesson plays, 0 when none.
+	 *
+	 * Learnomy stores the video's post ID in `video_url` for content type
+	 * 'mediashield'. Anything else (another content type, a URL, an ID that
+	 * is not a MediaShield video) is not ours to answer.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param object $lesson Lesson row.
+	 * @return int
+	 */
+	private static function lesson_video( $lesson ): int {
+		if ( ! is_object( $lesson ) || self::CONTENT_TYPE !== (string) ( $lesson->content_type ?? '' ) ) {
+			return 0;
+		}
+		$id = trim( (string) ( $lesson->video_url ?? '' ) );
+		if ( '' === $id || ! ctype_digit( $id ) ) {
+			return 0;
+		}
+		return 'mediashield_video' === get_post_type( (int) $id ) ? (int) $id : 0;
+	}
+
+	/**
+	 * How much of a protected video lesson's video has this member watched?
+	 *
+	 * Answers Learnomy 2.4.1's `learnomy_lesson_watched_pct` with the share
+	 * measured on the server (WatchedSpans: time spent watching, merged
+	 * across sittings, so skipping ahead earns nothing). Another lesson's
+	 * value is passed through untouched (null by default), so other
+	 * providers are not overridden. For the site-wide rule use
+	 * SessionManager::watch_requirement().
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int|null $pct     Share so far; null when no provider answered.
+	 * @param int      $user_id Member; 0 (a guest) has watched nothing.
+	 * @param object   $lesson  Lesson row.
+	 * @return int|null 0-100, or $pct for a lesson that is not a protected video.
+	 */
+	public static function watched_pct( $pct, $user_id, $lesson ) {
+		$video_id = self::lesson_video( $lesson );
+		if ( ! $video_id ) {
+			return $pct;
+		}
+		return (int) $user_id > 0 ? WatchedSpans::percent( (int) $user_id, $video_id ) : 0;
+	}
+
+	/**
+	 * Starting "watch %" for a new Learnomy protected video lesson.
+	 *
+	 * Answers `learnomy_protected_video_default_watch_pct` with Settings >
+	 * Integrations "Require X% watched", so a site that chose a share keeps
+	 * it on new lessons; 0 (off) leaves Learnomy's own default.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $pct Default so far.
+	 * @return int
+	 */
+	public static function default_watch_pct( $pct ): int {
+		$setting = (int) Settings::get( 'ms_lms_require_watch_pct' );
+		return $setting > 0 ? $setting : (int) $pct;
 	}
 
 	/**
@@ -107,6 +204,11 @@ class Learnomy {
 	 * (admins, the course's instructor) is untouched, 'advisory' shows the
 	 * requirement without blocking. A completed lesson stays completed.
 	 *
+	 * From Learnomy 2.4.1 the lesson's own Completion rule decides (it asks
+	 * watched_pct() for the share), so this adds nothing: two rules on one
+	 * lesson would show two strips and could disagree. With Learnomy 2.4.0
+	 * it behaves exactly as in 1.4.3.
+	 *
 	 * @since 1.4.3
 	 *
 	 * @param array  $status  Learnomy completion status.
@@ -116,6 +218,9 @@ class Learnomy {
 	 */
 	public static function require_watch( $status, $user_id, $lesson ): array {
 		$status = (array) $status;
+		if ( self::owns_watch_rule() ) {
+			return $status;
+		}
 		if ( self::CONTENT_TYPE !== (string) ( $lesson->content_type ?? '' )
 			|| ! empty( $status['is_completed'] ) || 'off' === ( $status['enforcement'] ?? 'strict' ) ) {
 			return $status;

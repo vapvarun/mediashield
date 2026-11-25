@@ -158,22 +158,25 @@ class Menu {
 			'mediashield-admin',
 			'mediashieldAdmin',
 			array(
-				'restUrl'           => rest_url( 'mediashield/v1/' ),
-				'wpRestUrl'         => rest_url( 'wp/v2/' ),
-				'nonce'             => wp_create_nonce( 'wp_rest' ),
-				'version'           => $ver,
-				'userId'            => get_current_user_id(),
-				'adminUrl'          => admin_url(),
-				'siteUrl'           => home_url(),
-				'isProActive'       => defined( 'MEDIASHIELD_PRO_VERSION' ),
+				'restUrl'               => rest_url( 'mediashield/v1/' ),
+				'wpRestUrl'             => rest_url( 'wp/v2/' ),
+				'nonce'                 => wp_create_nonce( 'wp_rest' ),
+				'version'               => $ver,
+				'userId'                => get_current_user_id(),
+				'adminUrl'              => admin_url(),
+				'siteUrl'               => home_url(),
+				'isProActive'           => defined( 'MEDIASHIELD_PRO_VERSION' ),
 				// The Videos list labels a video with no level of its own.
-				'defaultProtection' => \MediaShield\Player\Protection::default_level(),
+				'defaultProtection'     => \MediaShield\Player\Protection::default_level(),
 				// Settings shows "Require X% watched" when an LMS that enforces
 				// it is active: Learnomy (Free) or LearnDash (Pro).
-				'isLearnomyActive'  => function_exists( '\\Learnomy\\table' ),
+				'isLearnomyActive'      => function_exists( '\\Learnomy\\table' ),
+				// Learnomy 2.4.1+ sets "watch to complete" on each lesson, so
+				// Settings explains that instead of offering the site-wide %.
+				'learnomyOwnsWatchRule' => \MediaShield\Integrations\Learnomy::owns_watch_rule(),
 				// Video Ads shows only where WB Ad Manager's video ads are
 				// installed (the class AdManagerBridge reads them from).
-				'isAdManagerActive' => class_exists( '\\WBAM_Pro\\Modules\\AdTypes\\Video_Ad_Resolver' ),
+				'isAdManagerActive'     => class_exists( '\\WBAM_Pro\\Modules\\AdTypes\\Video_Ad_Resolver' ),
 			)
 		);
 	}
