@@ -1524,6 +1524,10 @@
 }
 
 .mediashield-settings__section-title {
+	/* An h2 for screen readers; WordPress admin styles h2 larger. */
+	margin: 0;
+	padding: 0;
+	line-height: 1.4;
 	font-size: 14px;
 	font-weight: 700;
 	color: var( --ms-color-text );

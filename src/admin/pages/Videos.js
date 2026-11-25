@@ -506,7 +506,7 @@ const Videos = () => {
 							counts.attention
 						) }
 					</strong>{ ' ' }
-					<span>{ __( 'Members cannot play them until they are fixed.', 'mediashield' ) }</span>{ ' ' }
+					<span>{ _n( 'Members cannot play it until it is fixed.', 'Members cannot play them until they are fixed.', counts.attention, 'mediashield' ) }</span>{ ' ' }
 					<Button variant="link" onClick={ () => pickState( 'attention' ) }>{ __( 'Show only these', 'mediashield' ) }</Button>
 				</div>
 			) }
@@ -728,7 +728,7 @@ const Videos = () => {
 			{ /* One line, at the end, never a box above the list (Basecamp 10545260681). */ }
 			{ ! config.isProActive && ! loading && 'trash' !== view && (
 				<p className="ms-upsell-line">
-					{ __( 'Pro adds Bunny Stream: browse your Bunny library and import videos in one step.', 'mediashield' ) }{ ' ' }
+					{ __( 'Bunny Stream import is in Pro.', 'mediashield' ) }{ ' ' }
 					<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer">{ __( 'See MediaShield Pro', 'mediashield' ) }</a>
 				</p>
 			) }

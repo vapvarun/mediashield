@@ -434,4 +434,31 @@
 	.ms-videos__toolbar .components-base-control {
 		flex-basis: 100%;
 	}
+
+	/* 40px tap areas; the visible sizes stay as they are. */
+	.mediashield-videos .mediashield-page__header .components-button,
+	.mediashield-videos .ms-videos__bulk .components-button {
+		min-height: 40px;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-check,
+	.mediashield-videos .ms-videos__bulk .components-checkbox-control {
+		position: relative;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-check .components-checkbox-control__label,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-check label {
+		position: absolute;
+		inset-block-start: -8px;
+		inset-inline-start: -8px;
+		width: 40px;
+		height: 40px;
+		z-index: 1;
+	}
+
+	.mediashield-videos .ms-videos__title-link {
+		display: inline-block;
+		padding-block: 11px;
+		margin-block: -11px;
+	}
 }

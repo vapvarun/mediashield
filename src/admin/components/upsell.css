@@ -17,6 +17,7 @@
 
 @media ( max-width: 640px ) {
 	.ms-upsell-line {
-		padding: var( --ms-space-2 ) var( --ms-space-3 );
+		padding: 0 var( --ms-space-3 );
+		font-size: var( --ms-font-size-sm );
 	}
 }
