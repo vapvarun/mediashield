@@ -143,6 +143,7 @@ class Protection {
 	 * @since 1.3.0
 	 * @since 1.4.3 A file MediaShield holds is always signed, whatever Hide Video Source says.
 	 * @since 1.4.3 A Strict video hides its source whatever Hide Video Source says.
+	 * @since 1.4.4 A Bunny video with a direct stream URL no longer prints its embed URL.
 	 *
 	 * @param int    $video_id   Video CPT post ID.
 	 * @param string $platform   Platform slug (self, bunny, youtube…).
@@ -155,6 +156,18 @@ class Protection {
 			'source_url' => $source_url,
 			'stream_url' => $stream_url,
 		);
+
+		// Bunny playing as a direct stream (Pro's Direct playback supplies the
+		// signed playlist URL): the player never loads the embed page, so its
+		// unsigned address is not printed. It would play the video in Bunny's
+		// own player with no watermark and no tracking. With Direct off there
+		// is no stream URL and the embed is what plays, so it stays.
+		if ( 'bunny' === $platform && '' !== $stream_url ) {
+			return array(
+				'source_url' => '',
+				'stream_url' => $stream_url,
+			);
+		}
 
 		if ( 'self' !== $platform ) {
 			return $unchanged;
