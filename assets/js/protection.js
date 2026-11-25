@@ -52,6 +52,8 @@
 		// Also init on dynamically added players.
 		window.addEventListener('mediashield:player-ready', function (e) {
 			if (e.detail && e.detail.el) {
+				// A None player measuring a lesson's watch rule stays unprotected.
+				if (!isProtectedPlayer(e.detail.el)) return;
 				initProtection(e.detail.el);
 				if (isProtectedPlayer(e.detail.el)) {
 					startDevtoolsDetection(e.detail.el.dataset.protectionLevel === 'strict');

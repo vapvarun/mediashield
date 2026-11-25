@@ -119,7 +119,8 @@
 		var detail  = e.detail || {};
 		var el      = detail.el;
 		var adapter = detail.adapter;
-		if ( ! el || ! adapter ) {
+		// None or Basic measuring a watch rule: those levels never ran ads.
+		if ( ! el || ! adapter || detail.trackingOnly ) {
 			return;
 		}
 

@@ -1430,13 +1430,18 @@
 			return;
 		}
 
-		// No protection — free preview.
+		// No protection — free preview. A lesson's watch rule is still
+		// measured (measuresWatch()), with nothing else added.
 		if ( protectionLevel === 'none' ) {
 			var adapter = createAdapter( el );
 			if ( adapter ) {
 				el._msAdapter = adapter;
 				adapter.onReady( function () {
 					applyPlayerFeatures( el, adapter );
+					if ( measuresWatch( el, videoId ) ) {
+						el._msTrackingOnly = true;
+						startOnFirstPlay( el, videoId, adapter );
+					}
 				} );
 			}
 			return;
@@ -1471,10 +1476,15 @@
 		if ( ! playerAdapter ) return;
 		el._msAdapter = playerAdapter;
 
-		// Basic tier: player features only, no session/tracking/watermark/milestones.
+		// Basic tier: player features only, no watermark. A viewing opens only
+		// to measure a lesson's watch rule (measuresWatch()).
 		if ( protectionLevel === 'basic' ) {
 			playerAdapter.onReady( function () {
 				applyPlayerFeatures( el, playerAdapter );
+				if ( measuresWatch( el, videoId ) ) {
+					el._msTrackingOnly = true;
+					startOnFirstPlay( el, videoId, playerAdapter );
+				}
 			} );
 			return;
 		}
@@ -1494,6 +1504,26 @@
 			}
 			startOnFirstPlay( el, videoId, playerAdapter );
 		} );
+	}
+
+	/**
+	 * Must this player measure watch time although its level opens no viewing?
+	 *
+	 * Measuring a lesson's required watch is not protection (Basecamp
+	 * 10541776164, 10537102216): at None and Basic a logged-in member's
+	 * player records watched time when the lesson sets a % on it
+	 * (data-watch-required) or the site's "Watch X% to complete" applies
+	 * (data-watch-track, printed by Renderer). Nothing else of Standard is
+	 * added: no watermark, no stream limit, no developer-tools detection.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {number}      videoId Video ID.
+	 * @return {boolean}
+	 */
+	function measuresWatch( el, videoId ) {
+		if ( ! config.isLoggedIn || ! videoId ) return false;
+		var target = el.querySelector( '.ms-player-target' );
+		return parseInt( el.dataset.watchRequired, 10 ) > 0 || !! ( target && '1' === target.dataset.watchTrack );
 	}
 
 	/**
@@ -1567,6 +1597,13 @@
 				var status = result.status;
 				var data = result.data;
 
+				// Only measuring a lesson's watch rule (None, Basic): a start
+				// that fails never holds a video those levels always played.
+				if ( el._msTrackingOnly && ! data.session_token ) {
+					releaseTrackingOnly( el, adapter );
+					return;
+				}
+
 				// Concurrent-stream limit (HTTP 429) — show the operator-configured
 				// message inline so the viewer knows why the player is idle. The
 				// REST handler returns the localised text in `data.message`.
@@ -1626,6 +1663,10 @@
 							resumePosition: data.resume_position,
 							watch: data.watch || null,
 							watermarkConfig: data.watermark_config,
+							// None or Basic measuring a watch rule: no watermark,
+							// protection or ads attach (watermark.js, protection.js,
+							// ad-breaks.js).
+							trackingOnly: !! el._msTrackingOnly,
 							video: data.video,
 							adapter: adapter,
 						},
@@ -1645,6 +1686,10 @@
 				} );
 			} )
 			.catch( function ( err ) {
+				if ( el._msTrackingOnly ) {
+					releaseTrackingOnly( el, adapter );
+					return;
+				}
 				// No session means no watermark: never leave a protected video
 				// playing unmarked. Say why, calmly, keep it stopped until a
 				// session starts, and offer a retry (the failure may pass).
@@ -1681,6 +1726,20 @@
 		showErrorOverlay( el, message || t( 'accessDenied', 'You do not have access to this video.' ), null, access.access_url ? {} : { sub: t( 'askOwner', 'Ask the site owner for access.' ) } );
 		if ( access.access_url ) {
 			addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
+		}
+	}
+
+	/**
+	 * Let a tracking-only player play after its viewing could not start.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {Object}      adapter Player adapter.
+	 */
+	function releaseTrackingOnly( el, adapter ) {
+		el._msBlocked = false;
+		if ( adapter && el._msPlayOnStart ) {
+			el._msPlayOnStart = false;
+			adapter.play();
 		}
 	}
 

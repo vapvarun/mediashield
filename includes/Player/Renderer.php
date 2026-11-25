@@ -416,6 +416,15 @@ class Renderer {
 				// "Resume from m:ss" before any viewing starts: a viewing now
 				// starts at the first play, not on page load (Basecamp 10545260660).
 				$resume_at = $access_denied ? 0.0 : \MediaShield\Access\SessionManager::resume_position( (int) $video_id, get_current_user_id() );
+				// The site's "Watch X% to complete" applies to this member: at
+				// None and Basic too, the player measures watch time (cards
+				// 10541776164, 10537102216). A lesson's own % arrives as
+				// data-watch-required on the container.
+				if ( ! $access_denied && get_current_user_id() && null !== \MediaShield\Access\SessionManager::watch_requirement( (int) $video_id, get_current_user_id() ) ) :
+					?>
+					data-watch-track="1"
+					<?php
+				endif;
 				if ( $resume_at > 0 ) :
 					?>
 					data-resume-position="<?php echo esc_attr( (string) round( $resume_at, 1 ) ); ?>"

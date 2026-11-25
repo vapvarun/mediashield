@@ -9,13 +9,15 @@ Settings, the video edit screen, the setup wizard, the Videos list and the block
 | Level | What the viewer gets |
 |-------|-------------|
 | None | The video plays as the platform shows it. Right-click stays blocked while **Block right-click on every video** is on (the default). Player features (speed, resume, sticky, end screen) still work. |
-| Basic | Right-click and download blocked. No watermark, and no tracked viewing or milestones, because no watch session is started. |
+| Basic | Right-click and download blocked. No watermark, and no tracked viewing or milestones, because no watch session is started (except to measure a lesson's "Watch X% to complete", below). |
 | Standard | Basic, plus a watermark with the viewer's name and tracked viewing (milestones, resume, analytics, the stream limit). |
 | Strict | Standard, plus the file address hidden from the page and developer tools detected (the video pauses while they are open). |
 
 Login is not part of a level. **Require login** is one site setting, under **Settings > Who can watch**, and applies at every level, None included.
 
 Basic protects the player but records nothing. If you want analytics for a video, use Standard or Strict.
+
+**A lesson's watch rule works at every level.** When a lesson asks the member to watch a share of the video ("Watch 70% to complete", set on the lesson or by **Lesson Completion** in Settings), MediaShield measures how much a logged-in member watches even at None or Basic, so Complete unlocks when they reach it. Nothing else is added at those levels: no watermark, no stream limit and no developer-tools detection. Without a watch rule, None and Basic record nothing, as before. Guests are never measured.
 
 Pick the site's level on the Protection card. A video can set its own on its edit screen.
 

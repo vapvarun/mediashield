@@ -387,3 +387,74 @@ describe( 'QA round 2 (Basecamp 10545260568, 10545260660)', () => {
 		expect( beacon.url ).toContain( '_wpnonce=n' );
 	} );
 } );
+
+describe( 'A lesson watch rule is measured at None and Basic (cards 10541776164, 10537102216)', () => {
+	const calls = ( kind ) => global.fetch.mock.calls.filter( ( c ) => c[ 0 ].indexOf( kind ) > -1 ).map( ( c ) => JSON.parse( c[ 1 ].body ) );
+	const player = ( level, extra = '', targetExtra = '' ) => `
+		<div class="ms-protected-player" data-video-id="9" data-platform="self" data-protection-level="${ level }" ${ extra }>
+			<div class="ms-player-target" data-source-url="https://example.org/lesson-9.mp4" data-stream-url="" data-duration="300" ${ targetExtra }></div>
+			<canvas class="ms-watermark-canvas"></canvas>
+		</div>`;
+
+	test( 'None with data-watch-required="2": a viewing starts at play and heartbeats, flagged tracking-only', async () => {
+		boot( { markup: player( 'none', 'data-watch-required="2"' ), session: { body: { session_token: 't9', resume_position: 0, watermark_config: { enabled: false } } }, tracker: true } );
+		const ready = [];
+		window.addEventListener( 'mediashield:player-ready', ( e ) => ready.push( e.detail.trackingOnly ) );
+		await readyNative();
+		expect( calls( 'session/start' ) ).toEqual( [] );
+
+		document.querySelector( 'video' ).play();
+		await flush();
+		await flush();
+		jest.advanceTimersByTime( 6000 );
+		await flush();
+
+		expect( calls( 'session/start' ) ).toEqual( [ { video_id: 9 } ] );
+		expect( calls( 'session/heartbeat' ).length ).toBeGreaterThan( 0 );
+		expect( ready ).toEqual( [ true ] );
+		expect( document.querySelector( 'video' ).paused ).toBe( false );
+	} );
+
+	test( 'Basic with the site rule (data-watch-track) measures too', async () => {
+		boot( { markup: player( 'basic', '', 'data-watch-track="1"' ), session: { body: { session_token: 't9', resume_position: 0 } }, tracker: true } );
+		await readyNative();
+		document.querySelector( 'video' ).play();
+		await flush();
+		await flush();
+
+		expect( calls( 'session/start' ) ).toEqual( [ { video_id: 9 } ] );
+	} );
+
+	test( 'None without a watch rule sends nothing, as before', async () => {
+		boot( { markup: player( 'none' ), session: { body: { session_token: 't9' } }, tracker: true } );
+		await readyNative();
+		document.querySelector( 'video' ).play();
+		await flush();
+		expect( document.querySelector( 'video' ).paused ).toBe( false );
+
+		jest.advanceTimersByTime( 60000 );
+		await flush();
+
+		expect( global.fetch ).not.toHaveBeenCalled();
+	} );
+
+	test( 'a guest is unchanged: no viewing at None even with a rule', async () => {
+		boot( { markup: player( 'none', 'data-watch-required="2"' ), session: { body: {} }, loggedIn: false, tracker: true } );
+		await readyNative();
+		document.querySelector( 'video' ).play();
+		await flush();
+
+		expect( global.fetch ).not.toHaveBeenCalled();
+	} );
+
+	test( 'a failed start never holds a None video', async () => {
+		boot( { markup: player( 'none', 'data-watch-required="2"' ), session: { status: 500, body: { code: 'internal' } } } );
+		await readyNative();
+		document.querySelector( 'video' ).play();
+		await flush();
+		await flush();
+
+		expect( document.querySelector( 'video' ).paused ).toBe( false );
+		expect( document.querySelector( '.ms-error-overlay' ) ).toBeNull();
+	} );
+} );

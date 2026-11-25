@@ -367,7 +367,9 @@ class SessionController extends WP_REST_Controller {
 				'session_token'    => $result['session_token'],
 				'resume_position'  => $result['resume_position'],
 				'is_resumed'       => $result['is_resumed'],
-				'watermark_config' => $watermark_config,
+				// None and Basic show no watermark; their viewing only
+				// measures a lesson's watch rule (SessionManager::tracking_only()).
+				'watermark_config' => SessionManager::tracking_only( $video_id ) ? array( 'enabled' => false ) : $watermark_config,
 				'video'            => array(
 					'id'               => $video_id,
 					'title'            => sanitize_text_field( $video->post_title ),

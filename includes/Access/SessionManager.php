@@ -58,6 +58,13 @@ class SessionManager {
 		// -- Concurrent session limit check (with row locking) --
 		$max_concurrent = (int) get_option( 'ms_max_concurrent_streams', 2 );
 
+		// None and Basic never had a stream limit. They open a viewing only to
+		// measure a lesson's "Watch X%" (cards 10541776164, 10537102216),
+		// which is not protection, so the limit stays off for them.
+		if ( self::tracking_only( $video_id ) ) {
+			$max_concurrent = PHP_INT_MAX;
+		}
+
 		/*
 		 * Guests have no identity, and every one of them lands on user_id = 0.
 		 * Both queries below key on user_id, so treating a guest like a user
@@ -178,7 +185,8 @@ class SessionManager {
 				 WHERE user_id = %d AND is_active = 1
 				 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
 				 AND NOT (ip_address = %s AND user_agent = %s)
-				 AND ( " . self::played_sql() . ' OR started_at > DATE_SUB(%s, INTERVAL 15 SECOND) ) FOR UPDATE',
+				 AND ( " . self::played_sql() . ' OR started_at > DATE_SUB(%s, INTERVAL 15 SECOND) )
+				 AND ' . self::limited_videos_sql() . ' FOR UPDATE',
 					$user_id,
 					$now,
 					$ip,
@@ -618,6 +626,39 @@ class SessionManager {
 	public static function played_sql( string $alias = '' ): string {
 		$c = '' === $alias ? '' : $alias . '.';
 		return "({$c}max_position > 0 OR {$c}total_seconds > 0)";
+	}
+
+	/**
+	 * Is a viewing of this video only measuring watch time?
+	 *
+	 * At None and Basic a viewing is opened only for a lesson's watch rule:
+	 * no stream limit, no watermark (Basecamp 10541776164, 10537102216).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return bool
+	 */
+	public static function tracking_only( int $video_id ): bool {
+		return in_array( \MediaShield\Player\Protection::resolve_level( $video_id ), array( 'none', 'basic' ), true );
+	}
+
+	/**
+	 * SQL: the session's video is at a level the stream limit covers (Standard, Strict).
+	 *
+	 * A member measuring a None or Basic lesson on one device is not using
+	 * up a stream on another. Reads the video's own level from postmeta
+	 * (meta_key index); a video without one follows the site default.
+	 *
+	 * @return string Condition on video_id.
+	 */
+	private static function limited_videos_sql(): string {
+		global $wpdb;
+		$low = in_array( \MediaShield\Player\Protection::default_level(), array( 'none', 'basic' ), true );
+
+		return $low
+			? "video_id IN ( SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_ms_protection_level' AND meta_value IN ( 'standard', 'strict' ) )"
+			: "video_id NOT IN ( SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_ms_protection_level' AND meta_value IN ( 'none', 'basic' ) )";
 	}
 
 	/**
