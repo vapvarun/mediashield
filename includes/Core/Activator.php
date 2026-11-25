@@ -61,7 +61,6 @@ class Activator {
 		// Seed defaults for every option declared in the Settings schema.
 		Settings::seed_defaults( $updating );
 
-
 		// Grant upload capability to administrators.
 		$admin_role = get_role( 'administrator' );
 		if ( $admin_role ) {
