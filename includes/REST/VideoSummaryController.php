@@ -195,11 +195,20 @@ class VideoSummaryController extends WP_REST_Controller {
 		$places = array_values(
 			array_filter(
 				VideoUsage::for_video( $video_id ),
-				static fn( $place ) => (int) ( $place['id'] ?? 0 ) !== $post_id
+				static fn( $place ) => (int) $place['id'] !== $post_id
 			)
 		);
 
 		$title = get_the_title( $video_id );
+
+		// No poster of the owner's: a YouTube video still has YouTube's
+		// public thumbnail, as the block showed before 1.4.4. Never derived
+		// for other platforms: a self-hosted id is the private file name.
+		$thumbnail = Thumbnail::poster_url( $video_id, 'large', true );
+		$youtube   = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+		if ( '' === $thumbnail && 'youtube' === $platform && preg_match( '/^[A-Za-z0-9_-]{11}$/', $youtube ) ) {
+			$thumbnail = 'https://i.ytimg.com/vi/' . $youtube . '/hqdefault.jpg';
+		}
 
 		return array(
 			'id'               => $video_id,
@@ -208,7 +217,7 @@ class VideoSummaryController extends WP_REST_Controller {
 			'platform'         => $platform,
 			'platform_label'   => Platforms::label( $platform ),
 			'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
-			'thumbnail'        => Thumbnail::poster_url( $video_id, 'large', true ),
+			'thumbnail'        => $thumbnail,
 			'protection'       => $level,
 			'protection_label' => $levels[ $level ]['label'] ?? $level,
 			'follows_default'  => '' === $own,

@@ -96,6 +96,7 @@ class VideoBlockLibraryTest extends WP_UnitTestCase {
 		$this->assertFalse( $data['follows_default'] );
 		$this->assertStringContainsString( 'post=' . $this->video, $data['edit_url'] );
 		$this->assertSame( array( $other ), wp_list_pluck( $data['used_in'], 'id' ), 'The page being edited is not counted.' );
+		$this->assertSame( 'https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg', $data['thumbnail'], 'YouTube\'s thumbnail when the owner set no poster.' );
 	}
 
 	/**
