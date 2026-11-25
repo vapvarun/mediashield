@@ -128,6 +128,83 @@ class Platforms {
 	}
 
 	/**
+	 * What a pasted video link is: its platform and the platform's video id.
+	 *
+	 * The one recogniser for a link someone adds: the setup wizard, Add video,
+	 * the block and any REST client all end here, so a link that can never
+	 * play is refused once, in the same words, instead of each screen saving
+	 * it as "self-hosted" or "iframe" (Basecamp 10545260436). The browser-side
+	 * detection (src/admin/utils/platform.js, assets/js/admin-video.js) only
+	 * shapes what the screen shows while typing; this decides what is saved.
+	 *
+	 * Recognised: a YouTube, Vimeo or Wistia video link, any Bunny Stream URL
+	 * bunny_from_url() reads, a link to a video file (.mp4, .webm, .ogv, .mov,
+	 * .m4v, .m3u8, .mpd), MediaShield's own /stream/ address and a URL into
+	 * the protected uploads folder (an uploaded file).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param string $url A link as pasted.
+	 * @return array{platform:string, video_id:string}|\WP_Error The platform and id, or `mediashield_unplayable_source` with the message to show.
+	 */
+	public static function recognise( string $url ) {
+		$url = trim( $url );
+
+		$patterns = array(
+			'youtube' => '#(?:youtube(?:-nocookie)?\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/|v/)|youtu\.be/)([A-Za-z0-9_-]{11})#i',
+			'vimeo'   => '#vimeo\.com/(?:video/|channels/[^/]+/|groups/[^/]+/videos/)?(\d{5,})#i',
+			'wistia'  => '#(?:wistia\.(?:com|net)/(?:medias|embed/(?:iframe|medias))/|wi\.st/(?:medias/)?)([a-z0-9]{10})#i',
+		);
+
+		if ( preg_match( '#^https?://#i', $url ) ) {
+			foreach ( $patterns as $platform => $pattern ) {
+				if ( preg_match( $pattern, $url, $m ) ) {
+					return array(
+						'platform' => $platform,
+						'video_id' => $m[1],
+					);
+				}
+			}
+
+			$bunny = self::bunny_from_url( $url );
+			if ( $bunny ) {
+				return array(
+					'platform' => 'bunny',
+					'video_id' => $bunny['guid'],
+				);
+			}
+
+			$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+			if ( preg_match( '/\.(mp4|webm|ogv|ogg|mov|m4v|m3u8|mpd)$/i', $path )
+				|| false !== strpos( $url, 'mediashield/v1/stream/' )
+				|| \MediaShield\Player\Protection::in_protected_folder( $url ) ) {
+				return array(
+					'platform' => self::SELF_HOSTED,
+					'video_id' => '',
+				);
+			}
+		}
+
+		return new \WP_Error( 'mediashield_unplayable_source', self::unplayable_message(), array( 'status' => 400 ) );
+	}
+
+	/**
+	 * The sentence that refuses a link MediaShield cannot play, naming what to use instead.
+	 *
+	 * Bunny is named only where Pro can play it.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return string
+	 */
+	public static function unplayable_message(): string {
+		if ( defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
+			return __( 'This link is not a video MediaShield can play. Use a YouTube, Vimeo, Wistia or Bunny Stream link, a link to an .mp4 file, or upload a file.', 'mediashield' );
+		}
+		return __( 'This link is not a video MediaShield can play. Use a YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file.', 'mediashield' );
+	}
+
+	/**
 	 * This site's Bunny pull-zone hostnames, mapped to their library ids.
 	 *
 	 * Empty in Free. Pro fills it from the connected Bunny library, which is

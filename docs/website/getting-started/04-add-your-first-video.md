@@ -10,7 +10,7 @@ Fill in the fields:
 
 **Title** - How the video appears in your library, in playlists, and in the "My Videos" grid.
 
-**Video URL** - Paste the video URL. MediaShield works out the platform for you and shows what it detected below the field, along with the platform's video ID. There is no platform picker: detection is driven by the URL. If a URL is not recognised as YouTube, Vimeo, Wistia, or Bunny, MediaShield says so and falls back to treating it as self-hosted, which only works if the URL serves the video file itself.
+**Video URL** - Paste the video URL. MediaShield works out the platform for you and shows what it detected below the field, along with the platform's video ID. There is no platform picker: detection is driven by the URL. A link MediaShield cannot play is not saved: the screen says "This link is not a video MediaShield can play" and names what to use instead (a YouTube, Vimeo or Wistia link, a link to an .mp4 file, or an uploaded file; Bunny Stream with Pro). The video keeps the link it had.
 
 **Or upload a file** - New in 1.3.0. Choose a video file and click **Upload** to store it on this site. The file is saved outside the media library, under `wp-content/uploads/mediashield/`, and played back through a permission-checked URL. Save the video afterwards to keep the file. Upload size is limited by your server, not by MediaShield. The field appears for users with the `upload_mediashield` capability, which administrators have by default.
 
@@ -41,7 +41,7 @@ Once the video is in your library, you have three ways to embed it on a page or 
 
 ### Block editor (Gutenberg)
 
-In the block inserter, search for **MediaShield Video**. The block opens a video picker where you select the video you just created. You can also paste a fresh video URL directly into the block to create a library entry on the fly. The editor shows a preview, and the block sidebar lets you change the protection level and duration without leaving the page. The frontend output includes the player, watermark, session tracking, and the login overlay when required.
+In the block inserter, search for **MediaShield Video**. The block opens a video picker where you select the video you just created. You can also paste a fresh video URL directly into the block to create a library entry on the fly; a link MediaShield cannot play is refused with the same message. The editor shows a preview, and the block sidebar lets you change the protection level and duration without leaving the page. The frontend output includes the player, watermark, session tracking, and the login overlay when required.
 
 ### Shortcode
 

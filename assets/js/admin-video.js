@@ -113,11 +113,10 @@
 						message = labels.bunnyStreamFile || '';
 					}
 
-					if ( ! message && 'self' === detected && /^https?:\/\//i.test( url ) && ! /\.(mp4|webm|ogg|ogv|mov|m3u8|mpd)(\?|#|$)/i.test( url ) ) {
-						// A URL we could not place, pointing at something that is
-						// not obviously a media file. Saving it as self-hosted is
-						// still allowed — an operator may know better than we do —
-						// but they should hear that we did not recognise it.
+					if ( ! message && 'self' === detected && ! /\.(mp4|webm|ogg|ogv|mov|m4v|m3u8|mpd)(\?|#|$)/i.test( url ) && ! /mediashield\/v1\/stream\//.test( url ) ) {
+						// Not a link MediaShield can play. The server refuses to
+						// save it (Platforms::recognise()); say so now, with what
+						// to use instead (Basecamp 10545260436).
 						message = labels.unrecognised || '';
 					}
 				}

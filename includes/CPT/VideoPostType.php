@@ -38,6 +38,12 @@ class VideoPostType {
 				self::normalize_platform( $post->ID );
 			}
 		);
+		// A link that can never play is refused where it is added: REST (the
+		// wizard, the block, any client) here, the edit screen in
+		// save_meta_box() (Basecamp 10545260436).
+		add_filter( 'rest_pre_insert_mediashield_video', array( __CLASS__, 'refuse_unplayable_source' ), 10, 2 );
+		add_filter( 'redirect_post_location', array( __CLASS__, 'flag_refused_source' ), 10, 2 );
+		add_action( 'admin_notices', array( __CLASS__, 'render_refused_source_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_edit_assets' ) );
 		// Hide WP's default Custom Fields meta box on the video edit screen —
 		// it surfaces raw post-meta key/value pairs and confuses site owners
@@ -202,7 +208,7 @@ class VideoPostType {
 					'self'            => __( 'Self-hosted / Direct URL', 'mediashield' ),
 					'bunnyCollection' => __( 'That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL.', 'mediashield' ),
 					'bunnyDashboard'  => __( 'That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL.', 'mediashield' ),
-					'unrecognised'    => __( 'This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. It will be saved as self-hosted, which only works if the URL serves the video file itself.', 'mediashield' ),
+					'unrecognised'    => \MediaShield\Support\Platforms::unplayable_message(),
 					'bunnyStreamFile' => __( 'This is a Bunny stream file from a library this site is not connected to, so it will be saved as a direct stream. That only plays if token authentication is off for the library. To use Bunny\'s player instead, paste the video\'s embed URL.', 'mediashield' ),
 					'uploading'       => __( 'Uploading…', 'mediashield' ),
 					/* translators: %s: percentage sent so far, e.g. "42%". */
@@ -884,6 +890,85 @@ class VideoPostType {
 	}
 
 	/**
+	 * Set when the edit screen refused a link during this save.
+	 *
+	 * @var bool
+	 */
+	private static bool $refused_source = false;
+
+	/**
+	 * Refuse a REST save whose new source link MediaShield cannot play.
+	 *
+	 * Covers every REST writer of `_ms_source_url`: the setup wizard, the
+	 * Video block's paste, Pro screens and any API client. A link already
+	 * stored is not re-checked when it comes back unchanged, so an old video
+	 * can still be edited.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param \stdClass|\WP_Error $prepared Post about to be saved.
+	 * @param \WP_REST_Request    $request  Request.
+	 * @return \stdClass|\WP_Error
+	 */
+	public static function refuse_unplayable_source( $prepared, $request ) {
+		if ( is_wp_error( $prepared ) || ! $request instanceof \WP_REST_Request ) {
+			return $prepared;
+		}
+
+		$meta = $request->get_param( 'meta' );
+		if ( ! is_array( $meta ) || ! isset( $meta['_ms_source_url'] ) ) {
+			return $prepared;
+		}
+
+		$url = trim( (string) $meta['_ms_source_url'] );
+		$id  = (int) $request->get_param( 'id' );
+		if ( '' === $url || ( $id > 0 && get_post_meta( $id, '_ms_source_url', true ) === $url ) ) {
+			return $prepared;
+		}
+
+		$found = \MediaShield\Support\Platforms::recognise( $url );
+
+		return is_wp_error( $found ) ? $found : $prepared;
+	}
+
+	/**
+	 * After an edit-screen save that refused a link, say so on the next screen.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param string $location Redirect URL.
+	 * @param int    $post_id  Post ID.
+	 * @return string
+	 */
+	public static function flag_refused_source( $location, $post_id ): string {
+		if ( self::$refused_source && 'mediashield_video' === get_post_type( (int) $post_id ) ) {
+			return add_query_arg( 'ms_source_refused', 1, (string) $location );
+		}
+		return (string) $location;
+	}
+
+	/**
+	 * The edit-screen notice for a refused link: what to use instead.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function render_refused_source_notice(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display flag only; set by our own redirect.
+		if ( empty( $_GET['ms_source_refused'] ) ) {
+			return;
+		}
+		$screen = get_current_screen();
+		if ( ! $screen || 'mediashield_video' !== $screen->post_type ) {
+			return;
+		}
+		printf(
+			'<div class="notice notice-error"><p><strong>%1$s</strong> %2$s</p></div>',
+			esc_html__( 'The video link was not saved.', 'mediashield' ),
+			esc_html( \MediaShield\Support\Platforms::unplayable_message() )
+		);
+	}
+
+	/**
 	 * Re-derive the platform from the stored source URL, server side.
 	 *
 	 * Whatever the browser guessed, a URL the server recognises is stored in one
@@ -896,6 +981,15 @@ class VideoPostType {
 	public static function normalize_platform( int $post_id ): void {
 		$source = (string) get_post_meta( $post_id, '_ms_source_url', true );
 		$bunny  = \MediaShield\Support\Platforms::bunny_from_url( $source );
+
+		// A YouTube, Vimeo or Wistia link names its platform and id whatever
+		// the browser guessed ("iframe", or nothing from an older client).
+		$found = '' !== $source ? \MediaShield\Support\Platforms::recognise( $source ) : null;
+		if ( is_array( $found ) && in_array( $found['platform'], array( 'youtube', 'vimeo', 'wistia' ), true ) ) {
+			update_post_meta( $post_id, '_ms_platform', $found['platform'] );
+			update_post_meta( $post_id, '_ms_platform_video_id', $found['video_id'] );
+			return;
+		}
 
 		if ( ! $bunny ) {
 			// Saved as Bunny, but we cannot tell which library it belongs to -
@@ -958,6 +1052,16 @@ class VideoPostType {
 			'_ms_protection_level',
 			'_ms_access_role',
 		);
+
+		// A link MediaShield cannot play is not saved: the video keeps the
+		// source it had, and the screen says what to use instead
+		// (flag_refused_source(), Basecamp 10545260436).
+		$posted_source = isset( $_POST['_ms_source_url'] ) ? trim( esc_url_raw( wp_unslash( $_POST['_ms_source_url'] ) ) ) : '';
+		if ( '' !== $posted_source && is_wp_error( \MediaShield\Support\Platforms::recognise( $posted_source ) )
+			&& $posted_source !== (string) get_post_meta( $post_id, '_ms_source_url', true ) ) {
+			unset( $fields['_ms_source_url'], $fields['_ms_platform'], $fields['_ms_platform_video_id'] );
+			self::$refused_source = true;
+		}
 
 		foreach ( $fields as $key => $sanitize ) {
 			if ( isset( $_POST[ $key ] ) ) {

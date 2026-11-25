@@ -30,7 +30,7 @@ Only users who can edit posts see these. Visitors see a blank space and no playe
 | Upload failed: ... | The file was not an accepted video. | Use `.mp4`, `.webm`, `.mov` or `.m4v`. |
 | That is a Bunny collection (a folder of videos), not a single video. | The address is a collection. | Open one video in Bunny and paste its address or embed address. |
 | That looks like a Bunny dashboard link we cannot read a video ID from. | A dashboard address was pasted. | Copy the video's own address or embed address. |
-| This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. | Saved as self-hosted. | Fix the address, or confirm it serves the video file itself. |
+| This link is not a video MediaShield can play. Use a YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file. | The link is not a video page MediaShield knows or a video file. It was not saved (setup wizard, Add video, the block and the REST API all refuse it). | Paste the video's own address on YouTube, Vimeo, Wistia or Bunny Stream (Pro), a link ending in .mp4, .webm, .mov, .m4v or .m3u8, or upload the file. |
 | MediaShield video files can be downloaded directly, bypassing access checks | Site Health found your server serves files without a check. | Add the nginx rule it shows. See [Upload a Video File](../using-mediashield/11-upload-a-video-file.md). |
 | MediaShield could not check whether your video files are downloadable | The check could not request a file. | Upload a video, then run Site Health again. |
 
