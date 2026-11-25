@@ -37,7 +37,8 @@ class UsageScanOnlyForListTest extends WP_UnitTestCase {
 		add_filter(
 			'query',
 			function ( $sql ) {
-				if ( false !== strpos( (string) $sql, "post_content LIKE '%[mediashield " ) ) {
+				// The post_content scan (VideoUsage::scan() since the no-cap fix).
+				if ( false !== strpos( (string) $sql, "post_type NOT IN ( 'revision', 'mediashield_video', 'mediashield_playlist'" ) && false !== strpos( (string) $sql, 'post_content LIKE' ) ) {
 					++$this->scans;
 				}
 				return $sql;

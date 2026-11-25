@@ -45,13 +45,12 @@ class VideoUsage {
 	/**
 	 * Look up several videos with one query and remember the answers.
 	 *
-	 * One scan of post_content for the MediaShield video and playlist
-	 * shortcodes and blocks, for the whole list page. post_content is not
-	 * indexed, so this is a table scan; it runs once per Videos list page
-	 * (20 videos), never per row, and is capped at 500 matching posts. Then
-	 * one indexed read of the playlist items table for the playlists that
-	 * hold these videos; the pages from the same scan that show those
-	 * playlists become each video's pages via a playlist.
+	 * One indexed read of the playlist items table for the playlists that
+	 * hold these videos, then one scan of post_content (not indexed) for
+	 * exactly these videos and those playlists (scan()). It runs once per
+	 * Videos list page (20 videos), never per row, and has no cap on the
+	 * posts it reads, so an old page is never missed. Pages that show one
+	 * of the playlists become the video's pages via a playlist.
 	 *
 	 * @param int[] $video_ids Video IDs.
 	 */
@@ -69,36 +68,11 @@ class VideoUsage {
 
 		global $wpdb;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One batched read per list page; see the docblock.
-		$rows = $wpdb->get_results(
-			"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
-			WHERE post_status IN ( 'publish', 'future', 'draft', 'private' )
-			AND post_type NOT IN ( 'revision', 'mediashield_video', 'mediashield_playlist', 'nav_menu_item', 'attachment', 'wp_global_styles' )
-			AND ( post_content LIKE '%[mediashield %' OR post_content LIKE '%wp:mediashield/video%'
-				OR post_content LIKE '%[mediashield\\_playlist%' OR post_content LIKE '%wp:mediashield/playlist%' )
-			ORDER BY post_modified_gmt DESC
-			LIMIT 500"
-		);
-
-		$wanted = array_flip( $video_ids );
-
-		$pages_by_playlist = array();
-		foreach ( (array) $rows as $row ) {
-			foreach ( self::playlist_ids_in( (string) $row->post_content ) as $playlist_id ) {
-				$pages_by_playlist[ $playlist_id ][] = $row;
-			}
-			foreach ( self::ids_in( (string) $row->post_content ) as $id ) {
-				if ( isset( $wanted[ $id ] ) && count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
-					self::$cache[ $id ][] = self::entry( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
-				}
-			}
-		}
-
-		// Playlists: a video added to a playlist is shown wherever the playlist
+		// Playlists that hold these videos: one indexed read of the playlist
+		// table. A video added to a playlist is shown wherever the playlist
 		// is placed (a playlist has no page of its own since 1.4.4), so the
-		// playlist is a place. Its items live in the playlist table, not in
-		// post_content.
-		// One read for the list page, on the indexed video_id.
+		// playlist is a place, and the pages that show it are the video's
+		// pages via a playlist.
 		$placeholders = implode( ', ', array_fill( 0, count( $video_ids ), '%d' ) );
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- One batched read per list page; placeholders built above.
 		$playlists = $wpdb->get_results(
@@ -109,12 +83,30 @@ class VideoUsage {
 				WHERE pi.video_id IN ( {$placeholders} )
 				AND p.post_type = 'mediashield_playlist'
 				AND p.post_status IN ( 'publish', 'future', 'draft', 'private' )
-				ORDER BY p.post_modified_gmt DESC
-				LIMIT 500",
+				ORDER BY p.post_modified_gmt DESC",
 				$video_ids
 			)
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$playlist_ids = array_values( array_unique( array_map( static fn( $row ) => (int) $row->ID, (array) $playlists ) ) );
+
+		// One scan of post_content for exactly these videos and playlists,
+		// with no cap: a video shown only on an old page must still say
+		// where.
+		$hits = self::scan( $video_ids, $playlist_ids, array( 'publish', 'future', 'draft', 'private' ) );
+
+		$wanted            = array_flip( $video_ids );
+		$pages_by_playlist = array();
+		foreach ( $hits as $hit ) {
+			foreach ( $hit['playlists'] as $playlist_id ) {
+				$pages_by_playlist[ $playlist_id ][] = $hit;
+			}
+			foreach ( $hit['videos'] as $id ) {
+				if ( count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
+					self::$cache[ $id ][] = self::entry( $hit['id'], $hit['title'], $hit['type'] );
+				}
+			}
+		}
 
 		foreach ( (array) $playlists as $row ) {
 			$id = (int) $row->video_id;
@@ -126,7 +118,7 @@ class VideoUsage {
 			}
 			foreach ( $pages_by_playlist[ (int) $row->ID ] ?? array() as $page ) {
 				if ( count( self::$via_playlist[ $id ] ) < self::MAX_PER_VIDEO ) {
-					self::$via_playlist[ $id ][] = self::entry( (int) $page->ID, (string) $page->post_title, (string) $page->post_type );
+					self::$via_playlist[ $id ][] = self::entry( $page['id'], $page['title'], $page['type'] );
 				}
 			}
 		}
@@ -199,27 +191,90 @@ class VideoUsage {
 	 * @return string
 	 */
 	public static function page_for_playlist( int $playlist_id ): string {
-		global $wpdb;
-
-		// One scan, like prime(); this runs only on a request for an old address.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- See the docblock.
-		$rows = $wpdb->get_results(
-			"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
-			WHERE post_status = 'publish'
-			AND post_type NOT IN ( 'revision', 'mediashield_video', 'mediashield_playlist', 'nav_menu_item', 'attachment', 'wp_global_styles' )
-			AND ( post_content LIKE '%[mediashield\\_playlist%' OR post_content LIKE '%wp:mediashield/playlist%' )
-			ORDER BY post_modified_gmt DESC
-			LIMIT 500"
-		);
-
+		// One scan for exactly this playlist, like prime(); this runs only on a
+		// request for an old address.
 		$places = array();
-		foreach ( (array) $rows as $row ) {
-			if ( in_array( $playlist_id, self::playlist_ids_in( (string) $row->post_content ), true ) ) {
-				$places[] = array( 'id' => (int) $row->ID );
-			}
+		foreach ( self::scan( array(), array( $playlist_id ), array( 'publish' ) ) as $hit ) {
+			$places[] = array( 'id' => $hit['id'] );
 		}
 
 		return self::first_readable( $places, 0 );
+	}
+
+	/**
+	 * The posts that show these videos or playlists, newest edit first.
+	 *
+	 * One table scan (post_content is not indexed) whose WHERE asks for
+	 * exactly these ids, in the forms the shortcode and the block are saved
+	 * in (id="N", id='N', id=N, "videoId":N, "playlistId":N), with no cap:
+	 * a video shown only on an old page must still say where. Each match is
+	 * then read with the same parsers as before, so a near miss (another
+	 * plugin's id="N") is dropped.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int[]    $video_ids    Video IDs (at most a list page).
+	 * @param int[]    $playlist_ids Playlist IDs.
+	 * @param string[] $statuses     Post statuses to search.
+	 * @return array<int, array{id:int, title:string, type:string, videos:int[], playlists:int[]}>
+	 */
+	private static function scan( array $video_ids, array $playlist_ids, array $statuses ): array {
+		global $wpdb;
+
+		$video_ids    = array_values( array_filter( array_unique( array_map( 'intval', $video_ids ) ) ) );
+		$playlist_ids = array_values( array_filter( array_unique( array_map( 'intval', $playlist_ids ) ) ) );
+
+		$likes = array();
+		$kinds = array(
+			'videoId'    => $video_ids,
+			'playlistId' => $playlist_ids,
+		);
+		foreach ( $kinds as $block_key => $ids ) {
+			foreach ( $ids as $id ) {
+				foreach ( array( "id=\"{$id}\"", "id='{$id}'", "id={$id} ", "id={$id}]", "\"{$block_key}\":{$id},", "\"{$block_key}\":{$id}}", "\"{$block_key}\":\"{$id}\"" ) as $form ) {
+					$likes[] = '%' . $wpdb->esc_like( $form ) . '%';
+				}
+			}
+		}
+		if ( ! $likes ) {
+			return array();
+		}
+
+		$any      = implode( ' OR ', array_fill( 0, count( $likes ), 'post_content LIKE %s' ) );
+		$in       = implode( ', ', array_fill( 0, count( $statuses ), '%s' ) );
+		$excluded = "'revision', 'mediashield_video', 'mediashield_playlist', 'nav_menu_item', 'attachment', 'wp_global_styles'";
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Placeholders built above; every value is prepared.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
+				WHERE post_status IN ( {$in} )
+				AND post_type NOT IN ( {$excluded} )
+				AND post_content LIKE %s
+				AND ( {$any} )
+				ORDER BY post_modified_gmt DESC",
+				array_merge( $statuses, array( '%' . $wpdb->esc_like( 'mediashield' ) . '%' ), $likes )
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		$hits = array();
+		foreach ( (array) $rows as $row ) {
+			$content = (string) $row->post_content;
+			$videos  = array_values( array_intersect( self::ids_in( $content ), $video_ids ) );
+			$lists   = array_values( array_intersect( self::playlist_ids_in( $content ), $playlist_ids ) );
+			if ( ! $videos && ! $lists ) {
+				continue;
+			}
+			$hits[] = array(
+				'id'        => (int) $row->ID,
+				'title'     => (string) $row->post_title,
+				'type'      => (string) $row->post_type,
+				'videos'    => $videos,
+				'playlists' => $lists,
+			);
+		}
+		return $hits;
 	}
 
 	/**
