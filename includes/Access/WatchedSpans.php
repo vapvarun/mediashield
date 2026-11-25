@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Stored per member in one user-meta row, `_ms_watched_spans`, an array keyed
  * by video ID: `[ 's' => [ [start, end], ... ], 't' => last report time,
- * 'p' => stop position ]`. No new table. Exported and removed with the
+ * 'p' => stop position, 'd' => longest length the player reported ]`. No new table. Exported and removed with the
  * member's other MediaShield data (privacy exporter and eraser, uninstall).
  *
  * For milestones (25/50/75/100) read `ms_milestones`; for the furthest point,
@@ -119,6 +119,12 @@ class WatchedSpans {
 		}
 
 		$entry['t'] = $now;
+		// The length the player measures, for a video whose Duration field
+		// was left at 0 (a pasted URL): the longest one reported, so a later
+		// short report never shrinks it (percent()).
+		if ( $duration > 0 ) {
+			$entry['d'] = max( (float) ( $entry['d'] ?? 0 ), round( $duration, 1 ) );
+		}
 		if ( $position > 0 ) {
 			$entry['p'] = round( $duration > 0 ? min( $position, $duration ) : $position, 1 );
 		}
@@ -170,11 +176,19 @@ class WatchedSpans {
 	 *
 	 * @param int   $user_id  Member.
 	 * @param int   $video_id Video CPT post ID.
+	 * The length is the one given, else the video's Duration field, else the
+	 * length the member's player measured: most videos added by pasting a
+	 * URL keep Duration 0, and with no length the share stayed 0% for ever,
+	 * so a "Require X% watched" lesson could never be completed.
+	 *
 	 * @param float $duration Video length in seconds; 0 reads it from the video.
 	 * @return int
 	 */
 	public static function percent( int $user_id, int $video_id, float $duration = 0.0 ): int {
 		$duration = $duration > 0 ? $duration : (float) get_post_meta( $video_id, '_ms_duration', true );
+		if ( $duration <= 0 ) {
+			$duration = (float) ( self::all( $user_id )[ $video_id ]['d'] ?? 0 );
+		}
 		if ( $duration <= 0 ) {
 			return 0;
 		}
