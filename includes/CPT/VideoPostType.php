@@ -503,6 +503,17 @@ class VideoPostType {
 							</option>
 						<?php endforeach; ?>
 					</select>
+					<?php
+					// A file on another site cannot be served through MediaShield,
+					// so no level can hide its address. Said here, where the owner
+					// picks the level, instead of Strict silently not hiding it.
+					$ms_platform = (string) get_post_meta( $post->ID, '_ms_platform', true );
+					$ms_source   = (string) get_post_meta( $post->ID, '_ms_source_url', true );
+					$ms_stream   = (string) get_post_meta( $post->ID, '_ms_stream_url', true );
+					if ( 'self' === $ms_platform && '' !== $ms_source && '' === $ms_stream && '' === \MediaShield\REST\StreamController::resolve_file( $post->ID ) ) :
+						?>
+						<p class="description"><?php esc_html_e( 'This file is on another site, so MediaShield cannot hide its address, even on Strict. The watermark, session tracking and developer-tools detection still work. To hide the address, upload the file to this site.', 'mediashield' ); ?></p>
+					<?php endif; ?>
 				</td>
 			</tr>
 			<tr>
