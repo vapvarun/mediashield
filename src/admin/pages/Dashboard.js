@@ -35,7 +35,7 @@ const STAT_CARDS = [
 	},
 	{
 		key: 'total_sessions',
-		label: __( 'Total Sessions', 'mediashield' ),
+		label: __( 'Viewings', 'mediashield' ),
 		icon: 'visibility',
 		iconClass: 'sessions',
 		format: ( v ) => ( v != null ? v.toLocaleString() : '0' ),
@@ -250,7 +250,7 @@ const Dashboard = () => {
 				labels,
 				datasets: [
 					{
-						label: __( 'Sessions', 'mediashield' ),
+						label: __( 'Viewings', 'mediashield' ),
 						data: sessions,
 						borderColor: '#3858e9',
 						backgroundColor: gradient1,

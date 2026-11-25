@@ -144,7 +144,7 @@ const Milestones = () => {
 					<table className="mediashield-table">
 						<thead>
 							<tr>
-								<th>{ __( 'Student', 'mediashield' ) }</th>
+								<th>{ __( 'Viewer', 'mediashield' ) }</th>
 								<th>{ __( 'Video', 'mediashield' ) }</th>
 								<th>{ __( 'Milestone', 'mediashield' ) }</th>
 								<th>{ __( 'Reached', 'mediashield' ) }</th>
@@ -155,13 +155,13 @@ const Milestones = () => {
 								<tr>
 									<td colSpan="4" className="mediashield-table__empty">
 										<Icon name="flag" className="mediashield-table__empty-icon" />
-										{ __( 'No milestones recorded yet. They appear as students watch videos.', 'mediashield' ) }
+										{ __( 'No milestones recorded yet. They appear as viewers watch videos.', 'mediashield' ) }
 									</td>
 								</tr>
 							) }
 							{ milestones.map( ( m, idx ) => (
 								<tr key={ m.id ?? idx }>
-									<td data-label={ __( 'Student', 'mediashield' ) }>
+									<td data-label={ __( 'Viewer', 'mediashield' ) }>
 										<div className="mediashield-user">
 											<div className="mediashield-user__avatar">
 												{ getInitials( m.user_name ) }

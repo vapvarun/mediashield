@@ -15,7 +15,7 @@ The date range selector at the top offers Today, Last 7 days (the default), Last
 ### Stat cards
 
 - **Total Videos** - published videos in your library. Not affected by the date range.
-- **Total Sessions** - watch sessions started in the selected period.
+- **Viewings** - times a video was played in the selected period (a page load that never played is not counted).
 - **Avg Completion** - the average, over viewers and videos, of each viewer's furthest completion of each video in the period. A viewer who watched a video twice, to 40% and then to the end, counts once at 100%. A page load that never played is not counted.
 - **Active Viewers** - distinct viewers playing a video in the last 5 minutes. A page left open that never played is not a viewer. This is live, and ignores the date range.
 

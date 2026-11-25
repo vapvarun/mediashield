@@ -12,7 +12,7 @@ The app's left-hand menu has six items. Click one to open its first screen; the 
 |-----------|---------------|
 | Dashboard | Dashboard |
 | Videos | Videos, Playlists, Tags, Upload Queue (Pro) |
-| Analytics | Viewers, Heatmaps (Pro), Realtime (Pro), Milestones, Export (Pro) |
+| Analytics | Viewers, Heatmap (Pro), Realtime (Pro), Milestones, Export (Pro) |
 | Security | Alerts (Pro) |
 | Platforms | Platforms and the library browsers (Pro) |
 | Settings | Settings, License (Pro), Milestone Actions (Pro) |

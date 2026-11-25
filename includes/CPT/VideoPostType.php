@@ -479,7 +479,7 @@ class VideoPostType {
 			'vimeo'   => __( 'Vimeo', 'mediashield' ),
 			'wistia'  => __( 'Wistia', 'mediashield' ),
 			'bunny'   => __( 'Bunny Stream', 'mediashield' ),
-			'self'    => __( 'Self-hosted', 'mediashield' ),
+			'self'    => __( 'Video file', 'mediashield' ),
 		);
 		return $labels[ $platform ] ?? $platform;
 	}

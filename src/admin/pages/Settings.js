@@ -1087,7 +1087,7 @@ const Settings = () => {
 						value={ settings?.ms_default_upload_target ?? 'auto' }
 						options={ [
 							{ label: __( 'Auto (use connected platform)', 'mediashield' ), value: 'auto' },
-							{ label: __( 'Self-hosted (local server)', 'mediashield' ), value: 'self' },
+							{ label: __( 'This site (uploaded file)', 'mediashield' ), value: 'self' },
 							...( settings.ms_connected_platforms || [] ).map( ( p ) => ( {
 								label: ( p.platform.charAt( 0 ).toUpperCase() + p.platform.slice( 1 ) ),
 								value: p.platform,
