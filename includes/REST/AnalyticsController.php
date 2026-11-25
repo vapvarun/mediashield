@@ -530,11 +530,15 @@ class AnalyticsController extends WP_REST_Controller {
 			$args[] = $like;
 		}
 
+		// Only sessions that played: every page view opens one (played_sql()),
+		// so a member who scrolled past five videos was "watching" five.
+		$played_s = SessionManager::played_sql( 's' ); // Constant SQL fragment, no input.
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		$count_query = "SELECT COUNT(DISTINCT s.user_id)
 			 FROM {$wpdb->prefix}ms_watch_sessions s
 			 INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
-			 WHERE s.user_id > 0 {$where}";
+			 WHERE s.user_id > 0 AND {$played_s} {$where}";
 		$total       = (int) $wpdb->get_var(
 			empty( $args ) ? $count_query : $wpdb->prepare( $count_query, ...$args )
 		);
@@ -545,7 +549,7 @@ class AnalyticsController extends WP_REST_Controller {
 					MAX(s.last_heartbeat) AS last_active
 			 FROM {$wpdb->prefix}ms_watch_sessions s
 			 INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
-			 WHERE s.user_id > 0 {$where}
+			 WHERE s.user_id > 0 AND {$played_s} {$where}
 			 GROUP BY s.user_id
 			 ORDER BY last_active DESC
 			 LIMIT %d OFFSET %d";
@@ -587,6 +591,8 @@ class AnalyticsController extends WP_REST_Controller {
 		$per_page = min( 100, max( 1, (int) $request['per_page'] ) );
 		$page     = max( 1, (int) $request['page'] );
 		$table    = "{$wpdb->prefix}ms_watch_sessions";
+		$played   = SessionManager::played_sql();    // Only sessions that played (played_sql()).
+		$played_s = SessionManager::played_sql( 's' );
 
 		// Paged: a long-time member can have thousands of sessions, and the
 		// old fixed LIMIT 100 hid everything older. Served by
@@ -594,7 +600,7 @@ class AnalyticsController extends WP_REST_Controller {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
 		$counts = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT COUNT(*) AS sessions, COUNT( DISTINCT video_id ) AS videos FROM {$table} WHERE user_id = %d",
+				"SELECT COUNT(*) AS sessions, COUNT( DISTINCT video_id ) AS videos FROM {$table} WHERE user_id = %d AND {$played}",
 				$user_id
 			)
 		);
@@ -604,7 +610,7 @@ class AnalyticsController extends WP_REST_Controller {
 					s.max_position, s.last_heartbeat, s.started_at
 			 FROM {$table} s
 			 LEFT JOIN {$wpdb->posts} p ON s.video_id = p.ID
-			 WHERE s.user_id = %d
+			 WHERE s.user_id = %d AND {$played_s}
 			 ORDER BY s.last_heartbeat DESC, s.id DESC
 			 LIMIT %d OFFSET %d",
 				$user_id,
@@ -670,6 +676,7 @@ class AnalyticsController extends WP_REST_Controller {
 
 		$user_id  = get_current_user_id();
 		$sessions = "{$wpdb->prefix}ms_watch_sessions";
+		$played_s = SessionManager::played_sql( 's' ); // Only videos the member played (played_sql()).
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
@@ -681,7 +688,7 @@ class AnalyticsController extends WP_REST_Controller {
 						MAX( s.last_heartbeat ) AS last_watched
 				 FROM {$sessions} s
 				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_status = 'publish'
-				 WHERE s.user_id = %d
+				 WHERE s.user_id = %d AND {$played_s}
 				 GROUP BY s.video_id
 				 ORDER BY last_watched DESC",
 				$user_id

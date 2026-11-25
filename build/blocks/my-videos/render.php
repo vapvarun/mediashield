@@ -58,7 +58,7 @@ $grouped        = "SELECT s.video_id,
 		MAX( s.last_heartbeat ) AS last_watched
 	 FROM {$sessions_table} s
 	 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_type = 'mediashield_video' AND p.post_status = 'publish'
-	 WHERE s.user_id = %d
+	 WHERE s.user_id = %d AND " . \MediaShield\Access\SessionManager::played_sql( 's' ) . "
 	 GROUP BY s.video_id " . $filters[ $filter ][1];
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Custom table; the HAVING clause is a fixed string from $filters. Served by idx_user.
