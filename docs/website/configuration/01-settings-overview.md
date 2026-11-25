@@ -126,7 +126,7 @@ There is no size setting. Self-hosted files are stored under `wp-content/uploads
 One card for when a lesson that plays a protected video counts as complete. It shows only what applies to the LMS on your site:
 
 - **Learnomy 2.4.1 and later** - set on each lesson in Learnomy (Completion: Auto: video watched). The card says so, with the % new protected video lessons start at.
-- **LearnDash (Pro)** - one setting, **LearnDash lessons: require this % of the video watched**. Mark Complete stays disabled until the member has watched that share, and with **Auto-complete lessons** on, the lesson completes at that point (on the first milestone at or above it).
+- **LearnDash (Pro)** - **LearnDash lessons: require this % of the video watched**. Mark Complete stays disabled until the member has watched that share, and with **Auto-complete lessons** on, the lesson completes at that point (on the first milestone at or above it). While it is 0, **LearnDash lessons complete at** shows the share your site stored before and decides instead; it hides once a required % is set.
 - **Tutor LMS and LifterLMS (Pro)** - **Complete lessons at**: the share watched that completes the lesson; a video can set its own.
 
 Milestone tags stay on each video's edit screen.

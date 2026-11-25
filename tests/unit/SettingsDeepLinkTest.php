@@ -56,4 +56,15 @@ class SettingsDeepLinkTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( "{ key: 'integrations', label: __( 'Lesson completion', 'mediashield' ) }", $settings );
 		$this->assertMatchesRegularExpression( "/group=\"integrations\"\s*title=\{ groupLabel\( 'integrations' \) \}/", $settings );
 	}
+
+	/**
+	 * Coordinator decision on Basecamp 10545260590: no hidden rule. While
+	 * LearnDash's required % is 0 the stored completion % still decides
+	 * (LearnDashAdapter::completion_pct()), so Settings shows it.
+	 */
+	public function test_learndash_stored_completion_pct_is_shown_while_it_applies(): void {
+		$settings = $this->source( 'src/admin/pages/Settings.js' );
+		$this->assertStringContainsString( "( 'learndash' !== lmsName || 0 === Number( settings?.ms_lms_require_watch_pct ?? 0 ) )", $settings );
+		$this->assertStringContainsString( 'LearnDash lessons complete at (while the required % above is 0)', $settings );
+	}
 }

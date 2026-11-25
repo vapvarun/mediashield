@@ -1179,10 +1179,16 @@ const Settings = () => {
 								onChange={ ( val ) => updateSetting( 'ms_lms_enrollment_check', val ) }
 								__nextHasNoMarginBottom
 							/>
-							{ 'learndash' !== lmsName && (
+							{ /* LearnDash completes at its required % while that is above 0; at 0
+							     the stored % below decides, so it is shown, never a hidden rule. */ }
+							{ ( 'learndash' !== lmsName || 0 === Number( settings?.ms_lms_require_watch_pct ?? 0 ) ) && (
 								<SelectControl
-									label={ __( 'Complete lessons at', 'mediashield' ) }
-									help={ __( 'The share of the video watched that completes the lesson. A video can set its own.', 'mediashield' ) }
+									label={ 'learndash' === lmsName
+										? __( 'LearnDash lessons complete at (while the required % above is 0)', 'mediashield' )
+										: __( 'Complete lessons at', 'mediashield' ) }
+									help={ 'learndash' === lmsName
+										? __( 'Set a required % above and the lesson completes there instead; this choice then no longer applies and is hidden.', 'mediashield' )
+										: __( 'The share of the video watched that completes the lesson. A video can set its own.', 'mediashield' ) }
 									value={ settings?.ms_lms_complete_pct ?? 100 }
 									options={ LMS_PCT_OPTIONS }
 									onChange={ ( val ) => updateSetting( 'ms_lms_complete_pct', parseInt( val, 10 ) ) }
