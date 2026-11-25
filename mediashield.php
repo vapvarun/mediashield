@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Plugin constants.
 define( 'MEDIASHIELD_VERSION', '1.4.3' );
-define( 'MEDIASHIELD_DB_VERSION', 12 ); // v12: offer existing sites the 1.4.3 defaults (one notice).
+define( 'MEDIASHIELD_DB_VERSION', 13 ); // v13: rebuild rewrite rules, playlists are no longer a page of their own.
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );

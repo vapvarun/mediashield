@@ -98,7 +98,7 @@ export default function PlaylistItemsModal( { playlistId, playlistTitle, onClose
 		setSaving( true );
 		apiFetch( {
 			url: `${ config.restUrl }playlists/${ playlistId }/items/reorder`,
-			method: 'PUT',
+			method: 'POST',
 			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
 			// PlaylistController expects `order: [{item_id, sort_order}]` — not a
 			// flat list of IDs. See includes/REST/PlaylistController.php :register_routes.

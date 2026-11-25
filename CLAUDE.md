@@ -172,7 +172,7 @@ assets/
   - `_ms_duration` (integer) -- video duration in seconds
 
 ### mediashield_playlist
-- **Slug:** `playlist`
+- **Not public** (1.4.4): no single page, no rewrite, no query var. It shows only where the Playlist block or `[mediashield_playlist]` places it. Migrator v13 dropped the old `/playlist/<slug>/` rule.
 - **REST base:** `mediashield-playlists`
 - **Supports:** title, editor, thumbnail
 - **Meta fields:**
@@ -225,7 +225,7 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 |--------|-------|-------------|
 | GET/POST | `/playlists/{playlist_id}/items` | List/add playlist items |
 | DELETE | `/playlists/{playlist_id}/items/{item_id}` | Remove item |
-| POST | `/playlists/{playlist_id}/items/reorder` | Reorder items |
+| POST (PUT, PATCH) | `/playlists/{playlist_id}/items/reorder` | Reorder items. Add, remove and reorder need `edit_post` on the playlist. |
 
 ### Upload
 | Method | Route | Description |

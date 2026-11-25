@@ -6,7 +6,7 @@
  *   GET    /mediashield/v1/playlists/<id>/items          — List videos in order
  *   POST   /mediashield/v1/playlists/<id>/items          — Add video to playlist
  *   DELETE /mediashield/v1/playlists/<id>/items/<item_id> — Remove video
- *   PUT    /mediashield/v1/playlists/<id>/items/reorder   — Batch reorder
+ *   POST   /mediashield/v1/playlists/<id>/items/reorder   — Batch reorder (PUT also accepted)
  *
  * @package MediaShield\REST
  */
@@ -71,7 +71,7 @@ class PlaylistController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'add_item' ),
-					'permission_callback' => array( $this, 'edit_permissions_check' ),
+					'permission_callback' => array( $this, 'change_permissions_check' ),
 					'args'                => array(
 						'video_id'   => array(
 							'type'              => 'integer',
@@ -96,20 +96,24 @@ class PlaylistController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'remove_item' ),
-					'permission_callback' => array( $this, 'edit_permissions_check' ),
+					'permission_callback' => array( $this, 'change_permissions_check' ),
 				),
 			)
 		);
 
-		// PUT /playlists/<id>/items/reorder.
+		// POST (or PUT) /playlists/<id>/items/reorder.
+		// POST is what the admin screens send. PUT alone reached WordPress only
+		// as POST plus X-HTTP-Method-Override, a header some hosts, firewalls
+		// and security plugins strip; the request then found no route and the
+		// new order was lost (Basecamp 10545260546).
 		register_rest_route(
 			$this->namespace,
 			'/playlists/(?P<playlist_id>\d+)/items/reorder',
 			array(
 				array(
-					'methods'             => 'PUT',
+					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'reorder_items' ),
-					'permission_callback' => array( $this, 'edit_permissions_check' ),
+					'permission_callback' => array( $this, 'change_permissions_check' ),
 					'args'                => array(
 						'order' => array(
 							'type'     => 'array',
@@ -186,6 +190,24 @@ class PlaylistController extends WP_REST_Controller {
 	 */
 	public function edit_permissions_check( WP_REST_Request $request ): bool {
 		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * May this user change this playlist's videos or their order?
+	 *
+	 * Editing rights on that playlist, as for its title: a contributor can
+	 * build their own playlists but not reorder someone else's. An unknown
+	 * id falls through to the callback, which answers 404.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
+	 */
+	public function change_permissions_check( WP_REST_Request $request ): bool {
+		$playlist_id = (int) $request['playlist_id'];
+		if ( 'mediashield_playlist' !== get_post_type( $playlist_id ) ) {
+			return current_user_can( 'edit_posts' );
+		}
+		return current_user_can( 'edit_post', $playlist_id );
 	}
 
 	/**

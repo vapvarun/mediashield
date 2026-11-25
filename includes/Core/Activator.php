@@ -79,8 +79,8 @@ class Activator {
 		}
 
 		// Register the CPTs before flushing: `init` has already run on the
-		// activation request, so without this the saved rules have no
-		// /playlist/ and playlist pages 404 until permalinks are saved.
+		// activation request, so without this the rules saved here would not
+		// match the post types as they are registered.
 		\MediaShield\CPT\VideoPostType::register_post_type();
 		\MediaShield\CPT\PlaylistPostType::register_post_type();
 		flush_rewrite_rules();

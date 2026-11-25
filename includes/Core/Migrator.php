@@ -58,10 +58,11 @@ class Migrator {
 		// videos to claim; a fresh install writes the claim at upload.
 		self::claim_uploaded_files( $installed );
 
-		// v7 - rebuild the rewrite rules once. Before 1.4.1 the activation
-		// flush ran before the post types were registered, so sites activated
-		// on 1.4.0 or earlier saved rules without /playlist/ and an update by
-		// zip never re-activates.
+		// v13 - rebuild the rewrite rules. Playlists are no longer a page of
+		// their own (1.4.4), and a saved /playlist/<slug>/ rule would send that
+		// address to the home page instead of a 404. An update by zip never
+		// re-activates, so the upgrade drops the rules. (v7 did the same when
+		// 1.4.1 added the route; v13 covers sites from before and after it.)
 		self::rebuild_rewrite_rules();
 
 		// v8 - move Media Library files that protected videos play from into
@@ -159,7 +160,7 @@ class Migrator {
 	 * runs on plugins_loaded, before the post types exist.
 	 */
 	private static function rebuild_rewrite_rules(): void {
-		if ( (int) get_option( 'ms_db_version', 0 ) >= 7 ) {
+		if ( (int) get_option( 'ms_db_version', 0 ) >= 13 ) {
 			return;
 		}
 		delete_option( 'rewrite_rules' );

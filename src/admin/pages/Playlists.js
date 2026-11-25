@@ -168,16 +168,6 @@ const Playlists = () => {
 											>
 												{ __( 'Edit', 'mediashield' ) }
 											</a>
-											{ playlist.link && (
-												<a
-													href={ playlist.link }
-													className="mediashield-action-btn mediashield-action-btn--view"
-													target="_blank"
-													rel="noopener noreferrer"
-												>
-													{ __( 'View', 'mediashield' ) }
-												</a>
-											) }
 										</td>
 									</tr>
 								);

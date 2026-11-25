@@ -92,7 +92,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 		setSaving( true );
 		apiFetch( {
 			url: `${ config.restUrl }playlists/${ playlistId }/items/reorder`,
-			method: 'PUT',
+			method: 'POST',
 			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
 			data: {
 				order: reordered.map( ( i, idx ) => ( { item_id: i.item_id, sort_order: idx } ) ),
