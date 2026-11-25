@@ -1413,9 +1413,17 @@
 		// watch it. A visitor is asked to log in; a member gets the reason from
 		// /session/start, whose denial path shows the access message and raises
 		// mediashield:access-denied for integrations without a player adapter.
+		// The refusal is on the page (AccessControl::refusal(), printed by
+		// Renderer), so a refused member's player asks the server nothing.
+		// A page cached before 1.4.4 carries no reason: ask, as before.
 		if ( el.dataset.accessDenied ) {
 			if ( ! config.isLoggedIn ) {
 				showLoginOverlay( el );
+			} else if ( undefined !== el.dataset.deniedMessage ) {
+				showRefusal( el, videoId, el.dataset.deniedCode || 'access_denied', el.dataset.deniedMessage, {
+					access_url: el.dataset.accessUrl || '',
+					access_label: el.dataset.accessLabel || '',
+				} );
 			} else {
 				startSession( el, videoId, null );
 			}
@@ -1583,28 +1591,7 @@
 						return;
 					}
 
-					// Give upstream listeners (custom access integrations) the
-					// chance to handle the denial BEFORE the generic error overlay
-					// paints — otherwise their own UI renders on top of a redundant
-					// denial overlay. Listeners suppress the fallback by calling
-					// event.preventDefault().
-					var ev = new CustomEvent( 'mediashield:access-denied', {
-						bubbles: true,
-						cancelable: true,
-						detail: { el: el, videoId: videoId, reason: reason },
-					} );
-					var handled = ! window.dispatchEvent( ev );
-
-					if ( ! handled ) {
-						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
-						// The course to enrol in or the owner's membership page,
-						// when the server named one; otherwise a plain next step.
-						var access = data.data || {};
-						showErrorOverlay( el, msg, null, access.access_url ? {} : { sub: t( 'askOwner', 'Ask the site owner for access.' ) } );
-						if ( access.access_url ) {
-							addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
-						}
-					}
+					showRefusal( el, videoId, reason, data.message, data.data || {} );
 					return;
 				}
 
@@ -1666,6 +1653,35 @@
 					startSession( el, videoId, adapter );
 				} );
 			} );
+	}
+
+	/**
+	 * A member may not watch: the reason and one next step.
+	 *
+	 * Upstream listeners (custom access integrations) get the denial first
+	 * and suppress the built-in overlay with event.preventDefault(), so their
+	 * own UI does not sit under a redundant one. Otherwise: the message, then
+	 * the course or membership page when the server named one, else "Ask the
+	 * site owner for access."
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {number}      videoId Video ID.
+	 * @param {string}      reason  Refusal code.
+	 * @param {string}      message Refusal message.
+	 * @param {Object}      access  { access_url, access_label }.
+	 */
+	function showRefusal( el, videoId, reason, message, access ) {
+		var ev = new CustomEvent( 'mediashield:access-denied', {
+			bubbles: true,
+			cancelable: true,
+			detail: { el: el, videoId: videoId, reason: reason },
+		} );
+		if ( ! window.dispatchEvent( ev ) ) return;
+
+		showErrorOverlay( el, message || t( 'accessDenied', 'You do not have access to this video.' ), null, access.access_url ? {} : { sub: t( 'askOwner', 'Ask the site owner for access.' ) } );
+		if ( access.access_url ) {
+			addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
+		}
 	}
 
 	/**

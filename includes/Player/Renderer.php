@@ -342,6 +342,17 @@ class Renderer {
 			echo self::guest_allowed_attr( $video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static attribute string.
 			if ( $access_denied ) {
 				echo ' data-access-denied="1"';
+				// A member refused this video: the reason and the next step,
+				// so the player shows them without asking /session/start
+				// (AccessControl::refusal(), the same answer that route gives).
+				if ( get_current_user_id() ) {
+					$refusal = AccessControl::refusal( AccessControl::can_watch( (int) $video_id, get_current_user_id() ), get_current_user_id() );
+					$details = (array) $refusal->get_error_data();
+					printf( ' data-denied-code="%s" data-denied-message="%s"', esc_attr( (string) $refusal->get_error_code() ), esc_attr( $refusal->get_error_message() ) );
+					if ( ! empty( $details['access_url'] ) ) {
+						printf( ' data-access-url="%s" data-access-label="%s"', esc_url( (string) $details['access_url'] ), esc_attr( (string) ( $details['access_label'] ?? '' ) ) );
+					}
+				}
 			}
 			// Someone who may edit the video reads the cause of a failure and
 			// gets an Edit video link under it (Basecamp 10545260568).

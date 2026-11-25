@@ -338,3 +338,52 @@ describe( 'A viewing starts at the first play (Basecamp 10545260660)', () => {
 		expect( calls( 'session/heartbeat' ).length - before ).toBe( 1 );
 	} );
 } );
+
+describe( 'QA round 2 (Basecamp 10545260568, 10545260660)', () => {
+	const calls = ( kind ) => global.fetch.mock.calls.filter( ( c ) => c[ 0 ].indexOf( kind ) > -1 ).map( ( c ) => JSON.parse( c[ 1 ].body ) );
+
+	test( 'a refused member\'s player shows the printed refusal and asks the server nothing', async () => {
+		boot( {
+			markup: nativePlayer( 'data-access-denied="1" data-denied-code="access_denied" data-denied-message="This video is for Gold members" data-access-url="https://example.org/join/" data-access-label="See membership options"' ),
+			session: { status: 403, body: {} },
+		} );
+		await flush();
+
+		expect( global.fetch ).not.toHaveBeenCalled();
+		const overlay = document.querySelector( '.ms-error-overlay' );
+		expect( overlay.textContent ).toContain( 'This video is for Gold members' );
+		expect( overlay.querySelector( 'a.ms-error-action' ).getAttribute( 'href' ) ).toBe( 'https://example.org/join/' );
+	} );
+
+	test( 'pausing reports the place at once, so a quick reload can offer it', async () => {
+		boot( { markup: nativePlayer(), session: { body: { session_token: 't', resume_position: 0 } }, tracker: true } );
+		await readyNative();
+		document.querySelector( '.ms-bigplay' ).click();
+		await flush();
+		await flush();
+		document.querySelector( 'video' ).currentTime = 15.9;
+
+		document.querySelector( 'video' ).pause();
+
+		const beats = calls( 'session/heartbeat' );
+		expect( beats ).toHaveLength( 1 );
+		expect( beats[ 0 ].position ).toBe( 15.9 );
+	} );
+
+	test( 'hiding the tab sends the place as a beacon', async () => {
+		boot( { markup: nativePlayer(), session: { body: { session_token: 't', resume_position: 0 } }, tracker: true } );
+		await readyNative();
+		document.querySelector( '.ms-bigplay' ).click();
+		await flush();
+		await flush();
+		document.querySelector( 'video' ).currentTime = 42;
+
+		Object.defineProperty( document, 'visibilityState', { configurable: true, get: () => 'hidden' } );
+		document.dispatchEvent( new Event( 'visibilitychange' ) );
+		delete document.visibilityState;
+
+		const beacon = reports.find( ( r ) => r.url.indexOf( 'session/heartbeat' ) > -1 );
+		expect( beacon ).toBeTruthy();
+		expect( beacon.url ).toContain( '_wpnonce=n' );
+	} );
+} );

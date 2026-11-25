@@ -7,6 +7,8 @@
 
 namespace MediaShield\Access;
 
+use WP_Error;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -144,6 +146,54 @@ class AccessControl {
 			// "Course" says "View Program"); empty falls back to the setting.
 			'label' => isset( $link['label'] ) ? \MediaShield\Support\Text::plain( (string) $link['label'] ) : '',
 		);
+	}
+
+	/**
+	 * Why a viewer may not watch, and their one next step, as /session/start answers it.
+	 *
+	 * The code promotes can_watch()'s reason so a client can route to the
+	 * right overlay (falls back to the legacy 'access_denied'). A course to
+	 * enrol in is named and linked in the owner's words (Basecamp
+	 * 10530930631); otherwise a logged-in member gets the owner's
+	 * membership page when Messages names one (Basecamp 10545260568). A guest
+	 * is asked to log in instead, so gets no link.
+	 *
+	 * Also printed on a player the page renders refused (Renderer), so a
+	 * refused member's player makes no request at all.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param array $access  From can_watch(), with allowed false.
+	 * @param int   $user_id Viewer (0 for a guest).
+	 * @return WP_Error Status 403; data may carry access_url and access_label.
+	 */
+	public static function refusal( array $access, int $user_id ): WP_Error {
+		$code = ! empty( $access['reason'] ) ? sanitize_key( $access['reason'] ) : 'access_denied';
+
+		if ( ! empty( $access['link'] ) ) {
+			return new WP_Error(
+				$code,
+				// An integration that says the viewer is already in the
+				// course (keep_reason) gets its own words, not "Enroll".
+				! empty( $access['keep_reason'] ) && '' !== (string) ( $access['reason'] ?? '' )
+					? (string) $access['reason']
+					/* translators: %s: course title. */
+					: sprintf( Settings::message( 'ms_course_denied_text', __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) ), $access['link']['title'] ),
+				array(
+					'status'       => 403,
+					'access_url'   => $access['link']['url'],
+					'access_label' => '' !== (string) ( $access['link']['label'] ?? '' ) ? (string) $access['link']['label'] : Settings::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
+				)
+			);
+		}
+
+		$data = array( 'status' => 403 );
+		$url  = (string) Settings::get( 'ms_access_denied_url' );
+		if ( $user_id && '' !== $url ) {
+			$data['access_url']   = $url;
+			$data['access_label'] = Settings::message( 'ms_access_denied_button_text', __( 'See membership options', 'mediashield' ) );
+		}
+		return new WP_Error( $code, (string) ( $access['reason'] ?? '' ), $data );
 	}
 
 	/**

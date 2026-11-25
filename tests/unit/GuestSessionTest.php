@@ -146,7 +146,9 @@ class GuestSessionTest extends WP_UnitTestCase {
 		update_option( 'ms_max_concurrent_streams', 1 );
 		$user = self::factory()->user->create();
 
-		$idle   = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'Tablet' );
+		$idle = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'Tablet' );
+		// Opened a minute ago and never played.
+		self::started_ago( $idle, 60 );
 		$second = SessionManager::start( $this->video_id, $user, '203.0.113.10', 'Laptop' );
 
 		$this->assertIsArray( $idle );
@@ -155,6 +157,33 @@ class GuestSessionTest extends WP_UnitTestCase {
 		// Once the laptop plays, a third device is refused as before.
 		self::mark_played( $second );
 		$this->assertFalse( SessionManager::start( $this->video_id, $user, '203.0.113.11', 'Phone' ) );
+	}
+
+	/**
+	 * QA round 2: a second device pressing Play within seconds of the first,
+	 * before the first had reported, was let in. A viewing counts from the
+	 * moment it starts. Fails on 0028c0d.
+	 */
+	public function test_a_second_device_pressing_play_at_once_is_refused(): void {
+		update_option( 'ms_max_concurrent_streams', 1 );
+		$user = self::factory()->user->create();
+
+		$first  = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'Laptop' );
+		$second = SessionManager::start( $this->video_id, $user, '203.0.113.10', 'Phone' );
+
+		$this->assertIsArray( $first );
+		$this->assertFalse( $second, 'The laptop started playing 0 s ago and has not reported yet.' );
+	}
+
+	/**
+	 * Move a viewing's start back in time.
+	 *
+	 * @param array $session From SessionManager::start().
+	 * @param int   $seconds How long ago.
+	 */
+	private static function started_ago( array $session, int $seconds ): void {
+		global $wpdb;
+		$wpdb->update( $wpdb->prefix . 'ms_watch_sessions', array( 'started_at' => gmdate( 'Y-m-d H:i:s', time() - $seconds ) ), array( 'id' => (int) $session['session_id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 
 	/**

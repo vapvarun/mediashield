@@ -61,6 +61,16 @@
 			sendHeartbeat( session, true );
 		}, 5000 );
 
+		// Where the member stopped, the moment they stop, so a reload a few
+		// seconds later offers "Resume from" that place (QA: pause at 15.9 s,
+		// reload, the page still had the last 30 s beat). A <video> says so at
+		// once; platform players are caught by sample() within a second.
+		if ( session.adapter && session.adapter._video ) {
+			session.adapter._video.addEventListener( 'pause', function () {
+				if ( ! session.stopped && ! session.adapter._video.ended ) reportStop( session );
+			} );
+		}
+
 		activeSessions.push( session );
 		emitWatched( session );
 	}
@@ -109,6 +119,12 @@
 		var playing = isPlaying( session.el, session.adapter );
 		var last = session.lastPos;
 		session.lastPos = pos;
+		// A platform player that just paused (a <video> reports its own pause).
+		var justPaused = session.wasPlaying && ! playing;
+		session.wasPlaying = playing;
+		if ( justPaused && ! ( session.adapter && session.adapter._video ) ) {
+			setTimeout( function () { reportStop( session ); }, 0 );
+		}
 		if ( ! playing || null === last || pos <= last || pos - last > 2.5 ) {
 			// Paused since the last sample: keep the part played before it.
 			if ( ! playing && session.open && pos > last && pos - last <= 2.5 ) {
@@ -288,6 +304,46 @@
 	}
 
 	/**
+	 * A REST address for a beacon, which cannot send headers: the nonce rides
+	 * in the query, after `?` or, on plain permalinks (?rest_route=), `&`.
+	 *
+	 * @param {string} route Route under mediashield/v1/.
+	 * @return {string} URL.
+	 */
+	function beaconUrl( route ) {
+		var url = config.restUrl + route;
+		return url + ( url.indexOf( '?' ) > -1 ? '&' : '?' ) + '_wpnonce=' + encodeURIComponent( config.nonce );
+	}
+
+	/**
+	 * Report where the member stopped now: a beat, closing the stretch just played.
+	 *
+	 * @param {Object} session Tracked session.
+	 */
+	function reportStop( session ) {
+		closeSpan( session );
+		sendHeartbeat( session, true );
+	}
+
+	/**
+	 * The tab is being hidden (switched away, phone locked, closing): send
+	 * where each playing member is, as a beacon that survives the page.
+	 */
+	function beaconStops() {
+		activeSessions.forEach( function ( session ) {
+			if ( session.stopped || ! navigator.sendBeacon ) return;
+			closeSpan( session );
+			var beat = finalBeat( session );
+			beat.playing = false;
+			beat.focused = false;
+			navigator.sendBeacon(
+				beaconUrl( 'session/heartbeat' ),
+				new Blob( [ JSON.stringify( beat ) ], { type: 'application/json' } )
+			);
+		} );
+	}
+
+	/**
 	 * End all sessions on page unload.
 	 */
 	function endAllSessions() {
@@ -301,7 +357,7 @@
 			if ( navigator.sendBeacon ) {
 				var blob = new Blob( [ data ], { type: 'application/json' } );
 				navigator.sendBeacon(
-					config.restUrl + 'session/end?_wpnonce=' + encodeURIComponent( config.nonce ),
+					beaconUrl( 'session/end' ),
 					blob
 				);
 			}
@@ -364,6 +420,7 @@
 
 	document.addEventListener( 'visibilitychange', function () {
 		if ( document.visibilityState === 'hidden' ) {
+			beaconStops();
 			pauseAllHeartbeats();
 		} else {
 			resumeAllHeartbeats();

@@ -300,39 +300,9 @@ class SessionController extends WP_REST_Controller {
 		// Access control check.
 		$access = AccessControl::can_watch( $video_id, $user_id );
 		if ( ! $access['allowed'] ) {
-			// Promote the access reason to the WP_Error code so the client can
-			// route to the right overlay for whichever gate denied it. Falls
-			// back to the legacy 'access_denied' so any integrator listening for
-			// the old code still works.
-			$code = ! empty( $access['reason'] ) ? sanitize_key( $access['reason'] ) : 'access_denied';
-			// A course to enrol in: name it and link to it, in the owner's
-			// words (Basecamp 10530930631).
-			if ( ! empty( $access['link'] ) ) {
-				return new WP_Error(
-					$code,
-					// An integration that says the viewer is already in the
-					// course (keep_reason) gets its own words, not "Enroll".
-					! empty( $access['keep_reason'] ) && '' !== (string) ( $access['reason'] ?? '' )
-						? (string) $access['reason']
-						/* translators: %s: course title. */
-						: sprintf( Settings::message( 'ms_course_denied_text', __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) ), $access['link']['title'] ),
-					array(
-						'status'       => 403,
-						'access_url'   => $access['link']['url'],
-						'access_label' => '' !== (string) ( $access['link']['label'] ?? '' ) ? (string) $access['link']['label'] : Settings::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
-					)
-				);
-			}
-			// A member who may not watch gets one next step: the owner's
-			// membership page, when Messages names one (Basecamp 10545260568).
-			// A guest is asked to log in instead, so gets no link here.
-			$data = array( 'status' => 403 );
-			$url  = (string) Settings::get( 'ms_access_denied_url' );
-			if ( $user_id && '' !== $url ) {
-				$data['access_url']   = $url;
-				$data['access_label'] = Settings::message( 'ms_access_denied_button_text', __( 'See membership options', 'mediashield' ) );
-			}
-			return new WP_Error( $code, $access['reason'], $data );
+			// The same refusal the page carries for a player it renders refused
+			// (Renderer), so the player needs no request to show it.
+			return AccessControl::refusal( $access, $user_id );
 		}
 
 		// Start session.

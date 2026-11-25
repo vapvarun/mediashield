@@ -166,21 +166,24 @@ class SessionManager {
 			// the third video on a lesson page before anything played
 			// (BC#10370648695). A device is an IP + browser pair; the caller's own
 			// is left out, so one viewer is never refused for their own tabs.
-			// Only viewings that played count: a page left open on another
-			// device, or a player from before 1.4.4 that opened its viewing on
-			// load, is not someone watching (players start one at the first
-			// play since 1.4.4 and report within 5 s).
+			// Only viewings that are playing count: one that played, or one
+			// started in the last 15 s (players start a viewing at the first
+			// play since 1.4.4 and report within 5 s, so a second device that
+			// presses Play at once is still refused). A page left open on
+			// another device, or a player from before 1.4.4 that opened its
+			// viewing on load and never played, stops counting after 15 s.
 			$active_count = (int) $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(DISTINCT ip_address, user_agent) FROM {$table}
 				 WHERE user_id = %d AND is_active = 1
 				 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
 				 AND NOT (ip_address = %s AND user_agent = %s)
-				 AND " . self::played_sql() . ' FOR UPDATE',
+				 AND ( " . self::played_sql() . ' OR started_at > DATE_SUB(%s, INTERVAL 15 SECOND) ) FOR UPDATE',
 					$user_id,
 					$now,
 					$ip,
-					mb_substr( $ua, 0, 500 )
+					mb_substr( $ua, 0, 500 ),
+					$now
 				)
 			);
 			if ( $deadlocked() ) {

@@ -215,4 +215,29 @@ class PlayerStatesTest extends WP_UnitTestCase {
 		update_option( 'ms_require_login', 0 );
 		$this->assertStringNotContainsString( 'data-resume-position', \MediaShield\Player\Renderer::render( $this->video ), 'A guest has no place kept.' );
 	}
+
+	/**
+	 * QA round 2: a refused member's player still asked /session/start on
+	 * load. The page now carries the refusal. Fails on 0028c0d.
+	 */
+	public function test_refused_member_player_carries_the_refusal(): void {
+		update_post_meta( $this->video, '_ms_access_role', 'editor' );
+		update_option( 'ms_access_denied_url', 'https://example.org/join/' );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$html = \MediaShield\Player\Renderer::render( $this->video );
+
+		$this->assertStringContainsString( 'data-access-denied="1"', $html );
+		$this->assertStringContainsString( 'data-denied-message="You do not have access to this video"', $html );
+		$this->assertStringContainsString( 'data-access-url="https://example.org/join/"', $html );
+		$this->assertStringContainsString( 'data-access-label="See membership options"', $html );
+
+		// The same words /session/start answers with.
+		$request = new WP_REST_Request( 'POST', '/mediashield/v1/session/start' );
+		$request->set_body_params( array( 'video_id' => $this->video ) );
+		$this->assertSame( 'You do not have access to this video', rest_do_request( $request )->as_error()->get_error_message() );
+
+		wp_set_current_user( 0 );
+		$this->assertStringNotContainsString( 'data-denied-message', \MediaShield\Player\Renderer::render( $this->video ), 'A guest is asked to log in instead.' );
+	}
 }
