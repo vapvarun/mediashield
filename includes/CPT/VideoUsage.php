@@ -12,9 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Finds the pages, posts and lessons that show a video.
+ * Finds the pages, posts, lessons and playlists that show a video.
  *
- * Answers "which published or draft content embeds video X?" for the Videos
+ * Answers "which published or draft content or playlist shows video X?" for the Videos
  * list (Basecamp 10530930295), one batch per list page. Not the same question
  * as Upload\LibraryFiles' "is this FILE referenced anywhere", which scans meta
  * and options for a path.
@@ -39,7 +39,8 @@ class VideoUsage {
 	 * One scan of post_content for the MediaShield shortcode and block, for the
 	 * whole list page. post_content is not indexed, so this is a table scan;
 	 * it runs once per Videos list page (20 videos), never per row, and is
-	 * capped at 500 matching posts.
+	 * capped at 500 matching posts. Then one indexed read of the playlist
+	 * items table for the playlists that hold these videos.
 	 *
 	 * @param int[] $video_ids Video IDs.
 	 */
@@ -73,6 +74,34 @@ class VideoUsage {
 				if ( isset( $wanted[ $id ] ) && count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
 					self::$cache[ $id ][] = self::entry( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
 				}
+			}
+		}
+
+		// Playlists: a video added to a playlist is shown wherever the playlist
+		// is, and the playlist's own page shows it too, so the playlist is a
+		// place. Its items live in the playlist table, not in post_content.
+		// One read for the list page, on the indexed video_id.
+		$placeholders = implode( ', ', array_fill( 0, count( $video_ids ), '%d' ) );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- One batched read per list page; placeholders built above.
+		$playlists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DISTINCT pi.video_id, p.ID, p.post_title, p.post_type, p.post_modified_gmt
+				FROM {$wpdb->prefix}ms_playlist_items pi
+				INNER JOIN {$wpdb->posts} p ON p.ID = pi.playlist_id
+				WHERE pi.video_id IN ( {$placeholders} )
+				AND p.post_type = 'mediashield_playlist'
+				AND p.post_status IN ( 'publish', 'future', 'draft', 'private' )
+				ORDER BY p.post_modified_gmt DESC
+				LIMIT 500",
+				$video_ids
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		foreach ( (array) $playlists as $row ) {
+			$id = (int) $row->video_id;
+			if ( isset( $wanted[ $id ] ) && count( self::$cache[ $id ] ) < self::MAX_PER_VIDEO ) {
+				self::$cache[ $id ][] = self::entry( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
 			}
 		}
 
