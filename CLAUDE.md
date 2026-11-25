@@ -350,7 +350,7 @@ Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `media
 | `mediashield_library_file_in_use` | $where, $relative, $attachment_id, $video_id | Report a use of a Media Library file MediaShield cannot see; non-empty leaves the file public and lists it in the owner notice. Learnomy integration answers for lesson/course URLs. |
 | `mediashield_library_files_batch_size` | $batch | Videos per pass of `ms_protect_library_files` and the 1.4.3 `ms_repair_library_files` (10-200, default 50). |
 | `mediashield_poster_rename_batch_size` | $batch | Videos per pass of `ms_rename_id_posters` (10-200, default 50). |
-| `mediashield_shortcode_source_url` | $url, $video_id, $atts | Override the source URL a `[mediashield]` shortcode resolves to (`Shortcode.php:61`) |
+| `mediashield_shortcode_source_url` | $url, $video_id, $atts | Override the source URL a `[mediashield]` shortcode resolves to, for that render only: answered through `get_post_metadata`, never stored (1.4.4) (`Shortcode.php`) |
 | `mediashield_stored_filename` | $obscured, $original_name | The randomised on-disk filename for a self-hosted upload (`SelfHosted.php:144`) |
 | `mediashield_video_ad_breaks` | $breaks, $video_id, $duration | In-video ad breaks. Populated by the WB Ad Manager bridge; empty when no ad source is active. (`Renderer.php:263`) |
 | `mediashield_video_ads` | $ads, $video_id, $duration | Ad creatives available for this video (`AdManagerBridge.php:104`) |

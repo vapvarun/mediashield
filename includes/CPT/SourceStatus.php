@@ -50,6 +50,32 @@ class SourceStatus {
 	public static function register(): void {
 		add_filter( 'mediashield_video_status', array( __CLASS__, 'list_status' ), 20, 2 );
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'clear_on_save' ), 10, 3 );
+		// After the edit screen (10) and REST (rest_after_insert) wrote the link.
+		add_action( 'save_post_mediashield_video', array( __CLASS__, 'fill_duration' ), 25 );
+		add_action( 'rest_after_insert_mediashield_video', array( __CLASS__, 'fill_duration' ), 20 );
+	}
+
+	/**
+	 * A Vimeo video saved with no Duration takes Vimeo's own (oEmbed
+	 * `duration`), so its watched share never depends on lengths viewers'
+	 * players report (WatchedSpans::measured()). A typed Duration always
+	 * wins: nothing is asked while one is stored.
+	 *
+	 * @param int|\WP_Post $video Video ID (save_post) or post (REST).
+	 */
+	public static function fill_duration( $video ): void {
+		$video_id = $video instanceof \WP_Post ? (int) $video->ID : (int) $video;
+		if ( wp_is_post_revision( $video_id ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) ) {
+			return;
+		}
+		if ( 'vimeo' !== get_post_meta( $video_id, '_ms_platform', true ) || (int) get_post_meta( $video_id, '_ms_duration', true ) > 0 ) {
+			return;
+		}
+		$answer   = self::ask( $video_id );
+		$duration = $answer && 200 === $answer['status'] ? absint( $answer['data']['duration'] ?? 0 ) : 0;
+		if ( $duration > 0 ) {
+			update_post_meta( $video_id, '_ms_duration', $duration );
+		}
 	}
 
 	/**
@@ -121,8 +147,36 @@ class SourceStatus {
 	 */
 	public static function check( int $video_id ): ?bool {
 		$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
-		$id       = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+		$answer   = self::ask( $video_id );
+		if ( null === $answer ) {
+			return null;
+		}
+		$status = $answer['status'];
+		if ( 200 === $status ) {
+			return true;
+		}
+		// Vimeo answers 403 for a video limited to certain sites and 404 for
+		// an unlisted one asked without its hash: neither says the video is
+		// gone, so a viewer's report alone records nothing (Free review #3).
+		if ( 'vimeo' === $platform && ( 403 === $status || ( 404 === $status && $answer['hashed'] ) ) ) {
+			return null;
+		}
+		if ( in_array( $status, array( 401, 403, 404 ), true ) ) {
+			return false;
+		}
+		return null;
+	}
 
+	/**
+	 * One oEmbed request about this video, as this site (check(), fill_duration()).
+	 *
+	 * @param int $video_id Video ID.
+	 * @return array{status: int, hashed: bool, data: array}|null Null for a
+	 *         platform with no public check or a failed request.
+	 */
+	private static function ask( int $video_id ): ?array {
+		$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
+		$id       = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
 		if ( '' === $id ) {
 			return null;
 		}
@@ -152,21 +206,12 @@ class SourceStatus {
 		if ( is_wp_error( $response ) ) {
 			return null;
 		}
-
-		$status = (int) wp_remote_retrieve_response_code( $response );
-		if ( 200 === $status ) {
-			return true;
-		}
-		// Vimeo answers 403 for a video limited to certain sites and 404 for
-		// an unlisted one asked without its hash: neither says the video is
-		// gone, so a viewer's report alone records nothing (Free review #3).
-		if ( 'vimeo' === $platform && ( 403 === $status || ( 404 === $status && $hashed ) ) ) {
-			return null;
-		}
-		if ( in_array( $status, array( 401, 403, 404 ), true ) ) {
-			return false;
-		}
-		return null;
+		$data = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+		return array(
+			'status' => (int) wp_remote_retrieve_response_code( $response ),
+			'hashed' => $hashed,
+			'data'   => is_array( $data ) ? $data : array(),
+		);
 	}
 
 	/**

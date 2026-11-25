@@ -14,7 +14,7 @@ Fill in the fields:
 
 **Or upload a file** - New in 1.3.0. Choose a video file and click **Upload** to store it on this site. The file is saved outside the media library, under `wp-content/uploads/mediashield/`, and played back through a permission-checked URL. Save the video afterwards to keep the file. Upload size is limited by your server, not by MediaShield. The field appears for users with the `upload_mediashield` capability, which administrators have by default.
 
-**Duration** - Length in seconds. Used to sanity-check watch progress. Leave 0 if you don't know it.
+**Duration** - Length in seconds. Used to sanity-check watch progress. Leave 0 if you don't know it: a Vimeo video fills it from Vimeo when saved, and other videos use the length viewers' players report. A Duration you type is always used.
 
 **Protection Level** - Pick the level for this video, or leave it on **Site default**. The line under the menu says what the chosen level does, in the same words as Settings.
 

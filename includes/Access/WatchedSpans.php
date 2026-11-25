@@ -54,6 +54,12 @@ class WatchedSpans {
 	 * member cannot stretch it and hold every member at 0% (re-review).
 	 * Changing the video's source forgets it (forget_length()).
 	 */
+	// shortcut: the first reporters set the length. A member who tampers with
+	// their player can make a video with no stored Duration look shorter (so
+	// the rule is met sooner) until honest reports outnumber theirs, or lock
+	// it with several accounts. The owner closes it by typing a Duration,
+	// which this median never overrides; Vimeo videos get the platform's
+	// own on save (SourceStatus::fill_duration()).
 	public const MEASURED = '_ms_measured_duration';
 
 	/**

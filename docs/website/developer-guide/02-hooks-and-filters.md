@@ -468,7 +468,7 @@ Defaults to `true` when the `ms_require_login` setting is off (*since 1.3.0*), o
 
 ### mediashield_shortcode_source_url
 
-*Since 1.1.0.* Override the source URL resolved by the `[mediashield]` shortcode at render time.
+*Since 1.1.0.* Override the source URL resolved by the `[mediashield]` shortcode at render time. Since 1.4.4 the URL is used for that one render only and is never saved to the video (earlier versions wrote it to `_ms_source_url` and back on every view).
 
 **Parameters:** `$source_url` (string), `$video_id` (int), `$atts` (array)
 

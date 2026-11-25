@@ -56,6 +56,9 @@ class FreeReviewSessionsTest extends WP_UnitTestCase {
 	 * @return array|\WP_Error
 	 */
 	public function platform( $pre, $args, $url ) {
+		if ( false !== $pre ) {
+			return $pre;
+		}
 		if ( false === strpos( $url, 'oembed' ) || ! $this->vimeo ) {
 			return new \WP_Error( 'offline', 'Offline in tests.' );
 		}
@@ -336,5 +339,81 @@ class FreeReviewSessionsTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 		$id = apply_filters( 'mediashield_create_video', null, array( 'source_url' => 'https://vimeo.com/222222222' ) );
 		$this->assertSame( 'publish', get_post_status( $id ) );
+	}
+
+	/**
+	 * Final check #4: a Vimeo video saved with no Duration takes Vimeo's own;
+	 * a typed Duration is never replaced and nothing is asked.
+	 */
+	public function test_saving_a_vimeo_link_stores_the_platform_duration(): void {
+		$this->vimeo = static function () {
+			return 200;
+		};
+		add_filter( 'pre_http_request', array( $this, 'with_duration' ), 9, 3 );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+
+		$id = apply_filters( 'mediashield_create_video', null, array( 'source_url' => 'https://vimeo.com/333444555' ) );
+		$this->assertSame( 212, (int) get_post_meta( $id, '_ms_duration', true ) );
+
+		// Its own asks carry this site as Referer (the poster fetch does not).
+		$own   = function () {
+			return count( wp_list_filter( $this->asked, array( 'referer' => home_url( '/' ) ) ) );
+		};
+		$asked = $own();
+		update_post_meta( $id, '_ms_duration', 300 );
+		wp_update_post( array( 'ID' => $id, 'post_title' => 'Renamed' ) );
+		$this->assertSame( 300, (int) get_post_meta( $id, '_ms_duration', true ), 'A typed Duration wins.' );
+		$this->assertSame( $asked, $own(), 'Nothing asked while a Duration is stored.' );
+		remove_filter( 'pre_http_request', array( $this, 'with_duration' ), 9 );
+	}
+
+	/**
+	 * Vimeo's oEmbed answer with a duration (212 s).
+	 *
+	 * @param mixed  $pre  Short-circuit.
+	 * @param array  $args Request args.
+	 * @param string $url  URL.
+	 * @return mixed
+	 */
+	public function with_duration( $pre, $args, $url ) {
+		if ( false === strpos( $url, 'vimeo.com/api/oembed' ) ) {
+			return $pre;
+		}
+		$this->asked[] = array(
+			'url'     => $url,
+			'referer' => (string) ( $args['headers']['Referer'] ?? '' ),
+		);
+		return array(
+			'headers'  => array(),
+			'body'     => '{"type":"video","duration":212,"title":"Vimeo lesson"}',
+			'response' => array( 'code' => 200, 'message' => '' ),
+			'cookies'  => array(),
+		);
+	}
+
+	/**
+	 * Final check #5: a filtered shortcode link is for that render only; two
+	 * renders leave the stored link and the measured lengths alone.
+	 */
+	public function test_a_filtered_shortcode_link_is_not_stored(): void {
+		$video = $this->vimeo_video( 'https://vimeo.com/76979871' );
+		$users = self::factory()->user->create_many( 2 );
+		WatchedSpans::record( $users[0], $video, array(), 200.0 );
+		WatchedSpans::record( $users[1], $video, array(), 200.0 );
+		$filter = static function () {
+			return 'https://cdn.example.org/signed/lesson.mp4?token=abc';
+		};
+		add_filter( 'mediashield_shortcode_source_url', $filter );
+		wp_set_current_user( $users[0] );
+
+		$first  = do_shortcode( '[mediashield id="' . $video . '"]' );
+		$second = do_shortcode( '[mediashield id="' . $video . '"]' );
+		remove_filter( 'mediashield_shortcode_source_url', $filter );
+
+		$this->assertNotSame( '', $first );
+		$this->assertSame( $first, $second );
+		$this->assertSame( 'https://vimeo.com/76979871', get_post_meta( $video, '_ms_source_url', true ) );
+		$this->assertCount( 2, get_post_meta( $video, WatchedSpans::MEASURED, true ) );
+		$this->assertSame( 200.0, WatchedSpans::measured( $video ) );
 	}
 }
