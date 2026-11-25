@@ -180,13 +180,66 @@ class VideoUsage {
 		self::for_video( $video_id ); // Primes both lists.
 		// Pages that show the video itself first, then pages that show a
 		// playlist holding it. A playlist is never offered: it has no public
-		// page, and is_post_type_viewable() below says so.
-		foreach ( array_merge( self::$cache[ $video_id ] ?? array(), self::$via_playlist[ $video_id ] ?? array() ) as $place ) {
+		// page, and first_readable() skips types that are not viewable.
+		return self::first_readable( array_merge( self::$cache[ $video_id ] ?? array(), self::$via_playlist[ $video_id ] ?? array() ), $user_id );
+	}
+
+	/**
+	 * The page that shows a playlist now that it has no page of its own:
+	 * the first published place with the Playlist block or shortcode that a
+	 * visitor may read, most recently edited first. '' when none.
+	 *
+	 * Used to send the 1.4.1-1.4.3 /playlist/<slug>/ address on to where
+	 * the playlist lives today (PlaylistPostType::old_address_target()).
+	 * Asked as a logged-out visitor, so the answer is the same for everyone.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $playlist_id Playlist ID.
+	 * @return string
+	 */
+	public static function page_for_playlist( int $playlist_id ): string {
+		global $wpdb;
+
+		// One scan, like prime(); this runs only on a request for an old address.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- See the docblock.
+		$rows = $wpdb->get_results(
+			"SELECT ID, post_title, post_type, post_content FROM {$wpdb->posts}
+			WHERE post_status = 'publish'
+			AND post_type NOT IN ( 'revision', 'mediashield_video', 'mediashield_playlist', 'nav_menu_item', 'attachment', 'wp_global_styles' )
+			AND ( post_content LIKE '%[mediashield\\_playlist%' OR post_content LIKE '%wp:mediashield/playlist%' )
+			ORDER BY post_modified_gmt DESC
+			LIMIT 500"
+		);
+
+		$places = array();
+		foreach ( (array) $rows as $row ) {
+			if ( in_array( $playlist_id, self::playlist_ids_in( (string) $row->post_content ), true ) ) {
+				$places[] = array( 'id' => (int) $row->ID );
+			}
+		}
+
+		return self::first_readable( $places, 0 );
+	}
+
+	/**
+	 * The first of these places that is published, has no password, is a
+	 * viewable post type and the user may read: its address, or ''.
+	 *
+	 * @param array<int, array{id:int}> $places  Places, in order of preference.
+	 * @param int                       $user_id User (0 = a logged-out visitor).
+	 * @return string
+	 */
+	private static function first_readable( array $places, int $user_id ): string {
+		foreach ( $places as $place ) {
 			$post = get_post( (int) ( $place['id'] ?? 0 ) );
 			if ( ! $post || 'publish' !== $post->post_status || post_password_required( $post ) ) {
 				continue;
 			}
-			if ( ! is_post_type_viewable( $post->post_type ) || ! user_can( $user_id, 'read_post', $post->ID ) ) {
+			// A logged-out visitor holds no capabilities at all (not even
+			// `read`), so for them published, no password and viewable is
+			// the whole test.
+			if ( ! is_post_type_viewable( $post->post_type ) || ( $user_id && ! user_can( $user_id, 'read_post', $post->ID ) ) ) {
 				continue;
 			}
 			$url = (string) get_permalink( $post );

@@ -27,7 +27,13 @@ class PlaylistPostType {
 		add_action( 'init', array( __CLASS__, 'register_post_type' ) );
 		add_action( 'init', array( __CLASS__, 'register_meta' ) );
 		add_action( 'add_meta_boxes_mediashield_playlist', array( __CLASS__, 'register_items_meta_box' ) );
+		// The classic edit screen, like Videos: one way of editing for both
+		// (Basecamp 10545260546). The block editor hid the items in a drawer.
+		add_filter( 'use_block_editor_for_post_type', array( __CLASS__, 'classic_screen' ), 10, 2 );
+		add_action( 'edit_form_after_title', array( __CLASS__, 'render_main_boxes' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_items_assets' ) );
+		// Before redirect_canonical (10), which would guess some other post for the 404.
+		add_action( 'template_redirect', array( __CLASS__, 'redirect_old_address' ), 5 );
 	}
 
 	/**
@@ -46,12 +52,40 @@ class PlaylistPostType {
 	public static function register_items_meta_box(): void {
 		add_meta_box(
 			'mediashield-playlist-items',
-			__( 'Playlist Items', 'mediashield' ),
+			__( 'Videos in this playlist', 'mediashield' ),
 			array( __CLASS__, 'render_items_meta_box' ),
 			'mediashield_playlist',
-			'normal',
+			self::MAIN_CONTEXT,
 			'high'
 		);
+	}
+
+	/**
+	 * Meta box context drawn straight under the title, so the videos come
+	 * before the description, as the video comes first on a video.
+	 */
+	const MAIN_CONTEXT = 'ms_main';
+
+	/**
+	 * Playlists edit on the classic screen, as videos do.
+	 *
+	 * @param bool   $use_block_editor Whether to use the block editor.
+	 * @param string $post_type        Post type.
+	 * @return bool
+	 */
+	public static function classic_screen( $use_block_editor, $post_type ) {
+		return 'mediashield_playlist' === $post_type ? false : $use_block_editor;
+	}
+
+	/**
+	 * Draw the main-column boxes under the title.
+	 *
+	 * @param \WP_Post $post Post being edited.
+	 */
+	public static function render_main_boxes( $post ): void {
+		if ( $post instanceof \WP_Post && 'mediashield_playlist' === $post->post_type ) {
+			do_meta_boxes( get_current_screen(), self::MAIN_CONTEXT, $post );
+		}
 	}
 
 	/**
@@ -159,6 +193,64 @@ class PlaylistPostType {
 				'map_meta_cap'        => true,
 			)
 		);
+	}
+
+	/**
+	 * Where does a 1.4.1-1.4.3 playlist address lead now?
+	 *
+	 * Those versions gave every playlist its own page, /playlist/<slug>/ (or
+	 * ?mediashield_playlist=<slug> on plain permalinks). Since 1.4.4 a
+	 * playlist shows only where it is placed, so an old link goes to the
+	 * page that places it (VideoUsage::page_for_playlist()), and answers 404
+	 * when no page does (Basecamp 10545260546).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return string|null The page to send the visitor to, '' for a 404, null when this is not an old playlist address.
+	 */
+	public static function old_address_target(): ?string {
+		global $wp;
+
+		$slug = '';
+		if ( is_404() && $wp instanceof \WP && preg_match( '#^playlist/([^/]+)/?$#', (string) $wp->request, $m ) ) {
+			$slug = sanitize_title( $m[1] );
+		} elseif ( isset( $_GET['mediashield_playlist'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- A public address, read only.
+			$slug = sanitize_title( wp_unslash( $_GET['mediashield_playlist'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+
+		if ( '' === $slug ) {
+			return null;
+		}
+
+		$playlist = get_page_by_path( $slug, OBJECT, 'mediashield_playlist' );
+		if ( ! $playlist || 'publish' !== $playlist->post_status || post_password_required( $playlist ) ) {
+			return '';
+		}
+
+		return \MediaShield\CPT\VideoUsage::page_for_playlist( (int) $playlist->ID );
+	}
+
+	/**
+	 * Send an old playlist address on to the page that shows the playlist (301), or answer 404.
+	 */
+	public static function redirect_old_address(): void {
+		$target = self::old_address_target();
+		if ( null === $target ) {
+			return;
+		}
+
+		if ( '' !== $target ) {
+			wp_safe_redirect( $target, 301, 'MediaShield' );
+			exit;
+		}
+
+		// No page shows it. On plain permalinks the query string would
+		// otherwise fall through to the home page.
+		global $wp_query;
+		$wp_query->set_404();
+		status_header( 404 );
+		nocache_headers();
+		remove_action( 'template_redirect', 'redirect_canonical' );
 	}
 
 	/**

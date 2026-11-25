@@ -173,7 +173,8 @@ assets/
   - `_ms_duration` (integer) -- video duration in seconds
 
 ### mediashield_playlist
-- **Not public** (1.4.4): no single page, no rewrite, no query var. It shows only where the Playlist block or `[mediashield_playlist]` places it. Migrator v13 dropped the old `/playlist/<slug>/` rule.
+- **Not public** (1.4.4): no single page, no rewrite, no query var. It shows only where the Playlist block or `[mediashield_playlist]` places it. Migrator v13 dropped the old `/playlist/<slug>/` rule; `PlaylistPostType::redirect_old_address()` sends that address (and `?mediashield_playlist=`) 301 to `VideoUsage::page_for_playlist()`, or 404s when no page shows it.
+- **Edit screen:** classic (`use_block_editor_for_post_type` false), like Videos; the items box sits in the `ms_main` context drawn under the title.
 - **REST base:** `mediashield-playlists`
 - **Supports:** title, editor, thumbnail
 - **Meta fields:**

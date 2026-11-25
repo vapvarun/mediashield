@@ -55,7 +55,7 @@ Without Pro, the Pro screens show as locked entries with a PRO label. Every scre
 | Where | What |
 |-------|------|
 | Video edit screen | See [The Video Edit Screen](06-video-edit-screen.md). |
-| Playlist edit screen | A Playlist Items panel with Playback options. |
+| Playlist edit screen | The classic edit screen, like a video's: title, then Videos in this playlist (order and Playback options), then an optional description. |
 | Setup wizard | `wp-admin/admin.php?page=mediashield-wizard`. See [Setup Wizard](../getting-started/03-setup-wizard.md). |
 | Tools > Site Health | A check that tells you whether self-hosted video files can be downloaded directly. |
 | Settings > Privacy | MediaShield adds itself to WordPress's personal data export and erase tools. See [Privacy, Retention and Uninstall](../using-mediashield/17-privacy-retention-and-uninstall.md). |

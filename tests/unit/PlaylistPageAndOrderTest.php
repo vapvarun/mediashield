@@ -152,6 +152,72 @@ class PlaylistPageAndOrderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Fails on b6b3243: an old /playlist/<slug>/ link answered 404 even when
+	 * a page shows the playlist. It now leads to that page (301), skipping a
+	 * draft and a password-protected page; plain permalinks too.
+	 */
+	public function test_old_address_leads_to_the_page_that_shows_the_playlist(): void {
+		global $wp_rewrite;
+		$wp_rewrite->set_permalink_structure( '/%postname%/' );
+		flush_rewrite_rules();
+
+		self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'draft', 'post_title' => 'Draft holder', 'post_content' => '[mediashield_playlist id=' . $this->playlist . ']' ) );
+		self::factory()->post->create( array( 'post_type' => 'page', 'post_title' => 'Locked holder', 'post_password' => 'x', 'post_content' => '[mediashield_playlist id=' . $this->playlist . ']' ) );
+		$page = self::factory()->post->create( array( 'post_type' => 'page', 'post_title' => 'Week 2 lessons', 'post_content' => '<!-- wp:mediashield/playlist {"playlistId":' . $this->playlist . '} /-->' ) );
+
+		$this->go_to( home_url( '/playlist/week-2/' ) );
+		$this->assertSame( get_permalink( $page ), \MediaShield\CPT\PlaylistPostType::old_address_target() );
+
+		$_GET['mediashield_playlist'] = 'week-2';
+		$this->go_to( home_url( '/?mediashield_playlist=week-2' ) );
+		$this->assertSame( get_permalink( $page ), \MediaShield\CPT\PlaylistPostType::old_address_target(), 'Plain permalinks.' );
+		unset( $_GET['mediashield_playlist'] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * No page shows the playlist (or it is not published): 404. Any other
+	 * address is left alone.
+	 */
+	public function test_old_address_with_no_page_is_a_404_and_others_are_untouched(): void {
+		global $wp_rewrite;
+		$wp_rewrite->set_permalink_structure( '/%postname%/' );
+		flush_rewrite_rules();
+
+		$this->go_to( home_url( '/playlist/week-2/' ) );
+		$this->assertSame( '', \MediaShield\CPT\PlaylistPostType::old_address_target() );
+
+		$this->go_to( home_url( '/playlist/no-such-playlist/' ) );
+		$this->assertSame( '', \MediaShield\CPT\PlaylistPostType::old_address_target() );
+
+		$this->go_to( home_url( '/some-other-missing-page/' ) );
+		$this->assertNull( \MediaShield\CPT\PlaylistPostType::old_address_target() );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * Fails on b6b3243: playlists opened in the block editor, with the items
+	 * in a collapsed drawer, while videos open on the classic screen.
+	 */
+	public function test_playlist_edits_on_the_classic_screen_with_its_videos_first(): void {
+		$this->assertFalse( use_block_editor_for_post_type( 'mediashield_playlist' ) );
+		$this->assertTrue( post_type_supports( 'mediashield_playlist', 'editor' ), 'The description field is kept.' );
+
+		set_current_screen( 'mediashield_playlist' );
+		\MediaShield\CPT\PlaylistPostType::register_items_meta_box();
+		global $wp_meta_boxes;
+		$this->assertArrayHasKey( 'mediashield-playlist-items', $wp_meta_boxes['mediashield_playlist'][ \MediaShield\CPT\PlaylistPostType::MAIN_CONTEXT ]['high'] );
+
+		ob_start();
+		\MediaShield\CPT\PlaylistPostType::render_main_boxes( get_post( $this->playlist ) );
+		$this->assertStringContainsString( 'mediashield-playlist-items-root', (string) ob_get_clean() );
+	}
+
+	/**
 	 * Placed with the shortcode, the playlist still renders its queue.
 	 */
 	public function test_shortcode_still_renders_the_playlist(): void {
