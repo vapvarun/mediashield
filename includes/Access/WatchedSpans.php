@@ -60,6 +60,12 @@ class WatchedSpans {
 	private const MAX_SPANS = 40;
 
 	/**
+	 * Seconds a writer waits for another request's write to this member's
+	 * record to finish.
+	 */
+	private const LOCK_WAIT = 2;
+
+	/**
 	 * Note that a session started, so the first report is measured from now.
 	 *
 	 * @param int $user_id  Member.
@@ -69,11 +75,15 @@ class WatchedSpans {
 		if ( $user_id <= 0 || $video_id <= 0 ) {
 			return;
 		}
-		$all              = self::all( $user_id );
-		$entry            = $all[ $video_id ] ?? array( 's' => array() );
-		$entry['t']       = time();
-		$all[ $video_id ] = $entry;
-		update_user_meta( $user_id, self::META_KEY, $all );
+		self::locked(
+			$user_id,
+			static function ( array $all ) use ( $user_id, $video_id ): void {
+				$entry            = $all[ $video_id ] ?? array( 's' => array() );
+				$entry['t']       = time();
+				$all[ $video_id ] = $entry;
+				update_user_meta( $user_id, self::META_KEY, $all );
+			}
+		);
 	}
 
 	/**
@@ -94,7 +104,26 @@ class WatchedSpans {
 		if ( $user_id <= 0 || $video_id <= 0 ) {
 			return 0.0;
 		}
-		$all   = self::all( $user_id );
+		return self::locked(
+			$user_id,
+			static function ( array $all ) use ( $user_id, $video_id, $spans, $duration, $position ): float {
+				return self::add_report( $user_id, $video_id, $all, $spans, $duration, $position );
+			}
+		);
+	}
+
+	/**
+	 * Add one report to the member's fresh record and save it (record(), under the lock).
+	 *
+	 * @param int   $user_id  Member.
+	 * @param int   $video_id Video CPT post ID.
+	 * @param array $all      Every video's record, read under the lock.
+	 * @param array $spans    [ [start, end], ... ] in seconds of the video.
+	 * @param float $duration Video length in seconds, 0 when unknown.
+	 * @param float $position Where the player is now, in seconds.
+	 * @return float Seconds accepted from this report.
+	 */
+	private static function add_report( int $user_id, int $video_id, array $all, array $spans, float $duration, float $position ): float {
 		$entry = $all[ $video_id ] ?? array( 's' => array() );
 		$now   = time();
 		$since = isset( $entry['t'] ) ? max( 0, $now - (int) $entry['t'] ) : 0;
@@ -232,6 +261,56 @@ class WatchedSpans {
 			--$n;
 		}
 		return $out;
+	}
+
+	/**
+	 * Run one read-modify-write of a member's record with no other writer in between.
+	 *
+	 * Every player on a page heartbeats, so two requests for one member often
+	 * land in the same second. Each read the one user-meta row, changed its
+	 * own video and wrote the whole row back, and the later write dropped the
+	 * earlier one's spans. A MySQL named lock per member serialises the
+	 * writers, and the record is read from the database (not this request's
+	 * object cache) once the lock is held, so each writer starts from the
+	 * last one's result. If the lock is not free within LOCK_WAIT seconds the
+	 * write still goes ahead on the fresh read: a slow database must not cost
+	 * the member the report.
+	 *
+	 * @param int      $user_id Member.
+	 * @param callable $change  Receives the fresh record, writes it, returns the result.
+	 * @return mixed What $change returns.
+	 */
+	private static function locked( int $user_id, callable $change ) {
+		global $wpdb;
+
+		$name = self::lock_name( $user_id );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A named lock, not a table read.
+		$held = '1' === (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, %d )', $name, self::LOCK_WAIT ) );
+
+		try {
+			wp_cache_delete( $user_id, 'user_meta' );
+			return $change( self::all( $user_id ) );
+		} finally {
+			if ( $held ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Releases the named lock taken above.
+				$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', $name ) );
+			}
+		}
+	}
+
+	/**
+	 * The MySQL named lock a writer of this member's record holds.
+	 *
+	 * Named locks are server-wide, so the name carries the database and the
+	 * user table prefix as well as the member; it stays under MySQL's 64
+	 * characters.
+	 *
+	 * @param int $user_id Member.
+	 * @return string
+	 */
+	public static function lock_name( int $user_id ): string {
+		global $wpdb;
+		return 'ms_spans_' . substr( md5( $wpdb->dbname . '|' . $wpdb->base_prefix ), 0, 12 ) . '_' . $user_id;
 	}
 
 	/**
