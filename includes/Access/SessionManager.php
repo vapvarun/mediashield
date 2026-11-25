@@ -24,13 +24,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 class SessionManager {
 
 	/**
+	 * Tries of a member's session start when the database ends it as a deadlock victim.
+	 */
+	private const DEADLOCK_ATTEMPTS = 3;
+
+	/**
 	 * Start or resume a watch session.
 	 *
 	 * Session dedup: if same user+video has an active session with heartbeat < 5 min ago,
 	 * reuse it instead of creating a new row.
 	 *
 	 * Uses SELECT ... FOR UPDATE inside a transaction to prevent concurrent session
-	 * race conditions.
+	 * race conditions, and runs that transaction again (up to DEADLOCK_ATTEMPTS
+	 * tries) when the database ends it as a deadlock victim.
 	 *
 	 * @param int    $video_id Video CPT post ID.
 	 * @param int    $user_id  User ID.
@@ -73,154 +79,261 @@ class SessionManager {
 			return self::start_guest_session( $video_id, $ip, $ua, $now );
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction start.
-		$wpdb->query( 'START TRANSACTION' );
+		// Every player on a page opens its session on load, so two of them
+		// often start in the same instant. Each transaction takes range locks
+		// on this member's rows and then inserts into the range the other
+		// locked, and InnoDB ends one of them as a deadlock victim. MySQL's
+		// own advice for a deadlock is to run the transaction again, so it is
+		// retried a few times with a short, growing pause. Any other database
+		// error is reported as before and not retried.
+		for ( $attempt = 1; ; $attempt++ ) {
+			$last   = $attempt >= self::DEADLOCK_ATTEMPTS;
+			$result = self::start_member_session( $video_id, $user_id, $ip, $ua, $now, $max_concurrent, $last );
+			if ( null !== $result ) {
+				return $result;
+			}
+			if ( $last ) {
+				return false;
+			}
+			usleep( $attempt * 50000 + wp_rand( 0, 50000 ) );
+		}
+	}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table with row locking.
-		// Count the OTHER devices this account is watching on, not its sessions.
-		// The limit exists to stop one login being shared, and every player on
-		// a page opens its own session on load - so counting sessions refused
-		// the third video on a lesson page before anything played
-		// (BC#10370648695). A device is an IP + browser pair; the caller's own
-		// is left out, so one viewer is never refused for their own tabs.
-		$active_count = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT ip_address, user_agent) FROM {$table}
-			 WHERE user_id = %d AND is_active = 1
-			 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
-			 AND NOT (ip_address = %s AND user_agent = %s)
-			 FOR UPDATE",
-				$user_id,
-				$now,
-				$ip,
-				mb_substr( $ua, 0, 500 )
-			)
-		);
+	/**
+	 * One try at start() for a signed-in member, in one transaction.
+	 *
+	 * Returns null when the database ended the transaction as a deadlock
+	 * victim (it is rolled back, nothing was written) so start() can run it
+	 * again. On a try that will be retried, wpdb's own report of the deadlock
+	 * is held back, since it would print into the JSON reply; any other error
+	 * is reported as wpdb always does. The last try reports everything.
+	 *
+	 * @param int    $video_id       Video CPT post ID.
+	 * @param int    $user_id        Member, never 0.
+	 * @param string $ip             Client IP.
+	 * @param string $ua             User agent string.
+	 * @param string $now            Current GMT datetime in MySQL format.
+	 * @param int    $max_concurrent Most other devices allowed.
+	 * @param bool   $last           Whether this is the last try.
+	 * @return array|false|null Session data, false (stream limit or a failed insert), null (deadlock, try again).
+	 */
+	private static function start_member_session( int $video_id, int $user_id, string $ip, string $ua, string $now, int $max_concurrent, bool $last ) {
+		global $wpdb;
 
-		// This device's open session on the same video (a reload, a second
-		// tab), reused. Only this device's: another device handed it, as
-		// before, shared the session and was never counted, so a login could
-		// be watched on one device more than the limit (same video, then any).
-		$existing = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM {$table}
-			 WHERE video_id = %d AND user_id = %d AND is_active = 1
-			 AND ip_address = %s AND user_agent = %s
-			 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
-			 ORDER BY last_heartbeat DESC LIMIT 1
-			 FOR UPDATE",
-				$video_id,
-				$user_id,
-				$ip,
-				mb_substr( $ua, 0, 500 ),
-				$now
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$table = "{$wpdb->prefix}ms_watch_sessions";
+		$quiet = $last ? null : $wpdb->suppress_errors( true );
 
-		if ( $existing ) {
+		// True when the query just run was ended by a deadlock (rolled back
+		// here); any other error is reported now, while it is wpdb's last query.
+		$deadlocked = static function () use ( $wpdb, &$quiet ): bool {
+			if ( '' === (string) $wpdb->last_error ) {
+				return false;
+			}
+			if ( self::is_deadlock() ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Ends the failed transaction.
+				$wpdb->query( 'ROLLBACK' );
+				return true;
+			}
+			if ( null !== $quiet ) {
+				$wpdb->suppress_errors( $quiet );
+				$wpdb->print_error( $wpdb->last_error );
+				$wpdb->suppress_errors( true );
+			}
+			return false;
+		};
+		// Once the transaction has ended, errors are reported as usual again:
+		// what runs next (spans, hooks) is not part of the retry.
+		$report = static function () use ( $wpdb, &$quiet ): void {
+			if ( null !== $quiet ) {
+				$wpdb->suppress_errors( $quiet );
+				$quiet = null;
+			}
+		};
+
+		try {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction start.
+			$wpdb->query( 'START TRANSACTION' );
+
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table with row locking.
+			// Count the OTHER devices this account is watching on, not its sessions.
+			// The limit exists to stop one login being shared, and every player on
+			// a page opens its own session on load - so counting sessions refused
+			// the third video on a lesson page before anything played
+			// (BC#10370648695). A device is an IP + browser pair; the caller's own
+			// is left out, so one viewer is never refused for their own tabs.
+			$active_count = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(DISTINCT ip_address, user_agent) FROM {$table}
+				 WHERE user_id = %d AND is_active = 1
+				 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
+				 AND NOT (ip_address = %s AND user_agent = %s)
+				 FOR UPDATE",
+					$user_id,
+					$now,
+					$ip,
+					mb_substr( $ua, 0, 500 )
+				)
+			);
+			if ( $deadlocked() ) {
+				return null;
+			}
+
+			// This device's open session on the same video (a reload, a second
+			// tab), reused. Only this device's: another device handed it, as
+			// before, shared the session and was never counted, so a login could
+			// be watched on one device more than the limit (same video, then any).
+			// A plain read: its rows are this member's active ones, which the
+			// count above has already locked (and their gaps, so no other
+			// start can add one). Locking them again through a second index
+			// only widened the locks two players on one page could deadlock on.
+			$existing = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$table}
+				 WHERE video_id = %d AND user_id = %d AND is_active = 1
+				 AND ip_address = %s AND user_agent = %s
+				 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
+				 ORDER BY last_heartbeat DESC LIMIT 1",
+					$video_id,
+					$user_id,
+					$ip,
+					mb_substr( $ua, 0, 500 ),
+					$now
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			if ( $deadlocked() ) {
+				return null;
+			}
+
+			if ( $existing ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
+				$wpdb->query( 'COMMIT' );
+				$report();
+
+				WatchedSpans::start( $user_id, $video_id );
+
+				return array(
+					'session_token'   => self::generate_token( (int) $existing->id, $video_id, $user_id, $existing->started_at ),
+					'session_id'      => (int) $existing->id,
+					// The place from the last viewing that played, not this
+					// session's own (a reload without play left it at 0).
+					'resume_position' => self::resume_enabled( $video_id ) ? self::last_played_position( $video_id, $user_id ) : 0.0,
+					'is_resumed'      => true,
+				);
+			}
+
+			// This device would be one more on top of the others.
+			if ( $active_count >= $max_concurrent ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction rollback.
+				$wpdb->query( 'ROLLBACK' );
+				$report();
+
+				/**
+				 * Fires when a concurrent stream limit is reached.
+				 *
+				 * @since 1.0.0
+				 *
+				 * @param int $user_id          User ID.
+				 * @param int $video_id         Video they tried to watch.
+				 * @param int $active_count     Other devices currently watching.
+				 * @param int $max_concurrent   Configured limit.
+				 */
+				do_action( 'mediashield_concurrent_limit_reached', $user_id, $video_id, $active_count, $max_concurrent );
+
+				return false;
+			}
+
+			// Only when Resume Playback is enabled (per-video override, then the
+			// global setting); otherwise no query and no position to prompt with.
+			// Resume from the last viewing that actually played. Every page view
+			// opens a session at 0, so "the newest session" lost the place after
+			// one visit without pressing play (Basecamp 10531602227).
+			$resume_position = self::resume_enabled( $video_id ) ? self::last_played_position( $video_id, $user_id ) : 0.0;
+
+			// Parse device info from user agent.
+			$device_type = self::parse_device_type( $ua );
+			$browser     = self::parse_browser( $ua );
+
+			// Create session token parts.
+			$session_token_raw = wp_generate_password( 32, false );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table insert.
+			$inserted = $wpdb->insert(
+				$table,
+				array(
+					'video_id'       => $video_id,
+					'user_id'        => $user_id,
+					'session_token'  => $session_token_raw,
+					'ip_address'     => $ip,
+					'user_agent'     => mb_substr( $ua, 0, 500 ),
+					'device_type'    => $device_type,
+					'browser'        => $browser,
+					'started_at'     => $now,
+					'last_heartbeat' => $now,
+					'total_seconds'  => 0,
+					'max_position'   => 0,
+					'completion_pct' => 0,
+					'is_active'      => 1,
+				),
+				array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%f', '%f', '%d' )
+			);
+
+			if ( ! $inserted ) {
+				if ( $deadlocked() ) {
+					return null;
+				}
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction rollback.
+				$wpdb->query( 'ROLLBACK' );
+				return false;
+			}
+
+			$session_id = (int) $wpdb->insert_id;
+
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
 			$wpdb->query( 'COMMIT' );
-
+			$report();
 			WatchedSpans::start( $user_id, $video_id );
 
-			return array(
-				'session_token'   => self::generate_token( (int) $existing->id, $video_id, $user_id, $existing->started_at ),
-				'session_id'      => (int) $existing->id,
-				// The place from the last viewing that played, not this
-				// session's own (a reload without play left it at 0).
-				'resume_position' => self::resume_enabled( $video_id ) ? self::last_played_position( $video_id, $user_id ) : 0.0,
-				'is_resumed'      => true,
-			);
-		}
-
-		// This device would be one more on top of the others.
-		if ( $active_count >= $max_concurrent ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction rollback.
-			$wpdb->query( 'ROLLBACK' );
+			$token = self::generate_token( $session_id, $video_id, $user_id, $now );
 
 			/**
-			 * Fires when a concurrent stream limit is reached.
+			 * Fires when a new watch session starts.
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param int $user_id          User ID.
-			 * @param int $video_id         Video they tried to watch.
-			 * @param int $active_count     Other devices currently watching.
-			 * @param int $max_concurrent   Configured limit.
+			 * @param int    $session_id Session row ID.
+			 * @param int    $video_id   Video CPT post ID.
+			 * @param int    $user_id    User ID.
+			 * @param string $ip         Client IP address.
 			 */
-			do_action( 'mediashield_concurrent_limit_reached', $user_id, $video_id, $active_count, $max_concurrent );
+			do_action( 'mediashield_session_started', $session_id, $video_id, $user_id, $ip );
 
-			return false;
+			return array(
+				'session_token'   => $token,
+				'session_id'      => $session_id,
+				'resume_position' => $resume_position,
+				'is_resumed'      => false,
+			);
+		} finally {
+			$report();
 		}
+	}
 
-		// Only when Resume Playback is enabled (per-video override, then the
-		// global setting); otherwise no query and no position to prompt with.
-		// Resume from the last viewing that actually played. Every page view
-		// opens a session at 0, so "the newest session" lost the place after
-		// one visit without pressing play (Basecamp 10531602227).
-		$resume_position = self::resume_enabled( $video_id ) ? self::last_played_position( $video_id, $user_id ) : 0.0;
-
-		// Parse device info from user agent.
-		$device_type = self::parse_device_type( $ua );
-		$browser     = self::parse_browser( $ua );
-
-		// Create session token parts.
-		$session_token_raw = wp_generate_password( 32, false );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table insert.
-		$inserted = $wpdb->insert(
-			$table,
-			array(
-				'video_id'       => $video_id,
-				'user_id'        => $user_id,
-				'session_token'  => $session_token_raw,
-				'ip_address'     => $ip,
-				'user_agent'     => mb_substr( $ua, 0, 500 ),
-				'device_type'    => $device_type,
-				'browser'        => $browser,
-				'started_at'     => $now,
-				'last_heartbeat' => $now,
-				'total_seconds'  => 0,
-				'max_position'   => 0,
-				'completion_pct' => 0,
-				'is_active'      => 1,
-			),
-			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%f', '%f', '%d' )
-		);
-
-		if ( ! $inserted ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction rollback.
-			$wpdb->query( 'ROLLBACK' );
-			return false;
+	/**
+	 * Did wpdb's last query fail because InnoDB ended its transaction as a deadlock victim?
+	 *
+	 * MySQL error 1213; the message is checked as well for drivers that do
+	 * not expose the number.
+	 *
+	 * @return bool
+	 */
+	private static function is_deadlock(): bool {
+		global $wpdb;
+		$dbh = $wpdb->dbh;
+		if ( $dbh instanceof \mysqli && 1213 === mysqli_errno( $dbh ) ) { // phpcs:ignore WordPress.DB.RestrictedFunctions.mysql_mysqli_errno -- wpdb keeps only the message; the number is the reliable test.
+			return true;
 		}
-
-		$session_id = (int) $wpdb->insert_id;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction commit.
-		$wpdb->query( 'COMMIT' );
-		WatchedSpans::start( $user_id, $video_id );
-
-		$token = self::generate_token( $session_id, $video_id, $user_id, $now );
-
-		/**
-		 * Fires when a new watch session starts.
-		 *
-		 * @since 1.0.0
-		 *
-		 * @param int    $session_id Session row ID.
-		 * @param int    $video_id   Video CPT post ID.
-		 * @param int    $user_id    User ID.
-		 * @param string $ip         Client IP address.
-		 */
-		do_action( 'mediashield_session_started', $session_id, $video_id, $user_id, $ip );
-
-		return array(
-			'session_token'   => $token,
-			'session_id'      => $session_id,
-			'resume_position' => $resume_position,
-			'is_resumed'      => false,
-		);
+		return false !== stripos( (string) $wpdb->last_error, 'Deadlock found' );
 	}
 
 	/**
