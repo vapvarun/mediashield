@@ -546,7 +546,7 @@ class Settings {
 				/* translators: %s: video platform, for example YouTube. */
 				'causeRemoved'    => __( '%s says this video was removed or is private.', 'mediashield' ),
 				/* translators: %s: video platform, for example YouTube. */
-				'causeNoEmbed'    => __( 'The owner of this video on %s does not allow it to play on other sites.', 'mediashield' ),
+				'causeNoEmbed'    => __( '%s will not play this video here. It may be private, removed, or not allowed on other sites.', 'mediashield' ),
 				'thePlatform'     => __( 'The video platform', 'mediashield' ),
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL

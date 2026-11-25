@@ -191,7 +191,7 @@ describe( 'Player states (Basecamp 10545260568)', () => {
 		jest.advanceTimersByTime( 1 );
 
 		const note = document.querySelector( '.ms-error-admin' );
-		expect( note.textContent ).toContain( 'The owner of this video on YouTube does not allow it to play on other sites.' );
+		expect( note.textContent ).toContain( 'YouTube will not play this video here. It may be private, removed, or not allowed on other sites.' );
 		expect( note.querySelector( 'a' ).getAttribute( 'href' ) ).toBe( '/wp-admin/post.php?post=9&action=edit' );
 		expect( reports ).toHaveLength( 1 );
 	} );

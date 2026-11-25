@@ -1972,7 +1972,7 @@
 	function showUnavailable( el, code, platform ) {
 		code = code || 'unknown';
 		var cause = 'not_embeddable' === code
-			? t( 'causeNoEmbed', 'The owner of this video on %s does not allow it to play on other sites.' )
+			? t( 'causeNoEmbed', '%s will not play this video here. It may be private, removed, or not allowed on other sites.' )
 			: t( 'causeRemoved', '%s says this video was removed or is private.' );
 		showErrorOverlay(
 			el,

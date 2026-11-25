@@ -216,7 +216,11 @@ iframe.ms-player-target {
 	z-index: 20;
 	display: flex;
 	align-items: center;
+	/* A short player (a phone) scrolls the state instead of clipping its
+	   first and last lines. */
+	align-items: safe center;
 	justify-content: center;
+	overflow-y: auto;
 	background: var(--ms-overlay-surface-strong);
 }
 
@@ -862,16 +866,26 @@ iframe.ms-player-target {
 /* Responsive adjustments */
 @media (max-width: 640px) {
 	.ms-error-message {
-		padding: var(--ms-space-4);
+		padding: var(--ms-space-3);
 	}
 
 	.ms-error-message p {
 		font-size: var(--ms-font-size-base);
 	}
 
-	.ms-error-action {
+	.ms-error-action,
+	.ms-error-retry {
 		margin-block-start: var(--ms-space-3);
 		font-size: var(--ms-font-size-base);
+	}
+
+	.ms-error-message .ms-error-sub {
+		font-size: var(--ms-font-size-sm);
+	}
+
+	.ms-error-message .ms-error-admin {
+		margin-block-start: var(--ms-space-2);
+		font-size: var(--ms-font-size-xs);
 	}
 
 	.ms-controls {
