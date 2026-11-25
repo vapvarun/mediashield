@@ -197,6 +197,11 @@ class SelfHosted implements DriverInterface {
 			}
 		}
 
+		// The file's own length, so the Videos list and the edit screen show
+		// it and the watch rule has a duration (Basecamp 10545260613). A new
+		// file replaces the old file's length.
+		self::record_length( (int) $post_id, $dest );
+
 		// The streaming URL depends on the new post ID, so it must be set after
 		// insert. It is not consumed by the thumbnail fetcher, so the timing is fine.
 		$stream_url = rest_url( "mediashield/v1/stream/{$post_id}" );
@@ -417,5 +422,53 @@ class SelfHosted implements DriverInterface {
 			'embed_url'         => '',
 			'error'             => $message,
 		);
+	}
+
+	/**
+	 * Store an uploaded file's length in `_ms_duration`, read from the file.
+	 *
+	 * WordPress's own reader (wp_read_video_metadata(), getID3) parses the
+	 * file's headers only. Nothing is written when the length cannot be read.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int    $video_id Video ID.
+	 * @param string $path     File on disk.
+	 * @return int Seconds stored, 0 when unknown.
+	 */
+	public static function record_length( int $video_id, string $path ): int {
+		if ( $video_id <= 0 || '' === $path || ! is_readable( $path ) ) {
+			return 0;
+		}
+		if ( ! function_exists( 'wp_read_video_metadata' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+		}
+		$meta   = wp_read_video_metadata( $path );
+		$length = is_array( $meta ) ? (int) round( (float) ( $meta['length'] ?? 0 ) ) : 0;
+		if ( $length > 0 ) {
+			update_post_meta( $video_id, '_ms_duration', $length );
+		}
+		return $length;
+	}
+
+	/**
+	 * Fill the length of every uploaded file that has none, once (Migrator v15).
+	 *
+	 * A length the owner typed is kept.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function backfill_lengths(): void {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off upgrade pass over core tables.
+		$ids = (array) $wpdb->get_col(
+			"SELECT p.ID FROM {$wpdb->posts} p
+			 INNER JOIN {$wpdb->postmeta} f ON f.post_id = p.ID AND f.meta_key = '_ms_owned_file' AND f.meta_value <> ''
+			 LEFT JOIN {$wpdb->postmeta} d ON d.post_id = p.ID AND d.meta_key = '_ms_duration'
+			 WHERE p.post_type = 'mediashield_video' AND p.post_status <> 'trash' AND ( d.meta_value IS NULL OR d.meta_value = '' OR d.meta_value = '0' )"
+		);
+		foreach ( $ids as $id ) {
+			self::record_length( (int) $id, \MediaShield\REST\StreamController::resolve_file( (int) $id ) );
+		}
 	}
 }

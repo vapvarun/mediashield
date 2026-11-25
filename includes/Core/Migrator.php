@@ -92,6 +92,11 @@ class Migrator {
 			add_option( \MediaShield\Player\Protection::SWITCHES_KEPT, 1 );
 		}
 
+		// v15 - the length of files uploaded before 1.4.4, read from the file.
+		if ( $installed > 0 && $installed < 15 ) {
+			\MediaShield\Upload\Drivers\SelfHosted::backfill_lengths();
+		}
+
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
 	}
 

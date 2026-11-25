@@ -19,7 +19,7 @@ The title appears in your library, playlists and the My Videos grid. The Feature
 
 ## 1. The video
 
-A file you uploaded is shown by its name, length and size ("Uploaded file · 8:15 · 142 MB · kept private, played through a signed link"), not by its signed stream address. The link field under it is then **Replace with a link**: leave it empty to keep the file.
+A file you uploaded is shown by its name, length and size (the length is read from the file when it is uploaded; files uploaded before 1.4.4 get theirs on update, and a length you typed is kept) ("Uploaded file · 8:15 · 142 MB · kept private, played through a signed link"), not by its signed stream address. The link field under it is then **Replace with a link**: leave it empty to keep the file.
 
 
 | Field | What it does |
