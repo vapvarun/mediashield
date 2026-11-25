@@ -400,6 +400,15 @@ class Renderer {
 					data-poster="<?php echo esc_url( $poster ); ?>"
 				<?php endif; ?>
 				<?php echo $playback_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes pre-escaped above. ?>
+				<?php
+				// Where this member stopped last time, so the player can offer
+				// "Resume from m:ss" before any viewing starts: a viewing now
+				// starts at the first play, not on page load (Basecamp 10545260660).
+				$resume_at = $access_denied ? 0.0 : \MediaShield\Access\SessionManager::resume_position( (int) $video_id, get_current_user_id() );
+				if ( $resume_at > 0 ) :
+					?>
+					data-resume-position="<?php echo esc_attr( (string) round( $resume_at, 1 ) ); ?>"
+				<?php endif; ?>
 				<?php if ( ! empty( $video_overrides ) ) : ?>
 					data-player-overrides="<?php echo esc_attr( wp_json_encode( $video_overrides ) ); ?>"
 				<?php endif; ?>

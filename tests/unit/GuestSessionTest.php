@@ -106,7 +106,10 @@ class GuestSessionTest extends WP_UnitTestCase {
 			)
 		);
 
-		$first  = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'UA' );
+		$first = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'UA' );
+		// Test change (1.4.4): only a viewing that played counts, so the first
+		// device plays (players open a viewing at the first play).
+		self::mark_played( $first );
 		// A different device: the same address and browser counts as one.
 		$second = SessionManager::start( $other_video, $user, '203.0.113.10', 'Other UA' );
 
@@ -125,11 +128,42 @@ class GuestSessionTest extends WP_UnitTestCase {
 
 		$first  = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'UA' );
 		$again  = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'UA' );
+		self::mark_played( $first ); // Test change (1.4.4): see above.
 		$second = SessionManager::start( $this->video_id, $user, '203.0.113.10', 'Other UA' );
 
 		$this->assertIsArray( $first );
 		$this->assertIsArray( $again, 'the same device reopening the video keeps its session' );
 		$this->assertSame( $first['session_id'], $again['session_id'] );
 		$this->assertFalse( $second, 'another device on the same video is one more stream and is refused' );
+	}
+
+	/**
+	 * Fails on 9b9f5eb: a viewing opened on another device that never played
+	 * (a lesson page left open; a pre-1.4.4 player opened one on load) took
+	 * the member's only stream, so they were refused with nothing playing.
+	 */
+	public function test_an_unplayed_viewing_on_another_device_does_not_block(): void {
+		update_option( 'ms_max_concurrent_streams', 1 );
+		$user = self::factory()->user->create();
+
+		$idle   = SessionManager::start( $this->video_id, $user, '203.0.113.9', 'Tablet' );
+		$second = SessionManager::start( $this->video_id, $user, '203.0.113.10', 'Laptop' );
+
+		$this->assertIsArray( $idle );
+		$this->assertIsArray( $second, 'Nothing was playing on the tablet.' );
+
+		// Once the laptop plays, a third device is refused as before.
+		self::mark_played( $second );
+		$this->assertFalse( SessionManager::start( $this->video_id, $user, '203.0.113.11', 'Phone' ) );
+	}
+
+	/**
+	 * Record that a viewing played, as its first heartbeat does.
+	 *
+	 * @param array $session From SessionManager::start().
+	 */
+	private static function mark_played( array $session ): void {
+		global $wpdb;
+		$wpdb->update( $wpdb->prefix . 'ms_watch_sessions', array( 'max_position' => 12, 'total_seconds' => 12 ), array( 'id' => (int) $session['session_id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 }

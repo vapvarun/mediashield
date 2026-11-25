@@ -370,7 +370,7 @@ DOM events the player fires are listed in `docs/website/developer-guide/08-javas
 ### Vanilla JS (assets/js/) -- no build required
 - **player-wrapper.js** -- Detects video/iframe elements, wraps with protection container. Every refusal or failure goes through `showErrorOverlay( el, message, onRetry, { sub, cause } )`: one message, one next step (Log in, the membership/course link, or Try again), and for users the server marked with `data-edit-url` the cause plus an Edit video link. The resume chip ("Resume from m:ss · Start over") stays until the member picks; Play resumes. Behaviour tests: `tests/js/` (`npm run test:js`, local-ci 1.5).
 - **watermark.js** -- Renders dynamic user watermark overlay (email/name + timestamp)
-- **tracker.js** -- Sends heartbeat POST to /session/heartbeat every 30s (`config.interval`, default 30000ms)
+- **tracker.js** -- Sends heartbeat POST to /session/heartbeat every 30s (`config.interval`, default 30000ms), one early beat 5 s into play, and one in four (every 2 min) while paused with nothing new to report. Sessions start at the first play (`player-wrapper.js` `startOnFirstPlay()`), never on page load; the resume offer reads `data-resume-position` printed by Renderer (`SessionManager::resume_position()`). The stream limit counts only devices whose viewing played (`played_sql()`).
 - **protection.js** -- Disables right-click context menu, detects devtools open
 - **ad-breaks.js** -- Plays pre/mid/post-roll breaks supplied by the WB Ad Manager bridge
 - **admin-video.js** -- Add New Video uploader + platform-URL detection (admin only)

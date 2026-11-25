@@ -180,4 +180,39 @@ class PlayerStatesTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		$this->assertStringNotContainsString( 'data-edit-url', \MediaShield\Player\Renderer::render( $this->video ) );
 	}
+
+	/**
+	 * Fails on 9b9f5eb: the player learnt the resume position only by opening
+	 * a viewing on page load. The page now carries it, so a viewing can wait
+	 * for the first play (Basecamp 10545260660).
+	 */
+	public function test_resume_position_is_on_the_player_for_the_member_only(): void {
+		global $wpdb;
+		$member = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->prefix . 'ms_watch_sessions',
+			array(
+				'video_id'       => $this->video,
+				'user_id'        => $member,
+				'session_token'  => 'played',
+				'started_at'     => gmdate( 'Y-m-d H:i:s', time() - 3600 ),
+				'last_heartbeat' => gmdate( 'Y-m-d H:i:s', time() - 3500 ),
+				'max_position'   => 113.5,
+				'total_seconds'  => 100,
+				'is_active'      => 0,
+			)
+		);
+		update_option( 'ms_player_resume', 1 );
+
+		wp_set_current_user( $member );
+		$this->assertStringContainsString( 'data-resume-position="113.5"', \MediaShield\Player\Renderer::render( $this->video ) );
+
+		update_post_meta( $this->video, '_ms_player_resume', 'off' );
+		$this->assertStringNotContainsString( 'data-resume-position', \MediaShield\Player\Renderer::render( $this->video ), 'Resume off for this video.' );
+		delete_post_meta( $this->video, '_ms_player_resume' );
+
+		wp_set_current_user( 0 );
+		update_option( 'ms_require_login', 0 );
+		$this->assertStringNotContainsString( 'data-resume-position', \MediaShield\Player\Renderer::render( $this->video ), 'A guest has no place kept.' );
+	}
 }

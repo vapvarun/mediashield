@@ -16,7 +16,7 @@ window.addEventListener( 'mediashield:player-ready', function ( e ) {
 
 | Event | Target | Detail | When |
 |-------|--------|--------|------|
-| `mediashield:player-ready` | `window` | `el`, `videoId`, `token`, `resumePosition`, `watermarkConfig`, `video`, `adapter` | A watch session has started and the player is wired up. The watermark, tracker, protection and ad scripts all key off it. |
+| `mediashield:player-ready` | `window` | `el`, `videoId`, `token`, `resumePosition`, `watermarkConfig`, `video`, `adapter` | A watch session has started and the player is wired up. Since 1.4.4 a session starts at the viewer's first play, not when the page loads, so a player nobody presses play on never fires it. The watermark, tracker, protection and ad scripts all key off it. |
 | `mediashield:player-ready` | `window` | `el`, `videoId` (0), `adapter` | Fired without a session when the player has no video ID (nothing to track). Check `token` before using it. |
 | `mediashield:access-denied` | `window`, cancelable | `el`, `videoId`, `reason` | `POST /session/start` was refused. Call `event.preventDefault()` to suppress the built-in overlay and draw your own. |
 | `mediashield:concurrent-limit` | `window` | `el`, `videoId`, `message` | Session start was refused because the viewer is at the stream limit. |

@@ -37,7 +37,7 @@ Leave the setting on "Any logged-in user" to allow every signed-in viewer.
 
 ## Concurrent stream limits
 
-**Max Concurrent Streams** (Settings > Concurrent Streams) - how many devices one account can actively watch on at the same time. Default is 2, the lowest you can set is 1. It is stored as the `ms_max_concurrent_streams` option.
+**Max Concurrent Streams** (Settings > Concurrent Streams) - how many devices one account can actively watch on at the same time. Default is 2, the lowest you can set is 1. It is stored as the `ms_max_concurrent_streams` option. Only a device where a video has played counts: opening a lesson page with several players, or leaving one open on a tablet without pressing play, never uses up a stream, because a viewing starts at the first play.
 
 To change it: open **MediaShield > Settings**, find Max Concurrent Streams, enter a whole number of 1 or more and save. The new limit applies to the next stream a viewer starts. Streams already playing are not cut off.
 

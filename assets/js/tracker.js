@@ -54,6 +54,13 @@
 			sendHeartbeat( session );
 		}, intervalMs );
 
+		// The viewing starts at the first play (player-wrapper.js), so one
+		// early report marks it as played within seconds; the stream limit
+		// counts only viewings that played.
+		session.firstBeatId = setTimeout( function () {
+			sendHeartbeat( session, true );
+		}, 5000 );
+
 		activeSessions.push( session );
 		emitWatched( session );
 	}
@@ -157,11 +164,21 @@
 	/**
 	 * Send a heartbeat to the REST API.
 	 */
-	function sendHeartbeat( session ) {
+	function sendHeartbeat( session, force ) {
 		var position = getPlayerPosition( session.el, session.adapter );
 		var duration = session.duration || getPlayerDuration( session.el, session.adapter );
 		var playing = isPlaying( session.el, session.adapter );
 		var focused = document.hasFocus();
+
+		// Paused with nothing new to report: one beat in four (every 2 min at
+		// the 30 s default), enough to keep the viewing open (5 min window)
+		// without a request every 30 s from a player nobody is watching.
+		if ( ! force && ! playing && ! session.spans.length && ! session.open ) {
+			session.idleTicks = ( session.idleTicks || 0 ) + 1;
+			if ( session.idleTicks % 4 ) return;
+		} else {
+			session.idleTicks = 0;
+		}
 
 		if ( duration > 0 ) {
 			session.duration = duration;
@@ -277,6 +294,7 @@
 		activeSessions.forEach( function ( session ) {
 			if ( session.intervalId ) clearInterval( session.intervalId );
 			if ( session.sampleId ) clearInterval( session.sampleId );
+			clearTimeout( session.firstBeatId );
 
 			var data = JSON.stringify( finalBeat( session ) );
 
@@ -328,6 +346,7 @@
 
 			if ( session.intervalId ) clearInterval( session.intervalId );
 			if ( session.sampleId ) clearInterval( session.sampleId );
+			clearTimeout( session.firstBeatId );
 			fetch( config.restUrl + 'session/end', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },

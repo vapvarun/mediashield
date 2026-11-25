@@ -41,20 +41,39 @@ function boot( { markup, session, loggedIn = true, tracker = false, heartbeat = 
 		return Promise.resolve( res );
 	} );
 	window.mediashieldConfig.interval = 30000;
+	// Record the listeners the scripts add, so afterEach can remove them and
+	// each test runs one player script and one tracker, like a real page.
+	[ window, document ].forEach( ( target ) => {
+		const add = target.addEventListener;
+		target.addEventListener = function ( type, fn, opts ) {
+			added.push( [ target, type, fn, opts ] );
+			return add.call( this, type, fn, opts );
+		};
+		restore.push( () => {
+			target.addEventListener = add;
+		} );
+	} );
 	// eslint-disable-next-line no-eval
 	window.eval( SCRIPT );
 	if ( tracker ) {
 		// eslint-disable-next-line no-eval
 		window.eval( TRACKER );
 	}
+	restore.splice( 0 ).forEach( ( undo ) => undo() );
 }
+
+const added = [];
+const restore = [];
 
 const flush = () => new Promise( ( r ) => jest.requireActual( 'timers' ).setImmediate( r ) );
 
-const nativePlayer = ( extra = '' ) => `
-	<div class="ms-protected-player" data-video-id="7" data-platform="self" data-protection-level="standard" ${ extra }>
-		<div class="ms-player-target" data-source-url="https://example.org/lesson.mp4" data-stream-url="" data-duration="300"></div>
+const nativePlayer = ( extra = '', targetExtra = '', id = 7 ) => `
+	<div class="ms-protected-player" data-video-id="${ id }" data-platform="self" data-protection-level="standard" ${ extra }>
+		<div class="ms-player-target" data-source-url="https://example.org/lesson-${ id }.mp4" data-stream-url="" data-duration="300" ${ targetExtra }></div>
 	</div>`;
+
+// The server prints where the member stopped (Renderer, data-resume-position).
+const RESUME_AT_252 = 'data-resume-position="252"';
 
 beforeAll( () => {
 	// jsdom has no media playback: a minimal clock and play state.
@@ -86,6 +105,8 @@ beforeEach( () => {
 } );
 
 afterEach( () => {
+	added.splice( 0 ).forEach( ( [ target, type, fn, opts ] ) => target.removeEventListener( type, fn, opts ) );
+	jest.clearAllTimers();
 	jest.useRealTimers();
 } );
 
@@ -97,7 +118,7 @@ async function readyNative() {
 
 describe( 'Resume (Basecamp 10545260660)', () => {
 	test( 'the chip stays until the member picks', async () => {
-		boot( { markup: nativePlayer(), session: { body: { session_token: 't', resume_position: 252 } } } );
+		boot( { markup: nativePlayer( '', RESUME_AT_252 ), session: { body: { session_token: 't', resume_position: 252 } } } );
 		await readyNative();
 
 		const chip = document.querySelector( '.ms-resume-chip' );
@@ -110,12 +131,14 @@ describe( 'Resume (Basecamp 10545260660)', () => {
 	} );
 
 	test( 'the big Play resumes at the saved position', async () => {
-		boot( { markup: nativePlayer(), session: { body: { session_token: 't', resume_position: 252 } } } );
+		boot( { markup: nativePlayer( '', RESUME_AT_252 ), session: { body: { session_token: 't', resume_position: 252 } } } );
 		await readyNative();
 
 		const big = document.querySelector( '.ms-bigplay' );
 		expect( big.getAttribute( 'aria-label' ) ).toBe( 'Resume from 4:12' );
 		big.click();
+		await flush();
+		await flush();
 
 		expect( played ).toEqual( [ 252 ] );
 		expect( document.querySelector( '.ms-resume-chip' ) ).toBeNull();
@@ -123,10 +146,12 @@ describe( 'Resume (Basecamp 10545260660)', () => {
 	} );
 
 	test( 'Start over plays from the beginning', async () => {
-		boot( { markup: nativePlayer(), session: { body: { session_token: 't', resume_position: 252 } } } );
+		boot( { markup: nativePlayer( '', RESUME_AT_252 ), session: { body: { session_token: 't', resume_position: 252 } } } );
 		await readyNative();
 
 		document.querySelector( '.ms-resume-chip__over' ).click();
+		await flush();
+		await flush();
 
 		expect( played ).toEqual( [ 0 ] );
 		expect( document.querySelector( '.ms-resume-chip' ) ).toBeNull();
@@ -235,14 +260,81 @@ describe( 'Live watched share for an LMS (mediashield:watched)', () => {
 		await readyNative();
 
 		document.querySelector( '.ms-bigplay' ).click();
+		await flush();
+		await flush();
 		jest.advanceTimersByTime( 30000 );
 		await flush();
 		await flush();
 		await flush();
 
-		expect( seen ).toEqual( [
-			{ target: true, videoId: 7, watchedPct: 12, requiredPct: 70 },
-			{ target: true, videoId: 7, watchedPct: 20, requiredPct: 70 },
-		] );
+		// Session start first, then one per heartbeat that answered.
+		expect( seen[ 0 ] ).toEqual( { target: true, videoId: 7, watchedPct: 12, requiredPct: 70 } );
+		expect( seen.length ).toBeGreaterThan( 1 );
+		expect( seen.slice( 1 ).every( ( e ) => e.target && 7 === e.videoId && 20 === e.watchedPct && 70 === e.requiredPct ) ).toBe( true );
+	} );
+} );
+
+describe( 'A viewing starts at the first play (Basecamp 10545260660)', () => {
+	const calls = ( kind ) => global.fetch.mock.calls.filter( ( c ) => c[ 0 ].indexOf( kind ) > -1 ).map( ( c ) => JSON.parse( c[ 1 ].body ) );
+
+	test( 'two players on a page: none starts on load; play on one starts that one only', async () => {
+		boot( {
+			markup: nativePlayer( '', '', 7 ) + nativePlayer( '', '', 8 ),
+			session: { body: { session_token: 'tok-7', resume_position: 0 } },
+			tracker: true,
+		} );
+		document.querySelectorAll( 'video' ).forEach( ( v ) => v.dispatchEvent( new Event( 'loadedmetadata' ) ) );
+		await flush();
+		jest.advanceTimersByTime( 60000 );
+		await flush();
+
+		expect( calls( 'session/start' ) ).toEqual( [] );
+		expect( calls( 'session/heartbeat' ) ).toEqual( [] );
+
+		document.querySelector( '.ms-protected-player[data-video-id="7"] .ms-bigplay' ).click();
+		await flush();
+		await flush();
+
+		expect( calls( 'session/start' ) ).toEqual( [ { video_id: 7 } ] );
+		expect( played ).toEqual( [ 0 ] );
+
+		jest.advanceTimersByTime( 30000 );
+		await flush();
+		const beats = calls( 'session/heartbeat' );
+		expect( beats.length ).toBeGreaterThan( 0 );
+		expect( beats.every( ( b ) => 'tok-7' === b.token ) ).toBe( true );
+		expect( calls( 'session/start' ) ).toHaveLength( 1 );
+	} );
+
+	test( 'a video that starts by itself (autoplay) is held until its viewing has started', async () => {
+		boot( { markup: nativePlayer(), session: { body: { session_token: 't', resume_position: 0 } } } );
+		await readyNative();
+		const video = document.querySelector( 'video' );
+
+		video.play(); // The browser starting it, not our button.
+		expect( video.paused ).toBe( true );
+		await flush();
+		await flush();
+
+		expect( calls( 'session/start' ) ).toEqual( [ { video_id: 7 } ] );
+		expect( video.paused ).toBe( false );
+	} );
+
+	test( 'a paused player reports every 2 minutes, not every 30 s', async () => {
+		boot( { markup: nativePlayer(), session: { body: { session_token: 't', resume_position: 0 } }, tracker: true } );
+		await readyNative();
+		document.querySelector( '.ms-bigplay' ).click();
+		await flush();
+		await flush();
+		jest.advanceTimersByTime( 6000 ); // The early report.
+		await flush();
+		document.querySelector( 'video' ).pause();
+		jest.advanceTimersByTime( 1000 );
+		const before = calls( 'session/heartbeat' ).length;
+
+		jest.advanceTimersByTime( 120000 );
+		await flush();
+
+		expect( calls( 'session/heartbeat' ).length - before ).toBe( 1 );
 	} );
 } );

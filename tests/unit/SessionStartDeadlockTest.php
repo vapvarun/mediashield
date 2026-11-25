@@ -194,6 +194,7 @@ class SessionStartDeadlockTest extends WP_UnitTestCase {
 	 * Fails before the fix: both came back as the 429 stream-limit refusal.
 	 */
 	public function test_the_player_is_told_to_try_again_not_blamed(): void {
+		global $wpdb;
 		wp_set_current_user( $this->member );
 		$this->fail_query( '/^\s*INSERT INTO/i', 1213, 99 );
 
@@ -212,7 +213,9 @@ class SessionStartDeadlockTest extends WP_UnitTestCase {
 		// The real limit keeps its own answer.
 		$this->fails = 99; // The raising filter stands down.
 		update_option( 'ms_max_concurrent_streams', 1 );
-		SessionManager::start( $this->video, $this->member, '198.51.100.1', 'Other device' );
+		$other = SessionManager::start( $this->video, $this->member, '198.51.100.1', 'Other device' );
+		// Test change (1.4.4): only a viewing that played counts towards the limit.
+		$wpdb->update( $wpdb->prefix . 'ms_watch_sessions', array( 'max_position' => 12, 'total_seconds' => 12 ), array( 'id' => (int) $other['session_id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$response = rest_do_request( $request );
 		$this->assertSame( 429, $response->get_status() );
 		$this->assertSame( 'concurrent_limit', $response->get_data()['code'] );

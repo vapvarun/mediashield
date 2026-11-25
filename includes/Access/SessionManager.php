@@ -166,13 +166,17 @@ class SessionManager {
 			// the third video on a lesson page before anything played
 			// (BC#10370648695). A device is an IP + browser pair; the caller's own
 			// is left out, so one viewer is never refused for their own tabs.
+			// Only viewings that played count: a page left open on another
+			// device, or a player from before 1.4.4 that opened its viewing on
+			// load, is not someone watching (players start one at the first
+			// play since 1.4.4 and report within 5 s).
 			$active_count = (int) $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT COUNT(DISTINCT ip_address, user_agent) FROM {$table}
 				 WHERE user_id = %d AND is_active = 1
 				 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
 				 AND NOT (ip_address = %s AND user_agent = %s)
-				 FOR UPDATE",
+				 AND " . self::played_sql() . ' FOR UPDATE',
 					$user_id,
 					$now,
 					$ip,
@@ -543,6 +547,26 @@ class SessionManager {
 		}
 
 		return $rows > 0;
+	}
+
+	/**
+	 * The position to offer this viewer under Resume Playback, or 0.
+	 *
+	 * The member's last_played_position() when Resume is on for the video. The player reads it from the page (data-resume-position,
+	 * Renderer) so it can offer "Resume from m:ss" before any viewing starts;
+	 * a viewing starts only at the first play (Basecamp 10545260660).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @param int $user_id  Viewer.
+	 * @return float Seconds.
+	 */
+	public static function resume_position( int $video_id, int $user_id ): float {
+		if ( $user_id <= 0 || ! self::resume_enabled( $video_id ) ) {
+			return 0.0;
+		}
+		return self::last_played_position( $video_id, $user_id );
 	}
 
 	/**

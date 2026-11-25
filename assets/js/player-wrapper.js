@@ -1471,12 +1471,64 @@
 			return;
 		}
 
-		// Standard / strict: full treatment — start session (tracking + watermark
-		// + milestones) and apply player features after the adapter is ready.
+		// Standard / strict: full treatment (tracking + watermark + milestones).
+		// The viewing starts at the first play, not on load (Basecamp
+		// 10545260660): a page with several players opened one per player,
+		// each counted as watching and sending a heartbeat every 30 s.
 		playerAdapter.onReady( function () {
 			applyPlayerFeatures( el, playerAdapter );
-			startSession( el, videoId, playerAdapter );
+			// Where this member stopped, printed by the server so the offer
+			// needs no viewing (Renderer, data-resume-position).
+			var target = el.querySelector( '.ms-player-target' );
+			var resumeAt = target ? parseFloat( target.dataset.resumePosition ) || 0 : 0;
+			if ( resumeAt > 0 && resumeEnabled( el ) ) {
+				showResumePrompt( el, resumeAt, playerAdapter );
+			}
+			startOnFirstPlay( el, videoId, playerAdapter );
 		} );
+	}
+
+	/**
+	 * Start the viewing (session) at the first real play, then play.
+	 *
+	 * Every way a video starts is caught: the player's own play (big Play,
+	 * poster, keyboard, a click on the picture all call adapter.play()), a
+	 * native <video> play event (autoplay), and for platform iframes their own
+	 * play button, seen through adapter.isPlaying(). The video is held still
+	 * until the session answers, so it never plays without its watermark.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {number}      videoId Video ID.
+	 * @param {Object}      adapter Player adapter.
+	 */
+	function startOnFirstPlay( el, videoId, adapter ) {
+		var started = false;
+		var watch = null;
+		var play = adapter.play;
+		var gate = function () {
+			if ( ! started ) {
+				begin();
+				return;
+			}
+			return play.apply( adapter, arguments );
+		};
+		var begin = function () {
+			if ( started ) return;
+			started = true;
+			clearInterval( watch );
+			if ( adapter.play === gate ) adapter.play = play;
+			el._msPlayOnStart = true;
+			blockPlayback( el, adapter );
+			startSession( el, videoId, adapter );
+		};
+
+		adapter.play = gate;
+		if ( adapter._video ) {
+			adapter._video.addEventListener( 'play', begin );
+		}
+		watch = setInterval( function () {
+			if ( adapter.isPlaying() ) begin();
+		}, 250 );
 	}
 
 	function startSession( el, videoId, adapter ) {
@@ -1567,13 +1619,16 @@
 					el._msBlocked = false;
 					el.dataset.sessionToken = data.session_token;
 
-					// Resume position via adapter — only when Resume Playback is
-					// enabled for this video. Server already gates the position
-					// (returns 0 when disabled); this is the matching client guard
-					// so the prompt respects the per-video override / global setting
-					// consistently with the other player features.
-					if ( data.resume_position > 0 && resumeEnabled( el ) ) {
-						showResumePrompt( el, data.resume_position, adapter );
+					// The member pressed play. A page cached before the resume
+					// position was printed on the player still resumes: Play
+					// means resume (Basecamp 10545260660).
+					var printed = el.querySelector( '.ms-player-target' );
+					if ( adapter && printed && undefined === printed.dataset.resumePosition && data.resume_position > 0 && resumeEnabled( el ) && resumeWorthOffering( data.resume_position, adapter.getDuration() ) ) {
+						adapter.seekTo( data.resume_position );
+					}
+					if ( adapter && el._msPlayOnStart ) {
+						el._msPlayOnStart = false;
+						adapter.play();
 					}
 
 					window.dispatchEvent( new CustomEvent( 'mediashield:player-ready', {
@@ -2128,23 +2183,25 @@
 		over.className = 'ms-resume-chip__over';
 		over.textContent = t( 'startOver', 'Start over' );
 
-		var done = function () {
-			pending = false;
-			clearInterval( watch );
-			adapter.play = play;
-			labels.forEach( function ( pair ) { pair[ 0 ].setAttribute( 'aria-label', pair[ 1 ] ); } );
-			el.classList.remove( 'ms-has-resume' );
-			if ( chip.parentNode ) chip.remove();
-		};
-
-		// Every play while the choice is open starts at the saved position.
-		adapter.play = function () {
+		var resumePlay = function () {
 			if ( pending ) {
 				done();
 				adapter.seekTo( position );
 			}
 			return play.apply( adapter, arguments );
 		};
+		var done = function () {
+			pending = false;
+			clearInterval( watch );
+			// Only our own wrapper: the first-play gate may sit on top of it.
+			if ( adapter.play === resumePlay ) adapter.play = play;
+			labels.forEach( function ( pair ) { pair[ 0 ].setAttribute( 'aria-label', pair[ 1 ] ); } );
+			el.classList.remove( 'ms-has-resume' );
+			if ( chip.parentNode ) chip.remove();
+		};
+
+		// Every play while the choice is open starts at the saved position.
+		adapter.play = resumePlay;
 
 		go.addEventListener( 'click', function () { adapter.play(); } );
 		over.addEventListener( 'click', function () {
