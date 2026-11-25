@@ -164,21 +164,21 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 									label={ __( 'Move up', 'mediashield' ) }
 									disabled={ saving || index === 0 }
 									onClick={ () => handleMove( index, -1 ) }
-									size="small"
+									__next40pxDefaultSize
 								/>
 								<Button
 									icon="arrow-down-alt2"
 									label={ __( 'Move down', 'mediashield' ) }
 									disabled={ saving || index === items.length - 1 }
 									onClick={ () => handleMove( index, 1 ) }
-									size="small"
+									__next40pxDefaultSize
 								/>
 								<Button
 									icon="no-alt"
 									label={ __( 'Remove', 'mediashield' ) }
 									disabled={ saving }
 									onClick={ () => handleRemove( item.item_id ) }
-									size="small"
+									__next40pxDefaultSize
 									className="ms-playlist-items__remove"
 								/>
 							</div>
