@@ -160,6 +160,12 @@ class VideoListController extends WP_REST_Controller {
 	public static function filter_query( $args, $request ): array {
 		$args = (array) $args;
 
+		// "Used in" scans post content, so it is primed only for a response
+		// that carries ms_list: the Videos list, not a picker asking for a
+		// few fields (prime_usage()).
+		$fields                   = $request instanceof WP_REST_Request ? wp_parse_list( (string) $request->get_param( '_fields' ) ) : array();
+		$args['ms_prime_usage'] = empty( $fields ) || rest_is_field_included( 'ms_list', $fields );
+
 		// The filters read protection settings; only people who edit videos may use them.
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return $args;
@@ -228,12 +234,17 @@ class VideoListController extends WP_REST_Controller {
 	/**
 	 * Before the list's rows are prepared, look up "used in" for all of them at once.
 	 *
+	 * Only for a collection request whose response includes ms_list
+	 * (filter_query() sets `ms_prime_usage`); a picker that asks for
+	 * `_fields=id,title,...` gets no content scan.
+	 *
 	 * @param WP_Post[] $posts Posts found.
 	 * @param WP_Query  $query The query.
 	 * @return WP_Post[]
 	 */
 	public static function prime_usage( $posts, $query ) {
-		if ( defined( 'REST_REQUEST' ) && REST_REQUEST && $query instanceof WP_Query
+		// The flag is set only by the REST collection filter (filter_query()).
+		if ( $query instanceof WP_Query && $query->get( 'ms_prime_usage' )
 			&& 'mediashield_video' === $query->get( 'post_type' ) && is_array( $posts ) && current_user_can( 'edit_posts' ) ) {
 			VideoUsage::prime( wp_list_pluck( $posts, 'ID' ) );
 		}
