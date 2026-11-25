@@ -1056,7 +1056,8 @@ const Settings = () => {
 				</SectionCard>
 			) }
 
-			{ ( config.isLearnomyActive || lmsConfig.isLMSActive ) && (
+			{ /* Only where a watch rule is enforced: Learnomy, or LearnDash through Pro (Tutor LMS and LifterLMS complete on milestones). */ }
+			{ ( config.isLearnomyActive || lmsConfig.enforcesWatchRule ) && (
 				<SectionCard
 					icon="welcome-learn-more"
 					group="integrations"
@@ -1075,7 +1076,7 @@ const Settings = () => {
 								: __( 'Set this on each lesson in Learnomy (Completion: Auto: video watched).', 'mediashield' ) }
 						</p>
 					) }
-					{ ( ! learnomyOwnsWatchRule || lmsConfig.isLMSActive ) && (
+					{ ( ( config.isLearnomyActive && ! learnomyOwnsWatchRule ) || lmsConfig.enforcesWatchRule ) && (
 					<NumberField
 						label={ learnomyOwnsWatchRule
 							? __( 'LearnDash lessons: require this % of the video watched before Complete', 'mediashield' )

@@ -41,7 +41,12 @@ class Shortcode {
 	public static function render( $atts ): string {
 		$atts = shortcode_atts(
 			array(
-				'id' => 0,
+				'id'             => 0,
+				// The % of this video a lesson asks the member to watch,
+				// passed by the LMS that places the player (Learnomy 2.4.1+).
+				// Only a hint for the player's early report; completion is
+				// still decided on the server from the watched share.
+				'watch_required' => 0,
 			),
 			$atts,
 			'mediashield'
@@ -72,7 +77,8 @@ class Shortcode {
 		// Renderer validates the video CPT + source and enqueues frontend assets
 		// only when output will be produced — calling enqueue() here would leak
 		// JS/CSS for invalid or non-existent IDs.
-		$html = Renderer::render( $video_id );
+		$required = min( 100, absint( $atts['watch_required'] ) );
+		$html     = Renderer::render( $video_id, $required > 0 ? sprintf( ' data-watch-required="%d"', $required ) : '' );
 
 		// Restore original source URL if we temporarily overrode it.
 		if ( $restore_source_url ) {

@@ -40,7 +40,9 @@
 			open: null,
 			lastPos: null,
 			watchedPct: watch ? watch.watched_pct : null,
-			requiredPct: watch ? watch.required_pct : 0,
+			// The lesson's own % when the LMS placed one on the player
+			// (data-watch-required), else the site-wide one.
+			requiredPct: lessonRequired( el ) || ( watch ? watch.required_pct : 0 ),
 			earlySent: false,
 		};
 
@@ -53,6 +55,18 @@
 		}, intervalMs );
 
 		activeSessions.push( session );
+	}
+
+	/**
+	 * The % a lesson asks for on this player, 0 when none: the LMS passes it
+	 * as [mediashield watch_required="N"] (Learnomy 2.4.1+).
+	 *
+	 * @param {HTMLElement} el Player container.
+	 * @return {number}
+	 */
+	function lessonRequired( el ) {
+		var n = el && el.dataset ? parseInt( el.dataset.watchRequired, 10 ) : 0;
+		return n > 0 ? Math.min( 100, n ) : 0;
 	}
 
 	/**
@@ -153,7 +167,7 @@
 					res.clone().json().then( function ( data ) {
 						if ( data && 'number' === typeof data.watched_pct ) {
 							session.watchedPct = data.watched_pct;
-							session.requiredPct = data.required_pct || 0;
+							session.requiredPct = lessonRequired( session.el ) || data.required_pct || 0;
 							// Still short after the early beat: allow another.
 							session.earlySent = session.watchedPct >= session.requiredPct;
 						}

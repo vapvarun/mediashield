@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
+use MediaShield\Access\WatchedSpans;
 use MediaShield\Core\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -372,9 +373,11 @@ class SessionController extends WP_REST_Controller {
 			array(
 				// The member's watched share, so the player can report the
 				// moment they reach "Require X% watched" (null when off).
-				'watch'            => $watch ? array(
-					'watched_pct'  => $watch['watched'],
-					'required_pct' => $watch['required'],
+				// For a member always, so a player whose lesson sets its own %
+				// (data-watch-required) can report on time too.
+				'watch'            => $user_id > 0 ? array(
+					'watched_pct'  => $watch ? $watch['watched'] : WatchedSpans::percent( $user_id, $video_id ),
+					'required_pct' => $watch ? $watch['required'] : 0,
 				) : null,
 				'session_token'    => $result['session_token'],
 				'resume_position'  => $result['resume_position'],
@@ -480,6 +483,11 @@ class SessionController extends WP_REST_Controller {
 		if ( $watch ) {
 			$response['watched_pct']  = $watch['watched'];
 			$response['required_pct'] = $watch['required'];
+		} elseif ( $parsed && (int) $parsed['user_id'] > 0 ) {
+			// No site-wide rule: still the member's share, for a player whose
+			// lesson sets its own % (data-watch-required).
+			$response['watched_pct']  = WatchedSpans::percent( (int) $parsed['user_id'], (int) $parsed['video_id'] );
+			$response['required_pct'] = 0;
 		}
 
 		return rest_ensure_response( $response );
