@@ -50,6 +50,10 @@ class SettingsDeepLinkTest extends WP_UnitTestCase {
 	 * Lesson Completion, the setting Learnomy links to, is in the Integrations group.
 	 */
 	public function test_lesson_completion_is_in_the_integrations_section(): void {
-		$this->assertMatchesRegularExpression( "/group=\"integrations\"\\s*title=\\{ __\\( 'Lesson Completion'/", $this->source( 'src/admin/pages/Settings.js' ) );
+		// Test change (Basecamp 10545260577): a card's title is its nav item's
+		// label, so the card reads it from the group list instead of repeating it.
+		$settings = $this->source( 'src/admin/pages/Settings.js' );
+		$this->assertStringContainsString( "{ key: 'integrations', label: __( 'Lesson completion', 'mediashield' ) }", $settings );
+		$this->assertMatchesRegularExpression( "/group=\"integrations\"\s*title=\{ groupLabel\( 'integrations' \) \}/", $settings );
 	}
 }

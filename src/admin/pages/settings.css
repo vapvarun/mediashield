@@ -1,0 +1,58 @@
+/* Settings screen: pieces the shared admin.css does not have. */
+.mediashield-settings__autosave {
+	font-size: var( --ms-font-size-sm );
+	font-weight: 600;
+	padding: var( --ms-space-1 ) var( --ms-space-3 );
+	border-radius: var( --ms-radius-full );
+	background: var( --ms-color-success-light );
+	color: var( --ms-palette-green-text, var( --ms-color-success ) );
+}
+
+.mediashield-settings__fieldset {
+	display: grid;
+	gap: var( --ms-space-3 );
+	margin: 0;
+	padding: var( --ms-space-3 ) var( --ms-space-4 );
+	border: 1px solid var( --ms-color-border );
+	border-radius: var( --ms-radius-md );
+}
+
+.mediashield-settings__fieldset legend {
+	padding: 0 var( --ms-space-1 );
+	font-size: var( --ms-font-size-md );
+	font-weight: 600;
+	color: var( --ms-color-text );
+}
+
+.mediashield-settings__fieldset-note {
+	margin: 0;
+	font-size: var( --ms-font-size-base );
+	color: var( --ms-color-text-secondary );
+}
+
+.mediashield-settings__section-body .ms-choices {
+	margin-block-end: var( --ms-space-4 );
+}
+
+.mediashield-settings__rule-note[role="note"] {
+	padding: var( --ms-space-3 ) var( --ms-space-4 );
+	border: 1px solid var( --ms-palette-yellow-border );
+	border-radius: var( --ms-radius-md );
+	background: var( --ms-color-warning-light );
+}
+
+.mediashield-settings__rule-note .components-button {
+	margin-block-start: var( --ms-space-2 );
+}
+
+@media ( max-width: 1024px ) {
+	.mediashield-settings__fieldset {
+		padding: var( --ms-space-3 );
+	}
+}
+
+@media ( max-width: 640px ) {
+	.mediashield-settings__fieldset {
+		padding: var( --ms-space-2 ) var( --ms-space-3 );
+	}
+}

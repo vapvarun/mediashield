@@ -1232,7 +1232,15 @@
 	align-items: center;
 	gap: var( --ms-space-2 );
 	max-width: min( 600px, calc( 100vw - var( --ms-space-4 ) * 2 ) );
+	/* A width of its own: sized by its content, a long message became a
+	   narrow seven-line column (Basecamp 10545260577). */
+	width: min( 520px, calc( 100vw - var( --ms-space-4 ) * 2 ) );
 	pointer-events: none;
+}
+
+.mediashield-toast .components-snackbar {
+	width: 100%;
+	box-sizing: border-box;
 }
 
 .mediashield-toast .components-snackbar-list,

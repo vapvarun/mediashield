@@ -2,7 +2,7 @@
 
 **Included in Free.** Two cards on this screen only appear with MediaShield Pro (see the end of this page).
 
-All MediaShield settings live under **MediaShield > Settings**. The cards sit in one column with a section list on the left: Protection, Watermark, Player, Access & messages, Video ads, Upload & storage and, when a course plugin is active, Integrations. Click a section to jump to it. Type in **Search settings** above the list to show only the cards that mention what you typed, for example "IP" or "resume". On a phone the section list is a **Go to section** menu. Every change saves by itself a moment after you make it, and a "Saved" message confirms it at the bottom of the screen. There is no Save button.
+All MediaShield settings live under **MediaShield > Settings**. The cards sit in one column with a section list on the left, one item per card, named as the card is: Protection, Who can watch, Watermark (and with Pro, Watermark fields), Player, Messages, Viewing history, and only where they can work Video ads (WB Ad Manager's video ads installed), Uploads (a platform connected with Pro) and Lesson completion (Learnomy, or with Pro an LMS). Click a section to jump to it; the item lit follows the card at the top of the screen as you scroll. Type in **Search settings** above the list to show only the cards that mention what you typed, for example "IP" or "resume". On a phone the section list is a **Go to section** menu. Every change saves by itself a moment after you make it, and a "Saved" message confirms it at the bottom of the screen. There is no Save button. If a change cannot be saved (the site cannot be reached, or the value is not allowed), the control switches back to the saved value and the message says "Not saved", with **Try again**.
 
 ## Before you start
 
@@ -13,40 +13,39 @@ All MediaShield settings live under **MediaShield > Settings**. The cards sit in
 
 | Card | What it controls | Detail page |
 |------|------------------|-------------|
-| General | Master switch, default protection level, login requirement | This page |
-| Protection | Right-click, save shortcut, source hiding, developer tools | [Protection Settings](02-protection-settings.md) |
-| Watermark | Opacity, colour, move interval, badge | [Watermarks](../using-mediashield/01-watermarks.md) |
-| Access | Allowed domains, concurrent streams | [Access Control](04-access-control.md) |
-| Analytics Retention | How long watch history is kept | This page |
-| Login and Access Messages | Wording of the login and denied messages | This page |
-| Player Controls | Speed, keyboard, resume, skipping, sticky, end screen, brand colour | [Player Settings](03-player-settings.md) |
-| Video Ads | Break placement for in-video ads | [Video Ads](../using-mediashield/13-video-ads.md) |
-| Upload and Storage (Pro) | Default upload target | Pro documentation |
-| LMS Integration (Pro) | Lesson completion and enrolment | Pro documentation |
+| Protection | Protect videos (master switch), the site's protection level, right-click on None videos, save shortcut | [Protection Settings](02-protection-settings.md) |
+| Who can watch | Require login, streams at once per member, allowed domains | [Access Control](04-access-control.md) |
+| Watermark | What it shows (Free: email and IP address, both off on a new install), opacity, colour, move interval, badge | [Watermarks](../using-mediashield/01-watermarks.md) |
+| Watermark fields (Pro) | The fields Pro prints | Pro documentation |
+| Player | Speed, keyboard, resume, skipping, sticky, end screen, brand colour | [Player Settings](03-player-settings.md) |
+| Messages | Login, denied, membership, course, unavailable and Strict's developer tools messages | This page |
+| Video ads | Break placement for in-video ads | [Video Ads](../using-mediashield/13-video-ads.md) |
+| Uploads (Pro) | Where an uploaded file goes | Pro documentation |
+| Viewing history | How long watch history is kept | This page |
+| Lesson completion | Learnomy: set on each lesson. LearnDash (Pro): the one "require this % watched" setting. Tutor LMS, LifterLMS (Pro): auto-complete at a %. Auto-complete and enrollment switches with Pro | This page |
 
 ## Every setting and its default
 
-There are 35 settings in Free. "Default" is the value a new install starts with. Out-of-range numbers are corrected when saved (the range is shown).
+"Default" is the value a new install starts with. Out-of-range numbers are corrected when saved (the range is shown).
 
 | Setting (label on screen) | Default | What it does |
 |---|---|---|
-| Enable MediaShield | On | Master switch. Off means no protection, no watermark and no tracking anywhere. Videos still play as ordinary embeds. |
-| Default Protection Level | Standard | The level used by any video that has none of its own. None, Basic, Standard or Strict. |
-| Require Login | On | Visitors must be logged in to watch. Off lets guests watch, and their sessions are recorded. |
-| Block Right-Click | On | Hides the browser menu over the player so "Save video as" is not offered. |
+| Protect videos | On | Master switch. Off means no protection, no watermark and no tracking anywhere. Videos still play as ordinary embeds. |
+| Protection level | Standard | The level used by any video that has none of its own. None, Basic, Standard or Strict, each including the one before. |
+| Require login | On | Visitors must be logged in to watch. Off lets guests watch, and their sessions are recorded. |
+| Block right-click on every video | On | Basic, Standard and Strict always hide the browser menu over the player. On: videos set to None hide it too. |
 | Block Save Shortcut (Ctrl+S / Cmd+S) | Off | Stops the save shortcut while the player has focus. |
-| Hide Video Source URL | On | Self-hosted video only. The page no longer prints the file address. Videos uploaded to MediaShield always play through the protected address, on or off. |
-| Detect Developer Tools | On | Notices when a viewer opens browser developer tools. Runs only on pages with a protected player. Skipped on touch devices and narrow screens. |
-| Pause Video When Detected | Off | Pauses and shows the message below when developer tools are found. Appears only while detection is on. |
-| Overlay Title | Developer Tools Detected | Heading of that message. Appears only while Pause Video When Detected is on. |
-| Overlay Message | Please close developer tools to continue watching this video. | Body of that message. Appears only while Pause Video When Detected is on. |
+| Developer Tools Title (Strict) | Developer Tools Detected | Heading of the message a Strict video shows while developer tools are open. Under Messages. |
+| Developer Tools Message (Strict) | Please close developer tools to continue watching this video. | Body of that message. Under Messages. |
+| Email address (watermark) | Off (on for a site updated from before 1.4.4) | Adds the viewer's email to the watermark. Free only; Pro sets its own fields. |
+| IP address (watermark) | Off | Adds the viewer's IP address to the watermark. Free only. |
 | Opacity | 0.5 | Watermark strength from 0 to 1. A decimal, not a percentage. |
 | Watermark Color | #ffffff | Colour of the watermark text, as a hex code. |
 | Position Swap Interval | 30 | Seconds before the watermark moves. Minimum 1. |
 | Keep the watermark at the edges | Off | Keeps the watermark in the corners, off the centre of the video. |
 | Show MediaShield Badge | Off | Small "Protected by MediaShield" label on the player, a pill in your Brand Color. Off on new installs. A site updated from an earlier version keeps its setting and sees one notice on the MediaShield screens offering the new defaults (badge off; watermark name and email, IP opt-in): **Apply new defaults** or **Keep my settings**, and the notice is gone for good. **Not now** hides it for a week. |
 | Allowed Domains | Empty | Sites allowed to embed your videos. Separate entries with commas, spaces or new lines, in any mix. A pasted web address is reduced to its domain. Empty allows any. See [Access Control](04-access-control.md). |
-| Max Concurrent Streams | 2 | Videos one account may watch at the same time. Minimum 1. |
+| Streams at once per member | 2 | Videos one account may watch at the same time. Minimum 1. |
 | Keep watch history for (months) | 0 | 0 keeps everything. 1 to 120 moves older sessions out of reports. See below. |
 | Login Overlay Text | Please log in to watch this video | Message on the video for visitors who are not logged in. |
 | Login Button Text | Log In | Label of the login button. |
@@ -76,26 +75,26 @@ The ad rows only appear while Enable In-Video Ads is on. The end screen rows onl
 
 Setting names such as `ms_watermark_opacity` are listed for developers in the [Settings reference](../developer-guide/06-post-meta-and-options.md).
 
-## General
+## Protection
 
-**Enable MediaShield** is the master switch. Leave it on. Use Off only for maintenance.
+**Protect videos** is the master switch. Leave it on. Use Off only for maintenance.
 
-**Default Protection Level** decides what a video gets when it has no level of its own:
+**Protection level** decides what a video gets when it has no level of its own, in the same words as every other screen:
 
-- None - No extra protection and no session tracking. The site-wide Require Login setting still applies.
-- Basic - Login gate and right-click blocking. No watermark, and no tracking.
-- Standard - Login gate, watermark, tracking and milestones.
-- Strict - Standard, plus developer-tools detection, pause on detection and source hiding forced on.
+- None - The video plays as the platform shows it.
+- Basic - Right-click and download blocked.
+- Standard - Plus a watermark and tracked viewing.
+- Strict - Plus file address hidden and developer tools detected.
 
-**Require Login** is on by default. Per-video roles, the domain list and any custom rules still apply when it is off.
+**Require login** (under Who can watch) is on by default and applies at every level. Per-video roles, the domain list and any custom rules still apply when it is off.
 
-## Analytics Retention
+## Viewing history
 
 **Keep watch history for (months)** defaults to 0, which keeps every session forever. That is the recommended value.
 
 If you enter a number, every month MediaShield moves older sessions into an archive table. Reports do not read that archive, so views, completion rates and top videos stop including anything older. This cannot be undone from the screen. The privacy export and erase tools do read the archive. The screen shows a warning while the value is above 0.
 
-## Login and Access Messages
+## Messages
 
 These three texts are what viewers read. While a message still has its default wording it is translated into the viewer's language. Once you edit it, your exact words are shown.
 
@@ -121,3 +120,13 @@ There is no size setting. Self-hosted files are stored under `wp-content/uploads
 - [Protection Settings](02-protection-settings.md)
 - [The Video Edit Screen](06-video-edit-screen.md)
 - [Every Admin Screen](07-admin-screens.md)
+
+## Lesson completion
+
+One card for when a lesson that plays a protected video counts as complete. It shows only what applies to the LMS on your site:
+
+- **Learnomy 2.4.1 and later** - set on each lesson in Learnomy (Completion: Auto: video watched). The card says so, with the % new protected video lessons start at.
+- **LearnDash (Pro)** - one setting, **LearnDash lessons: require this % of the video watched**. Mark Complete stays disabled until the member has watched that share, and with **Auto-complete lessons** on, the lesson completes at that point (on the first milestone at or above it).
+- **Tutor LMS and LifterLMS (Pro)** - **Complete lessons at**: the share watched that completes the lesson; a video can set its own.
+
+Milestone tags stay on each video's edit screen.
