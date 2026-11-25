@@ -109,19 +109,21 @@ class VideoPostType {
 	 * Register meta boxes for the video edit screen.
 	 */
 	public static function register_meta_boxes(): void {
+		// The order an owner works in (Basecamp 10545260613): the video first,
+		// then who can watch and how it is protected, then milestones.
 		add_meta_box(
-			'mediashield-video-settings',
-			__( 'Video Settings', 'mediashield' ),
-			array( __CLASS__, 'render_settings_meta_box' ),
+			'mediashield-video-source',
+			__( '1. The video', 'mediashield' ),
+			array( __CLASS__, 'render_source_meta_box' ),
 			'mediashield_video',
 			'normal',
 			'high'
 		);
 
 		add_meta_box(
-			'mediashield-video-source',
-			__( 'Video Source', 'mediashield' ),
-			array( __CLASS__, 'render_source_meta_box' ),
+			'mediashield-video-settings',
+			__( '2. Who can watch, and how it is protected', 'mediashield' ),
+			array( __CLASS__, 'render_settings_meta_box' ),
 			'mediashield_video',
 			'normal',
 			'high'
@@ -138,7 +140,7 @@ class VideoPostType {
 
 		add_meta_box(
 			'mediashield-video-milestones',
-			__( 'Milestone Tags', 'mediashield' ),
+			__( '3. Milestones', 'mediashield' ),
 			array( __CLASS__, 'render_milestones_meta_box' ),
 			'mediashield_video',
 			'normal',
@@ -205,7 +207,7 @@ class VideoPostType {
 					'vimeo'           => __( 'Vimeo', 'mediashield' ),
 					'wistia'          => __( 'Wistia', 'mediashield' ),
 					'bunny'           => __( 'Bunny Stream', 'mediashield' ),
-					'self'            => __( 'Self-hosted / Direct URL', 'mediashield' ),
+					'self'            => __( 'Video file', 'mediashield' ),
 					'bunnyCollection' => __( 'That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL.', 'mediashield' ),
 					'bunnyDashboard'  => __( 'That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL.', 'mediashield' ),
 					'unrecognised'    => \MediaShield\Support\Platforms::unplayable_message(),
@@ -340,16 +342,46 @@ class VideoPostType {
 				<?php endif; ?>
 			<?php endif; ?>
 
+			<?php
+			// A file this site holds is shown by its name, length and size,
+			// not by the signed /stream/ address its source field carries
+			// (Basecamp 10545260613). The link field is still there, empty, to
+			// replace the file with a link; left empty, the file stays.
+			$held = 'self' === $platform ? \MediaShield\REST\StreamController::resolve_file( $post->ID ) : '';
+			if ( '' !== $held ) :
+				?>
+				<div class="ms-held-file">
+					<strong class="ms-held-file__name"><?php echo esc_html( wp_basename( $held ) ); ?></strong>
+					<span class="ms-held-file__meta">
+						<?php
+						echo esc_html(
+							implode(
+								' · ',
+								array_filter(
+									array(
+										__( 'Uploaded file', 'mediashield' ),
+										$duration > 0 ? self::length_label( $duration ) : '',
+										size_format( (int) filesize( $held ) ),
+										__( 'kept private, played through a signed link', 'mediashield' ),
+									)
+								)
+							)
+						);
+						?>
+					</span>
+					<input type="hidden" name="_ms_source_held" value="1" />
+				</div>
+			<?php endif; ?>
 			<table class="form-table" role="presentation">
 				<tr>
-					<th><label for="ms-video-url"><?php esc_html_e( 'Video URL', 'mediashield' ); ?></label></th>
+					<th><label for="ms-video-url"><?php echo '' !== $held ? esc_html__( 'Replace with a link', 'mediashield' ) : esc_html__( 'Video link', 'mediashield' ); ?></label></th>
 					<td>
 						<input type="url" id="ms-video-url" name="_ms_source_url"
-							value="<?php echo esc_url( $source ); ?>" class="large-text"
+							value="<?php echo '' !== $held ? '' : esc_url( $source ); ?>" class="large-text"
 							autocomplete="off"
 							data-form-type="other"
 							placeholder="<?php esc_attr_e( 'https://www.youtube.com/watch?v=... or https://vimeo.com/...', 'mediashield' ); ?>" />
-						<p class="description"><?php esc_html_e( 'Paste the video URL. Supported: YouTube, Vimeo, Wistia, Bunny Stream embed URLs, or a direct video file URL.', 'mediashield' ); ?></p>
+						<p class="description"><?php echo '' !== $held ? esc_html__( 'Leave empty to keep the uploaded file.', 'mediashield' ) : esc_html__( 'A YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file below.', 'mediashield' ); ?></p>
 					</td>
 				</tr>
 				<?php
@@ -387,7 +419,7 @@ class VideoPostType {
 					</td>
 				</tr>
 				<?php endif; ?>
-				<tr id="ms-detected-platform-row" <?php echo $platform ? '' : 'style="display:none;"'; ?>>
+				<tr id="ms-detected-platform-row" <?php echo ( $platform && '' === $held ) ? '' : 'style="display:none;"'; ?>>
 					<th><?php esc_html_e( 'Detected Platform', 'mediashield' ); ?></th>
 					<td>
 						<strong id="ms-detected-platform-label"><?php echo esc_html( self::get_platform_label( $platform ) ); ?></strong>
@@ -420,6 +452,19 @@ class VideoPostType {
 		<?php
 		// Platform auto-detection behavior lives in assets/js/admin-video.js
 		// (enqueued by enqueue_edit_assets()).
+	}
+
+	/**
+	 * A length as m:ss, or h:mm:ss from an hour (the admin's formatDuration()).
+	 *
+	 * @param int $seconds Seconds.
+	 * @return string
+	 */
+	private static function length_label( int $seconds ): string {
+		$h = intdiv( $seconds, 3600 );
+		$m = intdiv( $seconds % 3600, 60 );
+		$r = $seconds % 60;
+		return $h ? sprintf( '%d:%02d:%02d', $h, $m, $r ) : sprintf( '%d:%02d', $m, $r );
 	}
 
 	/**
@@ -711,7 +756,7 @@ class VideoPostType {
 	}
 
 	/**
-	 * Render the Milestone Tags meta box.
+	 * Render the Milestones meta box.
 	 *
 	 * Per-video milestone tag assignments. When a user reaches a milestone,
 	 * the tag is stored as serialized user meta linking video ID + tag.
@@ -724,17 +769,22 @@ class VideoPostType {
 			$milestones = array();
 		}
 
-		$default_pcts = array( 10, 25, 50, 75, 100 );
+		// The milestones MediaShield records (MilestoneTracker); a 10% row a
+		// site filled in before 1.4.4 is still shown so nothing it set is lost.
+		$default_pcts = array( 25, 50, 75, 100 );
+		if ( ! empty( $milestones[10]['tag'] ) ) {
+			array_unshift( $default_pcts, 10 );
+		}
 		?>
-		<p class="description" style="margin-bottom: 12px;">
-			<?php esc_html_e( 'Assign tags to users when they reach specific watch milestones on this video. Tags are stored as user meta and can be used for automation, reporting, or LMS integration.', 'mediashield' ); ?>
+		<p class="description ms-milestones-intro">
+			<?php esc_html_e( 'When a member reaches 25%, 50%, 75% or 100% of this video, MediaShield records it. To add a tag to the member at a milestone, type the tag and tick the box.', 'mediashield' ); ?>
 		</p>
-		<table class="widefat striped" style="border: 1px solid #e2e8f0;">
+		<table class="widefat striped ms-milestones-table">
 			<thead>
 				<tr>
-					<th style="width: 80px;"><?php esc_html_e( 'Milestone', 'mediashield' ); ?></th>
-					<th><?php esc_html_e( 'Tag (assigned to user)', 'mediashield' ); ?></th>
-					<th style="width: 60px;"><?php esc_html_e( 'Active', 'mediashield' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Milestone', 'mediashield' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Tag to add to the member', 'mediashield' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'On', 'mediashield' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -750,26 +800,21 @@ class VideoPostType {
 					<td>
 						<input type="text" name="_ms_milestone_tags[<?php echo esc_attr( $pct ); ?>][tag]"
 							value="<?php echo esc_attr( $tag ); ?>"
-							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Tag for %d%% milestone', 'mediashield' ), $pct ) ); ?>"
-							placeholder="
-							<?php
-								/* translators: %d: milestone percentage */
-								echo esc_attr( sprintf( __( 'e.g. watched-%d-pct', 'mediashield' ), $pct ) );
-							?>
-							"
-							class="regular-text" style="width: 100%;" />
+							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Tag at %d%%', 'mediashield' ), $pct ) ); ?>"
+							placeholder="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'e.g. watched-%d', 'mediashield' ), $pct ) ); ?>"
+							class="regular-text" />
 					</td>
-					<td style="text-align: center;">
+					<td>
 						<input type="checkbox" name="_ms_milestone_tags[<?php echo esc_attr( $pct ); ?>][enabled]"
-							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Enable %d%% milestone', 'mediashield' ), $pct ) ); ?>"
+							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Add the tag at %d%%', 'mediashield' ), $pct ) ); ?>"
 							value="1" <?php checked( $enabled ); ?> />
 					</td>
 				</tr>
 				<?php endforeach; ?>
 			</tbody>
 		</table>
-		<p class="description" style="margin-top: 8px;">
-			<?php esc_html_e( 'When a user reaches a milestone, the tag is saved to their profile as: ms_tag_{video_id}_{percentage} → tag_value. Leave blank to use global milestone settings.', 'mediashield' ); ?>
+		<p class="description">
+			<?php esc_html_e( 'The tag goes on the member\'s profile, for your CRM, LMS or automation rules. Tags are listed under MediaShield > Tags.', 'mediashield' ); ?>
 		</p>
 		<?php
 	}
@@ -1069,6 +1114,12 @@ class VideoPostType {
 			'_ms_protection_level',
 			'_ms_access_role',
 		);
+
+		// The edit screen shows an uploaded file by name with an empty link
+		// field (render_source_meta_box()); empty there keeps the file.
+		if ( ! empty( $_POST['_ms_source_held'] ) && isset( $_POST['_ms_source_url'] ) && '' === trim( sanitize_text_field( wp_unslash( $_POST['_ms_source_url'] ) ) ) ) {
+			unset( $fields['_ms_source_url'], $fields['_ms_platform'], $fields['_ms_platform_video_id'] );
+		}
 
 		// A link MediaShield cannot play is not saved: the video keeps the
 		// source it had, and the screen says what to use instead

@@ -139,6 +139,46 @@
 	white-space: nowrap;
 }
 
+/* An uploaded file, shown by name, length and size (Basecamp 10545260613). */
+.ms-held-file {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 12px 0 4px;
+	padding: 12px 16px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #f6f7f7;
+}
+
+.ms-held-file__name {
+	font-size: 14px;
+	overflow-wrap: anywhere;
+}
+
+.ms-held-file__meta {
+	color: #50575e;
+}
+
+.ms-milestones-intro {
+	margin-bottom: 12px;
+}
+
+.ms-milestones-table th:first-child,
+.ms-milestones-table td:first-child {
+	width: 90px;
+}
+
+.ms-milestones-table th:last-child,
+.ms-milestones-table td:last-child {
+	width: 48px;
+	text-align: center;
+}
+
+.ms-milestones-table input[type="text"] {
+	width: 100%;
+}
+
 @media screen and (max-width: 782px) {
 	.ms-feature-overrides__row {
 		grid-template-columns: 1fr;

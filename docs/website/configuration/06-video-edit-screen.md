@@ -2,7 +2,7 @@
 
 **Included in Free.** Two extra boxes (LMS Integration and Video Ads) appear on this screen when MediaShield Pro is active. They are covered in the Pro documentation.
 
-Every video in your library is a WordPress post of type "video". Open one from **MediaShield > Videos > Edit**, or choose **Add New Video**. This page explains every box on that screen.
+Every video in your library is a WordPress post of type "video". Open one from **MediaShield > Videos > Edit**, or choose **Add New Video**. This page explains every box on that screen. The main column is in the order you work: 1. The video, 2. Who can watch, and how it is protected, 3. Milestones.
 
 ## Why use it
 
@@ -17,18 +17,21 @@ Everything about one video is on one screen: where it comes from, who may watch,
 
 The title appears in your library, playlists and the My Videos grid. The Featured Image is the poster frame shown before playback. For YouTube, Vimeo, Wistia and Bunny videos MediaShield fetches the platform's poster for you if the field is empty. For self-hosted files, set one yourself.
 
-## Video Source
+## 1. The video
+
+A file you uploaded is shown by its name, length and size ("Uploaded file · 8:15 · 142 MB · kept private, played through a signed link"), not by its signed stream address. The link field under it is then **Replace with a link**: leave it empty to keep the file.
+
 
 | Field | What it does |
 |-------|--------------|
-| Video URL | Paste a YouTube, Vimeo, Wistia or Bunny Stream URL, or the address of a direct video file. The platform is detected from the URL. When the address is a file in your Media Library, saving moves that file into MediaShield's protected folder and the field then shows the video's protected stream address. A file also used elsewhere on the site, or a file that is not in your Media Library (such as one another plugin stored), stays where it is, and a notice says so. The file moves only when the person saving may edit its Media Library entry. |
+| Video link | Paste a YouTube, Vimeo, Wistia or Bunny Stream URL, or the address of a direct video file. The platform is detected from the URL. When the address is a file in your Media Library, saving moves that file into MediaShield's protected folder and the field then shows the video's protected stream address. A file also used elsewhere on the site, or a file that is not in your Media Library (such as one another plugin stored), stays where it is, and a notice says so. The file moves only when the person saving may edit its Media Library entry. |
 | Or upload a file | Choose a video file and click Upload to store it on this site. Shown only to users with the upload permission. Save the video afterwards to keep the file. |
 | Detected Platform | Read-only. Shows what MediaShield recognised (YouTube, Vimeo, Wistia, Bunny Stream or Self-hosted) and a note when a URL looks wrong. |
 | Duration | Length in seconds. Leave 0 if you do not know it. When it is 0, MediaShield uses the length the player reports. Mid-roll ad breaks need a known length. |
 
 See [Video Hosts](../using-mediashield/10-video-hosts.md) for what each host supports.
 
-## Video Settings
+## 2. Who can watch, and how it is protected
 
 | Field | Default | What it does |
 |-------|---------|--------------|
@@ -40,9 +43,9 @@ See [Video Hosts](../using-mediashield/10-video-hosts.md) for what each host sup
 
 Shown in the sidebar once the video is saved. It gives you the shortcode `[mediashield id=NN]` with a copy button, a note on finding the MediaShield Video block, and a PHP template snippet for theme developers.
 
-## Milestone Tags
+## 3. Milestones
 
-A row for each of 10%, 25%, 50%, 75% and 100%. Type a tag name and tick **Active**. When a viewer reaches that point, the tag is saved on their profile and added to your Tags list. Blank rows do nothing. The site always records 25, 50, 75 and 100 percent milestones, whether or not a tag is set. 10% is only recorded when you add a tag row for it.
+When a member reaches 25%, 50%, 75% or 100% of the video, MediaShield records it. To add a tag to the member at a milestone, type the tag and tick **On**. The tag goes on the member's profile, for your CRM, LMS or automation rules, and is listed under MediaShield > Tags. A 10% tag saved before 1.4.4 is still shown and kept.
 
 ## Player Options
 
