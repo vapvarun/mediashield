@@ -420,7 +420,7 @@ class Renderer {
 				// None and Basic too, the player measures watch time (cards
 				// 10541776164, 10537102216). A lesson's own % arrives as
 				// data-watch-required on the container.
-				if ( ! $access_denied && get_current_user_id() && null !== \MediaShield\Access\SessionManager::watch_requirement( (int) $video_id, get_current_user_id() ) ) :
+				if ( ! $access_denied && get_current_user_id() && self::measures_watch( (int) $video_id ) ) :
 					?>
 					data-watch-track="1"
 					<?php
@@ -527,6 +527,43 @@ class Renderer {
 		$source_url        = '';
 		$stream_url        = '';
 		return true;
+	}
+
+	/**
+	 * Does the site's "Watch X% to complete" apply to this player for the member?
+	 *
+	 * Only where a lesson can use it: the site % is about lessons, and the
+	 * player cannot tell a lesson from a blog post, so an LMS integration
+	 * says so through `mediashield_measure_watch` (Pro's LearnDash: its lesson
+	 * and topic screens). Learnomy 2.4.1 lessons put their own % on the
+	 * player instead (data-watch-required). Free review #8.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return bool
+	 */
+	private static function measures_watch( int $video_id ): bool {
+		if ( null === \MediaShield\Access\SessionManager::watch_requirement( $video_id, get_current_user_id() ) ) {
+			return false;
+		}
+
+		/**
+		 * Filter whether this player measures the member's watch time for the
+		 * site's "Watch X% to complete" (Settings > Lesson Completion).
+		 *
+		 * Default false: a video on a blog post or a landing page is not a
+		 * lesson. Return true on the screens where a lesson's completion uses
+		 * the rule. Standard and Strict videos measure anyway; this decides
+		 * for None and Basic.
+		 *
+		 * @since 1.4.4
+		 *
+		 * @param bool $measure  Default false.
+		 * @param int  $video_id Video CPT post ID.
+		 * @param int  $post_id  The post or page being shown (0 when none).
+		 */
+		return (bool) apply_filters( 'mediashield_measure_watch', false, $video_id, (int) get_queried_object_id() );
 	}
 
 	/**

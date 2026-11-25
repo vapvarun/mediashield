@@ -608,6 +608,23 @@ add_filter( 'mediashield_display_timezone', function( $timezone, $user_id ) {
 
 ---
 
+### mediashield_measure_watch
+
+*Since 1.4.4.* Decides whether a player at the **None** or **Basic** level measures a logged-in member's watch time for the site-wide "Watch X% to complete" (**Settings > Lesson Completion**). That percentage is about lessons, and the player cannot tell a lesson from a blog post, so the default is `false`: return `true` on the screens where your LMS completes a lesson by it. Standard and Strict videos measure anyway. A lesson that sets its own percentage on the player (`data-watch-required`, the shortcode's `watch_required`) is measured without this filter.
+
+**Parameters:** `$measure` (bool, default `false`), `$video_id` (int), `$post_id` (int, the post or page being shown; 0 when there is none)
+
+```php
+// Measure on my LMS's lesson pages.
+add_filter( 'mediashield_measure_watch', function( $measure, $video_id, $post_id ) {
+    return $measure || 'my_lesson' === get_post_type( $post_id );
+}, 10, 3 );
+```
+
+MediaShield Pro answers `true` on LearnDash lessons and topics. When nothing answers, a None or Basic video makes no requests at all.
+
+---
+
 ### mediashield_create_video
 
 *Since 1.4.4.* The one way another plugin adds a video to the MediaShield library, for example an LMS lesson editor that offers "Add a video" or turns an ordinary video lesson into a protected one. Call it instead of writing MediaShield's posts or meta yourself.
@@ -643,6 +660,8 @@ if ( is_wp_error( $video_id ) ) {
 | `mediashield_unplayable_source` | 400 | The link is not a video MediaShield can play. The message says what to use instead, in the same words as the Add video screen. |
 | `mediashield_not_a_video_file` | 404 | `attachment_id` is not a video in the Media Library. |
 | (WordPress's code) | 500 | The video could not be saved. |
+
+A video added by someone who may publish posts is published at once; anyone else's (a Contributor, say) is saved as **Pending Review** for an editor to publish, as WordPress does for posts. Check `get_post_status( $video_id )` if your screen needs to say so.
 
 It takes the same path as **Videos > Add New**: the same link check, the same save (platform and id stored in one shape, the platform's title fetched when none is given, the Videos list status), no protection level stamped (the video follows the site default), and a Media Library file is moved into the protected folder with its Media Library item made private, as when an owner pastes that file's link. A file keeps the name it was uploaded with and its length is read from it. A link already in the library, however it is written (`youtu.be/…` or `watch?v=…`), returns that video instead of adding a copy, as the Video block does; so does the same Media Library file twice.
 

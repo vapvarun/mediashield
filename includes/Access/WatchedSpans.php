@@ -45,6 +45,15 @@ class WatchedSpans {
 	public const META_KEY = '_ms_watched_spans';
 
 	/**
+	 * Video meta: the longest length any viewer's player reported, in seconds.
+	 *
+	 * The share's length when the video has no Duration. Kept on the video,
+	 * not the member: one honest player sets it for everyone, and a member
+	 * can no longer shrink their own to fake 100% (Free review #9).
+	 */
+	public const MEASURED = '_ms_measured_duration';
+
+	/**
 	 * Fastest playback the player offers.
 	 */
 	private const MAX_RATE = 2.0;
@@ -153,6 +162,7 @@ class WatchedSpans {
 		// short report never shrinks it (percent()).
 		if ( $duration > 0 ) {
 			$entry['d'] = max( (float) ( $entry['d'] ?? 0 ), round( $duration, 1 ) );
+			self::note_length( $video_id, $duration );
 		}
 		if ( $position > 0 ) {
 			$entry['p'] = round( $duration > 0 ? min( $position, $duration ) : $position, 1 );
@@ -206,7 +216,7 @@ class WatchedSpans {
 	 * @param int   $user_id  Member.
 	 * @param int   $video_id Video CPT post ID.
 	 * The length is the one given, else the video's Duration field, else the
-	 * length the member's player measured: most videos added by pasting a
+	 * longest length any viewer's player measured (MEASURED): most videos added by pasting a
 	 * URL keep Duration 0, and with no length the share stayed 0% for ever,
 	 * so a "Require X% watched" lesson could never be completed.
 	 *
@@ -216,12 +226,46 @@ class WatchedSpans {
 	public static function percent( int $user_id, int $video_id, float $duration = 0.0 ): int {
 		$duration = $duration > 0 ? $duration : (float) get_post_meta( $video_id, '_ms_duration', true );
 		if ( $duration <= 0 ) {
-			$duration = (float) ( self::all( $user_id )[ $video_id ]['d'] ?? 0 );
+			$duration = self::measured_length( $user_id, $video_id );
 		}
 		if ( $duration <= 0 ) {
 			return 0;
 		}
 		return (int) min( 100, floor( self::seconds( $user_id, $video_id ) / $duration * 100 ) );
+	}
+
+	/**
+	 * Keep the longest length a player reported for this video.
+	 *
+	 * @param int   $video_id Video CPT post ID.
+	 * @param float $duration Length the player reported, in seconds.
+	 */
+	private static function note_length( int $video_id, float $duration ): void {
+		$duration = round( $duration, 1 );
+		if ( $duration > (float) get_post_meta( $video_id, self::MEASURED, true ) ) {
+			update_post_meta( $video_id, self::MEASURED, $duration );
+		}
+	}
+
+	/**
+	 * The video's measured length (MEASURED). A video measured only before
+	 * 1.4.4 kept the length on the member ('d'): that seeds the video once,
+	 * and every later honest report can only raise it.
+	 *
+	 * @param int $user_id  Member.
+	 * @param int $video_id Video CPT post ID.
+	 * @return float Seconds, 0 when never measured.
+	 */
+	private static function measured_length( int $user_id, int $video_id ): float {
+		$measured = (float) get_post_meta( $video_id, self::MEASURED, true );
+		if ( $measured > 0 ) {
+			return $measured;
+		}
+		$own = (float) ( self::all( $user_id )[ $video_id ]['d'] ?? 0 );
+		if ( $own > 0 ) {
+			self::note_length( $video_id, $own );
+		}
+		return $own;
 	}
 
 	/**

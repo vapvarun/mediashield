@@ -18,8 +18,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * video is private, removed or not embeddable); the server confirms it with
  * the platform before writing, so a visitor cannot mark a working video
  * broken. The Videos list reads it as the status 'unavailable' (Basecamp
- * 10545260568). Saving the video, or a later check that finds it playable,
- * clears it.
+ * 10545260568). Saving the video clears it, and so do playback (a
+ * heartbeat that reports progress, clear_if_playing()) and a later report
+ * the platform answers as playable (report()). Vimeo's answer for
+ * an unlisted or domain-limited video is not taken as a refusal (check()).
  *
  * Not the same question as the 'encoding' / 'failed' states Pro reports for
  * a Bunny upload: those are about an upload that never finished; this is a
@@ -78,6 +80,18 @@ class SourceStatus {
 	}
 
 	/**
+	 * The video just played (a heartbeat reported progress): a recorded
+	 * refusal is over. The re-check the docblock above promises.
+	 *
+	 * @param int $video_id Video ID.
+	 */
+	public static function clear_if_playing( int $video_id ): void {
+		if ( null !== self::get( $video_id ) ) {
+			self::clear( $video_id );
+		}
+	}
+
+	/**
 	 * The recorded refusal, or null while the video is available.
 	 *
 	 * @param int $video_id Video ID.
@@ -113,15 +127,28 @@ class SourceStatus {
 			return null;
 		}
 
+		$hashed = false;
 		if ( 'youtube' === $platform ) {
 			$endpoint = 'https://www.youtube.com/oembed?format=json&url=' . rawurlencode( 'https://www.youtube.com/watch?v=' . $id );
 		} elseif ( 'vimeo' === $platform ) {
-			$endpoint = 'https://vimeo.com/api/oembed.json?url=' . rawurlencode( 'https://vimeo.com/' . $id );
+			// The stored link keeps an unlisted video's hash (vimeo.com/123/abc,
+			// ?h=abc); without it Vimeo refuses a video that plays fine here.
+			$source   = (string) get_post_meta( $video_id, '_ms_source_url', true );
+			$link     = false !== stripos( $source, 'vimeo.com' ) ? $source : 'https://vimeo.com/' . $id;
+			$hashed   = (bool) preg_match( '#vimeo\.com/(?:video/)?\d+/[0-9a-f]+|[?&]h=[0-9a-f]+#i', $link );
+			$endpoint = 'https://vimeo.com/api/oembed.json?url=' . rawurlencode( $link );
 		} else {
 			return null;
 		}
 
-		$response = wp_safe_remote_get( $endpoint, array( 'timeout' => 5 ) );
+		// As this site: an embed limited to the site's domain answers its Referer.
+		$response = wp_safe_remote_get(
+			$endpoint,
+			array(
+				'timeout' => 5,
+				'headers' => array( 'Referer' => home_url( '/' ) ),
+			)
+		);
 		if ( is_wp_error( $response ) ) {
 			return null;
 		}
@@ -129,6 +156,12 @@ class SourceStatus {
 		$status = (int) wp_remote_retrieve_response_code( $response );
 		if ( 200 === $status ) {
 			return true;
+		}
+		// Vimeo answers 403 for a video limited to certain sites and 404 for
+		// an unlisted one asked without its hash: neither says the video is
+		// gone, so a viewer's report alone records nothing (Free review #3).
+		if ( 'vimeo' === $platform && ( 403 === $status || ( 404 === $status && $hashed ) ) ) {
+			return null;
 		}
 		if ( in_array( $status, array( 401, 403, 404 ), true ) ) {
 			return false;
@@ -139,8 +172,9 @@ class SourceStatus {
 	/**
 	 * A player says the platform refused the video: confirm and record it.
 	 *
-	 * Checked with the platform at most once per CHECK_INTERVAL per video. A
-	 * platform with no public check is recorded only when the reporter may
+	 * Checked with the platform at most once per CHECK_INTERVAL per video; a
+	 * report on a video already recorded re-checks it and clears the record
+	 * when the platform plays it again. A platform with no public check is recorded only when the reporter may
 	 * edit the video.
 	 *
 	 * @param int    $video_id Video ID.
@@ -148,17 +182,24 @@ class SourceStatus {
 	 * @return bool Whether the video is now recorded as unavailable.
 	 */
 	public static function report( int $video_id, string $code ): bool {
-		if ( null !== self::get( $video_id ) ) {
-			return true;
-		}
+		$recorded = null !== self::get( $video_id );
 
 		$lock = 'ms_source_check_' . $video_id;
 		if ( get_transient( $lock ) ) {
-			return false;
+			return $recorded;
 		}
 		set_transient( $lock, 1, self::CHECK_INTERVAL );
 
 		$playable = self::check( $video_id );
+		// Already recorded: the platform plays it again (the owner made it
+		// public), so the record goes; any other answer keeps it.
+		if ( $recorded ) {
+			if ( true === $playable ) {
+				self::clear( $video_id );
+				return false;
+			}
+			return true;
+		}
 		// The platform says it plays, or cannot say and the reporter is a
 		// viewer: nothing is recorded. Someone who edits the video saw the
 		// refusal on their own screen, which is enough where there is no check.

@@ -31,6 +31,7 @@ class WatchRuleLowLevelsTest extends WP_UnitTestCase {
 	public function tear_down(): void {
 		delete_option( 'ms_lms_require_watch_pct' );
 		delete_option( 'ms_max_concurrent_streams' );
+		remove_filter( 'mediashield_measure_watch', '__return_true' );
 		parent::tear_down();
 	}
 
@@ -106,6 +107,8 @@ class WatchRuleLowLevelsTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'data-watch-track', \MediaShield\Player\Renderer::render( $video ), 'No rule: nothing.' );
 
 		update_option( 'ms_lms_require_watch_pct', 2 );
+		// Where an LMS says the site rule applies (Free review #8).
+		add_filter( 'mediashield_measure_watch', '__return_true' );
 		$this->assertStringContainsString( 'data-watch-track="1"', \MediaShield\Player\Renderer::render( $video ) );
 
 		wp_set_current_user( 0 );

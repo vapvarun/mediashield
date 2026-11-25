@@ -112,7 +112,9 @@ class VideoCreator {
 		$id = wp_insert_post(
 			array(
 				'post_type'   => 'mediashield_video',
-				'post_status' => 'publish',
+				// As core's REST route allows: someone who cannot publish adds
+				// a video for review (Free review #10).
+				'post_status' => current_user_can( $type->cap->publish_posts ) ? 'publish' : 'pending',
 				'post_title'  => $title,
 				'meta_input'  => array_filter(
 					array(

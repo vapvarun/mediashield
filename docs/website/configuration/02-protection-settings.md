@@ -17,7 +17,7 @@ Login is not part of a level. **Require login** is one site setting, under **Set
 
 Basic protects the player but records nothing. If you want analytics for a video, use Standard or Strict.
 
-**A lesson's watch rule works at every level.** When a lesson asks the member to watch a share of the video ("Watch 70% to complete", set on the lesson or by **Lesson Completion** in Settings), MediaShield measures how much a logged-in member watches even at None or Basic, so Complete unlocks when they reach it. Nothing else is added at those levels: no watermark, no stream limit and no developer-tools detection. Without a watch rule, None and Basic record nothing, as before. Guests are never measured.
+**A lesson's watch rule works at every level.** When a lesson asks the member to watch a share of the video ("Watch 70% to complete", set on the lesson or by **Lesson Completion** in Settings), MediaShield measures how much a logged-in member watches even at None or Basic, so Complete unlocks when they reach it. Nothing else is added at those levels: no watermark, no stream limit and no developer-tools detection. The site-wide **Lesson Completion** percentage is measured only on lesson screens: LearnDash lessons and topics (with Pro), or a Learnomy lesson that sets its own percentage. The same video in a blog post or on a landing page records nothing. Without a watch rule, None and Basic record nothing, as before. Guests are never measured. At None and Basic the video starts playing at once; the measuring starts alongside it and never holds the video.
 
 Pick the site's level on the Protection card. A video can set its own on its edit screen.
 

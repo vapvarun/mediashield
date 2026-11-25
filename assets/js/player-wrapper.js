@@ -91,7 +91,14 @@
 							}
 						},
 						onStateChange: function ( e ) {
-							adapter._playing = ( e.data === YT.PlayerState.PLAYING );
+							// Only a real play or stop changes it: BUFFERING (every
+							// seek and stall) and CUED leave it as it was, so a
+							// stall is not reported as a pause (Free review #6).
+							if ( e.data === YT.PlayerState.PLAYING ) {
+								adapter._playing = true;
+							} else if ( e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED ) {
+								adapter._playing = false;
+							}
 							if ( e.data === YT.PlayerState.ENDED && adapter._endedCb ) {
 								adapter._endedCb();
 							}
@@ -1532,8 +1539,10 @@
 	 * Every way a video starts is caught: the player's own play (big Play,
 	 * poster, keyboard, a click on the picture all call adapter.play()), a
 	 * native <video> play event (autoplay), and for platform iframes their own
-	 * play button, seen through adapter.isPlaying(). The video is held still
-	 * until the session answers, so it never plays without its watermark.
+	 * play button, seen through adapter.isPlaying() once a second. The video
+	 * is held still until the session answers, so it never plays without its
+	 * watermark; a player that only measures watch time (el._msTrackingOnly,
+	 * None and Basic) has no watermark to wait for and plays at once.
 	 *
 	 * @param {HTMLElement} el      Player container.
 	 * @param {number}      videoId Video ID.
@@ -1541,22 +1550,26 @@
 	 */
 	function startOnFirstPlay( el, videoId, adapter ) {
 		var started = false;
-		var watch = null;
 		var play = adapter.play;
 		var gate = function () {
 			if ( ! started ) {
 				begin();
-				return;
+				// Only measuring watch time (None, Basic): never held.
+				if ( ! el._msTrackingOnly ) return;
 			}
 			return play.apply( adapter, arguments );
 		};
 		var begin = function () {
 			if ( started ) return;
 			started = true;
-			clearInterval( watch );
+			clearInterval( el._msFirstPlayWatch );
 			if ( adapter.play === gate ) adapter.play = play;
-			el._msPlayOnStart = true;
-			blockPlayback( el, adapter );
+			// None and Basic keep playing while the viewing starts in the
+			// background: no watermark waits on it (Free review #7).
+			if ( ! el._msTrackingOnly ) {
+				el._msPlayOnStart = true;
+				blockPlayback( el, adapter );
+			}
 			startSession( el, videoId, adapter );
 		};
 
@@ -1564,9 +1577,12 @@
 		if ( adapter._video ) {
 			adapter._video.addEventListener( 'play', begin );
 		}
-		watch = setInterval( function () {
+		// A platform player started from inside its own frame. Once a second
+		// is enough, and Try again (rebuildPlayer) clears it (Free review #13).
+		clearInterval( el._msFirstPlayWatch );
+		el._msFirstPlayWatch = setInterval( function () {
 			if ( adapter.isPlaying() ) begin();
-		}, 250 );
+		}, 1000 );
 	}
 
 	function startSession( el, videoId, adapter ) {
@@ -1600,7 +1616,6 @@
 				// Only measuring a lesson's watch rule (None, Basic): a start
 				// that fails never holds a video those levels always played.
 				if ( el._msTrackingOnly && ! data.session_token ) {
-					releaseTrackingOnly( el, adapter );
 					return;
 				}
 
@@ -1687,7 +1702,6 @@
 			} )
 			.catch( function ( err ) {
 				if ( el._msTrackingOnly ) {
-					releaseTrackingOnly( el, adapter );
 					return;
 				}
 				// No session means no watermark: never leave a protected video
@@ -1726,20 +1740,6 @@
 		showErrorOverlay( el, message || t( 'accessDenied', 'You do not have access to this video.' ), null, access.access_url ? {} : { sub: t( 'askOwner', 'Ask the site owner for access.' ) } );
 		if ( access.access_url ) {
 			addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
-		}
-	}
-
-	/**
-	 * Let a tracking-only player play after its viewing could not start.
-	 *
-	 * @param {HTMLElement} el      Player container.
-	 * @param {Object}      adapter Player adapter.
-	 */
-	function releaseTrackingOnly( el, adapter ) {
-		el._msBlocked = false;
-		if ( adapter && el._msPlayOnStart ) {
-			el._msPlayOnStart = false;
-			adapter.play();
 		}
 	}
 
@@ -2138,6 +2138,7 @@
 	 * @param {HTMLElement} el Player container.
 	 */
 	function rebuildPlayer( el ) {
+		clearInterval( el._msFirstPlayWatch );
 		if ( el._msAdapter && el._msAdapter.destroy ) {
 			try { el._msAdapter.destroy(); } catch ( e ) {}
 		}

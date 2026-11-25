@@ -458,3 +458,99 @@ describe( 'A lesson watch rule is measured at None and Basic (cards 10541776164,
 		expect( document.querySelector( '.ms-error-overlay' ) ).toBeNull();
 	} );
 } );
+
+describe( 'Free 1.4.4 review: player (#6, #7, #13)', () => {
+	const calls = ( kind ) => global.fetch.mock.calls.filter( ( c ) => c[ 0 ].indexOf( kind ) > -1 ).map( ( c ) => JSON.parse( c[ 1 ].body ) );
+
+	// A YouTube player the test drives: onReady at once, then the states we send.
+	function fakeYouTubePlayer() {
+		const handle = {};
+		window.YT = {
+			PlayerState: { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3, CUED: 5 },
+			Player: function ( target, opts ) {
+				handle.events = opts.events;
+				this.destroy = () => {};
+				this.getDuration = () => 300;
+				this.getCurrentTime = () => 0;
+				this.playVideo = () => opts.events.onStateChange( { data: 1 } );
+				this.pauseVideo = () => opts.events.onStateChange( { data: 2 } );
+				setTimeout( () => opts.events.onReady(), 0 );
+			},
+		};
+		return handle;
+	}
+	const youtube = ( level, extra = '' ) => `
+		<div class="ms-protected-player" data-video-id="9" data-platform="youtube" data-protection-level="${ level }" ${ extra }>
+			<div class="ms-player-target" data-platform-video-id="aaaaaaaaaaa"></div>
+		</div>`;
+
+	test( '#6 a YouTube stall (BUFFERING) or CUED is not a pause; PAUSED and ENDED are', () => {
+		const yt = fakeYouTubePlayer();
+		boot( { markup: youtube( 'standard' ), session: { body: { session_token: 't', resume_position: 0 } } } );
+		jest.advanceTimersByTime( 1 );
+		const adapter = document.querySelector( '.ms-protected-player' )._msAdapter;
+		const send = ( state ) => yt.events.onStateChange( { data: state } );
+
+		send( 1 );
+		expect( adapter.isPlaying() ).toBe( true );
+		send( 3 );
+		expect( adapter.isPlaying() ).toBe( true );
+		send( 5 );
+		expect( adapter.isPlaying() ).toBe( true );
+		send( 2 );
+		expect( adapter.isPlaying() ).toBe( false );
+		send( 3 );
+		expect( adapter.isPlaying() ).toBe( false );
+		send( 1 );
+		send( 0 );
+		expect( adapter.isPlaying() ).toBe( false );
+	} );
+
+	test( '#7 a None lesson video keeps playing while its viewing starts in the background', async () => {
+		boot( { markup: nativePlayer( 'data-protection-level="none" data-watch-required="2"' ).replace( 'data-protection-level="standard" ', '' ), session: { body: {} } } );
+		// The start never answers (a slow server).
+		global.fetch = jest.fn( () => new Promise( () => {} ) );
+		await readyNative();
+		const video = document.querySelector( 'video' );
+
+		video.play();
+		await flush();
+
+		expect( calls( 'session/start' ) ).toEqual( [ { video_id: 7 } ] );
+		expect( video.paused ).toBe( false );
+		expect( document.querySelector( '.ms-error-overlay' ) ).toBeNull();
+	} );
+
+	test( '#7 a Basic YouTube lesson plays at once on its first Play; the viewing starts alongside', () => {
+		fakeYouTubePlayer();
+		boot( { markup: youtube( 'basic', 'data-watch-required="2"' ), session: { body: {} } } );
+		global.fetch = jest.fn( () => new Promise( () => {} ) );
+		jest.advanceTimersByTime( 1 );
+		const adapter = document.querySelector( '.ms-protected-player' )._msAdapter;
+
+		adapter.play();
+
+		expect( adapter.isPlaying() ).toBe( true );
+		expect( calls( 'session/start' ) ).toEqual( [ { video_id: 9 } ] );
+	} );
+
+	test( '#13 the first-play check runs once a second and Try again clears the old one', () => {
+		const yt = fakeYouTubePlayer();
+		const every = jest.spyOn( window, 'setInterval' );
+		const clear = jest.spyOn( window, 'clearInterval' );
+		boot( { markup: youtube( 'standard' ), session: { body: { session_token: 't', resume_position: 0 } } } );
+		jest.advanceTimersByTime( 1 );
+		const el = document.querySelector( '.ms-protected-player' );
+		const watches = every.mock.calls.map( ( c, i ) => [ c[ 1 ], every.mock.results[ i ].value ] ).filter( ( c ) => 500 !== c[ 0 ] );
+
+		expect( watches.map( ( c ) => c[ 0 ] ) ).toEqual( [ 1000 ] );
+		expect( el._msFirstPlayWatch ).toBe( watches[ 0 ][ 1 ] );
+
+		yt.events.onError( { data: 100 } );
+		document.querySelector( '.ms-error-retry' ).click();
+
+		expect( clear.mock.calls.map( ( c ) => c[ 0 ] ) ).toContain( watches[ 0 ][ 1 ] );
+		every.mockRestore();
+		clear.mockRestore();
+	} );
+} );

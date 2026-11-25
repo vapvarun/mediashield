@@ -520,32 +520,48 @@ class SessionManager {
 		// Seconds really watched (Basecamp 10530930729): the stretches the
 		// player reports, checked against the time since its last report.
 		// A guest (nothing to keep spans against) and a player without span
-		// reports (a page cached before 1.4.3) keep the old 30 seconds per
-		// playing heartbeat.
+		// reports (a page cached before 1.4.3) count the time since the last
+		// report instead (below).
 		// The same write keeps where a member stopped, for the resume offer,
 		// from every report: heartbeat, pause-time beats and the end beacon.
 		$user_id  = (int) $parsed['user_id'];
 		$accepted = $user_id > 0 ? WatchedSpans::record( $user_id, (int) $parsed['video_id'], $spans ?? array(), $effective_duration, $position ) : 0.0;
-		$watched  = ( null === $spans || $user_id <= 0 ) ? ( $playing ? 30 : 0 ) : (int) round( $accepted );
+		// A guest or a player without span reports: the time since the last
+		// report, at most one 30 s beat, while playing. A flat 30 per beat
+		// stored a 6 s guest viewing as 30 s, since the early beat at 5 s
+		// (Free review #5).
+		$flat    = null === $spans || $user_id <= 0;
+		$watched = $flat ? 0 : (int) round( $accepted );
+		$timed   = $flat && $playing ? 1 : 0;
 
-		// Single atomic update with GREATEST for max_position.
+		// Single atomic update with GREATEST for max_position. total_seconds
+		// comes before last_heartbeat: MySQL assigns left to right, so it
+		// still reads the previous report's time.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table update.
 		$rows = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$table} SET
+				total_seconds = total_seconds + %d + IF( %d = 1, LEAST( 30, GREATEST( 0, TIMESTAMPDIFF( SECOND, last_heartbeat, %s ) ) ), 0 ),
 				last_heartbeat = %s,
-				total_seconds = total_seconds + %d,
 				max_position = GREATEST(max_position, %f),
 				completion_pct = %f
 			WHERE id = %d AND is_active = 1",
-				$now,
 				$watched,
+				$timed,
+				$now,
+				$now,
 				$position,
 				$completion_pct,
 				$parsed['session_id']
 			)
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		// The video played: if the platform was recorded as refusing it, that
+		// is over (SourceStatus; Free review #3).
+		if ( $rows > 0 && ( $position > 0 || $accepted > 0 ) ) {
+			\MediaShield\CPT\SourceStatus::clear_if_playing( (int) $parsed['video_id'] );
+		}
 
 		// Check milestones after updating completion percentage.
 		if ( $rows > 0 && $completion_pct > 0 ) {
