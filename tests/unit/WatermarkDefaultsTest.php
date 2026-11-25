@@ -67,16 +67,20 @@ class WatermarkDefaultsTest extends WP_UnitTestCase {
 		$request->set_body_params( array( 'video_id' => $video ) );
 		$config = rest_do_request( $request )->get_data()['watermark_config'] ?? array();
 
-		$this->assertSame( "Tom & Jerry's \u{00B7} " . get_userdata( $user )->user_email, $config['text'] ?? null );
+		// Test change (Basecamp 10545260667): the email is opt-in since 1.4.4;
+		// this test is about the name, which is always shown.
+		$this->assertSame( "Tom & Jerry's", $config['text'] ?? null );
 	}
 
 	/**
-	 * Card 10530930695. Fails on b75cb14: the watermark was "Name · IP" for
-	 * every viewer, with no email and no way to leave the IP out.
+	 * Card 10530930695, then 10545260667. Fails on b75cb14: the watermark was
+	 * "Name · IP" for every viewer. Since 1.4.4 a new install shows the name
+	 * only; email and IP are each the owner's choice.
 	 */
-	public function test_default_watermark_is_name_and_email_and_ip_is_opt_in(): void {
+	public function test_default_watermark_is_the_name_and_email_and_ip_are_opt_in(): void {
 		$_SERVER['REMOTE_ADDR'] = '198.51.100.23';
 		delete_option( 'ms_watermark_show_ip' );
+		delete_option( 'ms_watermark_show_email' );
 		$user = self::factory()->user->create(
 			array(
 				'display_name' => 'Aisha Khan',
@@ -93,11 +97,39 @@ class WatermarkDefaultsTest extends WP_UnitTestCase {
 		};
 
 		$config = $start();
-		$this->assertSame( "Aisha Khan \u{00B7} aisha@example.com", $config['text'] ?? null );
+		$this->assertSame( 'Aisha Khan', $config['text'] ?? null, 'No email unless the owner turns it on.' );
 		$this->assertSame( '', $config['ip'] ?? null, 'No IP unless the owner turns it on.' );
+
+		update_option( 'ms_watermark_show_email', 1 );
+		$this->assertSame( "Aisha Khan \u{00B7} aisha@example.com", $start()['text'] ?? null );
+		delete_option( 'ms_watermark_show_email' );
 
 		update_option( 'ms_watermark_show_ip', 1 );
 		$this->assertSame( '198.51.100.23', $start()['ip'] ?? null );
 		delete_option( 'ms_watermark_show_ip' );
+	}
+
+	/**
+	 * Card 10545260667: email starts off on a new install and stays on for a
+	 * site that updates; a value the site stored is never touched.
+	 */
+	public function test_email_default_is_off_on_install_and_kept_on_update(): void {
+		$db = get_option( 'ms_db_version' );
+
+		delete_option( 'ms_watermark_show_email' );
+		delete_option( 'ms_db_version' );
+		Settings::seed_defaults();
+		$this->assertFalse( Settings::get( 'ms_watermark_show_email' ), 'New install: name only.' );
+
+		delete_option( 'ms_watermark_show_email' );
+		update_option( 'ms_db_version', 12 );
+		Settings::seed_defaults();
+		$this->assertTrue( Settings::get( 'ms_watermark_show_email' ), 'Update: the email keeps showing.' );
+
+		update_option( 'ms_watermark_show_email', '' );
+		Settings::seed_defaults();
+		$this->assertFalse( Settings::get( 'ms_watermark_show_email' ), 'A stored choice is kept.' );
+
+		update_option( 'ms_db_version', $db );
 	}
 }

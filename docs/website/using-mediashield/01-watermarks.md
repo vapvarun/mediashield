@@ -4,13 +4,13 @@ The watermark is the core forensic tool in MediaShield. It renders the viewer's 
 
 ## Why use it
 
-If a recording of your video turns up online, the name and email on screen point to the account it came from. Knowing viewers can be identified also discourages casual sharing. It identifies a leaker. It does not stop a determined copier.
+If a recording of your video turns up online, the name on screen points to the account it came from. Knowing viewers can be identified also discourages casual sharing. It identifies a leaker. It does not stop a determined copier.
 
 ## What the watermark shows
 
 In the free plugin, the watermark displays:
 - The viewer's WordPress display name
-- The viewer's email address
+- The viewer's email address, only if you turn on **Email address** (off on a new install; a site updated from before 1.4.4 keeps showing it until you turn it off)
 - The viewer's IP address, only if you turn on **Show the viewer's IP address** (off by default)
 
 Details worth knowing:
@@ -19,7 +19,7 @@ Details worth knowing:
 - **On narrow players the IP is dropped.** When the player is under 640 px wide - phones, and small columns on desktop - an IP you turned on is left out so the text stays readable.
 - **Guests are labelled "Guest".** If you have turned Require Login off, an anonymous viewer's watermark reads "Guest", plus their IP when you show IPs. Only a logged-in viewer can be named.
 
-MediaShield Pro extends the watermark to 7 configurable fields: display name, email, IP address, user ID, timestamp, site name, and custom text. A new Pro install starts with display name and email; IP Address is a box you tick, with the same privacy note.
+MediaShield Pro extends the watermark to 7 configurable fields: display name, email, IP address, user ID, timestamp, site name, and custom text. A new Pro install starts with the display name only; Email and IP Address are boxes you tick, with the same privacy note. A site that saved its fields keeps them.
 
 ## How to configure the watermark
 
@@ -54,7 +54,7 @@ To see the watermark:
 
 ## What viewers see
 
-Viewers see their display name and email as text over the video (and their IP address if you turned it on), moving to a new position at the swap interval you set. Guests see "Guest".
+Viewers see their display name as text over the video (and their email and IP address if you turned them on), moving to a new position at the swap interval you set. Guests see "Guest".
 
 ## Honest limits
 

@@ -2,8 +2,9 @@
 /**
  * Watermark configuration — provides server-side config for the canvas overlay.
  *
- * Free: the viewer's name and email, supplied per viewer by /session/start;
- * the IP address only when the owner turns it on (ms_watermark_show_ip). Pro
+ * Free: the viewer's name, supplied per viewer by /session/start; the email
+ * (ms_watermark_show_email) and IP address (ms_watermark_show_ip) only when
+ * the owner turns them on. Pro
  * hooks mediashield_watermark_config to choose the fields, font size and badge.
  *
  * @package MediaShield\Player
@@ -47,7 +48,7 @@ class Watermark {
 	}
 
 	/**
-	 * The words that name a viewer in Free's watermark: "Name · email".
+	 * The words that name a viewer in Free's watermark: the name, and the email when shown.
 	 *
 	 * WordPress stores the display name HTML-escaped ("Tom &amp; Jerry") and the
 	 * canvas paints text as is, so it is decoded (card 10497708826). A guest
@@ -63,6 +64,7 @@ class Watermark {
 		if ( ! $user->exists() ) {
 			return __( 'Guest', 'mediashield' );
 		}
-		return implode( " \u{00B7} ", array_filter( array( \MediaShield\Support\Text::plain( $user->display_name ), (string) $user->user_email ) ) );
+		$email = Settings::get( 'ms_watermark_show_email' ) ? (string) $user->user_email : '';
+		return implode( " \u{00B7} ", array_filter( array( \MediaShield\Support\Text::plain( $user->display_name ), $email ) ) );
 	}
 }

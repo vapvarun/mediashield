@@ -26,7 +26,10 @@ class Settings {
 	/**
 	 * Schema for every free-plugin option.
 	 *
-	 * Each entry: `array( 'type' => <scalar>, 'default' => <value>, 'validate' => ?callable )`.
+	 * Each entry: `array( 'type' => <scalar>, 'default' => <value>, 'validate' => ?callable, 'upgrade_default' => ?<value> )`.
+	 *
+	 * `upgrade_default` is the value a site that updates from an older version
+	 * starts with when the setting is new to it (seed_defaults()).
 	 *
 	 * Translatable defaults must be returned from a method (not a const) so the
 	 * text domain is loaded before the strings are read.
@@ -97,6 +100,16 @@ class Settings {
 				'type'     => 'integer',
 				'default'  => 30,
 				'validate' => $min_int( 1 ),
+			),
+			// The viewer's email address in the watermark. Off on a new install:
+			// an email on screen ends up in screen recordings and shared
+			// screens. A site that updates from before 1.4.4 keeps showing it,
+			// as it always did (`upgrade_default`, seed_defaults()), until the
+			// owner turns it off (Basecamp 10545260667).
+			'ms_watermark_show_email'    => array(
+				'type'            => 'boolean',
+				'default'         => false,
+				'upgrade_default' => true,
 			),
 			// The viewer's IP address in the watermark. Off by default: an IP
 			// is personal data (GDPR), so showing it is the owner's choice,
@@ -372,9 +385,13 @@ class Settings {
 	 * to call on every activation.
 	 */
 	public static function seed_defaults(): void {
-		foreach ( self::defaults() as $key => $value ) {
+		// A site that already ran MediaShield is updating, not installing. A
+		// setting new to it that declares `upgrade_default` starts at that
+		// value, so an update never changes what the site did before.
+		$updating = (int) get_option( 'ms_db_version', 0 ) > 0;
+		foreach ( self::schema() as $key => $entry ) {
 			if ( false === get_option( $key, false ) ) {
-				add_option( $key, $value );
+				add_option( $key, $updating && array_key_exists( 'upgrade_default', $entry ) ? $entry['upgrade_default'] : $entry['default'] );
 			}
 		}
 	}
