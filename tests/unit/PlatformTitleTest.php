@@ -112,7 +112,11 @@ class PlatformTitleTest extends WP_UnitTestCase {
 	 * A host with no known oEmbed provider sends nothing (no discovery).
 	 */
 	public function test_unknown_provider_sends_no_request(): void {
-		$id = $this->create( 'bunny', 'abc-123', 'https://iframe.mediadelivery.net/embed/806115/abc-123' );
+		// A real-shaped Bunny GUID: since 1.4.4 a Bunny link without one is not
+		// a playable video and is refused on save (Platforms::recognise(),
+		// Basecamp 10545260436), so the old 'abc-123' fixture never got here.
+		$guid = '0b2b1c9e-3f0a-4e5f-9a1b-2c3d4e5f6a7b';
+		$id   = $this->create( 'bunny', $guid, 'https://iframe.mediadelivery.net/embed/806115/' . $guid );
 
 		// No oEmbed: the neutral title, never the ID (Basecamp 10499285942).
 		$this->assertSame( \MediaShield\CPT\Thumbnail::neutral_title( $id ), get_post( $id )->post_title );
