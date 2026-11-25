@@ -81,7 +81,7 @@ Setting names such as `ms_watermark_opacity` are listed for developers in the [S
 
 **Protection level** decides what a video gets when it has no level of its own, in the same words as every other screen:
 
-- None - The video plays as the platform shows it.
+- None - The video plays as the platform shows it. Right-click stays blocked while Block right-click on every video is on.
 - Basic - Right-click and download blocked.
 - Standard - Plus a watermark and tracked viewing.
 - Strict - Plus file address hidden and developer tools detected.

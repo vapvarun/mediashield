@@ -25,6 +25,7 @@ class ProtectionModelTest extends WP_UnitTestCase {
 		update_option( 'ms_hide_source', 1 );
 		update_option( 'ms_detect_devtools', 1 );
 		update_option( 'ms_pause_on_devtools', '' );
+		delete_option( Protection::SWITCHES_KEPT );
 	}
 
 	/**
@@ -40,6 +41,13 @@ class ProtectionModelTest extends WP_UnitTestCase {
 		}
 		update_option( 'ms_default_protection', 'strict' );
 		$this->assertSame( 'Site default (Strict)', Protection::site_default_label() );
+
+		// None's words stay true about the site-wide right-click switch.
+		update_option( 'ms_block_right_click', 1 );
+		$this->assertStringContainsString( 'Right-click stays blocked', Protection::levels()['none']['summary'] );
+		update_option( 'ms_block_right_click', '' );
+		$this->assertStringNotContainsString( 'Right-click', Protection::levels()['none']['summary'] );
+		update_option( 'ms_block_right_click', 1 );
 	}
 
 	/**
@@ -60,14 +68,15 @@ class ProtectionModelTest extends WP_UnitTestCase {
 	public function test_changed_switches_keep_working_until_a_level_is_picked(): void {
 		update_option( 'ms_pause_on_devtools', 1 );
 
-		$this->assertSame( array( 'ms_pause_on_devtools' ), Protection::legacy_switches() );
+		// The switches that are on keep applying site-wide.
+		$this->assertSame( Protection::LEGACY_SWITCHES, Protection::legacy_switches() );
 		$config = Protection::get_config();
 		$this->assertTrue( $config['hide_source'] );
 		$this->assertTrue( $config['detect_devtools'] );
 		$this->assertTrue( $config['pause_on_devtools'] );
 
 		$get = rest_do_request( new WP_REST_Request( 'GET', '/mediashield/v1/settings' ) )->get_data();
-		$this->assertSame( array( 'ms_pause_on_devtools' ), $get['ms_legacy_switches'] );
+		$this->assertSame( Protection::LEGACY_SWITCHES, $get['ms_legacy_switches'] );
 
 		// Picking a level moves the site onto the levels.
 		$put = new WP_REST_Request( 'PUT', '/mediashield/v1/settings' );
@@ -89,6 +98,52 @@ class ProtectionModelTest extends WP_UnitTestCase {
 		$put->set_body( wp_json_encode( array( 'ms_require_login' => false ) ) );
 		rest_do_request( $put );
 
-		$this->assertSame( array( 'ms_hide_source' ), Protection::legacy_switches() );
+		// Hide source is off here, so only developer-tools detection keeps applying.
+		$this->assertSame( array( 'ms_detect_devtools' ), Protection::legacy_switches() );
+	}
+
+	/**
+	 * Coordinator decision: an update from 1.4.3 with the defaults untouched
+	 * keeps a Standard video's file address hidden, until a level is picked.
+	 */
+	public function test_update_with_untouched_defaults_keeps_standard_hidden(): void {
+		$uploads = wp_upload_dir();
+		$path    = trailingslashit( $uploads['path'] ) . 'upgrade-' . wp_generate_password( 6, false ) . '.mp4';
+		file_put_contents( $path, str_repeat( 'x', 64 ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		$url      = trailingslashit( $uploads['url'] ) . wp_basename( $path );
+		$standard = self::factory()->post->create(
+			array(
+				'post_type'   => 'mediashield_video',
+				'post_status' => 'publish',
+				'meta_input'  => array(
+					'_ms_platform'         => 'self',
+					'_ms_source_url'       => $url,
+					'_ms_protection_level' => 'standard',
+				),
+			)
+		);
+
+		// A new install: Standard prints the pasted file's address.
+		$this->assertSame( $url, Protection::filter_player_urls( $standard, 'self', $url, '' )['source_url'] );
+
+		// The same site updating from 1.4.3 (DB version 13).
+		$db = get_option( 'ms_db_version' );
+		update_option( 'ms_db_version', 13 );
+		\MediaShield\Core\Migrator::run();
+
+		$this->assertSame( array( 'ms_hide_source', 'ms_detect_devtools' ), Protection::legacy_switches() );
+		$this->assertSame( '', Protection::filter_player_urls( $standard, 'self', $url, '' )['source_url'], 'Hidden, as on 1.4.3.' );
+		$this->assertTrue( Protection::get_config()['detect_devtools'] );
+
+		// Picking a level moves it onto the levels.
+		$put = new WP_REST_Request( 'PUT', '/mediashield/v1/settings' );
+		$put->set_header( 'Content-Type', 'application/json' );
+		$put->set_body( wp_json_encode( array( 'ms_default_protection' => 'standard' ) ) );
+		rest_do_request( $put );
+		$this->assertSame( array(), Protection::legacy_switches() );
+		$this->assertSame( $url, Protection::filter_player_urls( $standard, 'self', $url, '' )['source_url'] );
+
+		update_option( 'ms_db_version', $db );
+		wp_delete_file( $path );
 	}
 }

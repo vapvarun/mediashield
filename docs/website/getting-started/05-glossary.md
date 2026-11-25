@@ -27,7 +27,7 @@ MediaShield uses one word for one thing on every screen: Settings, the video edi
 | Word | Means |
 |------|-------|
 | Protection level | None, Basic, Standard or Strict. Each includes the one before. |
-| None | The video plays as the platform shows it. |
+| None | The video plays as the platform shows it. Right-click stays blocked while Block right-click on every video is on. |
 | Basic | Right-click and download blocked. |
 | Standard | Plus a watermark and tracked viewing. |
 | Strict | Plus file address hidden and developer tools detected. |

@@ -8,7 +8,7 @@ Settings, the video edit screen, the setup wizard, the Videos list and the block
 
 | Level | What the viewer gets |
 |-------|-------------|
-| None | The video plays as the platform shows it. Player features (speed, resume, sticky, end screen) still work. |
+| None | The video plays as the platform shows it. Right-click stays blocked while **Block right-click on every video** is on (the default). Player features (speed, resume, sticky, end screen) still work. |
 | Basic | Right-click and download blocked. No watermark, and no tracked viewing or milestones, because no watch session is started. |
 | Standard | Basic, plus a watermark with the viewer's name and tracked viewing (milestones, resume, analytics, the stream limit). |
 | Strict | Standard, plus the file address hidden from the page and developer tools detected (the video pauses while they are open). |
@@ -19,9 +19,19 @@ Basic protects the player but records nothing. If you want analytics for a video
 
 Pick the site's level on the Protection card. A video can set its own on its edit screen.
 
-### Sites that changed the old switches
+### Sites updated from 1.4.3 or earlier
 
-Before 1.4.4, **File address (Strict)** - Self-hosted video only. MediaShield stops printing the file's own address in the page and points the player at `/wp-json/mediashield/v1/stream/<id>` instead. That endpoint runs the same access check as the player on every request, including every seek, so a URL copied out of the page is useless to somebody without access. The URL carries a signed token naming the viewer, because a `<video>` element cannot send an authentication header.
+Before 1.4.4, **Hide Video Source URL**, **Detect Developer Tools** and **Pause Video When Detected** were site-wide switches that applied at every protected level. They now belong to Strict.
+
+An update changes nothing for your members: on a site that ran 1.4.3 or earlier, the switches that were on keep working for every protected video, whether you ever changed them or not. The Protection card names them, with a **Use the levels** button. Picking a level (or pressing that button) moves the site onto the levels, and from then on Standard videos no longer hide a pasted file's address or watch for developer tools; Strict videos do. A new install starts on the levels.
+
+## Protection controls
+
+**Block right-click on every video** - Basic, Standard and Strict always block the browser's context menu over the player. On by default, so a video set to None blocks it too; turn it off to leave None videos untouched.
+
+**Block the save shortcut (Ctrl+S / Cmd+S)** - Intercepts the save shortcut when the keypress happens inside a protected player. Off by default. This is the only shortcut it blocks; it does not intercept View Source, print, or developer-tools shortcuts, because browsers do not let a page do that reliably.
+
+**File address (Strict)** - Self-hosted video only. MediaShield stops printing the file's own address in the page and points the player at `/wp-json/mediashield/v1/stream/<id>` instead. That endpoint runs the same access check as the player on every request, including every seek, so a URL copied out of the page is useless to somebody without access. The URL carries a signed token naming the viewer, because a `<video>` element cannot send an authentication header.
 
 Videos you upload to MediaShield, and files it moved into its protected folder, always play through that signed address, at every level. A file you pasted from elsewhere in your Media Library plays through it on Strict.
 

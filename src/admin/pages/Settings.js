@@ -645,10 +645,10 @@ const Settings = () => {
 				/>
 				{ legacy.length > 0 && (
 					<div className="mediashield-settings__rule-note" role="note">
-						<strong>{ __( 'Your site uses its own protection switches.', 'mediashield' ) }</strong>{ ' ' }
+						<strong>{ __( 'Your site keeps its earlier protection switches.', 'mediashield' ) }</strong>{ ' ' }
 						{ sprintf(
-							/* translators: %s: the switches the site changed, e.g. "Hide the file address, Pause when developer tools open". */
-							__( 'Before this version these were site-wide switches, and your site changed them: %s. They keep working as you set them, for every protected video. Pick a level below to use the levels instead: then hiding the file address and detecting developer tools belong to Strict.', 'mediashield' ),
+							/* translators: %s: the switches still on, e.g. "Hide the file address, Detect developer tools". */
+							__( 'Before this version these were site-wide switches. On your site these are on, and keep working for every protected video, so nothing changed for your members: %s. Pick a level below to use the levels instead: then hiding the file address and detecting developer tools belong to Strict.', 'mediashield' ),
 							legacy.map( ( k ) => legacyNames[ k ] || k ).join( ', ' )
 						) }
 						<div>

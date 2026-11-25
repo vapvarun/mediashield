@@ -123,6 +123,7 @@ class SettingsController extends WP_REST_Controller {
 			foreach ( \MediaShield\Player\Protection::LEGACY_SWITCHES as $switch ) {
 				delete_option( $switch );
 			}
+			delete_option( \MediaShield\Player\Protection::SWITCHES_KEPT );
 			unset( $data['ms_hide_source'], $data['ms_detect_devtools'], $data['ms_pause_on_devtools'] );
 		}
 

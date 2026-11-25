@@ -87,6 +87,9 @@ class Migrator {
 		// Videos list status and counts. Local checks only.
 		if ( $installed > 0 && $installed < 14 ) {
 			\MediaShield\CPT\VideoStatus::backfill();
+			// An update keeps the old site-wide protection switches working
+			// until the owner picks a level (Protection::legacy_switches()).
+			add_option( \MediaShield\Player\Protection::SWITCHES_KEPT, 1 );
 		}
 
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
