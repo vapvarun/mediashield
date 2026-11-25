@@ -612,6 +612,11 @@
 	// reads autoplay, loop and muted from its query string. It has no switch
 	// for its controls, so Show player controls applies only when Bunny plays
 	// as a direct stream (NativeAdapter). Any other embed URL is left as it is.
+	//
+	// All three are always sent. Bunny's embed autoplays when its query string
+	// says nothing, while MediaShield's default is no autoplay, no loop, not
+	// muted, so a video whose Player Options were never saved (an import, a
+	// pasted URL) sends false for each instead of nothing.
 	function bunnyEmbedUrl( sourceUrl, options ) {
 		var url;
 		try {
@@ -623,9 +628,7 @@
 			return sourceUrl;
 		}
 		[ 'autoplay', 'loop', 'muted' ].forEach( function ( key ) {
-			if ( options && typeof options[ key ] === 'boolean' ) {
-				url.searchParams.set( key, options[ key ] ? 'true' : 'false' );
-			}
+			url.searchParams.set( key, options && options[ key ] === true ? 'true' : 'false' );
 		} );
 		return url.toString();
 	}
