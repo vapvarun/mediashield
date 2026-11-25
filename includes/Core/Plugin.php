@@ -79,6 +79,8 @@ class Plugin {
 		\MediaShield\CPT\VideoCreator::register();
 		// Each video's library status, stored when it can change (Basecamp 10545260458).
 		\MediaShield\CPT\VideoStatus::register();
+		// A new source forgets the length players measured for the old one.
+		\MediaShield\Access\WatchedSpans::register();
 		// Where each video is placed, cached until an embed changes.
 		\MediaShield\CPT\VideoUsage::register();
 

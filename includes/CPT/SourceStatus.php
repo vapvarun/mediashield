@@ -172,10 +172,11 @@ class SourceStatus {
 	/**
 	 * A player says the platform refused the video: confirm and record it.
 	 *
-	 * Checked with the platform at most once per CHECK_INTERVAL per video; a
-	 * report on a video already recorded re-checks it and clears the record
-	 * when the platform plays it again. A platform with no public check is recorded only when the reporter may
-	 * edit the video.
+	 * The platform is asked at most once per CHECK_INTERVAL per video,
+	 * whatever it answered, so guests cannot make the site call it on every
+	 * request. A report on a video already recorded uses that answer and
+	 * clears the record when the platform plays it again. A platform with
+	 * no public check is recorded only when the reporter may edit the video.
 	 *
 	 * @param int    $video_id Video ID.
 	 * @param string $code     Reason the player saw.
@@ -183,18 +184,25 @@ class SourceStatus {
 	 */
 	public static function report( int $video_id, string $code ): bool {
 		$recorded = null !== self::get( $video_id );
+		// Asked before the lock: where the platform cannot say, an editor's
+		// own screen is enough, even inside a viewer's ten minutes.
+		$editor = current_user_can( 'edit_post', $video_id );
 
-		$lock = 'ms_source_check_' . $video_id;
-		if ( get_transient( $lock ) ) {
-			return $recorded;
+		// The platform's last answer, kept CHECK_INTERVAL whatever it was, so
+		// reports (any visitor may send them) ask the platform at most once
+		// per interval: 'yes' plays, 'no' refused, 'unknown' cannot tell.
+		$lock   = 'ms_source_check_' . $video_id;
+		$answer = get_transient( $lock );
+		if ( false === $answer ) {
+			$playable = self::check( $video_id );
+			$answer   = true === $playable ? 'yes' : ( false === $playable ? 'no' : 'unknown' );
+			set_transient( $lock, $answer, self::CHECK_INTERVAL );
 		}
-		set_transient( $lock, 1, self::CHECK_INTERVAL );
 
-		$playable = self::check( $video_id );
 		// Already recorded: the platform plays it again (the owner made it
 		// public), so the record goes; any other answer keeps it.
 		if ( $recorded ) {
-			if ( true === $playable ) {
+			if ( 'yes' === $answer ) {
 				self::clear( $video_id );
 				return false;
 			}
@@ -203,10 +211,7 @@ class SourceStatus {
 		// The platform says it plays, or cannot say and the reporter is a
 		// viewer: nothing is recorded. Someone who edits the video saw the
 		// refusal on their own screen, which is enough where there is no check.
-		if ( true === $playable || ( null === $playable && ! current_user_can( 'edit_post', $video_id ) ) ) {
-			if ( null === $playable ) {
-				delete_transient( $lock );
-			}
+		if ( 'yes' === $answer || ( 'unknown' === $answer && ! $editor ) ) {
 			return false;
 		}
 

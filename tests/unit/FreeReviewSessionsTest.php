@@ -200,30 +200,92 @@ class FreeReviewSessionsTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * #9: the length is the video's, measured by any viewer: a member whose
+	 * Give a member $seconds of watched time on the video.
+	 */
+	private static function watched( int $user, int $video, float $seconds ): void {
+		update_user_meta( $user, WatchedSpans::META_KEY, array( $video => array( 's' => array( array( 0, $seconds ) ) ) ) );
+	}
+
+	/**
+	 * #9: the length is the video's, measured by its viewers: a member whose
 	 * player never reported one still gets a share, and a member reporting a
 	 * short length cannot make a long video 100%.
 	 */
 	public function test_the_measured_length_is_kept_on_the_video(): void {
-		$video  = $this->vimeo_video( 'https://vimeo.com/76979871' );
-		$honest = self::factory()->user->create();
-		$short  = self::factory()->user->create();
-		$quiet  = self::factory()->user->create();
+		$video = $this->vimeo_video( 'https://vimeo.com/76979871' );
+		$a     = self::factory()->user->create();
+		$b     = self::factory()->user->create();
+		$short = self::factory()->user->create();
+		$quiet = self::factory()->user->create();
 
-		$watched = static function ( int $user, float $seconds ) use ( $video ) {
-			update_user_meta( $user, WatchedSpans::META_KEY, array( $video => array( 's' => array( array( 0, $seconds ) ) ) ) );
-		};
+		WatchedSpans::record( $a, $video, array(), 200.0 );
+		WatchedSpans::record( $b, $video, array(), 200.0 );
+		$this->assertSame( 200.0, WatchedSpans::measured( $video ) );
 
-		WatchedSpans::record( $honest, $video, array(), 200.0 );
-		$this->assertSame( 200.0, (float) get_post_meta( $video, WatchedSpans::MEASURED, true ) );
-
-		$watched( $short, 10 );
+		self::watched( $short, $video, 10 );
 		WatchedSpans::record( $short, $video, array(), 10.0 );
 		$this->assertSame( 5, WatchedSpans::percent( $short, $video ), '10 s of 200 s, not of the 10 s it reported.' );
-		$this->assertSame( 200.0, (float) get_post_meta( $video, WatchedSpans::MEASURED, true ), 'A shorter report never lowers it.' );
 
-		$watched( $quiet, 20 );
+		self::watched( $quiet, $video, 20 );
 		$this->assertSame( 10, WatchedSpans::percent( $quiet, $video ), 'No length of its own: the video\'s.' );
+	}
+
+	/**
+	 * Re-review #1: one member reporting a huge length cannot hold everyone
+	 * at 0%: above 24 hours it is not believed, and under it the median of
+	 * the honest reports wins.
+	 */
+	public function test_one_bogus_length_does_not_move_anyones_share(): void {
+		$video  = $this->vimeo_video( 'https://vimeo.com/76979871' );
+		$honest = self::factory()->user->create();
+		$bogus  = self::factory()->user->create();
+		$other  = self::factory()->user->create();
+		self::watched( $honest, $video, 100 );
+
+		WatchedSpans::record( $honest, $video, array(), 200.0 );
+		WatchedSpans::record( $bogus, $video, array(), 99999999.0 );
+		$this->assertSame( 50, WatchedSpans::percent( $honest, $video ), 'Over 24 hours: not believed.' );
+
+		WatchedSpans::record( $bogus, $video, array(), 80000.0 );
+		$this->assertSame( 50, WatchedSpans::percent( $honest, $video ), 'Two reports: the lower middle one.' );
+
+		WatchedSpans::record( $other, $video, array(), 210.0 );
+		WatchedSpans::record( $bogus, $video, array(), 80000.0 );
+		$this->assertSame( 47, WatchedSpans::percent( $honest, $video ), 'Median of 200, 210 and the bogus one: 210.' );
+	}
+
+	/**
+	 * Re-review #1: the median of the honest reports is used, and a report far
+	 * above it is not kept once three are known.
+	 */
+	public function test_the_median_of_honest_reports_is_used(): void {
+		$video = $this->vimeo_video( 'https://vimeo.com/76979871' );
+		$users = self::factory()->user->create_many( 4 );
+		foreach ( array( 180.0, 200.0, 190.0 ) as $i => $length ) {
+			WatchedSpans::record( $users[ $i ], $video, array(), $length );
+		}
+		$this->assertSame( 190.0, WatchedSpans::measured( $video ) );
+
+		WatchedSpans::record( $users[3], $video, array(), 5000.0 );
+		$this->assertCount( 3, get_post_meta( $video, WatchedSpans::MEASURED, true ), 'Far above the median: not kept.' );
+		$this->assertSame( 190.0, WatchedSpans::measured( $video ) );
+	}
+
+	/**
+	 * Re-review #1: the owner swaps in a shorter video; the old length goes.
+	 */
+	public function test_a_new_source_forgets_the_measured_length(): void {
+		$video  = $this->vimeo_video( 'https://vimeo.com/76979871' );
+		$member = self::factory()->user->create();
+		WatchedSpans::record( $member, $video, array(), 3600.0 );
+		self::watched( $member, $video, 60 );
+		$this->assertSame( 1, WatchedSpans::percent( $member, $video ) );
+
+		update_post_meta( $video, '_ms_source_url', 'https://vimeo.com/76979872' );
+
+		$this->assertSame( 0.0, WatchedSpans::measured( $video ) );
+		WatchedSpans::record( $member, $video, array(), 120.0 );
+		$this->assertSame( 50, WatchedSpans::percent( $member, $video ) );
 	}
 
 	/**
@@ -236,7 +298,29 @@ class FreeReviewSessionsTest extends WP_UnitTestCase {
 		update_user_meta( $member, WatchedSpans::META_KEY, array( $video => array( 's' => array( array( 0, 30 ) ), 'd' => 120.0 ) ) );
 
 		$this->assertSame( 25, WatchedSpans::percent( $member, $video ) );
-		$this->assertSame( 120.0, (float) get_post_meta( $video, WatchedSpans::MEASURED, true ) );
+		$this->assertSame( 120.0, WatchedSpans::measured( $video ) );
+	}
+
+	/**
+	 * Re-review #2: guests' reports ask the platform once per ten minutes,
+	 * whatever it answered; an editor's report still records where it cannot
+	 * tell.
+	 */
+	public function test_guest_reports_call_the_platform_once_per_interval(): void {
+		$this->vimeo = static function () {
+			return 403;
+		};
+		$video = $this->vimeo_video( 'https://vimeo.com/76979871' );
+
+		for ( $i = 0; $i < 5; $i++ ) {
+			$this->assertFalse( $this->guest_report( $video ) );
+		}
+		$this->assertCount( 1, $this->asked );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertTrue( SourceStatus::report( $video, 'private' ) );
+		$this->assertCount( 1, $this->asked );
+		$this->assertNotNull( SourceStatus::get( $video ) );
 	}
 
 	/**
