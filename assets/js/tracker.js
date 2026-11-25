@@ -164,7 +164,7 @@
 			.then( function ( res ) {
 				if ( res.ok ) {
 					session.failCount = 0;
-					res.clone().json().then( function ( data ) {
+					window.mediashieldRequest.readJSON( res.clone() ).then( function ( data ) {
 						if ( data && 'number' === typeof data.watched_pct ) {
 							session.watchedPct = data.watched_pct;
 							session.requiredPct = lessonRequired( session.el ) || data.required_pct || 0;

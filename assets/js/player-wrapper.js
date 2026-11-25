@@ -1728,6 +1728,7 @@
 			reset();
 			var p = video.play();
 			if ( p && p.catch ) {
+				// ms-silent-ok: play() is not a request; a refusal is the stall this watchdog counts.
 				p.catch( function () {} );
 			}
 		};
@@ -1796,6 +1797,7 @@
 			if ( waitingToPlay && video.paused && video.readyState >= 2 ) {
 				var resumed = video.play();
 				if ( resumed && resumed.catch ) {
+					// ms-silent-ok: play() is not a request; if the browser keeps refusing, the count below runs on.
 					resumed.catch( function () {} );
 				}
 			}
