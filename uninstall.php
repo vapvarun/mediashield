@@ -72,6 +72,7 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			'ms_library_files_report',
 			'ms_library_files_repair_pending',
 			'ms_poster_names_pending',
+			'ms_lengths_pending',
 			'ms_new_defaults_decided',
 			'ms_protection_switches_kept',
 			'ms_custom_url_patterns', // Removed in 1.3.0.

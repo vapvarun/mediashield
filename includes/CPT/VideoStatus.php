@@ -154,6 +154,12 @@ class VideoStatus {
 	/**
 	 * Does this video have nothing MediaShield can play?
 	 *
+	 * A stored link with a stored platform plays as it did: 1.4.3 saved an
+	 * unrecognised link as a video file (`self`) and plays it in a <video>
+	 * (for example https://media.example.com/watch?id=42). Platforms::recognise()
+	 * only gates a new link, at save; here it judges a link saved without a
+	 * platform.
+	 *
 	 * @param int $video_id Video ID.
 	 * @return bool
 	 */
@@ -162,9 +168,53 @@ class VideoStatus {
 		$stream = trim( (string) get_post_meta( $video_id, '_ms_stream_url', true ) );
 		// A platform id (or an uploaded file's name) is enough for the
 		// player, as Renderer::render() reads it.
-		$id = trim( (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) );
+		$id       = trim( (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) );
+		$platform = trim( (string) get_post_meta( $video_id, '_ms_platform', true ) );
 
-		return '' === $stream && '' === $id && ( '' === $source || is_wp_error( Platforms::recognise( $source ) ) );
+		if ( '' !== $stream || '' !== $id ) {
+			return false;
+		}
+		if ( '' === $source ) {
+			return true;
+		}
+		return '' === $platform && is_wp_error( Platforms::recognise( $source ) );
+	}
+
+	/**
+	 * Take "No source" off videos the v14 backfill flagged that still play:
+	 * a stored link with a stored platform (lacks_source()). One read and
+	 * one delete, for sites that ran v14 before this rule (Migrator v17).
+	 *
+	 * @since 1.4.4
+	 */
+	public static function clear_played_links(): void {
+		global $wpdb;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off upgrade correction on indexed meta keys.
+		$ids = array_map(
+			'intval',
+			(array) $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT n.post_id FROM {$wpdb->postmeta} n
+					 INNER JOIN {$wpdb->postmeta} s ON s.post_id = n.post_id AND s.meta_key = '_ms_source_url' AND s.meta_value <> ''
+					 INNER JOIN {$wpdb->postmeta} p ON p.post_id = n.post_id AND p.meta_key = '_ms_platform' AND p.meta_value <> ''
+					 WHERE n.meta_key = %s",
+					self::NO_SOURCE
+				)
+			)
+		);
+		if ( ! $ids ) {
+			return;
+		}
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->postmeta} WHERE meta_key = %s AND post_id IN ( " . implode( ', ', array_fill( 0, count( $ids ), '%d' ) ) . ' )', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Placeholders only.
+				array_merge( array( self::NO_SOURCE ), $ids )
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		foreach ( $ids as $id ) {
+			wp_cache_delete( $id, 'post_meta' );
+		}
 	}
 
 	/**
@@ -321,7 +371,7 @@ class VideoStatus {
 			$wpdb->prepare(
 				"SELECT m.post_id, m.meta_key, m.meta_value FROM {$wpdb->postmeta} m
 				 INNER JOIN {$wpdb->posts} p ON p.ID = m.post_id AND p.post_type = 'mediashield_video'
-				 WHERE m.meta_key IN ( %s, %s, %s ) AND m.meta_value <> ''",
+				 WHERE m.meta_key IN ( %s, %s, %s, '_ms_platform' ) AND m.meta_value <> ''",
 				self::SOURCE_KEYS[0],
 				self::SOURCE_KEYS[1],
 				self::SOURCE_KEYS[2]
@@ -329,10 +379,24 @@ class VideoStatus {
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
+		// The same rule as lacks_source(): a stream or platform id plays; a
+		// link plays when a platform is stored with it or recognise() knows it.
 		$playable = array();
+		$links    = array();
+		$platform = array();
 		foreach ( $rows as $row ) {
-			if ( '_ms_source_url' !== $row->meta_key || ! is_wp_error( Platforms::recognise( (string) $row->meta_value ) ) ) {
-				$playable[ (int) $row->post_id ] = true;
+			$id = (int) $row->post_id;
+			if ( '_ms_platform' === $row->meta_key ) {
+				$platform[ $id ] = true;
+			} elseif ( '_ms_source_url' === $row->meta_key ) {
+				$links[ $id ] = (string) $row->meta_value;
+			} else {
+				$playable[ $id ] = true;
+			}
+		}
+		foreach ( $links as $id => $link ) {
+			if ( isset( $platform[ $id ] ) || ! is_wp_error( Platforms::recognise( $link ) ) ) {
+				$playable[ $id ] = true;
 			}
 		}
 		foreach ( $ids as $id ) {

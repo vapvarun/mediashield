@@ -456,24 +456,78 @@ class SelfHosted implements DriverInterface {
 	}
 
 	/**
-	 * Fill the length of every uploaded file that has none, once (Migrator v15).
+	 * Option: the length backfill is pending; its value is the last video ID
+	 * done (Migrator v15 adds it at '0', the job deletes it when finished).
+	 */
+	const LENGTHS_PENDING = 'ms_lengths_pending';
+
+	/**
+	 * Video meta: getID3 could not read this file's length; the backfill
+	 * does not try it again.
+	 */
+	const LENGTH_UNREADABLE = '_ms_length_unreadable';
+
+	/**
+	 * Files read per backfill run.
+	 */
+	const LENGTHS_BATCH = 50;
+
+	/**
+	 * Queue the next backfill run while one is pending (init).
 	 *
-	 * A length the owner typed is kept.
+	 * @since 1.4.4
+	 */
+	public static function ensure_lengths_job(): void {
+		if ( false !== get_option( self::LENGTHS_PENDING ) ) {
+			\MediaShield\Cron\Cleanup::schedule_single( 'ms_backfill_lengths', time() + MINUTE_IN_SECONDS );
+		}
+	}
+
+	/**
+	 * Fill the length of uploaded files that have none, 50 a run, in a
+	 * background job (Migrator v15 queues it; `ms_backfill_lengths`).
+	 *
+	 * Walks video IDs above the stored cursor, so each file is read once. A
+	 * length the owner typed is kept; a file getID3 cannot read is marked
+	 * LENGTH_UNREADABLE. Reschedules itself until none are left, then
+	 * deletes the pending option.
 	 *
 	 * @since 1.4.4
 	 */
 	public static function backfill_lengths(): void {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off upgrade pass over core tables.
-		$ids = (array) $wpdb->get_col(
-			"SELECT p.ID FROM {$wpdb->posts} p
-			 INNER JOIN {$wpdb->postmeta} f ON f.post_id = p.ID AND f.meta_key = '_ms_owned_file' AND f.meta_value <> ''
-			 LEFT JOIN {$wpdb->postmeta} d ON d.post_id = p.ID AND d.meta_key = '_ms_duration'
-			 WHERE p.post_type = 'mediashield_video' AND p.post_status <> 'trash' AND ( d.meta_value IS NULL OR d.meta_value = '' OR d.meta_value = '0' )"
-		);
-		foreach ( $ids as $id ) {
-			self::record_length( (int) $id, \MediaShield\REST\StreamController::resolve_file( (int) $id ) );
+		$cursor = get_option( self::LENGTHS_PENDING );
+		if ( false === $cursor ) {
+			return;
 		}
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off upgrade walk on the primary key, one batch.
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->posts} p
+				 INNER JOIN {$wpdb->postmeta} f ON f.post_id = p.ID AND f.meta_key = '_ms_owned_file' AND f.meta_value <> ''
+				 LEFT JOIN {$wpdb->postmeta} d ON d.post_id = p.ID AND d.meta_key = '_ms_duration'
+				 WHERE p.post_type = 'mediashield_video' AND p.post_status <> 'trash' AND p.ID > %d
+				 AND ( d.meta_value IS NULL OR d.meta_value = '' OR d.meta_value = '0' )
+				 ORDER BY p.ID ASC LIMIT %d",
+				(int) $cursor,
+				self::LENGTHS_BATCH
+			)
+		);
+
+		if ( empty( $ids ) ) {
+			delete_option( self::LENGTHS_PENDING );
+			return;
+		}
+
+		foreach ( $ids as $id ) {
+			if ( 0 === self::record_length( (int) $id, \MediaShield\REST\StreamController::resolve_file( (int) $id ) ) ) {
+				update_post_meta( (int) $id, self::LENGTH_UNREADABLE, 1 );
+			}
+		}
+
+		update_option( self::LENGTHS_PENDING, (string) max( array_map( 'intval', $ids ) ), false );
+		\MediaShield\Cron\Cleanup::schedule_single( 'ms_backfill_lengths', time() + MINUTE_IN_SECONDS );
 	}
 
 	/**

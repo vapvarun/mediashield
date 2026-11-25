@@ -93,14 +93,23 @@ class Migrator {
 		}
 
 		// v15 - the length of files uploaded before 1.4.4, read from the file.
+		// Background job (SelfHosted::backfill_lengths(), 50 files a run):
+		// reading files is slow, and an upgrade is the worst moment to block.
 		if ( $installed > 0 && $installed < 15 ) {
-			\MediaShield\Upload\Drivers\SelfHosted::backfill_lengths();
+			add_option( \MediaShield\Upload\Drivers\SelfHosted::LENGTHS_PENDING, '0', '', false );
 		}
 
 		// v16 - no step of its own: the bump makes seed_defaults() above
 		// store ms_learnomy_new_lesson_pct (the stored Require X% watched) on
 		// sites that reached v15 before that setting existed, so the saved
 		// value is what Settings shows, never a missing row read as 80.
+
+		// v17 - take "No source" off videos v14 flagged that still play: a
+		// stored link with a stored platform (VideoStatus::lacks_source()).
+		// One read and one delete. Sites below v14 get the fixed backfill.
+		if ( $installed >= 14 && $installed < 17 ) {
+			\MediaShield\CPT\VideoStatus::clear_played_links();
+		}
 
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
 	}
