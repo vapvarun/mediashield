@@ -594,6 +594,26 @@ class SessionManager {
 	}
 
 	/**
+	 * SQL for "one viewer" when grouping sessions: the member, or for a guest
+	 * the session itself (guests share user_id 0 and are not one person).
+	 *
+	 * Completion is counted one way on every screen (Basecamp 10545260603):
+	 * a viewer's completion of a video is the furthest completion_pct of any
+	 * session of theirs that played, and an average is over viewers and
+	 * videos, not over page loads. Group by video and this, take
+	 * MAX(completion_pct), then average. My Videos shows the same MAX.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param string $alias Table alias, e.g. 's', or '' for none.
+	 * @return string
+	 */
+	public static function viewer_sql( string $alias = '' ): string {
+		$c = '' === $alias ? '' : $alias . '.';
+		return "(CASE WHEN {$c}user_id = 0 THEN -{$c}id ELSE {$c}user_id END)";
+	}
+
+	/**
 	 * Has this member watched enough of this video to complete its lesson?
 	 *
 	 * The one place the "Require X% watched" rule (Settings

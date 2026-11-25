@@ -194,6 +194,8 @@ class AnalyticsController extends WP_REST_Controller {
 		// Only sessions that played: every page view opens one (see played_sql()).
 		$played   = SessionManager::played_sql();
 		$played_s = SessionManager::played_sql( 's' );
+		$viewer   = SessionManager::viewer_sql(); // One viewer: completion is their best, not each page load's.
+		$viewer_s = SessionManager::viewer_sql( 's' );
 
 		$total_sessions = (int) $wpdb->get_var(
 			$wpdb->prepare(
@@ -204,14 +206,18 @@ class AnalyticsController extends WP_REST_Controller {
 
 		$avg_completion = (float) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}",
+				"SELECT AVG(best) FROM (
+				   SELECT MAX(completion_pct) AS best FROM {$sessions}
+				   WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}
+				   GROUP BY video_id, {$viewer}
+				 ) per_viewer",
 				$now_utc
 			)
 		);
 
 		$active_viewers = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT user_id) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(%s, INTERVAL 5 MINUTE)",
+				"SELECT COUNT(DISTINCT {$viewer}) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(%s, INTERVAL 5 MINUTE) AND {$played}",
 				$now_utc
 			)
 		);
@@ -237,11 +243,15 @@ class AnalyticsController extends WP_REST_Controller {
 		// Top 5 videos by sessions.
 		$top_videos = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
-				 FROM {$sessions} s
-				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_status = 'publish'
-				 WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played_s}
-				 GROUP BY s.video_id
+				"SELECT v.video_id, SUM(v.sessions) AS session_count, AVG(v.best) AS avg_completion, p.post_title
+				 FROM (
+				   SELECT s.video_id, COUNT(*) AS sessions, MAX(s.completion_pct) AS best
+				   FROM {$sessions} s
+				   WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played_s}
+				   GROUP BY s.video_id, {$viewer_s}
+				 ) v
+				 INNER JOIN {$wpdb->posts} p ON v.video_id = p.ID AND p.post_status = 'publish'
+				 GROUP BY v.video_id, p.post_title
 				 ORDER BY session_count DESC
 				 LIMIT 5",
 				$now_utc
@@ -395,7 +405,9 @@ class AnalyticsController extends WP_REST_Controller {
 	private static function first_run( array $counts ): array {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; existence check.
-		$viewed = (bool) $wpdb->get_var( "SELECT 1 FROM {$wpdb->prefix}ms_watch_sessions LIMIT 1" );
+		$played = SessionManager::played_sql(); // A page load is not a view.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; existence check.
+		$viewed = (bool) $wpdb->get_var( "SELECT 1 FROM {$wpdb->prefix}ms_watch_sessions WHERE {$played} LIMIT 1" );
 		return array(
 			'has_video'     => $counts['total'] > 0,
 			'has_protected' => $counts['protected'] > 0,
@@ -417,16 +429,22 @@ class AnalyticsController extends WP_REST_Controller {
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$played = SessionManager::played_sql(); // Constant SQL fragment, no input.
+		$viewer = SessionManager::viewer_sql(); // Completion is each viewer's best (viewer_sql()).
 		$stats  = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT
-				COUNT(*) AS total_sessions,
-				COUNT(DISTINCT user_id) AS unique_viewers,
-				AVG(completion_pct) AS avg_completion,
-				SUM(total_seconds) AS total_watch_time,
-				MAX(last_heartbeat) AS last_watched
-			 FROM {$sessions}
-			 WHERE video_id = %d AND {$played}",
+				SUM(sessions) AS total_sessions,
+				COUNT(*) AS unique_viewers,
+				AVG(best) AS avg_completion,
+				SUM(seconds) AS total_watch_time,
+				MAX(last_hb) AS last_watched
+			 FROM (
+			   SELECT COUNT(*) AS sessions, MAX(completion_pct) AS best,
+			          SUM(total_seconds) AS seconds, MAX(last_heartbeat) AS last_hb
+			   FROM {$sessions}
+			   WHERE video_id = %d AND {$played}
+			   GROUP BY {$viewer}
+			 ) per_viewer",
 				$video_id
 			)
 		);
@@ -551,14 +569,21 @@ class AnalyticsController extends WP_REST_Controller {
 			empty( $args ) ? $count_query : $wpdb->prepare( $count_query, ...$args )
 		);
 
-		$list_query = "SELECT s.user_id, u.display_name, u.user_email,
-					COUNT(DISTINCT s.video_id) AS videos_watched,
-					AVG(s.completion_pct) AS avg_completion,
-					MAX(s.last_heartbeat) AS last_active
-			 FROM {$wpdb->prefix}ms_watch_sessions s
-			 INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
-			 WHERE s.user_id > 0 AND {$played_s} {$where}
-			 GROUP BY s.user_id
+		// A member's completion is the average of their best on each video,
+		// the same number My Videos shows per video (viewer_sql()).
+		$list_query = "SELECT v.user_id, u.display_name, u.user_email,
+					COUNT(*) AS videos_watched,
+					AVG(v.best) AS avg_completion,
+					MAX(v.last_hb) AS last_active
+			 FROM (
+			   SELECT s.user_id, s.video_id, MAX(s.completion_pct) AS best, MAX(s.last_heartbeat) AS last_hb
+			   FROM {$wpdb->prefix}ms_watch_sessions s
+			   INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
+			   WHERE s.user_id > 0 AND {$played_s} {$where}
+			   GROUP BY s.user_id, s.video_id
+			 ) v
+			 INNER JOIN {$wpdb->users} u ON v.user_id = u.ID
+			 GROUP BY v.user_id, u.display_name, u.user_email
 			 ORDER BY last_active DESC
 			 LIMIT %d OFFSET %d";
 		$query_args = array_merge( $args, array( $per_page, $offset ) );

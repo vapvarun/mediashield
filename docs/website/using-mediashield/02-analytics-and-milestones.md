@@ -16,8 +16,8 @@ The date range selector at the top offers Today, Last 7 days (the default), Last
 
 - **Total Videos** - published videos in your library. Not affected by the date range.
 - **Total Sessions** - watch sessions started in the selected period.
-- **Avg Completion** - average completion percentage across sessions in the period that made any progress at all. Sessions at 0% are excluded so an accidental page load does not drag the average down.
-- **Active Viewers** - distinct viewers with a heartbeat in the last 5 minutes. This is live, and ignores the date range.
+- **Avg Completion** - the average, over viewers and videos, of each viewer's furthest completion of each video in the period. A viewer who watched a video twice, to 40% and then to the end, counts once at 100%. A page load that never played is not counted.
+- **Active Viewers** - distinct viewers playing a video in the last 5 minutes. A page left open that never played is not a viewer. This is live, and ignores the date range.
 
 ### Activity chart
 
@@ -25,7 +25,7 @@ A daily bar chart of session counts over the selected period.
 
 ### Top Videos
 
-The five best-performing videos by session count for the active date range, with each one's average completion.
+The five best-performing videos by session count for the active date range, with each one's average completion (each viewer's furthest point, averaged).
 
 ### Recent Milestones
 
@@ -35,7 +35,7 @@ The most recent milestones reached across all videos, within the same date range
 
 Go to **MediaShield > Viewers** to see per-user watch activity. (This section was called Students in earlier versions; old links still resolve.)
 
-The list shows every user who has watched at least one video, with videos watched, average completion, and last active time, and a search box for name or email.
+The list shows every user who has watched at least one video, with videos watched, average completion (the average of their furthest completion on each video, the same per-video figure the member sees in My Videos), and last active time, and a search box for name or email.
 
 Click a viewer to see their watch history: every video they have started, their progress, and when they last watched it. The detail view covers their 100 most recent sessions.
 
@@ -84,3 +84,7 @@ Tags arrive here two ways: created by hand on this page, or created automaticall
 ## What to expect on a fresh install
 
 The dashboard shows real data only. There are no demo numbers. After installing, watch a video as a logged-in user for at least 30 seconds, then refresh the dashboard to see your first session counted. If nothing appears, check the video's protection level before anything else.
+
+## One way to count, on every screen
+
+Every count uses the same two rules, in Free and Pro (Dashboard, Viewers, a video's stats, My Videos, and Pro's funnel, device breakdown and weekly digest): a view is a session that played (a page load alone is not), and a viewer's completion of a video is the furthest point of any of their viewings. So the same member shows the same numbers wherever you look.
