@@ -45,6 +45,8 @@ In the block inserter, search for **MediaShield Playlist**. The block opens a pl
 
 Both embedding methods produce the same output. An empty playlist, or one that is not published, renders nothing for visitors and a short explanation for anyone who can edit posts.
 
+Only published videos play. A draft or private video can stay in the playlist: **Manage items** and the block in the editor mark it **Not published, not shown on the page**, and the block's video count leaves it out, so the editor shows the same number as the page.
+
 A playlist has no page of its own. Viewers see it only where you place it with the shortcode or the block, the same as a single video. Links to the old `/playlist/<name>/` address (MediaShield 1.4.1 to 1.4.3) keep working: they lead to a published page that shows the playlist with the block or shortcode. If no page shows it, the old address answers "page not found", so place the playlist on a page.
 
 ## How playlists work with protection

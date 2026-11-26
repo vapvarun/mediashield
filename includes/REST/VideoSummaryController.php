@@ -117,7 +117,7 @@ class VideoSummaryController extends WP_REST_Controller {
 		return new WP_REST_Response(
 			array(
 				'platform'       => $link['platform'],
-				'platform_label' => Platforms::label( $link['platform'] ),
+				'platform_label' => Platforms::label( $link['platform'], false ),
 				'match'          => $id ? self::summary( $id, 0 ) : null,
 			),
 			200
@@ -187,18 +187,13 @@ class VideoSummaryController extends WP_REST_Controller {
 		$levels   = Protection::levels();
 		$own      = (string) get_post_meta( $video_id, '_ms_protection_level', true );
 
-		// No poster of the owner's: a YouTube video still has YouTube's
-		// public thumbnail, as the block showed before 1.4.4. Never derived
-		// for other platforms: a self-hosted id is the private file name.
+		// poster_url() falls back to YouTube's public image itself, and not
+		// for a video YouTube no longer plays.
 		$thumbnail = Thumbnail::poster_url( $video_id, 'large', true );
-		$youtube   = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
-		if ( '' === $thumbnail && 'youtube' === $platform && preg_match( '/^[A-Za-z0-9_-]{11}$/', $youtube ) ) {
-			$thumbnail = 'https://i.ytimg.com/vi/' . $youtube . '/hqdefault.jpg';
-		}
 
 		return array(
 			'platform'         => $platform,
-			'platform_label'   => Platforms::label( $platform ),
+			'platform_label'   => Platforms::label( $platform, Platforms::SELF_HOSTED === $platform ? '' !== VideoListController::source_label( $video_id, $platform ) : null ),
 			'duration'         => (int) get_post_meta( $video_id, '_ms_duration', true ),
 			'thumbnail'        => $thumbnail,
 			'protection'       => $level,

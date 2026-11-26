@@ -84,10 +84,12 @@ export default function Edit( { attributes, setAttributes } ) {
 	const title = playlist ? decodeEntities( playlist.title?.rendered || '' ) : __( 'Playlist', 'mediashield' );
 	const meta = playlist?.meta || {};
 	const onOff = ( v ) => ( v ? __( 'On', 'mediashield' ) : __( 'Off', 'mediashield' ) );
+	// The page plays published videos only (render.php), so the count does too.
+	const playable = items.filter( ( item ) => 'publish' === item.status ).length;
 	const countLabel = sprintf(
 		/* translators: %d: number of videos in the playlist. */
-		_n( '%d video', '%d videos', items.length, 'mediashield' ),
-		items.length
+		_n( '%d video', '%d videos', playable, 'mediashield' ),
+		playable
 	);
 
 	return (
@@ -150,8 +152,10 @@ export default function Edit( { attributes, setAttributes } ) {
 									<Video size={ 24 } strokeWidth={ 1.75 } className="ms-icon ms-playlist-item-thumb-placeholder" />
 								) }
 								<span className="ms-playlist-item-title">{ decodeEntities( item.title || '' ) }</span>
-								{ item.platform && (
-									<span className="ms-playlist-item-platform">{ item.platform }</span>
+								{ 'publish' !== item.status ? (
+									<span className="ms-playlist-item-platform">{ __( 'Not published, not shown on the page', 'mediashield' ) }</span>
+								) : item.platform && (
+									<span className="ms-playlist-item-platform">{ item.platform_label || item.platform }</span>
 								) }
 							</li>
 						) ) }

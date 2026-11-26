@@ -260,23 +260,27 @@ class PlaylistController extends WP_REST_Controller {
 
 		// Sanitize output.
 		$result = array();
+		update_meta_cache( 'post', array_map( 'intval', wp_list_pluck( (array) $items, 'video_id' ) ) );
 		foreach ( ( ! empty( $items ) ? $items : array() ) as $item ) {
+			$platform = ! empty( $item->platform ) ? (string) $item->platform : 'self';
 			// Editors only (Manage items): the same poster as every list (MSUX-11).
 			$thumb_url = \MediaShield\CPT\Thumbnail::poster_url( (int) $item->video_id, 'thumbnail', true );
 			$result[]  = array(
-				'item_id'    => (int) $item->item_id,
-				'video_id'   => (int) $item->video_id,
-				'sort_order' => (int) $item->sort_order,
-				'added_at'   => $item->added_at,
-				'title'      => sanitize_text_field( $item->video_title ),
-				'status'     => $item->video_status,
-				'platform'   => sanitize_text_field( ! empty( $item->platform ) ? $item->platform : 'self' ),
+				'item_id'        => (int) $item->item_id,
+				'video_id'       => (int) $item->video_id,
+				'sort_order'     => (int) $item->sort_order,
+				'added_at'       => $item->added_at,
+				'title'          => sanitize_text_field( $item->video_title ),
+				'status'         => $item->video_status,
+				'platform'       => sanitize_text_field( $platform ),
+				// "Uploaded file" / "YouTube", never the slug (MSUX-23).
+				'platform_label' => \MediaShield\Support\Platforms::label( $platform, 'self' === $platform ? '' !== VideoListController::source_label( (int) $item->video_id, $platform ) : null ),
 				// Only for people who may edit that video, the same bar as its
 				// meta on /wp/v2/mediashield-videos: an author editing a playlist
 				// must not read the file address of someone else's paid video.
-				'source_url' => ! empty( $item->source_url ) && current_user_can( 'edit_post', (int) $item->video_id ) ? esc_url( $item->source_url ) : '',
-				'duration'   => (int) ( ! empty( $item->duration ) ? $item->duration : 0 ),
-				'thumbnail'  => ! empty( $thumb_url ) ? $thumb_url : '',
+				'source_url'     => ! empty( $item->source_url ) && current_user_can( 'edit_post', (int) $item->video_id ) ? esc_url( $item->source_url ) : '',
+				'duration'       => (int) ( ! empty( $item->duration ) ? $item->duration : 0 ),
+				'thumbnail'      => ! empty( $thumb_url ) ? $thumb_url : '',
 			);
 		}
 

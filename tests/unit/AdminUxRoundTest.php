@@ -84,4 +84,29 @@ class AdminUxRoundTest extends WP_UnitTestCase {
 		$this->assertTrue( $rows[ $live ] ?? null );
 		$this->assertFalse( $rows[ $idle ] ?? null );
 	}
+
+	/**
+	 * MSUX-23: playlist items showed the slug (SELF, YOUTUBE); MSUX-17 relies
+	 * on the status to leave drafts out of the block's count.
+	 */
+	public function test_playlist_items_name_the_platform_in_glossary_words(): void {
+		global $wpdb;
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$playlist = self::factory()->post->create( array( 'post_type' => 'mediashield_playlist', 'post_status' => 'publish' ) );
+		$yt       = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$link     = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'draft' ) );
+		update_post_meta( $yt, '_ms_platform', 'youtube' );
+		update_post_meta( $link, '_ms_platform', 'self' );
+		update_post_meta( $link, '_ms_source_url', 'https://example.com/clip.mp4' );
+		foreach ( array( $yt, $link ) as $i => $video ) {
+			$wpdb->insert( $wpdb->prefix . 'ms_playlist_items', array( 'playlist_id' => $playlist, 'video_id' => $video, 'sort_order' => $i ) ); // phpcs:ignore WordPress.DB
+		}
+
+		$items = rest_do_request( new WP_REST_Request( 'GET', "/mediashield/v1/playlists/{$playlist}/items" ) )->get_data();
+		$wpdb->delete( $wpdb->prefix . 'ms_playlist_items', array( 'playlist_id' => $playlist ) ); // phpcs:ignore WordPress.DB
+
+		$this->assertSame( array( 'YouTube', 'Video file link' ), wp_list_pluck( $items, 'platform_label' ) );
+		$this->assertSame( array( 'publish', 'draft' ), wp_list_pluck( $items, 'status' ) );
+		$this->assertSame( 'Uploaded file or file link', \MediaShield\Support\Platforms::label( 'self' ) );
+	}
 }

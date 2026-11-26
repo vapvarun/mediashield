@@ -29,7 +29,8 @@ const PLATFORM_LABELS = {
 	vimeo: 'Vimeo',
 	bunny: 'Bunny Stream',
 	wistia: 'Wistia',
-	self: __( 'Video file', 'mediashield' ),
+	// The filter covers both; a row names which (platformName()).
+	self: __( 'Uploaded file or file link', 'mediashield' ),
 	iframe: __( 'Not a video link', 'mediashield' ),
 };
 

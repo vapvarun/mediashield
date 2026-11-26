@@ -259,20 +259,23 @@ class Platforms {
 	/**
 	 * A platform's name as people read it, for any screen that shows one.
 	 *
-	 * The same words as the Videos list's platform column.
+	 * The same words as the Videos list's platform column. A video file is an
+	 * "Uploaded file" or a "Video file link" (glossary); when the caller does
+	 * not know which, both are named, as in the Videos platform filter.
 	 *
 	 * @since 1.4.4
 	 *
-	 * @param string $platform Platform slug as stored in `_ms_platform`.
+	 * @param string    $platform Platform slug as stored in `_ms_platform`.
+	 * @param bool|null $uploaded For a video file: true uploaded, false a link, null either.
 	 * @return string
 	 */
-	public static function label( string $platform ): string {
+	public static function label( string $platform, ?bool $uploaded = null ): string {
 		$labels = array(
 			'youtube'         => 'YouTube',
 			'vimeo'           => 'Vimeo',
 			'wistia'          => 'Wistia',
 			'bunny'           => 'Bunny Stream',
-			self::SELF_HOSTED => __( 'Video file', 'mediashield' ),
+			self::SELF_HOSTED => null === $uploaded ? __( 'Uploaded file or file link', 'mediashield' ) : ( $uploaded ? __( 'Uploaded file', 'mediashield' ) : __( 'Video file link', 'mediashield' ) ),
 		);
 		return $labels[ '' !== $platform ? $platform : self::SELF_HOSTED ] ?? $platform;
 	}

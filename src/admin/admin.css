@@ -100,9 +100,11 @@
 /* ── Design Tokens ────────────────────────────────── */
 /* Scoped to .mediashield-admin per wbcom-modern-admin standard */
 /* The playlist meta box on the WP edit screen mounts outside .mediashield-admin,
-   so it had no tokens and every token-driven space in it collapsed to 0. */
+   so it had no tokens and every token-driven space in it collapsed to 0.
+   The Manage items modal renders in a portal outside both, the same gap. */
 .mediashield-admin,
-#mediashield-playlist-items-root {
+#mediashield-playlist-items-root,
+.components-modal__frame.mediashield-playlist-items-modal {
 	--ms-sidebar-width: 260px;
 
 	/* Palette */
@@ -3323,8 +3325,6 @@
 	border-radius: 9999px;
 	font-size: 11px;
 	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.02em;
 	background: var( --ms-color-border-light );
 	color: var( --ms-color-text-secondary );
 }
@@ -3341,8 +3341,7 @@
 
 .ms-playlist-items__status {
 	font-style: italic;
-	color: var( --ms-color-warning, #b54708 );
-	text-transform: capitalize;
+	color: var( --ms-palette-amber-800 ); /* --ms-color-warning is 2:1 on white. */
 }
 
 .ms-playlist-items__row-actions {
@@ -3367,6 +3366,38 @@
 /* ── Playlist Items Panel (meta box on CPT edit screen) ─────── */
 .ms-playlist-items-panel {
 	padding: var( --ms-space-2 ) 0;
+}
+
+/* Phone: the row wraps. Number, small poster and title on top, labels free
+   to wrap under the title, the order buttons on their own line. */
+@media ( max-width: 600px ) {
+	.ms-playlist-items__row {
+		flex-wrap: wrap;
+		row-gap: var( --ms-space-2 );
+	}
+
+	.ms-playlist-items__thumb {
+		width: 56px;
+		height: 32px;
+		flex-shrink: 0;
+	}
+
+	.ms-playlist-items__meta {
+		flex-basis: calc( 100% - 120px );
+	}
+
+	.ms-playlist-items__title {
+		white-space: normal;
+	}
+
+	.ms-playlist-items__sub {
+		flex-wrap: wrap;
+	}
+
+	.ms-playlist-items__row-actions {
+		flex-basis: 100%;
+		justify-content: flex-end;
+	}
 }
 
 .ms-playlist-items__panel-actions {

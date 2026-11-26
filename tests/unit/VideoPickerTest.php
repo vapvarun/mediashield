@@ -44,7 +44,7 @@ class VideoPickerTest extends WP_UnitTestCase {
 		$this->assertSame( 'YouTube', $cards[ $video ]['platform_label'] );
 		$this->assertSame( 724, $cards[ $video ]['duration'] );
 		$this->assertSame( 'Site default (Standard)', $cards[ $video ]['protection_label'] );
-		$this->assertSame( 'Video file', $cards[ $strict ]['platform_label'] );
+		$this->assertSame( 'Video file link', $cards[ $strict ]['platform_label'] );
 		$this->assertSame( 'Strict', $cards[ $strict ]['protection_label'] );
 	}
 

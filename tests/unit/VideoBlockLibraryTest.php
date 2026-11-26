@@ -73,7 +73,7 @@ class VideoBlockLibraryTest extends WP_UnitTestCase {
 		update_post_meta( $file, '_ms_platform', 'self' );
 		update_post_meta( $file, '_ms_source_url', 'https://cdn.example.org/beach.mp4' );
 		$this->assertSame( $file, $this->get( '/videos/match', array( 'url' => 'https://cdn.example.org/beach.mp4' ) )->get_data()['match']['id'] );
-		$this->assertSame( 'Video file', $this->get( '/videos/match', array( 'url' => 'https://cdn.example.org/beach.mp4' ) )->get_data()['match']['platform_label'] );
+		$this->assertSame( 'Video file link', $this->get( '/videos/match', array( 'url' => 'https://cdn.example.org/beach.mp4' ) )->get_data()['match']['platform_label'] );
 
 		wp_trash_post( $this->video );
 		$this->assertNull( $this->get( '/videos/match', array( 'url' => 'https://youtu.be/jNQXAC9IVRw' ) )->get_data()['match'] );

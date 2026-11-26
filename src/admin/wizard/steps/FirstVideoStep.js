@@ -23,7 +23,7 @@ const PLATFORM_NAMES = {
 	vimeo: 'Vimeo',
 	wistia: 'Wistia',
 	bunny: 'Bunny Stream',
-	self: __( 'Video file', 'mediashield' ),
+	self: __( 'Video file link', 'mediashield' ),
 };
 
 export default function FirstVideoStep( { hosts = [], created = null, setCreated = () => {}, setBeforeContinue = () => {} } ) {

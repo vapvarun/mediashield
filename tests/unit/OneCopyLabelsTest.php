@@ -23,7 +23,7 @@ class OneCopyLabelsTest extends WP_UnitTestCase {
 		$this->assertFalse( method_exists( VideoPostType::class, 'get_platform_label' ), 'Platform names use Platforms::label().' );
 		$this->assertSame( '1:02:05', PlaylistRenderer::duration_label( 3725 ) );
 		$this->assertSame( '0:27', PlaylistRenderer::duration_label( 27 ) );
-		$this->assertSame( 'Video file', Platforms::label( 'self' ) );
+		$this->assertSame( 'Video file link', Platforms::label( 'self', false ) );
 	}
 
 	public function test_edit_screen_shows_the_shared_platform_name(): void {

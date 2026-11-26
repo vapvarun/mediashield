@@ -159,7 +159,7 @@ export default function PlaylistItemsModal( { playlistId, playlistTitle, onClose
 										</div>
 										<div className="ms-playlist-items__sub">
 											<span className={ `ms-playlist-items__platform ms-playlist-items__platform--${ item.platform || 'self' }` }>
-												{ item.platform || 'self' }
+												{ item.platform_label || item.platform || 'self' }
 											</span>
 											{ item.duration > 0 && (
 												<span className="ms-playlist-items__duration">
@@ -167,7 +167,7 @@ export default function PlaylistItemsModal( { playlistId, playlistTitle, onClose
 												</span>
 											) }
 											{ item.status && item.status !== 'publish' && (
-												<span className="ms-playlist-items__status">{ item.status }</span>
+												<span className="ms-playlist-items__status">{ __( 'Not published, not shown on the page', 'mediashield' ) }</span>
 											) }
 										</div>
 									</div>

@@ -209,7 +209,7 @@ class VideoPostType {
 					'vimeo'           => __( 'Vimeo', 'mediashield' ),
 					'wistia'          => __( 'Wistia', 'mediashield' ),
 					'bunny'           => __( 'Bunny Stream', 'mediashield' ),
-					'self'            => __( 'Video file', 'mediashield' ),
+					'self'            => \MediaShield\Support\Platforms::label( 'self', false ),
 					'bunnyCollection' => __( 'That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL.', 'mediashield' ),
 					'bunnyDashboard'  => __( 'That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL.', 'mediashield' ),
 					'unrecognised'    => \MediaShield\Support\Platforms::unplayable_message(),
@@ -433,7 +433,7 @@ class VideoPostType {
 				<tr id="ms-detected-platform-row" <?php echo ( $platform && '' === $held ) ? '' : 'style="display:none;"'; ?>>
 					<th><?php esc_html_e( 'Detected Platform', 'mediashield' ); ?></th>
 					<td>
-						<strong id="ms-detected-platform-label"><?php echo esc_html( \MediaShield\Support\Platforms::label( $platform ) ); ?></strong>
+						<strong id="ms-detected-platform-label"><?php echo esc_html( \MediaShield\Support\Platforms::label( $platform, false ) ); ?></strong>
 						<input type="hidden" id="ms-platform" name="_ms_platform" value="<?php echo esc_attr( $platform ); ?>" />
 						<input type="hidden" id="ms-platform-video-id" name="_ms_platform_video_id" value="<?php echo esc_attr( $video_id ); ?>" />
 						<?php
