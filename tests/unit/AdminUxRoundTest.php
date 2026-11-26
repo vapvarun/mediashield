@@ -109,4 +109,33 @@ class AdminUxRoundTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'publish', 'draft' ), wp_list_pluck( $items, 'status' ) );
 		$this->assertSame( 'Uploaded file or file link', \MediaShield\Support\Platforms::label( 'self' ) );
 	}
+
+	/**
+	 * MSUX-36: Free updates with a preset key, so its plugin row has no
+	 * licence to manage; only Pro's row offers Manage License.
+	 */
+	public function test_free_plugin_row_has_no_manage_license(): void {
+		$actions = apply_filters( 'plugin_action_links_' . plugin_basename( MEDIASHIELD_FILE ), array( 'edd_sdk_manage' => 'Manage License', 'deactivate' => 'Deactivate' ), plugin_basename( MEDIASHIELD_FILE ), array( 'Name' => 'MediaShield' ) );
+		$this->assertSame( array( 'deactivate' ), array_keys( $actions ) );
+	}
+
+	/**
+	 * MSUX-31: the Playlists list shows how many videos each playlist holds.
+	 */
+	public function test_playlists_list_counts_items(): void {
+		global $wpdb;
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$full  = self::factory()->post->create( array( 'post_type' => 'mediashield_playlist', 'post_status' => 'publish' ) );
+		$empty = self::factory()->post->create( array( 'post_type' => 'mediashield_playlist', 'post_status' => 'publish' ) );
+		foreach ( array( 11, 12 ) as $i => $video ) {
+			$wpdb->insert( $wpdb->prefix . 'ms_playlist_items', array( 'playlist_id' => $full, 'video_id' => $video, 'sort_order' => $i ) ); // phpcs:ignore WordPress.DB
+		}
+		do_action( 'rest_api_init', rest_get_server() );
+
+		$rows = wp_list_pluck( rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/mediashield-playlists' ) )->get_data(), 'ms_item_count', 'id' );
+		$wpdb->delete( $wpdb->prefix . 'ms_playlist_items', array( 'playlist_id' => $full ) ); // phpcs:ignore WordPress.DB
+
+		$this->assertSame( 2, $rows[ $full ] ?? null );
+		$this->assertSame( 0, $rows[ $empty ] ?? null );
+	}
 }

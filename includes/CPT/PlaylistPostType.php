@@ -34,6 +34,9 @@ class PlaylistPostType {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_items_assets' ) );
 		// Before redirect_canonical (10), which would guess some other post for the 404.
 		add_action( 'template_redirect', array( __CLASS__, 'redirect_old_address' ), 5 );
+		// Playlists list: how many videos each holds (MSUX-31), one query per page.
+		add_filter( 'the_posts', array( __CLASS__, 'prime_item_counts' ), 10, 2 );
+		add_action( 'rest_api_init', array( __CLASS__, 'register_item_count_field' ) );
 	}
 
 	/**
@@ -295,5 +298,63 @@ class PlaylistPostType {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Item counts for the playlists a query returned, keyed by playlist ID.
+	 *
+	 * @var array<int,int>
+	 */
+	private static array $item_counts = array();
+
+	/**
+	 * Count the items of a page of playlists in one query.
+	 *
+	 * @param array     $posts Posts found.
+	 * @param \WP_Query $query The query.
+	 * @return array
+	 */
+	public static function prime_item_counts( $posts, $query ) {
+		if ( ! is_array( $posts ) || ! $posts || ! $query instanceof \WP_Query || 'mediashield_playlist' !== $query->get( 'post_type' ) || ! defined( 'REST_REQUEST' ) ) {
+			return $posts;
+		}
+		global $wpdb;
+		$ids = array_map( 'intval', wp_list_pluck( $posts, 'ID' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; ids are ints.
+		$rows = $wpdb->get_results( "SELECT playlist_id, COUNT(*) AS n FROM {$wpdb->prefix}ms_playlist_items WHERE playlist_id IN (" . implode( ',', $ids ) . ') GROUP BY playlist_id', OBJECT_K );
+		foreach ( $ids as $id ) {
+			self::$item_counts[ $id ] = isset( $rows[ $id ] ) ? (int) $rows[ $id ]->n : 0;
+		}
+		return $posts;
+	}
+
+	/**
+	 * The `ms_item_count` field on wp/v2/mediashield-playlists (editors only).
+	 */
+	public static function register_item_count_field(): void {
+		register_rest_field(
+			'mediashield_playlist',
+			'ms_item_count',
+			array(
+				'get_callback' => static function ( $post ) {
+					$id = (int) ( $post['id'] ?? 0 );
+					if ( ! current_user_can( 'edit_post', $id ) ) {
+						return null;
+					}
+					if ( ! isset( self::$item_counts[ $id ] ) ) {
+						global $wpdb;
+						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table, a single playlist read.
+						self::$item_counts[ $id ] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}ms_playlist_items WHERE playlist_id = %d", $id ) );
+					}
+					return self::$item_counts[ $id ];
+				},
+				'schema'       => array(
+					'description' => 'How many videos the playlist holds, published or not.',
+					'type'        => array( 'integer', 'null' ),
+					'context'     => array( 'view', 'edit' ),
+					'readonly'    => true,
+				),
+			)
+		);
 	}
 }

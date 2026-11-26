@@ -206,7 +206,7 @@ const Dashboard = () => {
 						backgroundColor: gradient1,
 						borderWidth: 2.5,
 						fill: true,
-						tension: 0.4,
+						tension: 0, // Straight lines: a curve draws viewings between days that had none (MSUX-34).
 						// A day with sessions is a dot, so one busy day in a
 						// quiet week is still visible.
 						pointRadius: sessions.map( ( n ) => ( n > 0 ? 3 : 0 ) ),

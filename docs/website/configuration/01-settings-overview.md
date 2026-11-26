@@ -46,7 +46,7 @@ All MediaShield settings live under **MediaShield > Settings**. The cards sit in
 | Show MediaShield Badge | Off | Small "Protected by MediaShield" label on the player, a pill in your Brand Color. Off on new installs. A site updated from an earlier version keeps its setting and sees one notice on the MediaShield screens offering the new defaults (badge off; watermark name and email, IP opt-in): **Apply new defaults** or **Keep my settings**, and the notice is gone for good. **Not now** hides it for a week. |
 | Allowed Domains | Empty | Sites allowed to embed your videos. Separate entries with commas, spaces or new lines, in any mix. A pasted web address is reduced to its domain. Empty allows any. See [Access Control](04-access-control.md). |
 | Streams at once per member | 2 | Videos one account may watch at the same time. Minimum 1. |
-| Keep watch history for (months) | 0 | 0 keeps everything. 1 to 120 moves older sessions out of reports. See below. |
+| Keep every viewing forever | On | Off shows **Keep viewings for (months)** (1 to 120, starts at 12); older viewings move out of reports. See below. |
 | Login Overlay Text | Please log in to watch this video | Message on the video for visitors who are not logged in. |
 | Login Button Text | Log In | Label of the login button. |
 | Access Denied Text | You do not have access to this video | Message for signed-in viewers who lack the role, or whose domain is not allowed. |
@@ -90,9 +90,9 @@ Setting names such as `ms_watermark_opacity` are listed for developers in the [S
 
 ## Viewing history
 
-**Keep watch history for (months)** defaults to 0, which keeps every session forever. That is the recommended value.
+**Keep every viewing forever** is on by default, and that is the recommended setting (stored as `ms_session_retention_months` = 0).
 
-If you enter a number, every month MediaShield moves older sessions into an archive table. Reports do not read that archive, so views, completion rates and top videos stop including anything older. This cannot be undone from the screen. The privacy export and erase tools do read the archive. The screen shows a warning while the value is above 0.
+Turn it off and set **Keep viewings for (months)**, and every month MediaShield moves older sessions into an archive table. Reports do not read that archive, so views, completion rates and top videos stop including anything older. This cannot be undone from the screen. The privacy export and erase tools do read the archive. The months field explains this while it is shown.
 
 ## Messages
 

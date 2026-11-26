@@ -621,10 +621,17 @@
 .mediashield-videos .mediashield-table th:nth-child(4) { width: 13%; }
 .mediashield-videos .mediashield-table th:nth-child(5) { width: 35%; }
 
-.mediashield-playlists .mediashield-table th:nth-child(1) { width: 30%; }
-.mediashield-playlists .mediashield-table th:nth-child(2) { width: 20%; }
-.mediashield-playlists .mediashield-table th:nth-child(3) { width: 15%; }
-.mediashield-playlists .mediashield-table th:nth-child(4) { width: 35%; }
+.mediashield-playlists .mediashield-table th:nth-child(1) { width: 26%; }
+.mediashield-playlists .mediashield-table th:nth-child(2) { width: 18%; }
+.mediashield-playlists .mediashield-table th:nth-child(3) { width: 18%; }
+.mediashield-playlists .mediashield-table th:nth-child(4) { width: 12%; }
+.mediashield-playlists .mediashield-table th:nth-child(5) { width: 26%; }
+
+.mediashield-playlists__empty-hint {
+	display: block;
+	font-size: 12px;
+	color: var( --ms-color-text-secondary );
+}
 
 .mediashield-students .mediashield-table th:nth-child(1) { width: 26%; }
 .mediashield-students .mediashield-table th:nth-child(2) { width: 17%; }
@@ -892,8 +899,8 @@
 }
 
 .mediashield-milestone-badge__ring {
-	width: 28px;
-	height: 28px;
+	width: 36px;
+	height: 36px;
 	border-radius: 50%;
 	display: flex;
 	align-items: center;
@@ -1619,9 +1626,6 @@
 	margin-bottom: 0;
 }
 
-.mediashield-settings__color-field {
-	margin-bottom: var( --ms-space-5 );
-}
 
 /* ── Player preview (Watermark card) ─────────────────── */
 .mediashield-settings__preview {
@@ -1671,13 +1675,6 @@
 	inset-inline-end: var( --ms-space-3 );
 }
 
-.mediashield-settings__preview-button {
-	padding: var( --ms-space-2 ) var( --ms-space-5 );
-	border-radius: 4px;
-	background: var( --wp-admin-theme-color, #2271b1 );
-	color: var( --ms-palette-white );
-	font-weight: 600;
-}
 
 .mediashield-settings__preview-caption {
 	margin: var( --ms-space-2 ) 0 var( --ms-space-5 );
@@ -1690,24 +1687,52 @@
 	color: var( --ms-color-text );
 }
 
-.mediashield-settings__color-help {
-	margin: 0 0 var( --ms-space-3 );
-	color: var( --ms-color-text-secondary );
+/* Colour setting: a swatch button that opens the picker (ColorField). */
+.mediashield-color-field {
+	margin-bottom: var( --ms-space-3 );
 }
 
-.mediashield-settings__color-field > .components-button {
-	margin-top: var( --ms-space-3 );
-}
-
-.mediashield-settings__color-field > label {
+.mediashield-color-field__label {
 	display: block;
-	margin-bottom: 6px;
+	margin-bottom: var( --ms-space-2 );
 	font-size: 11px;
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var( --ms-color-text-secondary );
 }
+
+.mediashield-color-field__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-2 );
+}
+
+.mediashield-color-field__toggle.components-button {
+	gap: var( --ms-space-2 );
+	font-family: inherit;
+}
+
+.mediashield-color-field__swatch {
+	inline-size: 20px;
+	block-size: 20px;
+	border-radius: 4px;
+	border: 1px solid var( --ms-color-border );
+	flex-shrink: 0;
+}
+
+/* No colour set: an outlined square with a slash, not a colour as if chosen. */
+.mediashield-color-field__swatch.is-empty {
+	background: linear-gradient( to top right, transparent calc( 50% - 1px ), var( --ms-color-text-tertiary ) 50%, transparent calc( 50% + 1px ) );
+}
+
+.mediashield-settings__color-help {
+	margin: 0 0 var( --ms-space-3 );
+	color: var( --ms-color-text-secondary );
+}
+
+
 
 /* ── Quick Stats Row (Dashboard) ──────────────────── */
 .mediashield-quick-stats {
@@ -1746,6 +1771,30 @@
 	justify-content: space-between;
 	padding: 6px 0;
 	font-size: 13px;
+}
+
+/* Top Videos: a long title gives way; "17 viewings" stays on one line. */
+.mediashield-quick-stat__item {
+	gap: var( --ms-space-3 );
+}
+
+.mediashield-quick-stat__item > span {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mediashield-quick-stat__item > strong {
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+/* On a phone the Free dashboard keeps the one-line Pro banner, not four cards. */
+@media ( max-width: 640px ) {
+	.mediashield-page .ms-upsell-grid {
+		display: none;
+	}
 }
 
 .mediashield-quick-stat__item + .mediashield-quick-stat__item {
@@ -2839,19 +2888,7 @@
 }
 
 /* ── Watermark fields ────────────────────────────── */
-.ms-wizard__color-field {
-	margin-bottom: var( --ms-space-4 );
-}
 
-.ms-wizard__field-label {
-	display: block;
-	font-size: 11px;
-	font-weight: 500;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: var( --ms-color-text );
-	margin-bottom: var( --ms-space-2 );
-}
 
 .ms-wizard__watermark-preview {
 	margin-top: var( --ms-space-5 );

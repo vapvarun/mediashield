@@ -2,9 +2,10 @@
  * Wizard Step 4: Watermark Configuration.
  */
 import { __ } from '@wordpress/i18n';
-import { RangeControl, ColorPicker, TextControl } from '@wordpress/components';
+import { RangeControl, TextControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import Icon from '../../components/Icon';
+import ColorField from '../../components/ColorField';
 
 export default function WatermarkStep( { onSave, initialData } ) {
 	const [ opacity, setOpacity ] = useState( initialData?.ms_watermark_opacity ?? 0.5 );
@@ -42,16 +43,14 @@ export default function WatermarkStep( { onSave, initialData } ) {
 					__next40pxDefaultSize
 				/>
 
-				<div className="ms-wizard__color-field">
-					<label className="ms-wizard__field-label">
-						{ __( 'Text Color', 'mediashield' ) }
-					</label>
-					<ColorPicker
-						color={ color }
-						onChange={ ( val ) => { setColor( val ); onSave( { ms_watermark_color: val } ); } }
-						enableAlpha={ false }
-					/>
-				</div>
+				{ /* Saved once when the picker closes, not on every drag. */ }
+				<ColorField
+					label={ __( 'Watermark color', 'mediashield' ) }
+					value={ color }
+					fallback="#ffffff"
+					onChange={ setColor }
+					onClose={ () => onSave( { ms_watermark_color: color } ) }
+				/>
 
 				<TextControl
 					label={ __( 'Position swap interval (seconds)', 'mediashield' ) }

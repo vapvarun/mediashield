@@ -117,6 +117,17 @@ add_action(
 	}
 );
 
+// Free updates with the preset key above, so there is no licence for the owner
+// to manage: the SDK's "Manage License" link belongs on the Pro row only.
+add_filter(
+	'plugin_action_links_' . plugin_basename( MEDIASHIELD_FILE ),
+	static function ( $actions ) {
+		unset( $actions['edd_sdk_manage'] );
+		return $actions;
+	},
+	101
+);
+
 // Load the vendored EDD SL SDK only when the package is COMPLETE. A partial
 // build or extract that keeps the entry file but drops libs/edd-sl-sdk/src
 // fatals inside the SDK the moment it touches a src class — the SDK's own

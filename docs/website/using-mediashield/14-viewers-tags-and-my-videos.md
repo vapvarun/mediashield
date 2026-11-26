@@ -37,7 +37,7 @@ To award a tag when a viewer reaches a point in a video, use the **Milestone Tag
 
 ## Show members their own progress
 
-Place the **My Videos** block, or the shortcode:
+Place the **MediaShield My Videos** block (search the inserter for "My Videos"), or the shortcode:
 
 ```
 [mediashield_my_videos]

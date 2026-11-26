@@ -12,7 +12,6 @@ import {
 	ToggleControl,
 	TextControl,
 	RangeControl,
-	ColorPicker,
 	TextareaControl,
 	SelectControl,
 	Spinner,
@@ -25,6 +24,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { applyFilters } from '@wordpress/hooks';
 import Icon from '../components/Icon';
 import LevelPicker from '../components/LevelPicker';
+import ColorField from '../components/ColorField';
 import { protectionLevels } from '../utils/protection';
 import '../components/upsell.css';
 import './settings.css';
@@ -767,12 +767,6 @@ const Settings = () => {
 					>
 						{ previewWords?.text || [ __( 'Viewer Name', 'mediashield' ), settings?.ms_watermark_show_email ? 'viewer@example.com' : '', settings?.ms_watermark_show_ip ? '203.0.113.7' : '' ].filter( Boolean ).join( ' · ' ) }
 					</span>
-					<span
-						className="mediashield-settings__preview-button"
-						style={ settings?.ms_player_accent_color ? { background: settings.ms_player_accent_color } : undefined }
-					>
-						{ settings?.ms_login_button_text || __( 'Log in', 'mediashield' ) }
-					</span>
 				</div>
 				<p className="mediashield-settings__preview-caption">
 					{ previewWords?.caption || __( 'Preview. Each viewer sees their own name, and moves around the video.', 'mediashield' ) }
@@ -808,14 +802,12 @@ const Settings = () => {
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
-				<div className="mediashield-settings__color-field">
-					<label>{ __( 'Watermark Color', 'mediashield' ) }</label>
-					<ColorPicker
-						color={ settings?.ms_watermark_color || '#ffffff' }
-						onChange={ ( val ) => updateSetting( 'ms_watermark_color', val ) }
-						enableAlpha={ false }
-					/>
-				</div>
+				<ColorField
+					label={ __( 'Watermark color', 'mediashield' ) }
+					value={ settings?.ms_watermark_color || '#ffffff' }
+					fallback="#ffffff"
+					onChange={ ( val ) => updateSetting( 'ms_watermark_color', val ) }
+				/>
 				<NumberField
 					label={ __( 'Position Swap Interval', 'mediashield' ) }
 					help={ __( 'Seconds between watermark position changes. Moving the watermark stops a viewer cropping it out, so lower is safer and higher is less distracting.', 'mediashield' ) }
@@ -910,28 +902,24 @@ const Settings = () => {
 						/>
 					</>
 				) }
-				<div className="mediashield-settings__color-field">
-					<label>{ __( 'Brand Color', 'mediashield' ) }</label>
-					<p className="mediashield-settings__color-help">
-						{ settings?.ms_player_accent_color
-							? __( 'Used for the player\'s buttons, focus outlines and the current playlist item.', 'mediashield' )
-							: __( 'Following your theme\'s primary color. Pick a color to use your own for the player\'s buttons, focus outlines and the current playlist item.', 'mediashield' ) }
-					</p>
-					<ColorPicker
-						color={ settings?.ms_player_accent_color || '#2271b1' }
-						onChange={ ( val ) => updateSetting( 'ms_player_accent_color', val ) }
-						enableAlpha={ false }
-					/>
+				{ /* Unset follows the theme's colour, which this screen cannot read,
+				     so it says so instead of showing a colour as if chosen (MSUX-30). */ }
+				<ColorField
+					label={ __( 'Brand color', 'mediashield' ) }
+					value={ settings?.ms_player_accent_color || '' }
+					fallback="#2271b1"
+					emptyLabel={ __( 'Your theme\'s color', 'mediashield' ) }
+					onChange={ ( val ) => updateSetting( 'ms_player_accent_color', val ) }
+				>
 					{ !! settings?.ms_player_accent_color && (
-						<Button
-							variant="secondary"
-							onClick={ () => updateSetting( 'ms_player_accent_color', '' ) }
-							__next40pxDefaultSize
-						>
+						<Button variant="tertiary" onClick={ () => updateSetting( 'ms_player_accent_color', '' ) } __next40pxDefaultSize>
 							{ __( 'Use the theme color', 'mediashield' ) }
 						</Button>
 					) }
-				</div>
+				</ColorField>
+				<p className="mediashield-settings__color-help">
+					{ __( 'Used for the player\'s buttons, focus outlines and the current playlist item. Pick a color to use your own instead of your theme\'s.', 'mediashield' ) }
+				</p>
 			</SectionCard>
 
 			<SectionCard
@@ -1129,24 +1117,24 @@ const Settings = () => {
 				title={ groupLabel( 'history' ) }
 				description={ __( 'How long viewings stay in your reports.', 'mediashield' ) }
 			>
-				<NumberField
-					label={ __( 'Keep watch history for (months)', 'mediashield' ) }
-					help={
-						Number( settings?.ms_session_retention_months ?? 0 ) > 0
-							? __(
-									'Warning: sessions older than this are moved out of your reports every month. Views, completion rates and top-video figures will stop including anything older, and this cannot be undone from here. Set 0 to keep everything.',
-									'mediashield'
-							  )
-							: __(
-									'0 keeps every watch session forever, which is the recommended setting. Set a number of months only if you have a data-retention policy that requires older sessions to be moved out of reporting.',
-									'mediashield'
-							  )
-					}
-					min={ 0 }
-					max={ 120 }
-					value={ settings?.ms_session_retention_months ?? 0 }
-					onCommit={ ( val ) => updateSetting( 'ms_session_retention_months', val ) }
+				{ /* 0 months means forever: a choice, not a number to know (MSUX-28). */ }
+				<ToggleControl
+					label={ __( 'Keep every viewing forever', 'mediashield' ) }
+					help={ __( 'Recommended. Turn off only if a data-retention policy requires older viewings to leave your reports.', 'mediashield' ) }
+					checked={ Number( settings?.ms_session_retention_months ?? 0 ) === 0 }
+					onChange={ ( forever ) => updateSetting( 'ms_session_retention_months', forever ? 0 : 12 ) }
+					__nextHasNoMarginBottom
 				/>
+				{ Number( settings?.ms_session_retention_months ?? 0 ) > 0 && (
+					<NumberField
+						label={ __( 'Keep viewings for (months)', 'mediashield' ) }
+						help={ __( 'Viewings older than this are moved out of your reports every month. Views, completion rates and top videos stop counting them, and this cannot be undone from here.', 'mediashield' ) }
+						min={ 1 }
+						max={ 120 }
+						value={ settings?.ms_session_retention_months }
+						onCommit={ ( val ) => updateSetting( 'ms_session_retention_months', val ) }
+					/>
+				) }
 			</SectionCard>
 
 			{ /* One card for lesson completion (Basecamp 10545260590): Learnomy sets it on

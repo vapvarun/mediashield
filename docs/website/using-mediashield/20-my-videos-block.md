@@ -2,7 +2,7 @@
 
 **Included in Free.**
 
-The My Videos block shows a signed-in member the videos they have watched, how far they got and, where your site supplies a watch page, a link to carry on.
+The MediaShield My Videos block shows a signed-in member the videos they have watched, how far they got and, where your site supplies a watch page, a link to carry on.
 
 ## Why use it
 
