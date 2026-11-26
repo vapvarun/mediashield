@@ -69,6 +69,39 @@ class VideoStatus {
 	}
 
 	/**
+	 * Does this video need a length typed in? No stored Duration while a
+	 * watch rule completes a lesson by it: the share's length then comes
+	 * from viewers' players (WatchedSpans::measured()), which a member who
+	 * tampers with theirs can shorten. The edit screen and the Videos list
+	 * say so; typing the Duration closes it.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $video_id Video ID.
+	 * @return bool
+	 */
+	public static function needs_length( int $video_id ): bool {
+		if ( (int) get_post_meta( $video_id, '_ms_duration', true ) > 0 ) {
+			return false;
+		}
+
+		/**
+		 * Does a watch rule complete a lesson by this video?
+		 *
+		 * An LMS integration answers for its lessons: MediaShield's Learnomy
+		 * integration for a protected video lesson with a watch %, Pro's
+		 * LearnDash adapter for a linked lesson or topic while the site-wide
+		 * % is on.
+		 *
+		 * @since 1.4.4
+		 *
+		 * @param bool $applies  Default false.
+		 * @param int  $video_id Video ID.
+		 */
+		return (bool) apply_filters( 'mediashield_watch_rule_applies', false, $video_id );
+	}
+
+	/**
 	 * Most videos one `mediashield_library_choices` page returns.
 	 */
 	const CHOICES_MAX = 100;

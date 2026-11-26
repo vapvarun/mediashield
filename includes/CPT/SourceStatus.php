@@ -56,10 +56,12 @@ class SourceStatus {
 	}
 
 	/**
-	 * A Vimeo video saved with no Duration takes Vimeo's own (oEmbed
-	 * `duration`), so its watched share never depends on lengths viewers'
-	 * players report (WatchedSpans::measured()). A typed Duration always
-	 * wins: nothing is asked while one is stored.
+	 * A Vimeo or Wistia video saved with no Duration takes the platform's own
+	 * (oEmbed `duration`), so its watched share never depends on lengths
+	 * viewers' players report (WatchedSpans::measured()). A typed Duration
+	 * always wins: nothing is asked while one is stored. Pro fills a Bunny
+	 * video's from Bunny's API (BunnyEncodeStatus); YouTube's oEmbed has no
+	 * length.
 	 *
 	 * @param int|\WP_Post $video Video ID (save_post) or post (REST).
 	 */
@@ -68,11 +70,11 @@ class SourceStatus {
 		if ( wp_is_post_revision( $video_id ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) ) {
 			return;
 		}
-		if ( 'vimeo' !== get_post_meta( $video_id, '_ms_platform', true ) || (int) get_post_meta( $video_id, '_ms_duration', true ) > 0 ) {
+		if ( ! in_array( get_post_meta( $video_id, '_ms_platform', true ), array( 'vimeo', 'wistia' ), true ) || (int) get_post_meta( $video_id, '_ms_duration', true ) > 0 ) {
 			return;
 		}
 		$answer   = self::ask( $video_id );
-		$duration = $answer && 200 === $answer['status'] ? absint( $answer['data']['duration'] ?? 0 ) : 0;
+		$duration = $answer && 200 === $answer['status'] ? (int) round( (float) ( $answer['data']['duration'] ?? 0 ) ) : 0;
 		if ( $duration > 0 ) {
 			update_post_meta( $video_id, '_ms_duration', $duration );
 		}
@@ -147,7 +149,12 @@ class SourceStatus {
 	 */
 	public static function check( int $video_id ): ?bool {
 		$platform = (string) get_post_meta( $video_id, '_ms_platform', true );
-		$answer   = self::ask( $video_id );
+		// Wistia is asked only for its length (fill_duration()): its oEmbed
+		// statuses were never checked for refusals.
+		if ( ! in_array( $platform, array( 'youtube', 'vimeo' ), true ) ) {
+			return null;
+		}
+		$answer = self::ask( $video_id );
 		if ( null === $answer ) {
 			return null;
 		}
@@ -191,6 +198,8 @@ class SourceStatus {
 			$link     = false !== stripos( $source, 'vimeo.com' ) ? $source : 'https://vimeo.com/' . $id;
 			$hashed   = (bool) preg_match( '#vimeo\.com/(?:video/)?\d+/[0-9a-f]+|[?&]h=[0-9a-f]+#i', $link );
 			$endpoint = 'https://vimeo.com/api/oembed.json?url=' . rawurlencode( $link );
+		} elseif ( 'wistia' === $platform ) {
+			$endpoint = 'https://fast.wistia.com/oembed?url=' . rawurlencode( 'https://home.wistia.com/medias/' . $id );
 		} else {
 			return null;
 		}

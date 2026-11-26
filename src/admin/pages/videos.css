@@ -254,6 +254,20 @@
 	white-space: normal;
 }
 
+/* No Duration while a watch rule uses the video: one calm line under the
+   title, linking to the edit screen's Duration field. */
+.ms-videos__needs-length a {
+	color: var( --ms-palette-yellow-text );
+}
+
+@media ( max-width: 480px ) {
+	.mediashield-videos .ms-videos__needs-length a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+	}
+}
+
 /* A long uploaded file name is cut with an ellipsis; the full name is in
    the title attribute. The platform cell may shrink below its content. */
 .ms-videos__table td.ms-videos__col-platform {

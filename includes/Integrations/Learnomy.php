@@ -48,6 +48,7 @@ class Learnomy {
 		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 5 );
 		add_filter( 'learnomy_lesson_completion_rules', array( __CLASS__, 'require_watch' ), 10, 3 );
 		add_filter( 'mediashield_video_access_link', array( __CLASS__, 'course_link' ), 10, 2 );
+		add_filter( 'mediashield_watch_rule_applies', array( __CLASS__, 'watch_rule_applies' ), 10, 2 );
 		// Learnomy 2.4.1 owns "watch the video to complete" on each lesson;
 		// MediaShield reports how much was watched and the starting %.
 		// Hooking the first filter is what tells Learnomy a provider measures
@@ -89,6 +90,39 @@ class Learnomy {
 		}
 		return ! empty( get_option( self::RULE_MOVED_OPTION ) )
 			|| (int) Settings::get( 'ms_lms_require_watch_pct' ) <= 0;
+	}
+
+	/**
+	 * Does a published protected video lesson complete by watching this video?
+	 *
+	 * The lesson's own watch % once Learnomy owns the rule, else the site's
+	 * "Watch X% to complete" (owns_watch_rule()). For the owner's "add this
+	 * video's length" line (VideoStatus::needs_length()).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param bool $applies  Earlier answer.
+	 * @param int  $video_id Video ID.
+	 * @return bool
+	 */
+	public static function watch_rule_applies( $applies, $video_id ): bool {
+		if ( $applies ) {
+			return true;
+		}
+		if ( ! class_exists( '\\Learnomy\\Models\\Lesson' ) || ! is_callable( '\\Learnomy\\Models\\Lesson::for_mediashield_video' ) ) {
+			return false;
+		}
+		$owns = self::owns_watch_rule();
+		$site = (int) Settings::get( 'ms_lms_require_watch_pct' );
+		foreach ( \Learnomy\Models\Lesson::for_mediashield_video( (int) $video_id ) as $lesson ) {
+			if ( self::lesson_video( $lesson ) !== (int) $video_id ) {
+				continue;
+			}
+			if ( $owns ? (int) ( $lesson->min_video_watch_pct ?? 0 ) > 0 : $site > 0 ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

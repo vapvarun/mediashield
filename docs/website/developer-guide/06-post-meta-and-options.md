@@ -15,7 +15,7 @@ Registered with `register_post_meta()` and `show_in_rest`, so they round-trip th
 | `_ms_source_url` | string | empty | Source or file URL, `esc_url_raw`. |
 | `_ms_protection_level` | string | empty | `none`, `basic`, `standard`, `strict`, or a level an add-on registers. Empty follows `ms_default_protection`. |
 | `_ms_access_role` | string | empty | A role slug. Empty or `any` means any logged-in user. |
-| `_ms_duration` | integer | 0 | Length in seconds. 0 means unknown, and the player then reports it. Since 1.4.4 a Vimeo video saved with 0 takes Vimeo's oEmbed `duration`; a typed value is never replaced. |
+| `_ms_duration` | integer | 0 | Length in seconds. 0 means unknown, and the player then reports it. Since 1.4.4 a Vimeo or Wistia video saved with 0 takes the platform's oEmbed `duration` (Pro: a Bunny video takes Bunny's length); a typed value is never replaced. |
 | `_ms_measured_duration` | array | none | Since 1.4.4. The lengths viewers' players reported, `[ user_id => seconds ]`, from at most 5 members (a member's own length only rises). Their median is the length for the watched share while `_ms_duration` is 0. A length over 24 hours, or more than twice the median once 3 are kept, is ignored. Changing the video's link or file deletes it. |
 | `_ms_stream_url` | string | empty | Direct stream URL (for example a Bunny HLS playlist). |
 | `_ms_milestone_tags` | object | empty | `{ "<pct>": { "enabled": bool, "tag": string } }`. Percentages 1-100 become extra milestone thresholds. |

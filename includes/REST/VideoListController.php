@@ -296,11 +296,13 @@ class VideoListController extends WP_REST_Controller {
 		}
 
 		return array(
-			'thumbnail' => Thumbnail::poster_url( $id, 'thumbnail', true ),
-			'duration'  => (int) get_post_meta( $id, '_ms_duration', true ),
-			'status'    => in_array( $status, array( 'ready', 'encoding', 'failed', 'unavailable', 'no_source', 'draft' ), true ) ? $status : 'ready',
-			'source'    => self::source_label( $id, $platform ),
-			'used_in'   => VideoUsage::for_video( $id ),
+			'thumbnail'    => Thumbnail::poster_url( $id, 'thumbnail', true ),
+			'duration'     => (int) get_post_meta( $id, '_ms_duration', true ),
+			'status'       => in_array( $status, array( 'ready', 'encoding', 'failed', 'unavailable', 'no_source', 'draft' ), true ) ? $status : 'ready',
+			'source'       => self::source_label( $id, $platform ),
+			'used_in'      => VideoUsage::for_video( $id ),
+			// No Duration while a watch rule uses it (1.4.4): the list asks for one.
+			'needs_length' => \MediaShield\CPT\VideoStatus::needs_length( $id ),
 		);
 	}
 

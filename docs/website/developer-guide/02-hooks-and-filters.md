@@ -615,6 +615,22 @@ add_filter( 'mediashield_display_timezone', function( $timezone, $user_id ) {
 
 ---
 
+### mediashield_watch_rule_applies
+
+*Since 1.4.4.* Does a watch rule complete a lesson by this video? When the answer is `true` and the video has no stored Duration, the video's edit screen and the Videos list ask the owner for its length ("Add this video's length so the watch rule can't be skipped."): without one, the watched share is measured against the lengths viewers' players report.
+
+**Parameters:** `$applies` (bool, default `false`), `$video_id` (int)
+
+```php
+add_filter( 'mediashield_watch_rule_applies', function( $applies, $video_id ) {
+    return $applies || my_lms_lesson_needs_watching( $video_id );
+}, 10, 2 );
+```
+
+MediaShield answers for Learnomy protected video lessons with a watch %, and MediaShield Pro for a video linked to a LearnDash lesson or topic while the site-wide % is on.
+
+---
+
 ### mediashield_measure_watch
 
 *Since 1.4.4.* Decides whether a player at the **None** or **Basic** level measures a logged-in member's watch time for the site-wide "Watch X% to complete" (**Settings > Lesson Completion**). That percentage is about lessons, and the player cannot tell a lesson from a blog post, so the default is `false`: return `true` on the screens where your LMS completes a lesson by it. Standard and Strict videos measure anyway. A lesson that sets its own percentage on the player (`data-watch-required`, the shortcode's `watch_required`) is measured without this filter.

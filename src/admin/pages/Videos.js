@@ -641,6 +641,11 @@ const Videos = () => {
 														{ 'no_source' === list.status && <a href={ editUrl }>{ __( 'Add a link or upload', 'mediashield' ) }</a> }
 														{ 'unavailable' !== list.status && 'no_source' !== list.status && phoneMeta }
 													</span>
+													{ list.needs_length && (
+														<span className="ms-videos__hint ms-videos__needs-length">
+															<a href={ `${ editUrl }#ms-duration` }>{ __( "Add this video's length so the watch rule can't be skipped.", 'mediashield' ) }</a>
+														</span>
+													) }
 												</span>
 											</div>
 										</td>

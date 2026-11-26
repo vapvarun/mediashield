@@ -57,9 +57,11 @@ class WatchedSpans {
 	// shortcut: the first reporters set the length. A member who tampers with
 	// their player can make a video with no stored Duration look shorter (so
 	// the rule is met sooner) until honest reports outnumber theirs, or lock
-	// it with several accounts. The owner closes it by typing a Duration,
-	// which this median never overrides; Vimeo videos get the platform's
-	// own on save (SourceStatus::fill_duration()).
+	// it with several accounts. A stored Duration is always used instead:
+	// Vimeo and Wistia fill it on save (SourceStatus::fill_duration()), Pro
+	// fills Bunny's (BunnyEncodeStatus), and while a watch rule uses a video
+	// with none, the edit screen and the Videos list ask the owner for it
+	// (VideoStatus::needs_length()).
 	public const MEASURED = '_ms_measured_duration';
 
 	/**

@@ -448,8 +448,12 @@ class VideoPostType {
 					<td>
 						<input type="number" id="ms-duration" name="_ms_duration"
 							value="<?php echo esc_attr( $duration ); ?>" class="small-text" min="0"
+							<?php echo \MediaShield\CPT\VideoStatus::needs_length( (int) $post->ID ) ? 'aria-describedby="ms-duration-needed"' : ''; ?>
 							autocomplete="off" data-form-type="other" />
 						<span class="description"><?php esc_html_e( 'Length in seconds. Used to validate watch progress; leave 0 if unknown.', 'mediashield' ); ?></span>
+						<?php if ( \MediaShield\CPT\VideoStatus::needs_length( (int) $post->ID ) ) : ?>
+							<p class="description ms-duration-needed" id="ms-duration-needed"><?php esc_html_e( "Add this video's length so the watch rule can't be skipped.", 'mediashield' ); ?></p>
+						<?php endif; ?>
 					</td>
 				</tr>
 			</table>
