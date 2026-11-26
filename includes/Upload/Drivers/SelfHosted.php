@@ -197,6 +197,15 @@ class SelfHosted implements DriverInterface {
 			}
 		}
 
+		// The name the owner uploaded, shown instead of the stored name with
+		// its random token (display_name()).
+		update_post_meta( (int) $post_id, self::ORIGINAL_NAME, sanitize_file_name( $original_name ) );
+
+		// The file's own length, so the Videos list and the edit screen show
+		// it and the watch rule has a duration (Basecamp 10545260613). A new
+		// file replaces the old file's length.
+		self::record_length( (int) $post_id, $dest );
+
 		// The streaming URL depends on the new post ID, so it must be set after
 		// insert. It is not consumed by the thumbnail fetcher, so the timing is fine.
 		$stream_url = rest_url( "mediashield/v1/stream/{$post_id}" );
@@ -417,5 +426,144 @@ class SelfHosted implements DriverInterface {
 			'embed_url'         => '',
 			'error'             => $message,
 		);
+	}
+
+	/**
+	 * Store an uploaded file's length in `_ms_duration`, read from the file.
+	 *
+	 * WordPress's own reader (wp_read_video_metadata(), getID3) parses the
+	 * file's headers only. Nothing is written when the length cannot be read.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int    $video_id Video ID.
+	 * @param string $path     File on disk.
+	 * @return int Seconds stored, 0 when unknown.
+	 */
+	public static function record_length( int $video_id, string $path ): int {
+		if ( $video_id <= 0 || '' === $path || ! is_readable( $path ) ) {
+			return 0;
+		}
+		if ( ! function_exists( 'wp_read_video_metadata' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+		}
+		// The exact length, from the getID3 data WordPress passes to its own
+		// filter: the 'length' it returns is rounded (17.808 s became 18),
+		// which made the playlist say 0:18 where the player says 0:17 and kept
+		// a finished upload short of 100% (UX test MSUX-02, MSUX-25). Whole
+		// seconds down, as every player's clock shows it.
+		$exact = null;
+		$catch = static function ( $metadata, $file, $format, $data ) use ( &$exact ) {
+			$exact = isset( $data['playtime_seconds'] ) ? (float) $data['playtime_seconds'] : null;
+			return $metadata;
+		};
+		add_filter( 'wp_read_video_metadata', $catch, 1, 4 );
+		try {
+			$meta = wp_read_video_metadata( $path );
+		} finally {
+			remove_filter( 'wp_read_video_metadata', $catch, 1 );
+		}
+		$length = (int) floor( null !== $exact ? $exact : (float) ( is_array( $meta ) ? ( $meta['length'] ?? 0 ) : 0 ) );
+		if ( $length > 0 ) {
+			update_post_meta( $video_id, '_ms_duration', $length );
+		}
+		return $length;
+	}
+
+	/**
+	 * Option: the length backfill is pending; its value is the last video ID
+	 * done (Migrator v15 adds it at '0', the job deletes it when finished).
+	 */
+	const LENGTHS_PENDING = 'ms_lengths_pending';
+
+	/**
+	 * Files read per backfill run.
+	 */
+	const LENGTHS_BATCH = 50;
+
+	/**
+	 * Queue the next backfill run while one is pending (init).
+	 *
+	 * @since 1.4.4
+	 */
+	public static function ensure_lengths_job(): void {
+		if ( false !== get_option( self::LENGTHS_PENDING ) ) {
+			\MediaShield\Cron\Cleanup::schedule_single( 'ms_backfill_lengths', time() + MINUTE_IN_SECONDS );
+		}
+	}
+
+	/**
+	 * Fill the length of uploaded files that have none, 50 a run, in a
+	 * background job (Migrator v15 queues it; `ms_backfill_lengths`).
+	 *
+	 * Walks video IDs above the stored cursor, so each file is read once. The
+	 * cursor is saved before each file is read: a file that stops PHP
+	 * (memory, time) is skipped by the next run instead of stopping the job.
+	 * A length the owner typed is kept. Reschedules itself until none are
+	 * left, then deletes the pending option.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function backfill_lengths(): void {
+		$cursor = get_option( self::LENGTHS_PENDING );
+		if ( false === $cursor ) {
+			return;
+		}
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off upgrade walk on the primary key, one batch.
+		$ids = (array) $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->posts} p
+				 INNER JOIN {$wpdb->postmeta} f ON f.post_id = p.ID AND f.meta_key = '_ms_owned_file' AND f.meta_value <> ''
+				 LEFT JOIN {$wpdb->postmeta} d ON d.post_id = p.ID AND d.meta_key = '_ms_duration'
+				 WHERE p.post_type = 'mediashield_video' AND p.post_status <> 'trash' AND p.ID > %d
+				 AND ( d.meta_value IS NULL OR d.meta_value = '' OR d.meta_value = '0' )
+				 ORDER BY p.ID ASC LIMIT %d",
+				(int) $cursor,
+				self::LENGTHS_BATCH
+			)
+		);
+
+		if ( empty( $ids ) ) {
+			delete_option( self::LENGTHS_PENDING );
+			return;
+		}
+
+		foreach ( $ids as $id ) {
+			update_option( self::LENGTHS_PENDING, (string) (int) $id, false );
+			self::record_length( (int) $id, \MediaShield\REST\StreamController::resolve_file( (int) $id ) );
+		}
+
+		\MediaShield\Cron\Cleanup::schedule_single( 'ms_backfill_lengths', time() + MINUTE_IN_SECONDS );
+	}
+
+	/**
+	 * Video meta: the file name as uploaded, before the random token was added.
+	 */
+	const ORIGINAL_NAME = '_ms_original_file_name';
+
+	/**
+	 * The name to show for an uploaded file: as the owner uploaded it.
+	 *
+	 * The stored name carries a random 20-character token (stored_name()),
+	 * which means nothing to an owner and made one unbroken 50-character word
+	 * in the Videos list. Uploads from 1.4.4 keep the original name in
+	 * ORIGINAL_NAME; for an older upload the token is taken off the stored
+	 * name here, the one place that knows its shape.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int    $video_id Video ID.
+	 * @param string $stored   Stored file name or path.
+	 * @return string
+	 */
+	public static function display_name( int $video_id, string $stored ): string {
+		$original = $video_id > 0 ? (string) get_post_meta( $video_id, self::ORIGINAL_NAME, true ) : '';
+		if ( '' !== $original ) {
+			return $original;
+		}
+		$name = wp_basename( $stored );
+		return (string) preg_replace( '/-[A-Za-z0-9]{20}(?:-\d+)?(\.[A-Za-z0-9]+)?$/', '$1', $name );
 	}
 }

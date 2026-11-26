@@ -53,10 +53,13 @@ class Activator {
 		// loaded after plugins_loaded on the activation request, so an update by
 		// deactivate, replace, activate never reaches the bootstrap's Migrator
 		// run; writing the version here instead skipped every step between.
+		// Fresh or updating is decided here, before Migrator::run() writes the
+		// version: read after it, every activation looked like an update.
+		$updating = (int) get_option( 'ms_db_version', 0 ) > 0;
 		Migrator::run();
 
 		// Seed defaults for every option declared in the Settings schema.
-		Settings::seed_defaults();
+		Settings::seed_defaults( $updating );
 
 		// Grant upload capability to administrators.
 		$admin_role = get_role( 'administrator' );
@@ -79,8 +82,8 @@ class Activator {
 		}
 
 		// Register the CPTs before flushing: `init` has already run on the
-		// activation request, so without this the saved rules have no
-		// /playlist/ and playlist pages 404 until permalinks are saved.
+		// activation request, so without this the rules saved here would not
+		// match the post types as they are registered.
 		\MediaShield\CPT\VideoPostType::register_post_type();
 		\MediaShield\CPT\PlaylistPostType::register_post_type();
 		flush_rewrite_rules();

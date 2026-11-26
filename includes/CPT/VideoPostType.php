@@ -38,6 +38,12 @@ class VideoPostType {
 				self::normalize_platform( $post->ID );
 			}
 		);
+		// A link that can never play is refused where it is added: REST (the
+		// wizard, the block, any client) here, the edit screen in
+		// save_meta_box() (Basecamp 10545260436).
+		add_filter( 'rest_pre_insert_mediashield_video', array( __CLASS__, 'refuse_unplayable_source' ), 10, 2 );
+		add_filter( 'redirect_post_location', array( __CLASS__, 'flag_refused_source' ), 10, 2 );
+		add_action( 'admin_notices', array( __CLASS__, 'render_refused_source_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_edit_assets' ) );
 		// Hide WP's default Custom Fields meta box on the video edit screen —
 		// it surfaces raw post-meta key/value pairs and confuses site owners
@@ -88,6 +94,8 @@ class VideoPostType {
 				'show_ui'             => true,
 				'show_in_rest'        => true,
 				'rest_base'           => 'mediashield-videos',
+				// Editors only, as for playlists (REST\LibraryPostsController).
+				'rest_controller_class' => \MediaShield\REST\LibraryPostsController::class,
 				'has_archive'         => false,
 				'rewrite'             => false,
 				'supports'            => array( 'title', 'thumbnail', 'custom-fields' ),
@@ -103,19 +111,21 @@ class VideoPostType {
 	 * Register meta boxes for the video edit screen.
 	 */
 	public static function register_meta_boxes(): void {
+		// The order an owner works in (Basecamp 10545260613): the video first,
+		// then who can watch and how it is protected, then milestones.
 		add_meta_box(
-			'mediashield-video-settings',
-			__( 'Video Settings', 'mediashield' ),
-			array( __CLASS__, 'render_settings_meta_box' ),
+			'mediashield-video-source',
+			__( '1. The video', 'mediashield' ),
+			array( __CLASS__, 'render_source_meta_box' ),
 			'mediashield_video',
 			'normal',
 			'high'
 		);
 
 		add_meta_box(
-			'mediashield-video-source',
-			__( 'Video Source', 'mediashield' ),
-			array( __CLASS__, 'render_source_meta_box' ),
+			'mediashield-video-settings',
+			__( '2. Who can watch, and how it is protected', 'mediashield' ),
+			array( __CLASS__, 'render_settings_meta_box' ),
 			'mediashield_video',
 			'normal',
 			'high'
@@ -132,7 +142,7 @@ class VideoPostType {
 
 		add_meta_box(
 			'mediashield-video-milestones',
-			__( 'Milestone Tags', 'mediashield' ),
+			__( '3. Milestones', 'mediashield' ),
 			array( __CLASS__, 'render_milestones_meta_box' ),
 			'mediashield_video',
 			'normal',
@@ -148,16 +158,20 @@ class VideoPostType {
 			'default'
 		);
 
-		// Pro teaser meta boxes (only when Pro is NOT active).
+		// Pro teaser meta boxes (only when Pro is NOT active). The LMS one
+		// only when an LMS Pro links to is active (the detection Pro's
+		// LMSManager uses): with none it sold a feature the site cannot use.
 		if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
-			add_meta_box(
-				'mediashield-pro-lms-teaser',
-				__( 'LMS Integration', 'mediashield' ) . ' <span class="ms-pro-badge-small">PRO</span>',
-				array( __CLASS__, 'render_lms_teaser' ),
-				'mediashield_video',
-				'side',
-				'low'
-			);
+			if ( defined( 'LEARNDASH_VERSION' ) || function_exists( 'tutor' ) || function_exists( 'llms' ) ) {
+				add_meta_box(
+					'mediashield-pro-lms-teaser',
+					__( 'LMS Integration', 'mediashield' ) . ' <span class="ms-pro-badge-small">PRO</span>',
+					array( __CLASS__, 'render_lms_teaser' ),
+					'mediashield_video',
+					'side',
+					'low'
+				);
+			}
 			add_meta_box(
 				'mediashield-pro-features-teaser',
 				__( 'Pro Features', 'mediashield' ) . ' <span class="ms-pro-badge-small">PRO</span>',
@@ -195,12 +209,13 @@ class VideoPostType {
 					'vimeo'           => __( 'Vimeo', 'mediashield' ),
 					'wistia'          => __( 'Wistia', 'mediashield' ),
 					'bunny'           => __( 'Bunny Stream', 'mediashield' ),
-					'self'            => __( 'Self-hosted / Direct URL', 'mediashield' ),
+					'self'            => \MediaShield\Support\Platforms::label( 'self', false ),
 					'bunnyCollection' => __( 'That is a Bunny collection (a folder of videos), not a single video. Open the video itself in Bunny Stream and paste that URL, or paste its embed URL.', 'mediashield' ),
 					'bunnyDashboard'  => __( 'That looks like a Bunny dashboard link we cannot read a video ID from. Open the video in Bunny Stream and copy the URL from the address bar, or use its embed URL.', 'mediashield' ),
-					'unrecognised'    => __( 'This URL was not recognised as YouTube, Vimeo, Wistia or Bunny, and does not look like a direct video file. It will be saved as self-hosted, which only works if the URL serves the video file itself.', 'mediashield' ),
+					'unrecognised'    => \MediaShield\Support\Platforms::unplayable_message(),
 					'bunnyStreamFile' => __( 'This is a Bunny stream file from a library this site is not connected to, so it will be saved as a direct stream. That only plays if token authentication is off for the library. To use Bunny\'s player instead, paste the video\'s embed URL.', 'mediashield' ),
 					'uploading'       => __( 'Uploading…', 'mediashield' ),
+					'posterFailed'    => __( 'No poster was made from the file, so set a featured image yourself:', 'mediashield' ),
 					/* translators: %s: percentage sent so far, e.g. "42%". */
 					'uploadSending'   => __( 'Sending to your site: %s', 'mediashield' ),
 					/* translators: %s: upload target, e.g. "Bunny Stream - Course videos". */
@@ -210,6 +225,7 @@ class VideoPostType {
 					'tooLargeBunny'   => __( 'Upload it in Bunny, then use Browse & Import.', 'mediashield' ),
 					'tooLargeOther'   => __( 'Ask your host to raise the upload limit, or upload the file to your video platform and paste its URL above.', 'mediashield' ),
 					'uploadDone'      => __( 'Uploaded. Save the video to keep this file.', 'mediashield' ),
+					'uploadedFile'    => __( 'Uploaded file (save the video to keep it):', 'mediashield' ),
 					'uploadFailed'    => __( 'Upload failed:', 'mediashield' ),
 					'uploadNetwork'   => __( 'Upload failed: the connection dropped or the file is larger than this server accepts.', 'mediashield' ),
 				),
@@ -265,9 +281,24 @@ class VideoPostType {
 			// the form is "leaking" state across posts.
 			?>
 			<input type="text" style="display:none !important" autocomplete="username" tabindex="-1" aria-hidden="true">
+			<?php
+			// The Videos list says "Unavailable at YouTube - Replace link" and
+			// sends the owner here; say it here too (MSUX-10).
+			if ( null !== SourceStatus::get( $post->ID ) ) :
+				?>
+				<div class="notice notice-warning inline ms-source-unavailable">
+					<p>
+						<strong><?php echo esc_html( sprintf( /* translators: %s: platform name, e.g. YouTube. */ __( 'Unavailable at %s', 'mediashield' ), \MediaShield\Support\Platforms::label( (string) $platform ) ) ); ?></strong>
+						<?php echo esc_html( sprintf( /* translators: %s: platform name, e.g. YouTube. */ __( '%s no longer plays this video (it was removed or made private), so members cannot watch it. Paste a new link below, or make the video public again there.', 'mediashield' ), \MediaShield\Support\Platforms::label( (string) $platform ) ) ); ?>
+					</p>
+				</div>
+			<?php endif; ?>
 			<?php if ( $is_new ) : ?>
 				<p class="ms-source-intro">
-					<?php esc_html_e( 'Paste a video URL from YouTube, Vimeo, Wistia, or Bunny Stream. The platform and video ID will be detected automatically.', 'mediashield' ); ?>
+					<?php
+					// Which links work is said once, under the field (Platforms::link_hint()).
+					esc_html_e( 'Paste a link or upload a file. The platform is read from the link.', 'mediashield' );
+					?>
 				</p>
 
 				<?php if ( $has_pro && ! empty( $connected_platforms ) ) : ?>
@@ -286,33 +317,25 @@ class VideoPostType {
 						printf(
 							/* translators: %s: comma-separated platform names */
 							esc_html__( 'Connected platforms: %s. Use Browse & Import for bulk actions.', 'mediashield' ),
-							esc_html( implode( ', ', array_map( array( __CLASS__, 'get_platform_label' ), $connected_platforms ) ) )
+							esc_html( implode( ', ', array_map( array( \MediaShield\Support\Platforms::class, 'label' ), $connected_platforms ) ) )
 						);
 						?>
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=mediashield#/platforms' ) ); ?>"><?php esc_html_e( 'Manage Platforms →', 'mediashield' ); ?></a>
 					</p>
 				<?php elseif ( $has_pro ) : ?>
-					<div class="notice notice-info inline" style="margin: 8px 0;">
-						<p>
-							<?php
-							// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons::svg returns inline SVG built from a vendored Lucide path map; no user input.
-							echo \MediaShield\Support\Icons::svg(
-								'cloud',
-								array(
-									'size'  => 16,
-									'class' => 'ms-inline-icon',
-								)
-							);
-							?>
-							<?php
-							printf(
-								/* translators: %s: link to Platforms page */
-								esc_html__( 'No cloud platforms connected. %s to enable browsing, bulk import, and protected streaming from Bunny, YouTube, Vimeo, or Wistia.', 'mediashield' ),
-								'<a href="' . esc_url( admin_url( 'admin.php?page=mediashield#/platforms' ) ) . '"><strong>' . esc_html__( 'Connect a platform', 'mediashield' ) . '</strong></a>'
-							);
-							?>
-						</p>
-					</div>
+					<?php
+					// Links need no account; connecting is only for browsing and
+					// importing a library (MSUX-08). A quiet line, not a notice.
+					?>
+					<p class="ms-source-intro ms-source-intro--quiet">
+						<?php
+						printf(
+							/* translators: %s: link to the Platforms screen */
+							esc_html__( 'YouTube, Vimeo and Wistia links play here without an account. %s only to browse your library and import videos in one step.', 'mediashield' ),
+							'<a href="' . esc_url( admin_url( 'admin.php?page=mediashield#/platforms' ) ) . '">' . esc_html__( 'Connect a platform', 'mediashield' ) . '</a>'
+						);
+						?>
+					</p>
 				<?php else : ?>
 					<p class="ms-source-intro" style="color: #757575;">
 						<?php
@@ -325,21 +348,52 @@ class VideoPostType {
 							)
 						);
 						?>
-						<?php esc_html_e( 'Upgrade to MediaShield Pro to connect cloud platforms (Bunny, YouTube, Vimeo, Wistia) for protected streaming, bulk import, and advanced analytics.', 'mediashield' ); ?>
+						<?php esc_html_e( 'YouTube, Vimeo and Wistia links play here as they are. MediaShield Pro adds Bunny Stream: browse your Bunny library and import videos in one step.', 'mediashield' ); ?>
 					</p>
 				<?php endif; ?>
 			<?php endif; ?>
 
+			<?php
+			// A file this site holds is shown by its name, length and size,
+			// not by the signed /stream/ address its source field carries
+			// (Basecamp 10545260613). The link field is still there, empty, to
+			// replace the file with a link; left empty, the file stays.
+			$held = 'self' === $platform ? \MediaShield\REST\StreamController::resolve_file( $post->ID ) : '';
+			if ( '' !== $held ) :
+				?>
+				<div class="ms-held-file">
+					<?php $held_name = \MediaShield\Upload\Drivers\SelfHosted::display_name( $post->ID, $held ); ?>
+					<strong class="ms-held-file__name" title="<?php echo esc_attr( $held_name ); ?>"><?php echo esc_html( $held_name ); ?></strong>
+					<span class="ms-held-file__meta">
+						<?php
+						echo esc_html(
+							implode(
+								' · ',
+								array_filter(
+									array(
+										__( 'Uploaded file', 'mediashield' ),
+										$duration > 0 ? \MediaShield\Player\PlaylistRenderer::duration_label( $duration ) : '',
+										size_format( (int) filesize( $held ) ),
+										__( 'kept private, played through a signed link', 'mediashield' ),
+									)
+								)
+							)
+						);
+						?>
+					</span>
+					<input type="hidden" name="_ms_source_held" value="1" />
+				</div>
+			<?php endif; ?>
 			<table class="form-table" role="presentation">
 				<tr>
-					<th><label for="ms-video-url"><?php esc_html_e( 'Video URL', 'mediashield' ); ?></label></th>
+					<th><label for="ms-video-url"><?php echo '' !== $held ? esc_html__( 'Replace with a link', 'mediashield' ) : esc_html__( 'Video link', 'mediashield' ); ?></label></th>
 					<td>
 						<input type="url" id="ms-video-url" name="_ms_source_url"
-							value="<?php echo esc_url( $source ); ?>" class="large-text"
+							value="<?php echo '' !== $held ? '' : esc_url( $source ); ?>" class="large-text"
 							autocomplete="off"
 							data-form-type="other"
 							placeholder="<?php esc_attr_e( 'https://www.youtube.com/watch?v=... or https://vimeo.com/...', 'mediashield' ); ?>" />
-						<p class="description"><?php esc_html_e( 'Paste the video URL. Supported: YouTube, Vimeo, Wistia, Bunny Stream embed URLs, or a direct video file URL.', 'mediashield' ); ?></p>
+						<p class="description"><?php echo '' !== $held ? esc_html__( 'Leave empty to keep the uploaded file.', 'mediashield' ) : esc_html( \MediaShield\Support\Platforms::link_hint() ); ?></p>
 					</td>
 				</tr>
 				<?php
@@ -377,10 +431,10 @@ class VideoPostType {
 					</td>
 				</tr>
 				<?php endif; ?>
-				<tr id="ms-detected-platform-row" <?php echo $platform ? '' : 'style="display:none;"'; ?>>
+				<tr id="ms-detected-platform-row" <?php echo ( $platform && '' === $held ) ? '' : 'style="display:none;"'; ?>>
 					<th><?php esc_html_e( 'Detected Platform', 'mediashield' ); ?></th>
 					<td>
-						<strong id="ms-detected-platform-label"><?php echo esc_html( self::get_platform_label( $platform ) ); ?></strong>
+						<strong id="ms-detected-platform-label"><?php echo esc_html( \MediaShield\Support\Platforms::label( $platform, false ) ); ?></strong>
 						<input type="hidden" id="ms-platform" name="_ms_platform" value="<?php echo esc_attr( $platform ); ?>" />
 						<input type="hidden" id="ms-platform-video-id" name="_ms_platform_video_id" value="<?php echo esc_attr( $video_id ); ?>" />
 						<?php
@@ -400,8 +454,12 @@ class VideoPostType {
 					<td>
 						<input type="number" id="ms-duration" name="_ms_duration"
 							value="<?php echo esc_attr( $duration ); ?>" class="small-text" min="0"
+							<?php echo \MediaShield\CPT\VideoStatus::needs_length( (int) $post->ID ) ? 'aria-describedby="ms-duration-needed"' : ''; ?>
 							autocomplete="off" data-form-type="other" />
 						<span class="description"><?php esc_html_e( 'Length in seconds. Used to validate watch progress; leave 0 if unknown.', 'mediashield' ); ?></span>
+						<?php if ( \MediaShield\CPT\VideoStatus::needs_length( (int) $post->ID ) ) : ?>
+							<p class="description ms-duration-needed" id="ms-duration-needed"><?php esc_html_e( "Add this video's length so the watch rule can't be skipped.", 'mediashield' ); ?></p>
+						<?php endif; ?>
 					</td>
 				</tr>
 			</table>
@@ -410,23 +468,6 @@ class VideoPostType {
 		<?php
 		// Platform auto-detection behavior lives in assets/js/admin-video.js
 		// (enqueued by enqueue_edit_assets()).
-	}
-
-	/**
-	 * Get human-readable platform label.
-	 *
-	 * @param string $platform Platform slug.
-	 * @return string Label.
-	 */
-	private static function get_platform_label( string $platform ): string {
-		$labels = array(
-			'youtube' => __( 'YouTube', 'mediashield' ),
-			'vimeo'   => __( 'Vimeo', 'mediashield' ),
-			'wistia'  => __( 'Wistia', 'mediashield' ),
-			'bunny'   => __( 'Bunny Stream', 'mediashield' ),
-			'self'    => __( 'Self-hosted', 'mediashield' ),
-		);
-		return $labels[ $platform ] ?? $platform;
 	}
 
 	/**
@@ -449,12 +490,9 @@ class VideoPostType {
 		$protection = (string) get_post_meta( $post->ID, '_ms_protection_level', true );
 		$access     = get_post_meta( $post->ID, '_ms_access_role', true );
 
-		$levels = array(
-			'none'     => __( 'None', 'mediashield' ),
-			'basic'    => __( 'Basic — Login required, right-click disabled', 'mediashield' ),
-			'standard' => __( 'Standard — Watermark + session tracking', 'mediashield' ),
-			'strict'   => __( 'Strict — Devtools detection + source hiding', 'mediashield' ),
-		);
+		// The one set of level words (Protection::levels(), Basecamp 10545260510).
+		$words  = \MediaShield\Player\Protection::levels();
+		$levels = wp_list_pluck( $words, 'label' );
 
 		/**
 		 * Filter the protection levels offered on the video edit screen.
@@ -478,13 +516,12 @@ class VideoPostType {
 		// remove the only route back to "follow the site default". The label
 		// names the current default, because "Default" on its own tells the
 		// operator nothing about what they are choosing.
-		$levels = array(
-			'' => sprintf(
-				/* translators: %s: the site-wide default protection level. */
-				__( 'Default (%s)', 'mediashield' ),
-				\MediaShield\Player\Protection::default_level()
-			),
-		) + $levels;
+		$levels = array( '' => \MediaShield\Player\Protection::site_default_label() ) + $levels;
+
+		// What the chosen level does, under the select; admin-video.js swaps
+		// it when the choice changes.
+		$default_level = \MediaShield\Player\Protection::default_level();
+		$summaries     = array( '' => $words[ $default_level ]['summary'] ?? '' ) + wp_list_pluck( $words, 'summary' );
 
 		$roles = wp_roles()->get_names();
 		?>
@@ -492,27 +529,59 @@ class VideoPostType {
 			<tr>
 				<th><label for="ms-protection-level"><?php esc_html_e( 'Protection Level', 'mediashield' ); ?></label></th>
 				<td>
-					<select id="ms-protection-level" name="_ms_protection_level">
+					<select id="ms-protection-level" name="_ms_protection_level" aria-describedby="ms-protection-summary">
 						<?php foreach ( $levels as $value => $label ) : ?>
-							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $protection, $value ); ?>>
+							<option value="<?php echo esc_attr( $value ); ?>" data-summary="<?php echo esc_attr( $summaries[ $value ] ?? '' ); ?>" <?php selected( $protection, $value ); ?>>
 								<?php echo esc_html( $label ); ?>
 							</option>
 						<?php endforeach; ?>
 					</select>
+					<p class="description" id="ms-protection-summary"><?php echo esc_html( $summaries[ $protection ] ?? '' ); ?></p>
+					<?php
+					// A file on another site cannot be served through MediaShield,
+					// so no level can hide its address. Said here, where the owner
+					// picks the level, instead of Strict silently not hiding it.
+					$ms_platform = (string) get_post_meta( $post->ID, '_ms_platform', true );
+					$ms_source   = (string) get_post_meta( $post->ID, '_ms_source_url', true );
+					$ms_stream   = (string) get_post_meta( $post->ID, '_ms_stream_url', true );
+					if ( 'self' === $ms_platform && '' !== $ms_source && '' === $ms_stream && '' === \MediaShield\REST\StreamController::resolve_file( $post->ID ) ) :
+						?>
+						<p class="description"><?php esc_html_e( 'This file is on another site, so MediaShield cannot hide its address, even on Strict. The watermark, session tracking and developer-tools detection still work. To hide the address, upload the file to this site.', 'mediashield' ); ?></p>
+					<?php endif; ?>
 				</td>
 			</tr>
 			<tr>
-				<th><label for="ms-access-role"><?php esc_html_e( 'Restrict to Role', 'mediashield' ); ?></label></th>
+				<th><label for="ms-access-role"><?php esc_html_e( 'Who can watch', 'mediashield' ); ?></label></th>
 				<td>
 					<select id="ms-access-role" name="_ms_access_role">
-						<option value=""><?php esc_html_e( '— Any logged-in user —', 'mediashield' ); ?></option>
+						<option value="">
+							<?php
+							// Login is the site's Who can watch setting, not part of a level.
+							echo esc_html(
+								\MediaShield\Core\Settings::get( 'ms_require_login' )
+									? __( 'Everyone the site allows (Require login is on: logged-in members)', 'mediashield' )
+									: __( 'Everyone the site allows (Require login is off: anyone)', 'mediashield' )
+							);
+							?>
+						</option>
 						<?php foreach ( $roles as $slug => $name ) : ?>
 							<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $access, $slug ); ?>>
-								<?php echo esc_html( translate_user_role( $name ) ); ?>
+								<?php
+								/* translators: %s: a user role, e.g. Subscriber. */
+								echo esc_html( sprintf( __( 'Only %s', 'mediashield' ), translate_user_role( $name ) ) );
+								?>
 							</option>
 						<?php endforeach; ?>
 					</select>
-					<p class="description"><?php esc_html_e( 'Only users with this role can watch. Leave empty for all logged-in users.', 'mediashield' ); ?></p>
+					<p class="description">
+						<?php
+						printf(
+							/* translators: %s: link to the Who can watch settings. */
+							esc_html__( 'Require login is set once for the whole site, under %s.', 'mediashield' ),
+							'<a href="' . esc_url( admin_url( 'admin.php?page=mediashield#/settings/access' ) ) . '">' . esc_html__( 'Settings > Who can watch', 'mediashield' ) . '</a>'
+						);
+						?>
+					</p>
 				</td>
 			</tr>
 			<?php self::render_tags_row( $post->ID ); ?>
@@ -611,7 +680,18 @@ class VideoPostType {
 					<?php esc_html_e( 'Save the video first to get the embed codes.', 'mediashield' ); ?>
 				</p>
 			<?php else : ?>
-				<label class="ms-embed-label"><?php esc_html_e( 'Shortcode', 'mediashield' ); ?></label>
+				<?php
+				// The block first: it is how most pages are built today. The
+				// shortcode is for the Classic editor, widgets and page builders.
+				// A theme template uses do_shortcode() (developer docs), not this
+				// box (MSUX-27).
+				?>
+				<label class="ms-embed-label"><?php esc_html_e( 'On a page or post', 'mediashield' ); ?></label>
+				<p class="description">
+					<?php esc_html_e( 'Add the MediaShield Video block and pick this video, or paste this video\'s link into the block.', 'mediashield' ); ?>
+				</p>
+
+				<label class="ms-embed-label ms-embed-label--spaced" for="ms-shortcode-input"><?php esc_html_e( 'Shortcode', 'mediashield' ); ?></label>
 				<div class="ms-embed-copy-row">
 					<input type="text" value="<?php echo esc_attr( $shortcode ); ?>" readonly class="ms-embed-input" id="ms-shortcode-input" />
 					<button type="button" class="button ms-embed-copy-btn" data-copy="ms-shortcode-input" title="<?php esc_attr_e( 'Copy', 'mediashield' ); ?>">
@@ -634,36 +714,7 @@ class VideoPostType {
 						?>
 					</button>
 				</div>
-				<p class="description"><?php esc_html_e( 'Paste in any page, post, or lesson using the Classic Editor.', 'mediashield' ); ?></p>
-
-				<label class="ms-embed-label" style="margin-top: 14px; display: block;"><?php esc_html_e( 'Gutenberg Block', 'mediashield' ); ?></label>
-				<p class="description">
-					<?php esc_html_e( 'In the Block Editor, search for "MediaShield" to find the Video block. Select this video from the block settings.', 'mediashield' ); ?>
-				</p>
-
-				<label class="ms-embed-label ms-embed-label--spaced"><?php esc_html_e( 'PHP Template', 'mediashield' ); ?></label>
-				<div class="ms-embed-copy-row">
-					<input type="text" value="<?php echo esc_attr( '<?php echo do_shortcode(\'[mediashield id=' . $post_id . ']\'); ?>' ); ?>" readonly class="ms-embed-input" id="ms-php-input" />
-					<button type="button" class="button ms-embed-copy-btn" data-copy="ms-php-input" title="<?php esc_attr_e( 'Copy', 'mediashield' ); ?>">
-						<?php
-						// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Two Icons::svg calls concatenated; each returns inline SVG from a vendored Lucide path map; no user input.
-						echo \MediaShield\Support\Icons::svg(
-							'clipboard',
-							array(
-								'size'  => 16,
-								'class' => 'ms-copy-idle',
-							)
-						) . \MediaShield\Support\Icons::svg(
-							'check',
-							array(
-								'size'  => 16,
-								'class' => 'ms-copy-done',
-							)
-						);
-						// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
-						?>
-					</button>
-				</div>
+				<p class="description"><?php esc_html_e( 'For the Classic editor, widgets and page builders.', 'mediashield' ); ?></p>
 			<?php endif; ?>
 		</div>
 
@@ -673,7 +724,7 @@ class VideoPostType {
 	}
 
 	/**
-	 * Render the Milestone Tags meta box.
+	 * Render the Milestones meta box.
 	 *
 	 * Per-video milestone tag assignments. When a user reaches a milestone,
 	 * the tag is stored as serialized user meta linking video ID + tag.
@@ -686,17 +737,22 @@ class VideoPostType {
 			$milestones = array();
 		}
 
-		$default_pcts = array( 10, 25, 50, 75, 100 );
+		// The milestones MediaShield records (MilestoneTracker); a 10% row a
+		// site filled in before 1.4.4 is still shown so nothing it set is lost.
+		$default_pcts = array( 25, 50, 75, 100 );
+		if ( ! empty( $milestones[10]['tag'] ) ) {
+			array_unshift( $default_pcts, 10 );
+		}
 		?>
-		<p class="description" style="margin-bottom: 12px;">
-			<?php esc_html_e( 'Assign tags to users when they reach specific watch milestones on this video. Tags are stored as user meta and can be used for automation, reporting, or LMS integration.', 'mediashield' ); ?>
+		<p class="description ms-milestones-intro">
+			<?php esc_html_e( 'When a member reaches 25%, 50%, 75% or 100% of this video, MediaShield records it. To add a tag to the member at a milestone, type the tag and tick the box.', 'mediashield' ); ?>
 		</p>
-		<table class="widefat striped" style="border: 1px solid #e2e8f0;">
+		<table class="widefat striped ms-milestones-table">
 			<thead>
 				<tr>
-					<th style="width: 80px;"><?php esc_html_e( 'Milestone', 'mediashield' ); ?></th>
-					<th><?php esc_html_e( 'Tag (assigned to user)', 'mediashield' ); ?></th>
-					<th style="width: 60px;"><?php esc_html_e( 'Active', 'mediashield' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Milestone', 'mediashield' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Tag to add to the member', 'mediashield' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'On', 'mediashield' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -712,26 +768,21 @@ class VideoPostType {
 					<td>
 						<input type="text" name="_ms_milestone_tags[<?php echo esc_attr( $pct ); ?>][tag]"
 							value="<?php echo esc_attr( $tag ); ?>"
-							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Tag for %d%% milestone', 'mediashield' ), $pct ) ); ?>"
-							placeholder="
-							<?php
-								/* translators: %d: milestone percentage */
-								echo esc_attr( sprintf( __( 'e.g. watched-%d-pct', 'mediashield' ), $pct ) );
-							?>
-							"
-							class="regular-text" style="width: 100%;" />
+							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Tag at %d%%', 'mediashield' ), $pct ) ); ?>"
+							placeholder="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'e.g. watched-%d', 'mediashield' ), $pct ) ); ?>"
+							class="regular-text" />
 					</td>
-					<td style="text-align: center;">
+					<td>
 						<input type="checkbox" name="_ms_milestone_tags[<?php echo esc_attr( $pct ); ?>][enabled]"
-							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Enable %d%% milestone', 'mediashield' ), $pct ) ); ?>"
+							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: milestone percentage */ __( 'Add the tag at %d%%', 'mediashield' ), $pct ) ); ?>"
 							value="1" <?php checked( $enabled ); ?> />
 					</td>
 				</tr>
 				<?php endforeach; ?>
 			</tbody>
 		</table>
-		<p class="description" style="margin-top: 8px;">
-			<?php esc_html_e( 'When a user reaches a milestone, the tag is saved to their profile as: ms_tag_{video_id}_{percentage} → tag_value. Leave blank to use global milestone settings.', 'mediashield' ); ?>
+		<p class="description">
+			<?php esc_html_e( 'The tag goes on the member, for your CRM, LMS or automation rules, and shows on their page under MediaShield > Viewers. It is not a video tag: the Tags box above and MediaShield > Tags are for organising your videos.', 'mediashield' ); ?>
 		</p>
 		<?php
 	}
@@ -752,7 +803,7 @@ class VideoPostType {
 		?>
 		<div class="ms-player-options">
 			<p class="description" style="margin-bottom: 12px;">
-				<?php esc_html_e( 'These options apply to self-hosted and Bunny videos. YouTube, Vimeo, and Wistia use their own player controls.', 'mediashield' ); ?>
+				<?php esc_html_e( 'These options apply to every video source. Two exceptions for Show player controls: a Bunny embed always shows Bunny\'s own controls, and Vimeo hides its controls only on a paid Vimeo plan. Most browsers start a video automatically only when it is muted.', 'mediashield' ); ?>
 			</p>
 			<p>
 				<label>
@@ -869,6 +920,85 @@ class VideoPostType {
 	}
 
 	/**
+	 * Set when the edit screen refused a link during this save.
+	 *
+	 * @var bool
+	 */
+	private static bool $refused_source = false;
+
+	/**
+	 * Refuse a REST save whose new source link MediaShield cannot play.
+	 *
+	 * Covers every REST writer of `_ms_source_url`: the setup wizard, the
+	 * Video block's paste, Pro screens and any API client. A link already
+	 * stored is not re-checked when it comes back unchanged, so an old video
+	 * can still be edited.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param \stdClass|\WP_Error $prepared Post about to be saved.
+	 * @param \WP_REST_Request    $request  Request.
+	 * @return \stdClass|\WP_Error
+	 */
+	public static function refuse_unplayable_source( $prepared, $request ) {
+		if ( is_wp_error( $prepared ) || ! $request instanceof \WP_REST_Request ) {
+			return $prepared;
+		}
+
+		$meta = $request->get_param( 'meta' );
+		if ( ! is_array( $meta ) || ! isset( $meta['_ms_source_url'] ) ) {
+			return $prepared;
+		}
+
+		$url = trim( (string) $meta['_ms_source_url'] );
+		$id  = (int) $request->get_param( 'id' );
+		if ( '' === $url || ( $id > 0 && get_post_meta( $id, '_ms_source_url', true ) === $url ) ) {
+			return $prepared;
+		}
+
+		$found = \MediaShield\Support\Platforms::recognise( $url );
+
+		return is_wp_error( $found ) ? $found : $prepared;
+	}
+
+	/**
+	 * After an edit-screen save that refused a link, say so on the next screen.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param string $location Redirect URL.
+	 * @param int    $post_id  Post ID.
+	 * @return string
+	 */
+	public static function flag_refused_source( $location, $post_id ): string {
+		if ( self::$refused_source && 'mediashield_video' === get_post_type( (int) $post_id ) ) {
+			return add_query_arg( 'ms_source_refused', 1, (string) $location );
+		}
+		return (string) $location;
+	}
+
+	/**
+	 * The edit-screen notice for a refused link: what to use instead.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function render_refused_source_notice(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display flag only; set by our own redirect.
+		if ( empty( $_GET['ms_source_refused'] ) ) {
+			return;
+		}
+		$screen = get_current_screen();
+		if ( ! $screen || 'mediashield_video' !== $screen->post_type ) {
+			return;
+		}
+		printf(
+			'<div class="notice notice-error"><p><strong>%1$s</strong> %2$s</p></div>',
+			esc_html__( 'The video link was not saved.', 'mediashield' ),
+			esc_html( \MediaShield\Support\Platforms::unplayable_message() )
+		);
+	}
+
+	/**
 	 * Re-derive the platform from the stored source URL, server side.
 	 *
 	 * Whatever the browser guessed, a URL the server recognises is stored in one
@@ -881,6 +1011,15 @@ class VideoPostType {
 	public static function normalize_platform( int $post_id ): void {
 		$source = (string) get_post_meta( $post_id, '_ms_source_url', true );
 		$bunny  = \MediaShield\Support\Platforms::bunny_from_url( $source );
+
+		// A YouTube, Vimeo or Wistia link names its platform and id whatever
+		// the browser guessed ("iframe", or nothing from an older client).
+		$found = '' !== $source ? \MediaShield\Support\Platforms::recognise( $source ) : null;
+		if ( is_array( $found ) && in_array( $found['platform'], array( 'youtube', 'vimeo', 'wistia' ), true ) ) {
+			update_post_meta( $post_id, '_ms_platform', $found['platform'] );
+			update_post_meta( $post_id, '_ms_platform_video_id', $found['video_id'] );
+			return;
+		}
 
 		if ( ! $bunny ) {
 			// Saved as Bunny, but we cannot tell which library it belongs to -
@@ -943,6 +1082,30 @@ class VideoPostType {
 			'_ms_protection_level',
 			'_ms_access_role',
 		);
+
+		// A length read from an uploaded file is never replaced by an empty or
+		// 0 Duration field (a form opened before the upload finished).
+		if ( isset( $_POST['_ms_duration'] ) && 0 === absint( wp_unslash( $_POST['_ms_duration'] ) )
+			&& (int) get_post_meta( $post_id, '_ms_duration', true ) > 0
+			&& '' !== (string) get_post_meta( $post_id, '_ms_owned_file', true ) ) {
+			unset( $fields['_ms_duration'] );
+		}
+
+		// The edit screen shows an uploaded file by name with an empty link
+		// field (render_source_meta_box()); empty there keeps the file.
+		if ( ! empty( $_POST['_ms_source_held'] ) && isset( $_POST['_ms_source_url'] ) && '' === trim( sanitize_text_field( wp_unslash( $_POST['_ms_source_url'] ) ) ) ) {
+			unset( $fields['_ms_source_url'], $fields['_ms_platform'], $fields['_ms_platform_video_id'] );
+		}
+
+		// A link MediaShield cannot play is not saved: the video keeps the
+		// source it had, and the screen says what to use instead
+		// (flag_refused_source(), Basecamp 10545260436).
+		$posted_source = isset( $_POST['_ms_source_url'] ) ? trim( esc_url_raw( wp_unslash( $_POST['_ms_source_url'] ) ) ) : '';
+		if ( '' !== $posted_source && is_wp_error( \MediaShield\Support\Platforms::recognise( $posted_source ) )
+			&& $posted_source !== (string) get_post_meta( $post_id, '_ms_source_url', true ) ) {
+			unset( $fields['_ms_source_url'], $fields['_ms_platform'], $fields['_ms_platform_video_id'] );
+			self::$refused_source = true;
+		}
 
 		foreach ( $fields as $key => $sanitize ) {
 			if ( isset( $_POST[ $key ] ) ) {

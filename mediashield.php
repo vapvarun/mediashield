@@ -3,7 +3,7 @@
  * Plugin Name: MediaShield
  * Plugin URI:  https://wbcomdesigns.com/mediashield
  * Description: Video protection for WordPress — dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
- * Version:     1.4.3
+ * Version:     1.4.4
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author:      Wbcom Designs
@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'MEDIASHIELD_VERSION', '1.4.3' );
-define( 'MEDIASHIELD_DB_VERSION', 12 ); // v12: offer existing sites the 1.4.3 defaults (one notice).
+define( 'MEDIASHIELD_VERSION', '1.4.4' );
+define( 'MEDIASHIELD_DB_VERSION', 19 ); // v19: member milestone tags no longer linked to videos.
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDIASHIELD_URL', plugin_dir_url( __FILE__ ) );
@@ -115,6 +115,17 @@ add_action(
 			)
 		);
 	}
+);
+
+// Free updates with the preset key above, so there is no licence for the owner
+// to manage: the SDK's "Manage License" link belongs on the Pro row only.
+add_filter(
+	'plugin_action_links_' . plugin_basename( MEDIASHIELD_FILE ),
+	static function ( $actions ) {
+		unset( $actions['edd_sdk_manage'] );
+		return $actions;
+	},
+	101
 );
 
 // Load the vendored EDD SL SDK only when the package is COMPLETE. A partial

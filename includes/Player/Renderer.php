@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Core\Assets;
+use MediaShield\Core\Settings;
 
 /**
  * Class Renderer
@@ -30,28 +31,34 @@ use MediaShield\Core\Assets;
 class Renderer {
 
 	/**
-	 * Build an editor-only placeholder notice for a video that cannot render.
+	 * The player-sized "This video is unavailable." state for a video that
+	 * cannot play here (missing, in the trash, not published, private, no
+	 * source). Viewers get the calm state the player shows for a refused
+	 * platform video, never a blank area (front-end walk F25); someone who
+	 * may edit the video also gets the cause and the one fix.
 	 *
-	 * A mistyped or unpublished ID otherwise produces silent blank space with
-	 * nothing to search for. Front-end visitors still get nothing (never expose
-	 * why a video is missing); users who can edit content get an explanation.
+	 * @since 1.4.4
 	 *
-	 * Mirrors PlaylistRenderer::notice(), which has always done this.
-	 *
-	 * @since 1.2.0
-	 *
-	 * @param string $message Already-translated, human-readable explanation.
-	 * @return string Notice HTML for editors, empty string otherwise.
+	 * @param string $cause      Editor-only cause, already translated; '' for none.
+	 * @param string $fix_url    Where the fix is (Restore, Edit video); '' for none.
+	 * @param string $fix_label  Link text for $fix_url.
+	 * @param bool   $for_editor Whether the current user may see the cause.
+	 * @return string HTML.
 	 */
-	private static function notice( string $message ): string {
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			return '';
+	private static function unavailable( string $cause, string $fix_url, string $fix_label, bool $for_editor ): string {
+		wp_enqueue_style( 'mediashield-player' );
+
+		$note = '';
+		if ( $for_editor && '' !== $cause ) {
+			$note = '<p class="ms-error-admin"><span>' . esc_html( __( 'Only editors see this:', 'mediashield' ) . ' ' . $cause ) . '</span>'
+				. ( '' !== $fix_url ? '<a href="' . esc_url( $fix_url ) . '">' . esc_html( $fix_label ) . '</a>' : '' )
+				. '</p>';
 		}
 
-		// Ensure the notice picks up player.css styling.
-		Assets::enqueue();
-
-		return '<p class="ms-playlist-notice">' . esc_html( $message ) . '</p>';
+		return '<div class="ms-player-unavailable"><div class="ms-error-overlay ms-error-overlay--solid" role="status"><div class="ms-error-message">'
+			. '<p class="ms-error-title">' . esc_html( Settings::message( 'ms_unavailable_text', __( 'This video is unavailable.', 'mediashield' ) ) ) . '</p>'
+			. $note
+			. '</div></div></div>';
 	}
 
 	/**
@@ -201,22 +208,32 @@ class Renderer {
 		$video = get_post( $video_id );
 
 		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
-			return self::notice(
-				sprintf(
-					/* translators: %d: video ID used in the shortcode or block. */
-					__( 'MediaShield: no video found with ID %d.', 'mediashield' ),
-					$video_id
-				)
+			return self::unavailable(
+				/* translators: %d: video ID used in the shortcode or block. */
+				sprintf( __( 'No video found with ID %d.', 'mediashield' ), $video_id ),
+				'',
+				'',
+				current_user_can( 'edit_posts' )
 			);
 		}
 
 		if ( 'publish' !== $video->post_status ) {
-			return self::notice(
-				sprintf(
-					/* translators: %s: video title. */
-					__( 'MediaShield: the video "%s" is not published yet, so it is only visible to you.', 'mediashield' ),
-					$video->post_title
-				)
+			$editor = current_user_can( 'edit_post', $video_id );
+			if ( 'trash' === $video->post_status ) {
+				return self::unavailable(
+					__( 'This video is in the trash.', 'mediashield' ),
+					current_user_can( 'delete_post', $video_id ) ? wp_nonce_url( admin_url( 'post.php?post=' . $video_id . '&action=untrash' ), 'untrash-post_' . $video_id ) : '',
+					__( 'Restore it', 'mediashield' ),
+					$editor
+				);
+			}
+			return self::unavailable(
+				'private' === $video->post_status
+					? __( 'This video is private. Publish it to show it here.', 'mediashield' )
+					: __( 'This video is not published yet.', 'mediashield' ),
+				(string) get_edit_post_link( $video_id, 'raw' ),
+				__( 'Edit video', 'mediashield' ),
+				$editor
 			);
 		}
 
@@ -234,12 +251,11 @@ class Renderer {
 		$player_type      = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 
 		if ( empty( $source_url ) && empty( $stream_url ) && empty( $platform_video_id ) ) {
-			return self::notice(
-				sprintf(
-					/* translators: %s: video title. */
-					__( 'MediaShield: the video "%s" has no source file or URL yet. Edit it and add one.', 'mediashield' ),
-					$video->post_title
-				)
+			return self::unavailable(
+				__( 'This video has no source file or link yet.', 'mediashield' ),
+				(string) get_edit_post_link( $video_id, 'raw' ),
+				__( 'Edit video', 'mediashield' ),
+				current_user_can( 'edit_post', $video_id )
 			);
 		}
 
@@ -328,6 +344,10 @@ class Renderer {
 		?>
 		<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
 			data-video-id="<?php echo esc_attr( $video_id ); ?>"
+			data-title="<?php echo esc_attr( \MediaShield\CPT\Thumbnail::display_title( (int) $video_id, (string) $video->post_title ) ); ?>"
+			<?php if ( '' !== AccessControl::context_string() ) : ?>
+				data-ms-context="<?php echo esc_attr( AccessControl::context_string() ); ?>"
+			<?php endif; ?>
 			data-platform="<?php echo esc_attr( $platform ); ?>"
 			data-protection-level="<?php echo esc_attr( $protection_level ); ?>"
 			data-player-type="<?php echo esc_attr( $player_type ); ?>"
@@ -342,6 +362,22 @@ class Renderer {
 			echo self::guest_allowed_attr( $video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static attribute string.
 			if ( $access_denied ) {
 				echo ' data-access-denied="1"';
+				// A member refused this video: the reason and the next step,
+				// so the player shows them without asking /session/start
+				// (AccessControl::refusal(), the same answer that route gives).
+				if ( get_current_user_id() ) {
+					$refusal = AccessControl::refusal( AccessControl::can_watch( (int) $video_id, get_current_user_id() ), get_current_user_id() );
+					$details = (array) $refusal->get_error_data();
+					printf( ' data-denied-code="%s" data-denied-message="%s"', esc_attr( (string) $refusal->get_error_code() ), esc_attr( $refusal->get_error_message() ) );
+					if ( ! empty( $details['access_url'] ) ) {
+						printf( ' data-access-url="%s" data-access-label="%s"', esc_url( (string) $details['access_url'] ), esc_attr( (string) ( $details['access_label'] ?? '' ) ) );
+					}
+				}
+			}
+			// Someone who may edit the video reads the cause of a failure and
+			// gets an Edit video link under it (Basecamp 10545260568).
+			if ( current_user_can( 'edit_post', $video_id ) ) {
+				printf( ' data-edit-url="%s"', esc_url( (string) get_edit_post_link( $video_id, 'raw' ) ) );
 			}
 			if ( $wrapper_attrs ) {
 				echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped by get_block_wrapper_attributes().
@@ -395,6 +431,24 @@ class Renderer {
 					data-poster="<?php echo esc_url( $poster ); ?>"
 				<?php endif; ?>
 				<?php echo $playback_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- attributes pre-escaped above. ?>
+				<?php
+				// Where this member stopped last time, so the player can offer
+				// "Resume from m:ss" before any viewing starts: a viewing now
+				// starts at the first play, not on page load (Basecamp 10545260660).
+				$resume_at = $access_denied ? 0.0 : \MediaShield\Access\SessionManager::resume_position( (int) $video_id, get_current_user_id() );
+				// The site's "Watch X% to complete" applies to this member: at
+				// None and Basic too, the player measures watch time (cards
+				// 10541776164, 10537102216). A lesson's own % arrives as
+				// data-watch-required on the container.
+				if ( ! $access_denied && get_current_user_id() && self::measures_watch( (int) $video_id ) ) :
+					?>
+					data-watch-track="1"
+					<?php
+				endif;
+				if ( $resume_at > 0 ) :
+					?>
+					data-resume-position="<?php echo esc_attr( (string) round( $resume_at, 1 ) ); ?>"
+				<?php endif; ?>
 				<?php if ( ! empty( $video_overrides ) ) : ?>
 					data-player-overrides="<?php echo esc_attr( wp_json_encode( $video_overrides ) ); ?>"
 				<?php endif; ?>
@@ -493,6 +547,43 @@ class Renderer {
 		$source_url        = '';
 		$stream_url        = '';
 		return true;
+	}
+
+	/**
+	 * Does the site's "Watch X% to complete" apply to this player for the member?
+	 *
+	 * Only where a lesson can use it: the site % is about lessons, and the
+	 * player cannot tell a lesson from a blog post, so an LMS integration
+	 * says so through `mediashield_measure_watch` (Pro's LearnDash: its lesson
+	 * and topic screens). Learnomy 2.4.1 lessons put their own % on the
+	 * player instead (data-watch-required). Free review #8.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $video_id Video CPT post ID.
+	 * @return bool
+	 */
+	private static function measures_watch( int $video_id ): bool {
+		if ( null === \MediaShield\Access\SessionManager::watch_requirement( $video_id, get_current_user_id() ) ) {
+			return false;
+		}
+
+		/**
+		 * Filter whether this player measures the member's watch time for the
+		 * site's "Watch X% to complete" (Settings > Lesson Completion).
+		 *
+		 * Default false: a video on a blog post or a landing page is not a
+		 * lesson. Return true on the screens where a lesson's completion uses
+		 * the rule. Standard and Strict videos measure anyway; this decides
+		 * for None and Basic.
+		 *
+		 * @since 1.4.4
+		 *
+		 * @param bool $measure  Default false.
+		 * @param int  $video_id Video CPT post ID.
+		 * @param int  $post_id  The post or page being shown (0 when none).
+		 */
+		return (bool) apply_filters( 'mediashield_measure_watch', false, $video_id, (int) get_queried_object_id() );
 	}
 
 	/**

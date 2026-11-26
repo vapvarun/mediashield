@@ -48,6 +48,7 @@ class Thumbnail {
 		// priority 10, so reading platform meta at priority 20 sees the freshly
 		// written values.
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'maybe_fetch_thumbnail' ), 20, 2 );
+		add_action( self::FETCH_JOB, array( __CLASS__, 'fetch_poster' ) );
 		// REST create path (card #9924901405): WP_REST_Posts_Controller calls
 		// wp_insert_post() WITHOUT the meta_input arg, so save_post fires while
 		// _ms_platform / _ms_platform_video_id are still empty and the thumbnail
@@ -252,7 +253,17 @@ class Thumbnail {
 	}
 
 	/**
-	 * Fetch and set thumbnail on video save if none is set.
+	 * Background job that fetches a platform video's poster (one video each).
+	 */
+	const FETCH_JOB = 'ms_fetch_poster';
+
+	/**
+	 * On video save, queue the platform poster if none is set.
+	 *
+	 * The fetch itself (the platform's oEmbed, then the image) runs in the
+	 * FETCH_JOB background job, never inside the save request: a slow or
+	 * down platform must not hold up the owner's save or another plugin
+	 * creating a video (gate P9).
 	 *
 	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post    Post object.
@@ -266,25 +277,76 @@ class Thumbnail {
 			return;
 		}
 
-		// Skip if featured image is already set.
-		if ( has_post_thumbnail( $post_id ) ) {
-			return;
-		}
-
 		$platform = get_post_meta( $post_id, '_ms_platform', true );
 		$video_id = get_post_meta( $post_id, '_ms_platform_video_id', true );
 
 		if ( empty( $video_id ) || 'self' === $platform ) {
 			return;
 		}
-
-		$thumbnail_url = self::get_thumbnail_url( $platform, $video_id );
-
-		if ( empty( $thumbnail_url ) ) {
+		// The job also asks YouTube and Vimeo whether the video still plays
+		// (MSUX-10), so a video with a poster is queued too.
+		if ( has_post_thumbnail( $post_id ) && ! in_array( $platform, array( 'youtube', 'vimeo' ), true ) ) {
 			return;
 		}
 
-		self::sideload_poster( $thumbnail_url, $post_id, (string) $platform, (string) $video_id, $post->post_title );
+		$args = array( $post_id );
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			if ( ! as_has_scheduled_action( self::FETCH_JOB, $args, 'mediashield' ) ) {
+				as_enqueue_async_action( self::FETCH_JOB, $args, 'mediashield' );
+			}
+		} elseif ( ! wp_next_scheduled( self::FETCH_JOB, $args ) ) {
+			wp_schedule_single_event( time(), self::FETCH_JOB, $args );
+		}
+	}
+
+	/**
+	 * The background job: fetch the platform poster and make it the video's
+	 * featured image, unless one was set meanwhile.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $post_id Video ID.
+	 */
+	public static function fetch_poster( $post_id ): void {
+		$post_id = (int) $post_id;
+		$post    = get_post( $post_id );
+		if ( ! $post || 'mediashield_video' !== $post->post_type ) {
+			return;
+		}
+
+		$platform = (string) get_post_meta( $post_id, '_ms_platform', true );
+		$video_id = (string) get_post_meta( $post_id, '_ms_platform_video_id', true );
+		if ( '' === $video_id || 'self' === $platform ) {
+			return;
+		}
+
+		// Does the platform still play it? A removed or private YouTube or
+		// Vimeo video is recorded now, after the save, not when a member
+		// first fails to play it (MSUX-10). null: the platform cannot say.
+		$plays = SourceStatus::check( $post_id );
+		if ( false === $plays ) {
+			SourceStatus::mark_unavailable( $post_id, 'removed' );
+			return;
+		}
+		if ( true === $plays ) {
+			SourceStatus::clear( $post_id );
+		}
+
+		if ( has_post_thumbnail( $post_id ) ) {
+			return;
+		}
+
+		$thumbnail_url = self::get_thumbnail_url( $platform, $video_id );
+		if ( '' === $thumbnail_url ) {
+			return;
+		}
+
+		$result = self::sideload_poster( $thumbnail_url, $post_id, $platform, $video_id, $post->post_title );
+		// YouTube has no maxresdefault image for older or low-resolution
+		// videos; hqdefault exists for every video (MSUX-11).
+		if ( is_wp_error( $result ) && 'youtube' === $platform ) {
+			self::sideload_poster( "https://img.youtube.com/vi/{$video_id}/hqdefault.jpg", $post_id, $platform, $video_id, $post->post_title );
+		}
 	}
 
 	/**
@@ -461,6 +523,9 @@ class Thumbnail {
 	 *
 	 * A poster whose file name still carries the platform ID (saved before
 	 * 1.4.2 and not renamed yet) is left out for a viewer who may not watch.
+	 * A YouTube video with no poster yet (the background job has not run)
+	 * shows YouTube's own image to a viewer who may watch, with no request
+	 * from this site (MSUX-11); it names the video ID, so never to others.
 	 *
 	 * @param int       $video_id  Video post ID.
 	 * @param string    $size      Image size.
@@ -469,7 +534,18 @@ class Thumbnail {
 	 */
 	public static function poster_url( int $video_id, string $size = 'large', ?bool $may_watch = null ): string {
 		$url = (string) get_the_post_thumbnail_url( $video_id, $size );
-		if ( '' === $url || ! self::carries_id( wp_basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ), (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) ) ) {
+		if ( '' === $url ) {
+			$platform_id = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+			// Not for a video YouTube no longer plays: its image is gone too.
+			if ( 'youtube' !== get_post_meta( $video_id, '_ms_platform', true ) || ! preg_match( '/^[A-Za-z0-9_-]{11}$/', $platform_id ) || null !== SourceStatus::get( $video_id ) ) {
+				return '';
+			}
+			if ( null === $may_watch ) {
+				$may_watch = \MediaShield\Access\AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'];
+			}
+			return $may_watch ? 'https://i.ytimg.com/vi/' . $platform_id . '/hqdefault.jpg' : '';
+		}
+		if ( ! self::carries_id( wp_basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ), (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) ) ) {
 			return $url;
 		}
 		if ( null === $may_watch ) {

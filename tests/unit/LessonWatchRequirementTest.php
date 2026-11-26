@@ -118,6 +118,37 @@ class LessonWatchRequirementTest extends WP_UnitTestCase {
 		$this->assertSame( 85, $status['requirements'][0]['current_pct'] );
 	}
 
+	/**
+	 * Fails on 1.4.3 (Basecamp 10541776164, 10537102216): a video added by
+	 * pasting a URL keeps Duration 0, the share was read only against that
+	 * field, and it stayed 0% however much was played, so Complete never
+	 * unlocked. The length the member's player reports is used instead.
+	 */
+	public function test_duration_zero_uses_the_length_the_player_reports(): void {
+		update_option( 'ms_lms_require_watch_pct', 5 );
+		delete_post_meta( $this->video, '_ms_duration' );
+
+		// A sitting that started two minutes ago, as the heartbeat records it:
+		// 20 seconds played of a 214-second video.
+		$all                 = (array) get_user_meta( $this->member, '_ms_watched_spans', true );
+		$all[ $this->video ] = array(
+			's' => array(),
+			't' => time() - 120,
+		);
+		update_user_meta( $this->member, '_ms_watched_spans', $all );
+		$accepted = \MediaShield\Access\WatchedSpans::record( $this->member, $this->video, array( array( 0, 20 ) ), 214.0, 20.0 );
+
+		$this->assertEqualsWithDelta( 20.0, $accepted, 0.01, 'the stretch is accepted' );
+		$this->assertSame( 9, \MediaShield\Access\WatchedSpans::percent( $this->member, $this->video ), '20 s of 214 s is 9%' );
+		$status = $this->ask( $this->status() );
+		$this->assertTrue( $status['all_met'], 'Complete unlocks at 5%' );
+		$this->assertSame( 9, $status['requirements'][0]['current_pct'] );
+
+		// A later report of a shorter length never shrinks the share's base.
+		\MediaShield\Access\WatchedSpans::record( $this->member, $this->video, array(), 30.0, 0.0 );
+		$this->assertSame( 9, \MediaShield\Access\WatchedSpans::percent( $this->member, $this->video ) );
+	}
+
 	public function test_enforcement_modes_and_other_lessons_are_respected(): void {
 		update_option( 'ms_lms_require_watch_pct', 80 );
 

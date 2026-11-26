@@ -7,7 +7,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { Button, Spinner } from '@wordpress/components';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
@@ -31,6 +31,20 @@ export default function Wizard() {
 	const [ saving, setSaving ] = useState( false );
 	const [ initialSettings, setInitialSettings ] = useState( null );
 	const [ loadingSettings, setLoadingSettings ] = useState( true );
+	// Where the owner hosts videos (step 2); step 3 names only those. Kept
+	// for this run of the wizard, not saved: nothing else reads it.
+	const [ hosts, setHosts ] = useState( [] );
+	// The video step 3 added, kept here so Back still shows it.
+	const [ firstVideo, setFirstVideo ] = useState( null );
+	// Steps the owner finished (not skipped): only these get a tick.
+	const [ done, setDone ] = useState( [] );
+	// A step may act before the wizard moves on (step 3 adds a pasted link).
+	// It answers { proceed, done }; proceed false keeps the step open.
+	const beforeContinue = useRef( null );
+	// Save & Continue may wait for the step (a video being added): a second
+	// press meanwhile is ignored, and the button shows busy.
+	const advancing = useRef( false );
+	const [ busy, setBusy ] = useState( false );
 
 	const { createErrorNotice } = useDispatch( noticesStore );
 
@@ -79,16 +93,36 @@ export default function Wizard() {
 		setSaving( false );
 	};
 
-	const handleNext = () => {
+	const handleNext = async () => {
+		if ( advancing.current ) {
+			return;
+		}
+		advancing.current = true;
+		setBusy( true );
+		let result;
+		try {
+			result = beforeContinue.current ? await beforeContinue.current() : { proceed: true, done: true };
+		} finally {
+			advancing.current = false;
+			setBusy( false );
+		}
+		if ( ! result.proceed ) {
+			return;
+		}
+		if ( result.done && ! done.includes( step.key ) ) {
+			setDone( [ ...done, step.key ] );
+		}
 		if ( isLast ) {
 			handleFinish();
 		} else {
+			beforeContinue.current = null;
 			setCurrentStep( currentStep + 1 );
 		}
 	};
 
 	const handleBack = () => {
 		if ( ! isFirst ) {
+			beforeContinue.current = null;
 			setCurrentStep( currentStep - 1 );
 		}
 	};
@@ -97,6 +131,7 @@ export default function Wizard() {
 		if ( isLast ) {
 			handleFinish();
 		} else {
+			beforeContinue.current = null;
 			setCurrentStep( currentStep + 1 );
 		}
 	};
@@ -146,16 +181,19 @@ export default function Wizard() {
 
 			<div className="ms-wizard__stepper">
 				{ STEPS.map( ( s, idx ) => {
+					// A tick only for a step the owner finished, never for one
+					// skipped or passed with nothing done.
+					const isDone = done.includes( s.key );
 					let state = '';
-					if ( idx < currentStep ) {
-						state = 'is-complete';
-					} else if ( idx === currentStep ) {
+					if ( idx === currentStep ) {
 						state = 'is-active';
+					} else if ( isDone ) {
+						state = 'is-complete';
 					}
 					return (
 						<div key={ s.key } className={ `ms-wizard__stepper-item ${ state }` }>
 							<div className="ms-wizard__stepper-circle">
-								{ idx < currentStep ? (
+								{ isDone && idx !== currentStep ? (
 									<Icon name="yes-alt" />
 								) : (
 									<span>{ idx + 1 }</span>
@@ -168,7 +206,18 @@ export default function Wizard() {
 			</div>
 
 			<div className="ms-wizard__card">
-				<StepComponent onSave={ saveSettings } saving={ saving } initialData={ initialSettings } />
+				<StepComponent
+					onSave={ saveSettings }
+					saving={ saving }
+					initialData={ initialSettings }
+					hosts={ hosts }
+					setHosts={ setHosts }
+					created={ firstVideo }
+					setCreated={ setFirstVideo }
+					setBeforeContinue={ ( fn ) => {
+						beforeContinue.current = fn;
+					} }
+				/>
 			</div>
 
 			<div className="ms-wizard__actions">
@@ -196,7 +245,9 @@ export default function Wizard() {
 						className="ms-wizard__btn ms-wizard__btn--next"
 						variant="primary"
 						onClick={ handleNext }
-						isBusy={ saving }
+						isBusy={ saving || busy }
+						disabled={ saving || busy }
+						__experimentalIsFocusable
 					>
 						{ isLast ? __( 'Finish Setup', 'mediashield' ) : __( 'Save & Continue', 'mediashield' ) }
 						{ ! isLast && <Icon name="arrow-right-alt2" /> }

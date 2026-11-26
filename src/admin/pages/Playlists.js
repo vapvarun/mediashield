@@ -97,6 +97,7 @@ const Playlists = () => {
 						<thead>
 							<tr>
 								<th>{ __( 'Title', 'mediashield' ) }</th>
+								<th>{ __( 'Videos', 'mediashield' ) }</th>
 								<th>{ __( 'Settings', 'mediashield' ) }</th>
 								<th>{ __( 'Date', 'mediashield' ) }</th>
 								<th>{ __( 'Actions', 'mediashield' ) }</th>
@@ -105,7 +106,7 @@ const Playlists = () => {
 						<tbody>
 							{ playlists.length === 0 && (
 								<tr>
-									<td colSpan="4" className="mediashield-table__empty">
+									<td colSpan="5" className="mediashield-table__empty">
 										<Icon name="playlist-audio" className="mediashield-table__empty-icon" />
 										{ __( 'No playlists yet. Create one to group your videos.', 'mediashield' ) }
 									</td>
@@ -124,6 +125,16 @@ const Playlists = () => {
 											<strong>
 												{ decodeEntities( playlist.title?.rendered || '' ) }
 											</strong>
+										</td>
+										<td data-label={ __( 'Videos', 'mediashield' ) }>
+											{ 0 === playlist.ms_item_count ? (
+												<>
+													<strong>0</strong>
+													<span className="mediashield-playlists__empty-hint">{ __( 'Shows nothing on the page yet. Add videos with Manage items.', 'mediashield' ) }</span>
+												</>
+											) : (
+												<strong>{ playlist.ms_item_count ?? '\u2014' }</strong>
+											) }
 										</td>
 										<td data-label={ __( 'Settings', 'mediashield' ) } className="mediashield-table__badges">
 											{ flags.length > 0 ? (
@@ -151,33 +162,22 @@ const Playlists = () => {
 												: '\u2014' }
 										</td>
 										<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
-											<Button
-												variant="secondary"
+											<button
+												type="button"
 												onClick={ () => setItemsModal( {
 													id: playlist.id,
 													title: playlist.title?.rendered || '',
 												} ) }
-												__next40pxDefaultSize
-												className="mediashield-action-btn"
+												className="mediashield-action-btn mediashield-action-btn--edit"
 											>
 												{ __( 'Manage items', 'mediashield' ) }
-											</Button>
+											</button>
 											<a
 												href={ `${ config.adminUrl }post.php?post=${ playlist.id }&action=edit` }
 												className="mediashield-action-btn mediashield-action-btn--edit"
 											>
 												{ __( 'Edit', 'mediashield' ) }
 											</a>
-											{ playlist.link && (
-												<a
-													href={ playlist.link }
-													className="mediashield-action-btn mediashield-action-btn--view"
-													target="_blank"
-													rel="noopener noreferrer"
-												>
-													{ __( 'View', 'mediashield' ) }
-												</a>
-											) }
 										</td>
 									</tr>
 								);

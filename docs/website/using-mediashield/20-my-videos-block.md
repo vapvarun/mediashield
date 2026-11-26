@@ -2,7 +2,7 @@
 
 **Included in Free.**
 
-The My Videos block shows a signed-in member the videos they have watched, how far they got and, where your site supplies a watch page, a link to carry on.
+The MediaShield My Videos block shows a signed-in member the videos they have watched, how far they got and, where your site supplies a watch page, a link to carry on.
 
 ## Why use it
 
@@ -17,7 +17,7 @@ Members see their own progress without asking you. It suits course dashboards an
 ## Add it to a page
 
 1. Edit the page and click the block inserter.
-2. Search for **My Videos** and insert the block. It has no settings. Use the block toolbar for width and the sidebar for spacing.
+2. Search for **My Videos** and insert the block. Its one setting, **Browse videos link**, is where a member with no videos yet can find some (your courses page, say); leave it empty for no button. Use the block toolbar for width and the sidebar for spacing.
 3. Update the page.
 
 Or use the shortcode anywhere shortcodes work:
@@ -34,7 +34,7 @@ The shortcode prints exactly what the block prints. Before 1.4.1 the shortcode c
 - The title.
 - A progress bar and "N% complete".
 - **Completed** once the member reaches 100 percent.
-- **Resume**, for videos not yet finished, when a watch page is known.
+- **Resume**, for every video not yet finished.
 
 Filter links above the grid switch between All, In Progress and Completed. Newest watched comes first. The list shows 12 videos at a time, with **Previous** and **Next** links below it when there are more. The filter and page are part of the address (for example `?ms_videos=completed&ms_videos_page=2`), so they work without JavaScript and can be bookmarked.
 
@@ -47,13 +47,13 @@ Videos have no public page of their own, so MediaShield cannot link to one. In 1
 | Your setup | What members get |
 |------------|------------------|
 | An integration supplies the page, such as the Learnomy lesson that holds the video, or (with Pro) the LearnDash, Tutor LMS or LifterLMS lesson picked in the video's LMS box | The title and Resume link to that page. The player there offers to resume by itself |
-| Nothing supplies a page | The title is plain text and there is no Resume link. Progress still shows |
+| Nothing supplies a page, and no page shows the video | Since 1.4.4 the title and Resume open the video on a page of its own, made for that member (the same page the embed links for apps open). The link lasts 12 hours; reloading My Videos makes a fresh one |
 
 To link to your own pages, a developer adds the filter. See [Hooks and Filters](../developer-guide/02-hooks-and-filters.md).
 
 ## What viewers see
 
-A logged-out visitor sees "Please log in to see your video history." A member with no history sees "You have not watched any videos yet." A filter with nothing in it says so, for example "No completed videos yet." A member never sees anyone else's list.
+A logged-out visitor sees "Please log in to see your video history." with a **Log in** button. A member with no history sees "You have not watched any videos yet." and, when you set the link, a **Browse videos** button. A filter with nothing in it says so, for example "No completed videos yet." A member never sees anyone else's list.
 
 ## Check it worked
 

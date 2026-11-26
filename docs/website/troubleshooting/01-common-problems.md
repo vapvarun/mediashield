@@ -103,7 +103,7 @@ Stat cards all read 0. Chart is empty.
 
 1. **No sessions yet.** The dashboard shows real data only. Watch a video as a logged-in user for at least 30 seconds, then refresh.
 
-2. **Date range filter.** Check the period selector at the top of the dashboard. Make sure your test activity falls within the selected range. Total Videos and Active Viewers ignore the range; everything else follows it.
+2. **Date range filter.** Check the period selector at the top of the dashboard. Make sure your test activity falls within the selected range. Total Videos and Watching now ignore the range; everything else follows it.
 
 3. **Older history looks missing.** If you set a retention window under Settings > Analytics Retention, sessions older than that window are archived and reports no longer include them.
 
@@ -142,7 +142,7 @@ Allowed Domains is filled in and the partner's page shows "You do not have acces
 2. Some browsers and privacy tools remove the Referer header. A request with no Referer is refused whenever the list is not empty. Developers can change that with the `mediashield_allow_empty_referer` filter.
 3. Clear the list to allow embeds from anywhere.
 
-## A member on a second device is told "Too many active streams"
+## A member on a second device is told "You are playing too many videos at once"
 
 The first stream may still count. A session stops counting 5 minutes after its last report. Close the other tab, or raise **Max Concurrent Streams**.
 

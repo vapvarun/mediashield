@@ -182,9 +182,6 @@ class AnalyticsController extends WP_REST_Controller {
 		$interval = self::period_to_interval( $period );
 		$sessions = "{$wpdb->prefix}ms_watch_sessions";
 
-		// Total videos.
-		$total_videos = (int) wp_count_posts( 'mediashield_video' )->publish;
-
 		// All queries below use $sessions (table name variable) and $interval (hardcoded allowlist value).
 		// `started_at` / `last_heartbeat` are stored UTC via current_time('mysql', true);
 		// pass the same function's output here as a prepared %s parameter so both
@@ -197,6 +194,8 @@ class AnalyticsController extends WP_REST_Controller {
 		// Only sessions that played: every page view opens one (see played_sql()).
 		$played   = SessionManager::played_sql();
 		$played_s = SessionManager::played_sql( 's' );
+		$viewer   = SessionManager::viewer_sql(); // One viewer: completion is their best, not each page load's.
+		$viewer_s = SessionManager::viewer_sql( 's' );
 
 		$total_sessions = (int) $wpdb->get_var(
 			$wpdb->prepare(
@@ -207,14 +206,18 @@ class AnalyticsController extends WP_REST_Controller {
 
 		$avg_completion = (float) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT AVG(completion_pct) FROM {$sessions} WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}",
+				"SELECT AVG(best) FROM (
+				   SELECT MAX(completion_pct) AS best FROM {$sessions}
+				   WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}
+				   GROUP BY video_id, {$viewer}
+				 ) per_viewer",
 				$now_utc
 			)
 		);
 
 		$active_viewers = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT user_id) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(%s, INTERVAL 5 MINUTE)",
+				"SELECT COUNT(DISTINCT {$viewer}) FROM {$sessions} WHERE is_active = 1 AND last_heartbeat >= DATE_SUB(%s, INTERVAL 5 MINUTE) AND {$played}",
 				$now_utc
 			)
 		);
@@ -240,11 +243,15 @@ class AnalyticsController extends WP_REST_Controller {
 		// Top 5 videos by sessions.
 		$top_videos = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT s.video_id, COUNT(*) AS session_count, AVG(s.completion_pct) AS avg_completion, p.post_title
-				 FROM {$sessions} s
-				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_status = 'publish'
-				 WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played_s}
-				 GROUP BY s.video_id
+				"SELECT v.video_id, SUM(v.sessions) AS session_count, AVG(v.best) AS avg_completion, p.post_title
+				 FROM (
+				   SELECT s.video_id, COUNT(*) AS sessions, MAX(s.completion_pct) AS best
+				   FROM {$sessions} s
+				   WHERE s.started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played_s}
+				   GROUP BY s.video_id, {$viewer_s}
+				 ) v
+				 INNER JOIN {$wpdb->posts} p ON v.video_id = p.ID AND p.post_status = 'publish'
+				 GROUP BY v.video_id, p.post_title
 				 ORDER BY session_count DESC
 				 LIMIT 5",
 				$now_utc
@@ -257,7 +264,8 @@ class AnalyticsController extends WP_REST_Controller {
 
 		return rest_ensure_response(
 			array(
-				'total_videos'      => $total_videos,
+				// Ready videos only: published with something that plays.
+				'total_videos'      => $protected_counts['total'],
 				'total_sessions'    => $total_sessions,
 				'avg_completion'    => round( $avg_completion, 1 ),
 				'active_viewers'    => $active_viewers,
@@ -275,7 +283,7 @@ class AnalyticsController extends WP_REST_Controller {
 				),
 				'recent_milestones' => self::recent_milestones( $interval, $now_utc ),
 				'protection'        => self::protection_summary( $protected_counts, $interval, $now_utc ),
-				'first_run'         => self::first_run( $protected_counts ),
+				'first_run'         => self::first_run_state( $protected_counts ),
 				'site_timezone'     => wp_timezone_string(),
 			)
 		);
@@ -316,29 +324,39 @@ class AnalyticsController extends WP_REST_Controller {
 	}
 
 	/**
-	 * How many published videos are protected (above None), of how many.
+	 * How many Ready videos are protected (above None), of how many Ready.
 	 *
-	 * The level is the video's own or the site default
-	 * (Protection::resolve_level()), worked out in one COUNT.
+	 * Ready is published with something to play that its platform has not
+	 * refused (CPT\VideoStatus): a video with no source, or one removed at
+	 * YouTube, is not counted as protected (Basecamp 10545260458); those are
+	 * `attention`, for the Dashboard's link to the Videos list. The level is
+	 * the video's own or the site default (Protection::resolve_level()),
+	 * worked out in one COUNT.
 	 *
-	 * @return array{protected: int, total: int}
+	 * @return array{protected: int, total: int, attention: int}
 	 */
 	private static function protected_counts(): array {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One COUNT for the dashboard; core tables, indexed on post_type/status and meta post_id.
 		$counts = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT COUNT(*) AS total,
-				        SUM( COALESCE( NULLIF( m.meta_value, '' ), %s ) <> 'none' ) AS protected
+				"SELECT SUM( ns.meta_id IS NULL AND un.meta_id IS NULL ) AS total,
+				        SUM( ns.meta_id IS NULL AND un.meta_id IS NULL AND COALESCE( NULLIF( m.meta_value, '' ), %s ) <> 'none' ) AS protected,
+				        SUM( ns.meta_id IS NOT NULL OR un.meta_id IS NOT NULL ) AS attention
 				 FROM {$wpdb->posts} p
 				 LEFT JOIN {$wpdb->postmeta} m ON m.post_id = p.ID AND m.meta_key = '_ms_protection_level'
+				 LEFT JOIN {$wpdb->postmeta} ns ON ns.post_id = p.ID AND ns.meta_key = %s
+				 LEFT JOIN {$wpdb->postmeta} un ON un.post_id = p.ID AND un.meta_key = %s
 				 WHERE p.post_type = 'mediashield_video' AND p.post_status = 'publish'",
-				\MediaShield\Player\Protection::default_level()
+				\MediaShield\Player\Protection::default_level(),
+				\MediaShield\CPT\VideoStatus::NO_SOURCE,
+				\MediaShield\CPT\SourceStatus::META
 			)
 		);
 		return array(
 			'protected' => (int) ( $counts->protected ?? 0 ),
 			'total'     => (int) ( $counts->total ?? 0 ),
+			'attention' => (int) ( $counts->attention ?? 0 ),
 		);
 	}
 
@@ -376,22 +394,53 @@ class AnalyticsController extends WP_REST_Controller {
 	}
 
 	/**
-	 * The three first-run steps and whether each is done.
+	 * The four first-run steps and whether each is done, for the Dashboard's
+	 * Get started card and the Analytics screens' first-run notice
+	 * (Basecamp 10478806397). No sample data: each step is the owner's own.
 	 *
-	 * A video exists; one is protected (above None); someone has opened one
-	 * (any watch session, so it is on a page). Each is one indexed query.
+	 * - has_video: a Ready video exists.
+	 * - has_protected: one plays above None.
+	 * - has_embed: a published page or post shows one (the usage index);
+	 *   watch_url is that page, for "watch it as a member".
+	 * - has_view: someone pressed play (played_sql()). Once true the site has
+	 *   real data and the first-run state is not shown anywhere.
 	 *
-	 * @param array $counts From protected_counts().
-	 * @return array{has_video: bool, has_protected: bool, has_view: bool}
+	 * Four indexed reads; the Dashboard's overview passes the counts it
+	 * already has.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param array|null $counts protected_counts(), when already read.
+	 * @return array{has_video: bool, has_protected: bool, has_embed: bool, has_view: bool, watch_url: string}
 	 */
-	private static function first_run( array $counts ): array {
+	public static function first_run_state( ?array $counts = null ): array {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; existence check.
-		$viewed = (bool) $wpdb->get_var( "SELECT 1 FROM {$wpdb->prefix}ms_watch_sessions LIMIT 1" );
+		$counts = $counts ?? self::protected_counts();
+
+		// A page load is not a view: played_sql() is fixed SQL written in code, no input.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Custom table; existence check.
+		$viewed = (bool) $wpdb->get_var( "SELECT 1 FROM {$wpdb->prefix}ms_watch_sessions WHERE " . SessionManager::played_sql() . ' LIMIT 1' );
+
+		// The newest published page that shows a video, from the usage index.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Existence check on the indexed meta_key.
+		$page = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->postmeta} m
+				 INNER JOIN {$wpdb->posts} p ON p.ID = CAST( m.meta_value AS UNSIGNED )
+				 WHERE m.meta_key = %s AND p.post_status = 'publish'
+				 ORDER BY p.post_modified_gmt DESC LIMIT 1",
+				\MediaShield\CPT\VideoUsage::USED_IN
+			)
+		);
+
 		return array(
 			'has_video'     => $counts['total'] > 0,
 			'has_protected' => $counts['protected'] > 0,
+			// While the index of older content is still being built, a viewing
+			// proves a page shows a video.
+			'has_embed'     => $page > 0 || $viewed,
 			'has_view'      => $viewed,
+			'watch_url'     => $page > 0 ? (string) get_permalink( $page ) : '',
 		);
 	}
 
@@ -409,16 +458,22 @@ class AnalyticsController extends WP_REST_Controller {
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$played = SessionManager::played_sql(); // Constant SQL fragment, no input.
+		$viewer = SessionManager::viewer_sql(); // Completion is each viewer's best (viewer_sql()).
 		$stats  = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT
-				COUNT(*) AS total_sessions,
-				COUNT(DISTINCT user_id) AS unique_viewers,
-				AVG(completion_pct) AS avg_completion,
-				SUM(total_seconds) AS total_watch_time,
-				MAX(last_heartbeat) AS last_watched
-			 FROM {$sessions}
-			 WHERE video_id = %d AND {$played}",
+				SUM(sessions) AS total_sessions,
+				COUNT(*) AS unique_viewers,
+				AVG(best) AS avg_completion,
+				SUM(seconds) AS total_watch_time,
+				MAX(last_hb) AS last_watched
+			 FROM (
+			   SELECT COUNT(*) AS sessions, MAX(completion_pct) AS best,
+			          SUM(total_seconds) AS seconds, MAX(last_heartbeat) AS last_hb
+			   FROM {$sessions}
+			   WHERE video_id = %d AND {$played}
+			   GROUP BY {$viewer}
+			 ) per_viewer",
 				$video_id
 			)
 		);
@@ -530,26 +585,42 @@ class AnalyticsController extends WP_REST_Controller {
 			$args[] = $like;
 		}
 
+		// Only sessions that played: every page view opens one (played_sql()),
+		// so a member who scrolled past five videos was "watching" five.
+		$played_s = SessionManager::played_sql( 's' ); // Constant SQL fragment, no input.
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		$count_query = "SELECT COUNT(DISTINCT s.user_id)
 			 FROM {$wpdb->prefix}ms_watch_sessions s
 			 INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
-			 WHERE s.user_id > 0 {$where}";
+			 WHERE s.user_id > 0 AND {$played_s} {$where}";
 		$total       = (int) $wpdb->get_var(
 			empty( $args ) ? $count_query : $wpdb->prepare( $count_query, ...$args )
 		);
 
-		$list_query = "SELECT s.user_id, u.display_name, u.user_email,
-					COUNT(DISTINCT s.video_id) AS videos_watched,
-					AVG(s.completion_pct) AS avg_completion,
-					MAX(s.last_heartbeat) AS last_active
-			 FROM {$wpdb->prefix}ms_watch_sessions s
-			 INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
-			 WHERE s.user_id > 0 {$where}
-			 GROUP BY s.user_id
+		// A member's completion is the average of their best on each video,
+		// the same number My Videos shows per video (viewer_sql()).
+		// watching_now: the Dashboard's Watching now rule (a played viewing,
+		// still active, heard from in the last 5 minutes), so Stop playback is
+		// offered only to a member it would stop (MSUX-13).
+		$list_query = "SELECT v.user_id, u.display_name, u.user_email,
+					COUNT(*) AS videos_watched,
+					AVG(v.best) AS avg_completion,
+					MAX(v.last_hb) AS last_active,
+					MAX(v.live) AS watching_now
+			 FROM (
+			   SELECT s.user_id, s.video_id, MAX(s.completion_pct) AS best, MAX(s.last_heartbeat) AS last_hb,
+			          MAX( s.is_active = 1 AND s.last_heartbeat >= DATE_SUB( %s, INTERVAL 5 MINUTE ) ) AS live
+			   FROM {$wpdb->prefix}ms_watch_sessions s
+			   INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
+			   WHERE s.user_id > 0 AND {$played_s} {$where}
+			   GROUP BY s.user_id, s.video_id
+			 ) v
+			 INNER JOIN {$wpdb->users} u ON v.user_id = u.ID
+			 GROUP BY v.user_id, u.display_name, u.user_email
 			 ORDER BY last_active DESC
 			 LIMIT %d OFFSET %d";
-		$query_args = array_merge( $args, array( $per_page, $offset ) );
+		$query_args = array_merge( array( current_time( 'mysql', true ) ), $args, array( $per_page, $offset ) );
 		$rows       = $wpdb->get_results( $wpdb->prepare( $list_query, ...$query_args ) );
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
@@ -562,6 +633,7 @@ class AnalyticsController extends WP_REST_Controller {
 					'videos_watched' => (int) $row->videos_watched,
 					'avg_completion' => round( (float) $row->avg_completion, 1 ),
 					'last_active'    => self::utc_marked( $row->last_active ),
+					'watching_now'   => (bool) $row->watching_now,
 				);
 			},
 			! empty( $rows ) ? $rows : array()
@@ -587,6 +659,8 @@ class AnalyticsController extends WP_REST_Controller {
 		$per_page = min( 100, max( 1, (int) $request['per_page'] ) );
 		$page     = max( 1, (int) $request['page'] );
 		$table    = "{$wpdb->prefix}ms_watch_sessions";
+		$played   = SessionManager::played_sql();    // Only sessions that played (played_sql()).
+		$played_s = SessionManager::played_sql( 's' );
 
 		// Paged: a long-time member can have thousands of sessions, and the
 		// old fixed LIMIT 100 hid everything older. Served by
@@ -594,7 +668,7 @@ class AnalyticsController extends WP_REST_Controller {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table query.
 		$counts = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT COUNT(*) AS sessions, COUNT( DISTINCT video_id ) AS videos FROM {$table} WHERE user_id = %d",
+				"SELECT COUNT(*) AS sessions, COUNT( DISTINCT video_id ) AS videos FROM {$table} WHERE user_id = %d AND {$played}",
 				$user_id
 			)
 		);
@@ -604,7 +678,7 @@ class AnalyticsController extends WP_REST_Controller {
 					s.max_position, s.last_heartbeat, s.started_at
 			 FROM {$table} s
 			 LEFT JOIN {$wpdb->posts} p ON s.video_id = p.ID
-			 WHERE s.user_id = %d
+			 WHERE s.user_id = %d AND {$played_s}
 			 ORDER BY s.last_heartbeat DESC, s.id DESC
 			 LIMIT %d OFFSET %d",
 				$user_id,
@@ -627,6 +701,9 @@ class AnalyticsController extends WP_REST_Controller {
 					'display_name' => $user ? sanitize_text_field( \MediaShield\Support\Text::plain( $user->display_name ) ) : '',
 					'email'        => $user ? sanitize_email( $user->user_email ) : '',
 				),
+				// Tags this member got at milestones (MilestoneTracker), once
+				// each. Member tags, kept apart from video tags (MSUX-18).
+				'milestone_tags' => array_values( array_unique( array_map( 'sanitize_text_field', array_filter( wp_list_pluck( array_filter( (array) get_user_meta( $user_id, '_ms_video_tags', true ), 'is_array' ), 'tag' ) ) ) ) ),
 				'sessions' => array_map(
 					function ( $row ) {
 						return array(
@@ -670,6 +747,7 @@ class AnalyticsController extends WP_REST_Controller {
 
 		$user_id  = get_current_user_id();
 		$sessions = "{$wpdb->prefix}ms_watch_sessions";
+		$played_s = SessionManager::played_sql( 's' ); // Only videos the member played (played_sql()).
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
@@ -681,7 +759,7 @@ class AnalyticsController extends WP_REST_Controller {
 						MAX( s.last_heartbeat ) AS last_watched
 				 FROM {$sessions} s
 				 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_status = 'publish'
-				 WHERE s.user_id = %d
+				 WHERE s.user_id = %d AND {$played_s}
 				 GROUP BY s.video_id
 				 ORDER BY last_watched DESC",
 				$user_id
@@ -691,7 +769,7 @@ class AnalyticsController extends WP_REST_Controller {
 
 		$items = array_map(
 			function ( $row ) {
-				$thumbnail_url = get_the_post_thumbnail_url( (int) $row->video_id, 'medium' );
+				$thumbnail_url = \MediaShield\CPT\Thumbnail::poster_url( (int) $row->video_id, 'medium' );
 
 				return array(
 					'video_id'       => (int) $row->video_id,

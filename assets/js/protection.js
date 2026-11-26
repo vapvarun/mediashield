@@ -40,6 +40,9 @@
 		var hasProtected = false;
 		var hasStrict = false;
 		players.forEach(function (el) {
+			// The site-wide Block Right-Click setting covers every player,
+			// a "None" protection level included (Basecamp 10537111817).
+			blockRightClick(el);
 			if (!isProtectedPlayer(el)) return;
 			hasProtected = true;
 			if (el.dataset.protectionLevel === 'strict') hasStrict = true;
@@ -49,6 +52,8 @@
 		// Also init on dynamically added players.
 		window.addEventListener('mediashield:player-ready', function (e) {
 			if (e.detail && e.detail.el) {
+				// A None player measuring a lesson's watch rule stays unprotected.
+				if (!isProtectedPlayer(e.detail.el)) return;
 				initProtection(e.detail.el);
 				if (isProtectedPlayer(e.detail.el)) {
 					startDevtoolsDetection(e.detail.el.dataset.protectionLevel === 'strict');
@@ -84,6 +89,28 @@
 	}
 
 	/**
+	 * Block the browser's context menu on a player, once.
+	 *
+	 * On when the site-wide toggle is on, for every player whatever its
+	 * protection level; Basic, Standard and Strict promise it (each tier
+	 * includes the one below), so they block it even with the toggle off. A right-click inside a YouTube, Vimeo,
+	 * Wistia or Bunny embed lands in that site's own page, which no script
+	 * here can reach.
+	 *
+	 * @param {HTMLElement} el Player container.
+	 */
+	function blockRightClick(el) {
+		if (!el || el.dataset.msNoContext) return;
+		var level = el.dataset.protectionLevel;
+		if (protConfig.block_right_click === false && (!level || level === 'none')) return;
+		el.dataset.msNoContext = '1';
+		el.addEventListener('contextmenu', function (e) {
+			e.preventDefault();
+			return false;
+		});
+	}
+
+	/**
 	 * Initialize protection on a single player.
 	 *
 	 * @param {HTMLElement} el Player container.
@@ -96,15 +123,7 @@
 		// `hide_source` toggle is off (the tier's documented behaviour).
 		var isStrict = el.dataset.protectionLevel === 'strict';
 
-		// Block right-click. The Basic tier promises it ("Login required,
-		// right-click disabled"), so a Basic player blocks it even when the
-		// global toggle is off; other levels follow the toggle.
-		if (protConfig.block_right_click !== false || el.dataset.protectionLevel === 'basic') {
-			el.addEventListener('contextmenu', function (e) {
-				e.preventDefault();
-				return false;
-			});
-		}
+		blockRightClick(el);
 
 		// Add nodownload and nofullscreen to the video controls, keeping the
 		// tokens already there. Replacing the list dropped the player's

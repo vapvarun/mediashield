@@ -121,7 +121,7 @@ Open **MediaShield > Dashboard**. Have a logged-in user watch the video you embe
 
 The dashboard surfaces:
 
-- **Four stat cards** -- Total Videos, Total Sessions, Avg Completion, Active Viewers. The date filter (Today / 7 days / 30 days / 90 days) rescopes all four.
+- **Four stat cards** -- Total Videos, Total Sessions, Avg Completion, Watching now. The date filter (Today / 7 days / 30 days / 90 days) rescopes all four.
 - **Activity chart** -- daily session counts, grouped by your site's timezone.
 - **Top videos** -- best-performing videos for the active date range.
 - **Recent milestones** -- the latest 25 / 50 / 75 / 100% completions. Since 1.1.0, this card honours the date filter alongside everything else on the page.

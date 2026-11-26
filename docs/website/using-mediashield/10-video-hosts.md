@@ -66,7 +66,7 @@ Open the page that holds the video. It should play with the "Protected by MediaS
 
 ## Manage a long list of videos
 
-**MediaShield > Videos** lists 20 videos a page. For each video you see its thumbnail, platform, length, status (**Ready**, **Encoding** while a platform is still processing it, or **Failed**), protection level, and **Used in**: the pages, posts or lessons that show it.
+**MediaShield > Videos** lists 20 videos a page. For each video you see its thumbnail, platform, length, status (**Ready**, **Encoding** while a platform is still processing it, or **Failed**), protection level, and **Used in**: the pages, posts or lessons that show it, including Learnomy lessons that play it as a protected video (linked to the lesson editor).
 
 - Narrow the list with the search box and the **Platform** and **Protection** filters.
 - Tick videos (or **Select all on this page**), choose a bulk action and click **Apply**: **Set protection** to a level or to the site default, or **Move to Trash**. Open **Trash** to restore a video.

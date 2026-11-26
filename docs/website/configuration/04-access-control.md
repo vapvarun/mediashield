@@ -10,7 +10,7 @@ MediaShield decides who can watch a video with a single check that runs when a w
 
 ## Login requirement
 
-**Require Login** (Settings > General) is on by default. While it is on, visitors who are not logged in see a login overlay instead of the player.
+**Require login** (Settings > Who can watch) is on by default. While it is on, visitors who are not logged in see a login overlay instead of the player.
 
 Turn it off and guests can watch: the player asks the server, the server allows it, and the watch session is recorded like any other.
 
@@ -31,19 +31,19 @@ Each video has an optional **Restrict to Role** setting. When set, only users wh
 
 Leaving the role empty, or set to `any`, means no role restriction: the video plays for every viewer who passes the other checks, with or without MediaShield Pro active. The match is exact, not hierarchical. A video restricted to `subscriber` refuses an `editor`, because an editor does not hold the subscriber role. Administrators are the one exception and always pass. Logged-out visitors are refused with the login overlay text, since a guest cannot hold any role.
 
-Users who are signed in but don't hold the role see the **Access Denied Text** (Settings > Login & Access Messages). Default: "You do not have access to this video".
+Users who are signed in but don't hold the role see the **Access Denied Text** (Settings > Login & Access Messages). Default: "You do not have access to this video". Set **Membership Page** in the same card to give them a "See membership options" button to your membership or pricing page.
 
 Leave the setting on "Any logged-in user" to allow every signed-in viewer.
 
 ## Concurrent stream limits
 
-**Max Concurrent Streams** (Settings > Concurrent Streams) - how many devices one account can actively watch on at the same time. Default is 2, the lowest you can set is 1. It is stored as the `ms_max_concurrent_streams` option.
+**Max Concurrent Streams** (Settings > Concurrent Streams) - how many devices one account can actively watch on at the same time. Default is 2, the lowest you can set is 1. It is stored as the `ms_max_concurrent_streams` option. Only a device where a video has played counts: opening a lesson page with several players, or leaving one open on a tablet without pressing play, never uses up a stream, because a viewing starts at the first play.
 
 To change it: open **MediaShield > Settings**, find Max Concurrent Streams, enter a whole number of 1 or more and save. The new limit applies to the next stream a viewer starts. Streams already playing are not cut off.
 
-The player sends a heartbeat every 30 seconds. A session that has not sent one for 5 minutes stops counting toward the limit, so a viewer who closes their laptop is not locked out for long. An hourly background job then marks sessions with no heartbeat for 10 minutes as finished, which is what clears them out of the Active Viewers count.
+The player sends a heartbeat every 30 seconds. A session that has not sent one for 5 minutes stops counting toward the limit, so a viewer who closes their laptop is not locked out for long. An hourly background job then marks sessions with no heartbeat for 10 minutes as finished, which is what clears them out of the Watching now count.
 
-When a viewer tries to start a stream beyond the limit, the request is refused with "Too many active streams. Please close another video first." The `mediashield_concurrent_limit_reached` action fires at the same moment, so you can hook logging or alerting.
+When a viewer tries to start a stream beyond the limit, the request is refused with "You are playing too many videos at once. Close another video first." The `mediashield_concurrent_limit_reached` action fires at the same moment, so you can hook logging or alerting.
 
 When a viewer closes a browser tab, MediaShield uses the browser's `sendBeacon` API to end the session immediately. If the beacon never arrives (a browser crash, for example) the 5-minute rule above covers it.
 
@@ -51,7 +51,7 @@ Guests are never counted. With no account there is nothing to share, and countin
 
 ### Revoking a user's sessions
 
-Go to **MediaShield > Viewers**, click **Revoke session** on the member's row, then **Revoke** to confirm. It ends every active watch session for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop them watching, change what they are allowed to watch or deactivate the account.
+Go to **MediaShield > Viewers**, click **Stop playback** on the member's row, then **Stop** to confirm. It ends every viewing in progress for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop them watching, change what they are allowed to watch or deactivate the account.
 
 The same action is an authenticated REST call for administrators:
 

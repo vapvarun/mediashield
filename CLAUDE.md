@@ -80,6 +80,7 @@ includes/
     Watermark.php            Dynamic watermark overlay
     Renderer.php             Shared .ms-protected-player container output for a single video (used by [mediashield] shortcode, video block, single template). Validates the CPT + source URLs and enqueues assets only when output will be produced. Emits per-video playback options (`data-autoplay`/`data-loop`/`data-muted`/`data-controls`) from `_ms_autoplay`/`_ms_loop`/`_ms_muted`/`_ms_show_controls` meta.
     PlaylistRenderer.php     Shared playlist output (used by [mediashield_playlist] shortcode and the playlist Gutenberg block): the queue markup around ONE Renderer::render() player. It never builds a player of its own - the playlist script swaps in /playlists/{id}/player/{video_id} markup and player-wrapper.js initialises it like any other player.
+  CPT/SourceStatus.php       (1.4.4) The one record of "the platform no longer plays this video" (video meta `_ms_source_unavailable`). The player reports YouTube/Vimeo refusals to POST /videos/{id}/unavailable (REST/SourceReportController.php); report() confirms with the platform's oEmbed (or believes only an editor where there is no check), the Videos list shows "Unavailable at platform". Vimeo is asked with the stored link (an unlisted video's hash) and this site as Referer; its 403, and a 404 for a hashed link, mean "cannot tell". Saving the video, a heartbeat with progress (`clear_if_playing()`) or a later report the platform answers 200 clears it.
   Milestones/
     MilestoneTracker.php     25/50/75/100% completion tracking. When a milestone with a configured tag fires, the tag is promoted into the unified `ms_tags` dictionary (via `TagManager::ensure()`) and the video↔tag link recorded in `ms_video_tags`. The per-user earn record stays in `_ms_video_tags` user meta but now carries `tag_id` alongside the display string for cross-reference.
   Upload/
@@ -172,8 +173,9 @@ assets/
   - `_ms_duration` (integer) -- video duration in seconds
 
 ### mediashield_playlist
-- **Slug:** `playlist`
-- **REST base:** `mediashield-playlists`
+- **Not public** (1.4.4): no single page, no rewrite, no query var. It shows only where the Playlist block or `[mediashield_playlist]` places it. Migrator v13 dropped the old `/playlist/<slug>/` rule; `PlaylistPostType::redirect_old_address()` sends that address (and `?mediashield_playlist=`) 301 to `VideoUsage::page_for_playlist()`, or 404s when no page shows it.
+- **Edit screen:** classic (`use_block_editor_for_post_type` false), like Videos; the items box sits in the `ms_main` context drawn under the title.
+- **REST base:** `mediashield-playlists`. Reading `wp/v2` needs `edit_posts` for playlists and videos alike (`REST/LibraryPostsController.php`, 1.4.4); viewers get them only where they are placed.
 - **Supports:** title, editor, thumbnail
 - **Meta fields:**
   - `_ms_autoplay` (boolean, default false)
@@ -225,7 +227,7 @@ All routes under namespace `mediashield/v1`. Require `manage_options` unless not
 |--------|-------|-------------|
 | GET/POST | `/playlists/{playlist_id}/items` | List/add playlist items |
 | DELETE | `/playlists/{playlist_id}/items/{item_id}` | Remove item |
-| POST | `/playlists/{playlist_id}/items/reorder` | Reorder items |
+| POST (PUT, PATCH) | `/playlists/{playlist_id}/items/reorder` | Reorder items. Add, remove and reorder need `edit_post` on the playlist. |
 
 ### Upload
 | Method | Route | Description |
@@ -273,7 +275,7 @@ That is 25 routes in `mediashield/v1`. Registering the two CPTs with `show_in_re
 
 | Block | Slug | Description |
 |-------|------|-------------|
-| Video | `mediashield/video` | Embed protected video with player wrapper |
+| Video | `mediashield/video` | Embed protected video with player wrapper. Paste asks GET /videos/match first ("Use this video" before a second copy); the block and sidebar read GET /videos/{id}/summary (title, platform, length, protection with a link to the video, other pages using it). Protection is set on the video only. (`REST/VideoSummaryController.php`) |
 | Playlist | `mediashield/playlist` | Playlist with autoplay/countdown |
 | My Videos | `mediashield/my-videos` | Logged-in user's watch history |
 
@@ -341,12 +343,16 @@ Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `media
 | `mediashield_protection_config` | $config | Right-click / keyboard / devtools client config (`Protection.php:54`) |
 | `mediashield_restore_archive_batch_size` | $batch | Rows per pass of the one-off archive restore job. Default 2000. (`Cleanup.php:400`) |
 | `mediashield_session_allow_anonymous_start` | $allow, $video_id, $access_type, $request | Whether an anonymous `POST /session/start` may reach the handler. Defaults true when `ms_require_login` is off or `_ms_access_type` is set. (`SessionController.php:220`) |
-| `mediashield_guest_can_watch` | $allowed, $video_id | Return true to let a guest past Require Login for one video (LMS free previews). Role, domain and `mediashield_can_watch` still apply. One answer for can_watch, `/session/start` and the player's `data-guest-allowed` via `AccessControl::login_gate_applies()`. |
-| `mediashield_video_watch_url` | $url, $video_id, $user_id | Page where a member watches a video, used by My Videos. The video CPT is not public; '' renders the title as plain text with no Resume link. |
-| `mediashield_library_file_in_use` | $where, $relative, $attachment_id, $video_id | Report a use of a Media Library file MediaShield cannot see; non-empty leaves the file public and lists it in the owner notice. Learnomy integration answers for lesson/course URLs. |
+| `mediashield_page_context` | ['type' => 'post', 'id' => queried id] | (1.4.4) Where the page shows its videos; an LMS whose lessons are not posts names its own (Learnomy: learnomy_lesson). Printed as `data-ms-context`, sent back as `ms_context` on session start, stream, stream URL and playlist player requests (`AccessControl::context()`). |
+| `mediashield_guest_can_watch` | $allowed, $video_id, $context (1.4.4) | Return true to let a guest past Require Login for one video (LMS free previews). Role, domain and `mediashield_can_watch` still apply. One answer for can_watch, `/session/start` and the player's `data-guest-allowed` via `AccessControl::login_gate_applies()`. |
+| `mediashield_video_watch_url` | $url, $video_id, $user_id | Page where a member watches a video, used by My Videos. The video CPT is not public; '' falls back to VideoUsage::page_for_viewer(), then (1.4.4) the member's signed EmbedLink player page, so every card in progress has Resume. |
+| `mediashield_create_video` | null, $args {source_url?, attachment_id?, title?, replacing?: {type: 'post'\|'learnomy_lesson'\|…, id}} | (1.4.4, listened to, not fired) The one way another plugin adds a library video: returns the video id or a WP_Error (400 unplayable link, 403 cannot add, 404 not a video file). Same path as Add New (`CPT/VideoCreator.php`); a link or file already in the library returns that video. Published when the user can `publish_posts` on videos, else `pending`. |
+| `mediashield_watch_rule_applies` | false, $video_id | (1.4.4) Does a watch rule complete a lesson by this video? With no `_ms_duration` the edit screen and Videos list (`ms_list.needs_length`) ask for the length (`VideoStatus::needs_length()`). Learnomy integration and Pro LearnDash answer. |
+| `mediashield_measure_watch` | false, $video_id, $post_id | (1.4.4) Whether a None/Basic player measures the site-wide "Watch X% to complete" (prints `data-watch-track`). Default false (a blog post is not a lesson); Pro's LearnDash answers true on `sfwd-lessons` / `sfwd-topic`. A lesson's own `data-watch-required` needs no filter. (`Renderer::measures_watch()`) |
+| `mediashield_library_file_in_use` | $where, $relative, $attachment_id, $video_id, $replacing (1.4.4: {type, id} or []) | Report a use of a Media Library file MediaShield cannot see; non-empty leaves the file public and lists it in the owner notice. Learnomy integration answers for lesson/course URLs. |
 | `mediashield_library_files_batch_size` | $batch | Videos per pass of `ms_protect_library_files` and the 1.4.3 `ms_repair_library_files` (10-200, default 50). |
 | `mediashield_poster_rename_batch_size` | $batch | Videos per pass of `ms_rename_id_posters` (10-200, default 50). |
-| `mediashield_shortcode_source_url` | $url, $video_id, $atts | Override the source URL a `[mediashield]` shortcode resolves to (`Shortcode.php:61`) |
+| `mediashield_shortcode_source_url` | $url, $video_id, $atts | Override the source URL a `[mediashield]` shortcode resolves to, for that render only: answered through `get_post_metadata`, never stored (1.4.4) (`Shortcode.php`) |
 | `mediashield_stored_filename` | $obscured, $original_name | The randomised on-disk filename for a self-hosted upload (`SelfHosted.php:144`) |
 | `mediashield_video_ad_breaks` | $breaks, $video_id, $duration | In-video ad breaks. Populated by the WB Ad Manager bridge; empty when no ad source is active. (`Renderer.php:263`) |
 | `mediashield_video_ads` | $ads, $video_id, $duration | Ad creatives available for this video (`AdManagerBridge.php:104`) |
@@ -359,14 +365,16 @@ Changed during the 1.3.0 bug sweep: `mediashield_force_output_buffer` and `media
 |------|-------|-------------|
 | `mediashield_admin_routes` | `src/admin/App.js:116` | Adds pages to the admin SPA hash router. This is how Pro injects its screens. |
 
+DOM events the player fires are listed in `docs/website/developer-guide/08-javascript-events-and-config.md`. 1.4.4 adds `mediashield:watched` (bubbles from `.ms-protected-player`, detail `{ videoId, watchedPct, requiredPct }`, on session start and every heartbeat; `assets/js/tracker.js` `emitWatched()`), which Learnomy listens to for its live "Watch X%" line.
+
 ---
 
 ## JavaScript Architecture
 
 ### Vanilla JS (assets/js/) -- no build required
-- **player-wrapper.js** -- Detects video/iframe elements, wraps with protection container
+- **player-wrapper.js** -- Detects video/iframe elements, wraps with protection container. Every refusal or failure goes through `showErrorOverlay( el, message, onRetry, { sub, cause } )`: one message, one next step (Log in, the membership/course link, or Try again), and for users the server marked with `data-edit-url` the cause plus an Edit video link. The resume chip ("Resume from m:ss · Start over") stays until the member picks; Play resumes. Behaviour tests: `tests/js/` (`npm run test:js`, local-ci 1.5).
 - **watermark.js** -- Renders dynamic user watermark overlay (email/name + timestamp)
-- **tracker.js** -- Sends heartbeat POST to /session/heartbeat every 30s (`config.interval`, default 30000ms)
+- **tracker.js** -- Sends heartbeat POST to /session/heartbeat every 30s (`config.interval`, default 30000ms), one early beat 5 s into play, and one in four (every 2 min) while paused with nothing new to report. Sessions start at the first play (`player-wrapper.js` `startOnFirstPlay()`), never on page load; the resume offer reads `data-resume-position` printed by Renderer (`SessionManager::resume_position()`). The stream limit counts devices whose viewing played (`played_sql()`) or started in the last 15 s. The position is reported at pause and as a beacon when the tab hides, so a quick reload offers it. At None and Basic a logged-in member's player opens a tracking-only viewing at first play when a watch rule applies (`data-watch-required` from the lesson, or `data-watch-track` from Renderer when `ms_lms_require_watch_pct` is on): heartbeats and spans only, `player-ready` carries `trackingOnly`, no watermark (`watermark_config.enabled` false), no stream limit (`SessionManager::tracking_only()`, and `limited_videos_sql()` leaves such viewings out of the count). A refused member's player shows the refusal printed by Renderer (`AccessControl::refusal()`, shared with `/session/start`) and makes no request.
 - **protection.js** -- Disables right-click context menu, detects devtools open
 - **ad-breaks.js** -- Plays pre/mid/post-roll breaks supplied by the WB Ad Manager bridge
 - **admin-video.js** -- Add New Video uploader + platform-URL detection (admin only)
@@ -388,6 +396,20 @@ webpack.config.js entry points:
 - `blocks/video/index` + `blocks/video/view`
 - `blocks/playlist/index` + `blocks/playlist/view`
 - `admin/index`
+
+The admin entry stays small (release gate P2, 40 KB gzipped): every screen in
+`src/admin/App.js`, the wizard and the playlist items panel load on demand
+with `React.lazy` into `build/admin/chunks/[name].[contenthash].js`, and Chart.js
+sits in its own `chartjs` chunk loaded only by the Dashboard (allow-listed in
+`.gate-check-allow`). Every admin stylesheet is imported by `src/admin/index.js`,
+so all CSS stays in `index.css` and its RTL twin; do not import CSS only from a
+lazy screen. A new screen is added the same way: `lazy( () => import( ... ) )`.
+
+JS translations: the `.pot` is made from `src/` (`wp i18n make-pot . languages/mediashield.pot --domain=mediashield --exclude=node_modules,vendor,build,plan,dist,tests`), and `wp i18n make-json` writes one JSON per source file. `Core\Assets::script_translations()` answers core's `pre_load_script_translations` with every JSON of the domain and locale merged (plugin `languages/`, then `wp-content/languages/plugins`), so the admin entry, its lazy chunks and the block scripts all translate. Pro adds its domain through `mediashield_script_translation_dirs`. Never call `make-json --use-map` or rename JSON files to match `build/`.
+
+Release zip: `bash bin/build-release.sh` (version check, local CI, build,
+runtime-only Composer install in a staged copy, deflated zip, `REQUIRED_FILES`
+and the admin chunks asserted in the zip). It replaces `grunt dist`.
 
 Dependencies: chart.js (analytics charts), lucide-react (admin icons). `shaka-player` is still listed in `package.json` but **is not imported anywhere in `src/` and is not a webpack entry** — adaptive playback ships as the pre-built `assets/vendor/hls.min.js`, loaded by handle, not by the bundler. Treat the shaka-player dependency as removable dead weight.
 
@@ -453,7 +475,7 @@ Schema covers **34 keys** (this list is the full set — verified against `Setti
 
 - **Core:** `ms_enabled`, `ms_default_protection`, `ms_require_login`, `ms_allowed_domains`, `ms_max_concurrent_streams`, `ms_session_retention_months`, `ms_show_badge`
 - **Watermark:** `ms_watermark_opacity`, `ms_watermark_color`, `ms_watermark_swap_interval`
-- **Messages:** `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`
+- **Messages:** `ms_login_overlay_text`, `ms_login_button_text`, `ms_access_denied_text`, `ms_access_denied_url` + `ms_access_denied_button_text` (1.4.4: the refused member's membership button; empty URL = no button)
 - **Player:** `ms_player_speed_control`, `ms_player_prevent_forward_seek`, `ms_player_sticky`, `ms_player_keyboard`, `ms_player_resume`, `ms_player_endscreen`, `ms_player_endscreen_text`, `ms_player_endscreen_url`
 - **Ads:** `ms_ads_enabled`, `ms_ads_require_full_view`, `ms_ads_skip_after`, `ms_ads_preroll`, `ms_ads_midroll_count`, `ms_ads_show_markers`
 - **Protection:** `ms_block_right_click`, `ms_block_keyboard`, `ms_hide_source`, `ms_detect_devtools`, `ms_pause_on_devtools`, `ms_devtools_title`, `ms_devtools_message`

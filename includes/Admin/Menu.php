@@ -158,20 +158,51 @@ class Menu {
 			'mediashield-admin',
 			'mediashieldAdmin',
 			array(
-				'restUrl'           => rest_url( 'mediashield/v1/' ),
-				'wpRestUrl'         => rest_url( 'wp/v2/' ),
-				'nonce'             => wp_create_nonce( 'wp_rest' ),
-				'version'           => $ver,
-				'userId'            => get_current_user_id(),
-				'adminUrl'          => admin_url(),
-				'siteUrl'           => home_url(),
-				'isProActive'       => defined( 'MEDIASHIELD_PRO_VERSION' ),
-				// The Videos list labels a video with no level of its own.
-				'defaultProtection' => \MediaShield\Player\Protection::default_level(),
+				'restUrl'               => rest_url( 'mediashield/v1/' ),
+				'wpRestUrl'             => rest_url( 'wp/v2/' ),
+				'nonce'                 => wp_create_nonce( 'wp_rest' ),
+				'version'               => $ver,
+				'userId'                => get_current_user_id(),
+				'adminUrl'              => admin_url(),
+				'siteUrl'               => home_url(),
+				'isProActive'           => defined( 'MEDIASHIELD_PRO_VERSION' ),
 				// Settings shows "Require X% watched" when an LMS that enforces
 				// it is active: Learnomy (Free) or LearnDash (Pro).
-				'isLearnomyActive'  => function_exists( '\\Learnomy\\table' ),
-			)
+				'isLearnomyActive'      => function_exists( '\\Learnomy\\table' ),
+				// Learnomy 2.4.1+ sets "watch to complete" on each lesson, so
+				// once it has moved the site-wide % onto them, Settings
+				// explains that instead of offering the site-wide %.
+				'learnomyOwnsWatchRule' => \MediaShield\Integrations\Learnomy::owns_watch_rule(),
+				// Video Ads shows only where WB Ad Manager's video ads are
+				// installed (the class AdManagerBridge reads them from).
+				'isAdManagerActive'     => class_exists( '\\WBAM_Pro\\Modules\\AdTypes\\Video_Ad_Resolver' ),
+				// The Analytics screens' first-run notice (Basecamp 10478806397).
+				'firstRun'              => \MediaShield\REST\AnalyticsController::first_run_state(),
+				'newVideoUrl'           => admin_url( 'post-new.php?post_type=mediashield_video' ),
+				'newPageUrl'            => admin_url( 'post-new.php?post_type=page' ),
+			) + self::vocabulary()
+		);
+	}
+
+	/**
+	 * The words every admin screen shares, printed with each admin bundle.
+	 *
+	 * The protection levels and the refusal for a link that cannot play come
+	 * from PHP so the edit screen, the SPA, the wizard and the block say the
+	 * same thing (Basecamp 10545260510, 10545260436).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function vocabulary(): array {
+		return array(
+			'defaultProtection' => \MediaShield\Player\Protection::default_level(),
+			'protectionLevels'  => \MediaShield\Player\Protection::levels(),
+			'siteDefaultLabel'  => \MediaShield\Player\Protection::site_default_label(),
+			'unplayableMessage' => \MediaShield\Support\Platforms::unplayable_message(),
+			'wizardLinkHint'    => \MediaShield\Support\Platforms::wizard_link_hint(),
+			'linkHint'          => \MediaShield\Support\Platforms::link_hint(),
 		);
 	}
 

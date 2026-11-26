@@ -45,7 +45,7 @@ const UPSELL_URL = 'https://wbcomdesigns.com/downloads/mediashield-pro/';
  * @param {Object} route Route definition.
  * @return {string} Group key.
  */
-const groupOf = ( route ) => {
+export const groupOf = ( route ) => {
 	const found = GROUPS.find( ( g ) => g.hashes.includes( route.hash ) );
 	return found ? found.key : 'settings';
 };

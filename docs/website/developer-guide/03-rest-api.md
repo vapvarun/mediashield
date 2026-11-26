@@ -139,6 +139,12 @@ Rate limited to one recorded event per user and IP per hour. A limited request s
 Videos and playlists are custom post types with `show_in_rest` enabled, so the standard WordPress routes apply and are where you create, update, and delete them:
 
 - `/wp/v2/mediashield-videos` and `/wp/v2/mediashield-videos/{id}`
+
+  The collection takes `ms_state` (`ready`, `attention` = no source or unavailable at the platform, `draft`) next to `ms_platform`, `ms_protection` and (1.4.4) `ms_tag` (a video tag id from `/mediashield/v1/tags`); `ms_list.status` is `ready`, `no_source`, `unavailable`, `draft` (or Pro's `encoding` / `failed`), and `ms_list.source` is an uploaded file's name. Since 1.4.4 `ms_list.needs_length` is true while a watch rule completes a lesson by the video and it has no stored Duration.
+
+- `GET /mediashield/v1/videos/counts` (edit_posts) - `{all, ready, attention, draft, no_source, unavailable}` for the Videos list chips, one `COUNT(*)`.
+
+  A create or update whose `meta._ms_source_url` is a new link MediaShield cannot play is refused with `400 mediashield_unplayable_source` and the message to show (`Platforms::recognise()`); nothing is saved. A link that is already stored and sent back unchanged is not re-checked.
 - `/wp/v2/mediashield-playlists` and `/wp/v2/mediashield-playlists/{id}`
 
 Video and playlist meta (`_ms_platform`, `_ms_source_url`, `_ms_protection_level`, `_ms_duration`, the player overrides, the playlist playback options) is registered with `show_in_rest`, so it round-trips through the `meta` object on those routes. This is how the block editor creates a video from a pasted URL.

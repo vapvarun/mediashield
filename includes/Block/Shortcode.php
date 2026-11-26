@@ -41,7 +41,12 @@ class Shortcode {
 	public static function render( $atts ): string {
 		$atts = shortcode_atts(
 			array(
-				'id' => 0,
+				'id'             => 0,
+				// The % of this video a lesson asks the member to watch,
+				// passed by the LMS that places the player (Learnomy 2.4.1+).
+				// Only a hint for the player's early report; completion is
+				// still decided on the server from the watched share.
+				'watch_required' => 0,
 			),
 			$atts,
 			'mediashield'
@@ -60,23 +65,31 @@ class Shortcode {
 		 */
 		$filtered_source_url = apply_filters( 'mediashield_shortcode_source_url', '', $video_id, $atts );
 
-		// If a filter provided a custom source URL, temporarily set the post meta
-		// so the Renderer picks it up. Restore after rendering.
-		$restore_source_url = false;
+		// A filtered link is for this render only: Renderer reads it through
+		// get_post_meta(), so it is answered there and never stored. Writing
+		// it to the video and back on every view also counted as a new
+		// source and forgot the lengths players measured.
+		$override = null;
 		if ( ! empty( $filtered_source_url ) && $video_id > 0 ) {
-			$original_source_url = get_post_meta( $video_id, '_ms_source_url', true );
-			update_post_meta( $video_id, '_ms_source_url', $filtered_source_url );
-			$restore_source_url = true;
+			$override = static function ( $value, $object_id, $meta_key ) use ( $video_id, $filtered_source_url ) {
+				if ( (int) $object_id !== $video_id || '_ms_source_url' !== $meta_key ) {
+					return $value;
+				}
+				return array( (string) $filtered_source_url );
+			};
+			add_filter( 'get_post_metadata', $override, 10, 3 );
 		}
 
 		// Renderer validates the video CPT + source and enqueues frontend assets
 		// only when output will be produced — calling enqueue() here would leak
 		// JS/CSS for invalid or non-existent IDs.
-		$html = Renderer::render( $video_id );
-
-		// Restore original source URL if we temporarily overrode it.
-		if ( $restore_source_url ) {
-			update_post_meta( $video_id, '_ms_source_url', $original_source_url );
+		$required = min( 100, absint( $atts['watch_required'] ) );
+		try {
+			$html = Renderer::render( $video_id, $required > 0 ? sprintf( ' data-watch-required="%d"', $required ) : '' );
+		} finally {
+			if ( $override ) {
+				remove_filter( 'get_post_metadata', $override, 10 );
+			}
 		}
 
 		return $html;

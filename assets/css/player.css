@@ -7,9 +7,11 @@
  * Part 7.6.1 (BLOCK gate F9, same-family rule).
  */
 
-/* Tokens. The playlist wrapper sits outside the player, so it shares them. */
+/* Tokens. The playlist wrapper sits outside the player, so it shares them,
+   and so does the unavailable state (Renderer), which is not a player. */
 .ms-protected-player,
-.ms-playlist-player {
+.ms-playlist-player,
+.ms-player-unavailable {
 	/* Spacing scale */
 	--ms-space-1: 4px;
 	--ms-space-2: 8px;
@@ -43,6 +45,10 @@
 	--ms-accent: var(--wp--preset--color--primary, #2271b1);
 	--ms-accent-hover: #135e96; /* hex fallback before color-mix() */
 	--ms-accent-hover: color-mix(in srgb, var(--ms-accent) 82%, #000);
+	/* Text on the accent. A theme whose dark mode lightens the accent says
+	 * which text reads on it (Reign: --reign-on-accent-color); white
+	 * otherwise. White on Reign's dark accent was 1.9:1 (UX test MSUX-16). */
+	--ms-on-accent: var(--reign-on-accent-color, #ffffff);
 
 	/* Fixed control colours — player chrome sits on dark video, so white text
 	 * and the letterbox black are intentional constants, not theme-driven. */
@@ -130,6 +136,75 @@ iframe.ms-player-target {
 	display: block;
 }
 
+/* Standard and Strict on YouTube, Vimeo and Wistia: shields over the
+   platform's own links (title, share, logo, side buttons, related videos,
+   end screen). A click plays or pauses (UX test MSUX-04). Geometry follows
+   each platform's 2026 player; re-measure if one is redesigned. */
+.ms-shield {
+	position: absolute;
+	z-index: 7;
+	display: none;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+.ms-shield--top {
+	display: block;
+	inset-block-start: 0;
+	inset-inline: 0;
+	height: 64px;
+}
+
+/* Vimeo's like, watch later, share and embed column. */
+.ms-protected-player[data-platform="vimeo"] .ms-shield--side {
+	display: block;
+	inset-block-start: 0;
+	inset-inline-end: 0;
+	width: 64px;
+	height: 200px;
+}
+
+/* The platform's logo at the end of its control bar ("Watch on YouTube", vimeo). */
+.ms-protected-player[data-platform="youtube"] .ms-shield--corner,
+.ms-protected-player[data-platform="vimeo"] .ms-shield--corner {
+	display: block;
+	inset-block-end: 0;
+	inset-inline-end: 0;
+	width: 96px;
+	height: 52px;
+}
+
+/* Paused: everything above the control bar (related videos). Ended: all of it. */
+.ms-shield-paused .ms-shield--rest {
+	display: block;
+	inset-block: 0 52px;
+	inset-inline: 0;
+}
+
+.ms-shield--rest .ms-icon {
+	display: none;
+}
+
+.ms-shield-ended .ms-shield--rest {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	inset: 0;
+	background: var(--ms-overlay-surface-strong);
+	color: var(--ms-on-overlay);
+}
+
+.ms-shield-ended .ms-shield--rest .ms-icon {
+	display: block;
+}
+
+/* No poster: the platform's own picture shows through the cover. */
+.ms-iframe-poster.ms-iframe-poster--clear {
+	background-color: transparent;
+}
+
 /* Featured Image over a platform iframe until the viewer clicks play. */
 .ms-iframe-poster {
 	position: absolute;
@@ -165,7 +240,7 @@ iframe.ms-player-target {
 	margin-left: 6px;
 	border-top: 14px solid transparent;
 	border-bottom: 14px solid transparent;
-	border-left: 22px solid var(--ms-on-overlay);
+	border-left: 22px solid var(--ms-on-accent);
 }
 
 .ms-iframe-poster:focus-visible {
@@ -216,7 +291,11 @@ iframe.ms-player-target {
 	z-index: 20;
 	display: flex;
 	align-items: center;
+	/* A short player (a phone) scrolls the state instead of clipping its
+	   first and last lines. */
+	align-items: safe center;
 	justify-content: center;
+	overflow-y: auto;
 	background: var(--ms-overlay-surface-strong);
 }
 
@@ -241,7 +320,7 @@ iframe.ms-player-target {
 	border: 0;
 	border-radius: var(--ms-radius-sm);
 	background: var(--ms-accent);
-	color: var(--ms-on-overlay);
+	color: var(--ms-on-accent);
 	font-size: 1rem;
 	font-weight: 600;
 	cursor: pointer;
@@ -250,6 +329,43 @@ iframe.ms-player-target {
 .ms-error-retry:hover,
 .ms-error-retry:focus-visible {
 	background: var(--ms-accent-hover);
+}
+
+/* Second line of a state: who it is for, what happens next (Basecamp 10545260568). */
+.ms-error-message .ms-error-sub,
+.ms-login-message .ms-login-sub {
+	margin-block: var(--ms-space-2) 0;
+	font-size: var(--ms-font-size-base);
+	color: var(--ms-on-overlay-muted);
+}
+
+/* The cause and an Edit video link, for someone who may edit the video. */
+.ms-error-message .ms-error-admin {
+	margin-block-start: var(--ms-space-4);
+	font-size: var(--ms-font-size-sm);
+	color: var(--ms-on-overlay-muted);
+}
+
+.ms-error-admin a {
+	/* Its own line, so a 40px target does not open a gap in the text above. */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: fit-content;
+	min-height: var(--ms-tap-min);
+	margin-inline: auto;
+	padding-inline: var(--ms-space-2);
+	color: var(--ms-on-overlay) !important;
+	text-decoration: underline;
+}
+
+/* A video that cannot play here (missing, in the trash, not published):
+   the player-sized unavailable state, printed by the server (Renderer). */
+.ms-player-unavailable {
+	position: relative;
+	aspect-ratio: 16 / 9;
+	overflow: hidden;
+	background: var(--ms-player-bg);
 }
 
 /* A video the host removed: cover the host's own error page completely. */
@@ -266,7 +382,7 @@ iframe.ms-player-target {
 	padding: 0 var(--ms-space-5);
 	border-radius: var(--ms-radius-sm);
 	background: var(--ms-accent);
-	color: var(--ms-on-overlay) !important;
+	color: var(--ms-on-accent) !important;
 	font-size: 1rem;
 	font-weight: 600;
 	text-decoration: none;
@@ -310,14 +426,29 @@ iframe.ms-player-target {
 
 .ms-login-message p {
 	font-size: 1.125rem;
-	margin: 0 0 1rem;
+	margin: 0;
+}
+
+/* The lock and the title of what is behind the wall (UX test MSUX-07). */
+.ms-login-lock {
+	display: inline-flex;
+	margin-block-end: var(--ms-space-2);
+	opacity: 0.85;
+}
+
+.ms-login-message .ms-login-title {
+	margin-block-end: var(--ms-space-2);
+	font-size: var(--ms-font-size-md);
+	font-weight: 600;
+	overflow-wrap: anywhere;
 }
 
 .ms-login-button {
 	display: inline-block;
+	margin-block-start: var(--ms-space-4);
 	padding: 0.75rem 2rem;
 	background: var(--ms-accent);
-	color: #fff !important;
+	color: var(--ms-on-accent) !important;
 	text-decoration: none;
 	border-radius: 4px;
 	font-size: 1rem;
@@ -344,8 +475,12 @@ iframe.ms-player-target {
 	line-height: 1;
 }
 
+.ms-resume-chip--low {
+	bottom: var(--ms-space-3);
+}
+
 .ms-resume-chip__go,
-.ms-resume-chip__close {
+.ms-resume-chip__over {
 	min-height: var(--ms-tap-min);
 	border: 0;
 	background: transparent;
@@ -362,11 +497,12 @@ iframe.ms-player-target {
 	text-overflow: ellipsis;
 }
 
-.ms-resume-chip__close {
-	min-width: var(--ms-tap-min);
-	padding: 0;
-	font-size: var(--ms-font-size-md);
+.ms-resume-chip__over {
+	padding-inline: var(--ms-space-2) var(--ms-space-4);
 	color: var(--ms-on-overlay-muted);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	white-space: nowrap;
 }
 
 /* "Protected by MediaShield" badge (off by default; the owner turns it on).
@@ -411,6 +547,17 @@ iframe.ms-player-target {
 	justify-content: center;
 	padding: 0;
 	transition: background 0.2s;
+}
+
+/* Vimeo draws a fullscreen icon of its own that no embed setting removes
+   (without the permission it does nothing): MediaShield's, solid, sits
+   over it, so one shows (UX test MSUX-15). */
+.ms-protected-player[data-platform="vimeo"] .ms-fullscreen-btn {
+	bottom: 6px;
+	right: 6px;
+	width: 46px;
+	height: 46px;
+	background: var(--ms-player-bg);
 }
 
 .ms-fullscreen-btn:hover {
@@ -656,7 +803,7 @@ iframe.ms-player-target {
 	border: 0;
 	border-radius: 50%;
 	background: var(--ms-accent);
-	color: var(--ms-on-overlay);
+	color: var(--ms-on-accent);
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 	cursor: pointer;
 }
@@ -736,7 +883,7 @@ iframe.ms-player-target {
 	}
 
 	.ms-resume-chip__go:hover,
-	.ms-resume-chip__close:hover {
+	.ms-resume-chip__over:hover {
 		color: var(--ms-accent);
 	}
 }
@@ -779,7 +926,7 @@ iframe.ms-player-target {
 	display: inline-block;
 	padding: 0.75rem 2rem;
 	background: var(--ms-accent);
-	color: var(--ms-on-overlay);
+	color: var(--ms-on-accent);
 	text-decoration: none;
 	border-radius: 6px;
 	font-weight: 600;
@@ -830,7 +977,8 @@ iframe.ms-player-target {
 .ms-playlist-item:focus-visible,
 .ms-error-action:focus-visible,
 .ms-resume-chip__go:focus-visible,
-.ms-resume-chip__close:focus-visible,
+.ms-resume-chip__over:focus-visible,
+.ms-error-admin a:focus-visible,
 .ms-endscreen__replay:focus-visible {
 	outline: 2px solid var(--ms-accent);
 	outline-offset: 2px;
@@ -839,16 +987,28 @@ iframe.ms-player-target {
 /* Responsive adjustments */
 @media (max-width: 640px) {
 	.ms-error-message {
-		padding: var(--ms-space-4);
+		padding: var(--ms-space-2) var(--ms-space-3);
+		line-height: 1.4;
 	}
 
 	.ms-error-message p {
 		font-size: var(--ms-font-size-base);
 	}
 
-	.ms-error-action {
-		margin-block-start: var(--ms-space-3);
+	.ms-error-action,
+	.ms-error-retry {
+		margin-block-start: var(--ms-space-2);
 		font-size: var(--ms-font-size-base);
+	}
+
+	.ms-error-message .ms-error-sub {
+		margin-block-start: var(--ms-space-1);
+		font-size: var(--ms-font-size-sm);
+	}
+
+	.ms-error-message .ms-error-admin {
+		margin-block-start: var(--ms-space-1);
+		font-size: var(--ms-font-size-xs);
 	}
 
 	.ms-controls {
@@ -1071,6 +1231,26 @@ iframe.ms-player-target {
 	opacity: 0.7;
 }
 
+/* A video file's first frame as its row picture (view.js loads it). */
+video.ms-playlist-item-thumb {
+	background: var(--ms-player-bg);
+	pointer-events: none;
+}
+
+/* An item this viewer cannot watch yet: still opens to say why. */
+.ms-playlist-item.is-locked .ms-playlist-item-thumb,
+.ms-playlist-item.is-locked .ms-playlist-item-thumb-placeholder {
+	opacity: 0.5;
+}
+
+.ms-playlist-item-lock {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ms-space-1);
+	font-size: var(--ms-font-size-sm);
+	opacity: 0.75;
+}
+
 @media (max-width: 480px) {
 	.ms-playlist-item {
 		grid-template-columns: 1.25rem 72px minmax(0, 1fr);
@@ -1240,6 +1420,14 @@ iframe.ms-player-target {
 }
 .ms-ad-timeline__marker:hover::after {
 	opacity: 1;
+}
+/* While an ad plays the bar is the ad's own progress; the lesson's ad
+   markers would mark the wrong timeline, so they step aside. */
+.ms-ad-timeline.is-ad .ms-ad-timeline__progress {
+	background: #f5c518;
+}
+.ms-ad-timeline.is-ad .ms-ad-timeline__marker {
+	visibility: hidden;
 }
 @media ( max-width: 480px ) {
 	.ms-ad-timeline__caption {

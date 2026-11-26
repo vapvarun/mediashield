@@ -111,7 +111,7 @@ class HealthCheck {
 		// report. Saying "protected" here would be a guess.
 		if ( '' === $probe ) {
 			$result['status']      = 'good';
-			$result['description'] = '<p>' . esc_html__( 'No self-hosted video files are stored yet, so there is nothing that could be downloaded directly. This check will run once you upload one.', 'mediashield' ) . '</p>';
+			$result['description'] = '<p>' . esc_html__( 'No uploaded video files are stored yet, so there is nothing that could be downloaded directly. This check will run once you upload one.', 'mediashield' ) . '</p>';
 			return $result;
 		}
 

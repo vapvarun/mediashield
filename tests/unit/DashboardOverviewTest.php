@@ -25,6 +25,9 @@ class DashboardOverviewTest extends WP_UnitTestCase {
 
 	private function video( string $level = '' ): int {
 		$id = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		// Test change (Basecamp 10545260458): a video with no source is not
+		// Ready and is not counted as protected, so the fixture has a link.
+		update_post_meta( $id, '_ms_source_url', 'https://vimeo.com/76979871' );
 		if ( '' !== $level ) {
 			update_post_meta( $id, '_ms_protection_level', $level );
 		}
@@ -79,7 +82,17 @@ class DashboardOverviewTest extends WP_UnitTestCase {
 		update_option( 'ms_default_protection', 'standard' );
 
 		$fresh = $this->overview();
-		$this->assertSame( array( 'has_video' => false, 'has_protected' => false, 'has_view' => false ), $fresh['first_run'] );
+		// Labelled change (Basecamp 10478806397): two more first-run keys.
+		$this->assertSame(
+			array(
+				'has_video'     => false,
+				'has_protected' => false,
+				'has_embed'     => false,
+				'has_view'      => false,
+				'watch_url'     => '',
+			),
+			$fresh['first_run']
+		);
 
 		$this->video();          // Site default: Standard.
 		$this->video( 'strict' );
@@ -92,5 +105,38 @@ class DashboardOverviewTest extends WP_UnitTestCase {
 		$this->assertTrue( $data['first_run']['has_protected'] );
 		$this->assertFalse( $data['first_run']['has_view'] );
 		$this->assertArrayHasKey( 'alerts', $data['protection'] );
+	}
+
+	/**
+	 * Basecamp 10478806397: the first run walks the owner to a page that
+	 * shows the video and to watching it as a member, from their own content
+	 * (no sample data). Fails before: no has_embed / watch_url, and the
+	 * Analytics screens had no first-run state in the admin config.
+	 */
+	public function test_first_run_reaches_the_page_and_the_first_viewing(): void {
+		global $wpdb;
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}ms_watch_sessions" ); // phpcs:ignore WordPress.DB
+		delete_option( \MediaShield\CPT\VideoUsage::INDEX_PENDING );
+		\MediaShield\CPT\VideoUsage::register();
+
+		$video = $this->video( 'standard' );
+		$this->assertFalse( $this->overview()['first_run']['has_embed'] );
+
+		$draft = self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'draft', 'post_content' => '[mediashield id="' . $video . '"]' ) );
+		$this->assertFalse( $this->overview()['first_run']['has_embed'], 'A draft is not a page members can open.' );
+
+		$page  = self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'publish', 'post_content' => '[mediashield id="' . $video . '"]' ) );
+		$state = $this->overview()['first_run'];
+		$this->assertTrue( $state['has_embed'] );
+		$this->assertSame( get_permalink( $page ), $state['watch_url'], 'Step 4 links the page that shows the video.' );
+		$this->assertFalse( $state['has_view'] );
+
+		// The admin config carries the same state for the Analytics screens.
+		$this->assertSame( $state, \MediaShield\REST\AnalyticsController::first_run_state() );
+
+		$now = current_time( 'mysql', true );
+		$wpdb->insert( $wpdb->prefix . 'ms_watch_sessions', array( 'video_id' => $video, 'user_id' => 1, 'session_token' => 'first-view', 'started_at' => $now, 'last_heartbeat' => $now, 'max_position' => 12, 'total_seconds' => 12, 'is_active' => 0 ) ); // phpcs:ignore WordPress.DB
+		$this->assertTrue( $this->overview()['first_run']['has_view'], 'Real data: the first-run state is no longer shown.' );
+		unset( $draft );
 	}
 }

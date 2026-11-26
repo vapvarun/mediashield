@@ -11,8 +11,23 @@ import { useState, useEffect, useRef } from '@wordpress/element';
 import { SelectControl, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import Chart from 'chart.js/auto';
+import {
+	Chart,
+	LineController,
+	LineElement,
+	PointElement,
+	LinearScale,
+	CategoryScale,
+	Filler,
+	Legend,
+	Tooltip,
+} from 'chart.js';
+
+// Only what the activity chart draws (a filled line with a legend and
+// tooltips), not chart.js/auto's every chart type.
+Chart.register( LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Legend, Tooltip );
 import Icon from '../components/Icon';
+import FirstRunSteps, { showFirstRun } from '../components/FirstRunSteps';
 import { restUrl } from '../utils/rest';
 
 const config = window.mediashieldAdmin || {};
@@ -27,14 +42,15 @@ const PERIOD_OPTIONS = [
 const STAT_CARDS = [
 	{
 		key: 'total_videos',
-		label: __( 'Total Videos', 'mediashield' ),
+		// Ready videos only: published, with something that plays (Basecamp 10545260458).
+		label: __( 'Ready videos', 'mediashield' ),
 		icon: 'format-video',
 		iconClass: 'videos',
 		format: ( v ) => v ?? '0',
 	},
 	{
 		key: 'total_sessions',
-		label: __( 'Total Sessions', 'mediashield' ),
+		label: __( 'Viewings', 'mediashield' ),
 		icon: 'visibility',
 		iconClass: 'sessions',
 		format: ( v ) => ( v != null ? v.toLocaleString() : '0' ),
@@ -48,77 +64,12 @@ const STAT_CARDS = [
 	},
 	{
 		key: 'active_viewers',
-		label: __( 'Active Viewers', 'mediashield' ),
+		label: __( 'Watching now', 'mediashield' ),
 		icon: 'groups',
 		iconClass: 'viewers',
 		format: ( v ) => v ?? '0',
 	},
 ];
-
-/**
- * The three first-run steps (Basecamp 10530930901). Shown until all are done.
- */
-const FIRST_RUN_STEPS = [
-	{
-		key: 'has_video',
-		title: __( 'Add a video', 'mediashield' ),
-		body: __( 'Upload a file, paste a YouTube, Vimeo, Bunny or Wistia link, or connect a platform.', 'mediashield' ),
-		href: '#/videos',
-		cta: __( 'Add a video', 'mediashield' ),
-	},
-	{
-		key: 'has_protected',
-		title: __( 'Protect it', 'mediashield' ),
-		body: __( 'Pick a protection level above None, for one video or as the site default.', 'mediashield' ),
-		href: '#/settings',
-		cta: __( 'Choose protection', 'mediashield' ),
-	},
-	{
-		key: 'has_view',
-		title: __( 'Place it on a page', 'mediashield' ),
-		body: __( 'Add the MediaShield Video block or the [mediashield id=X] shortcode, then open the page once.', 'mediashield' ),
-		href: '#/videos',
-		cta: __( 'Copy a shortcode', 'mediashield' ),
-	},
-];
-
-const FirstRunChecklist = ( { status } ) => {
-	const done = FIRST_RUN_STEPS.filter( ( step ) => status?.[ step.key ] ).length;
-	return (
-		<section className="mediashield-first-run" aria-labelledby="mediashield-first-run-title">
-			<div className="mediashield-first-run__head">
-				<h2 id="mediashield-first-run-title">{ __( 'Get started', 'mediashield' ) }</h2>
-				<span className="mediashield-first-run__count">
-					{ sprintf( /* translators: 1: steps done, 2: total steps. */ __( '%1$d of %2$d done', 'mediashield' ), done, FIRST_RUN_STEPS.length ) }
-				</span>
-			</div>
-			<ol className="mediashield-first-run__steps">
-				{ FIRST_RUN_STEPS.map( ( step, i ) => {
-					const isDone = !! status?.[ step.key ];
-					return (
-						<li key={ step.key } className={ 'mediashield-first-run__step' + ( isDone ? ' is-done' : '' ) }>
-							<span className="mediashield-first-run__mark" aria-hidden="true">
-								{ isDone ? <Icon name="yes" /> : i + 1 }
-							</span>
-							<div className="mediashield-first-run__text">
-								<strong>
-									{ step.title }
-									{ isDone && <span className="screen-reader-text">{ ' ' + __( '(done)', 'mediashield' ) }</span> }
-								</strong>
-								<span>{ step.body }</span>
-							</div>
-							{ ! isDone && (
-								<a href={ step.href } className="components-button is-secondary mediashield-first-run__cta">
-									{ step.cta }
-								</a>
-							) }
-						</li>
-					);
-				} ) }
-			</ol>
-		</section>
-	);
-};
 
 const ProtectionCard = ( { protection } ) => {
 	if ( ! protection ) {
@@ -127,7 +78,7 @@ const ProtectionCard = ( { protection } ) => {
 	const items = [
 		{
 			label: __( 'Videos protected', 'mediashield' ),
-			/* translators: 1: protected videos, 2: all published videos. */
+			/* translators: 1: protected videos, 2: Ready videos (published, with something that plays). */
 			value: sprintf( __( '%1$d of %2$d', 'mediashield' ), protection.protected, protection.total ),
 		},
 		{
@@ -146,6 +97,17 @@ const ProtectionCard = ( { protection } ) => {
 				<span className="mediashield-protection-card__icon"><Icon name="shield" /></span>
 				<h2 id="mediashield-protection-title">{ __( 'Protection', 'mediashield' ) }</h2>
 			</div>
+			{ protection.attention > 0 && (
+				<p className="mediashield-protection-card__attention">
+					<a href="#/videos/attention">
+						{ sprintf(
+							/* translators: %d: number of videos with no source or unavailable at their platform. */
+							_n( '%d video needs attention and is not counted.', '%d videos need attention and are not counted.', protection.attention, 'mediashield' ),
+							protection.attention
+						) }
+					</a>
+				</p>
+			) }
 			<dl className="mediashield-protection-card__list">
 				{ items.map( ( item ) => (
 					<div key={ item.label } className="mediashield-protection-card__item">
@@ -238,13 +200,13 @@ const Dashboard = () => {
 				labels,
 				datasets: [
 					{
-						label: __( 'Sessions', 'mediashield' ),
+						label: __( 'Viewings', 'mediashield' ),
 						data: sessions,
 						borderColor: '#3858e9',
 						backgroundColor: gradient1,
 						borderWidth: 2.5,
 						fill: true,
-						tension: 0.4,
+						tension: 0, // Straight lines: a curve draws viewings between days that had none (MSUX-34).
 						// A day with sessions is a dot, so one busy day in a
 						// quiet week is still visible.
 						pointRadius: sessions.map( ( n ) => ( n > 0 ? 3 : 0 ) ),
@@ -353,8 +315,8 @@ const Dashboard = () => {
 				</div>
 			) }
 
-			{ ! loading && ! error && data?.first_run && ! ( data.first_run.has_video && data.first_run.has_protected && data.first_run.has_view ) && (
-				<FirstRunChecklist status={ data.first_run } />
+			{ ! loading && ! error && showFirstRun( data?.first_run ) && (
+				<FirstRunSteps status={ data.first_run } title={ __( 'Get started', 'mediashield' ) } />
 			) }
 
 			{ ! loading && ! error && data?.total_videos > 0 && (
@@ -410,8 +372,8 @@ const Dashboard = () => {
 											<span>{ v.title || `Video #${ v.video_id }` }</span>
 											<strong>
 												{ sprintf(
-													/* translators: %d: number of views. */
-													_n( '%d view', '%d views', v.session_count || 0, 'mediashield' ),
+													/* translators: %d: number of viewings. */
+													_n( '%d viewing', '%d viewings', v.session_count || 0, 'mediashield' ),
 													v.session_count || 0
 												) }
 											</strong>
@@ -471,7 +433,7 @@ const Dashboard = () => {
 								<div className="ms-upsell-card">
 									<Icon name="download" className="ms-upsell-card__icon" />
 									<h3>{ __( 'CSV & PDF Export', 'mediashield' ) }</h3>
-									<p>{ __( 'Export watch sessions, milestones, and user data as CSV or formatted PDF reports.', 'mediashield' ) }</p>
+									<p>{ __( 'Export viewings, milestones and member data as CSV or PDF reports.', 'mediashield' ) }</p>
 								</div>
 							</div>
 							<div className="ms-upsell-banner">

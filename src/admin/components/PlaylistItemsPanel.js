@@ -92,7 +92,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 		setSaving( true );
 		apiFetch( {
 			url: `${ config.restUrl }playlists/${ playlistId }/items/reorder`,
-			method: 'PUT',
+			method: 'POST',
 			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
 			data: {
 				order: reordered.map( ( i, idx ) => ( { item_id: i.item_id, sort_order: idx } ) ),
@@ -135,7 +135,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 							<span className="ms-playlist-items__position">{ index + 1 }</span>
 							<div className="ms-playlist-items__thumb">
 								{ item.thumbnail ? (
-									<img src={ item.thumbnail } alt="" />
+									<img src={ item.thumbnail } alt="" onError={ ( e ) => { e.currentTarget.hidden = true; } } />
 								) : (
 									<Icon name="video-alt3" />
 								) }
@@ -146,7 +146,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 								</div>
 								<div className="ms-playlist-items__sub">
 									<span className={ `ms-playlist-items__platform ms-playlist-items__platform--${ item.platform || 'self' }` }>
-										{ item.platform || 'self' }
+										{ item.platform_label || item.platform || 'self' }
 									</span>
 									{ item.duration > 0 && (
 										<span className="ms-playlist-items__duration">
@@ -154,7 +154,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 										</span>
 									) }
 									{ item.status && item.status !== 'publish' && (
-										<span className="ms-playlist-items__status">{ item.status }</span>
+										<span className="ms-playlist-items__status">{ __( 'Not published, not shown on the page', 'mediashield' ) }</span>
 									) }
 								</div>
 							</div>
@@ -164,21 +164,21 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 									label={ __( 'Move up', 'mediashield' ) }
 									disabled={ saving || index === 0 }
 									onClick={ () => handleMove( index, -1 ) }
-									size="small"
+									__next40pxDefaultSize
 								/>
 								<Button
 									icon="arrow-down-alt2"
 									label={ __( 'Move down', 'mediashield' ) }
 									disabled={ saving || index === items.length - 1 }
 									onClick={ () => handleMove( index, 1 ) }
-									size="small"
+									__next40pxDefaultSize
 								/>
 								<Button
 									icon="no-alt"
 									label={ __( 'Remove', 'mediashield' ) }
 									disabled={ saving }
 									onClick={ () => handleRemove( item.item_id ) }
-									size="small"
+									__next40pxDefaultSize
 									className="ms-playlist-items__remove"
 								/>
 							</div>

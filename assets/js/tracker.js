@@ -40,9 +40,23 @@
 			open: null,
 			lastPos: null,
 			watchedPct: watch ? watch.watched_pct : null,
-			requiredPct: watch ? watch.required_pct : 0,
+			// The lesson's own % when the LMS placed one on the player
+			// (data-watch-required), else the site-wide one.
+			requiredPct: lessonRequired( el ) || ( watch ? watch.required_pct : 0 ),
 			earlySent: false,
 		};
+
+		// None and Basic play while the viewing starts (player-wrapper.js):
+		// the seconds played before it answered count too.
+		var from = el._msPlayFrom;
+		delete el._msPlayFrom;
+		if ( 'number' === typeof from && session.adapter && isPlaying( el, session.adapter ) ) {
+			var at = getPlayerPosition( el, session.adapter ) || 0;
+			if ( at > from && at - from <= 10 ) {
+				session.open = [ from, at ];
+				session.lastPos = at;
+			}
+		}
 
 		session.sampleId = setInterval( function () {
 			sample( session );
@@ -52,7 +66,60 @@
 			sendHeartbeat( session );
 		}, intervalMs );
 
+		// The viewing starts at the first play (player-wrapper.js), so one
+		// early report marks it as played within seconds; the stream limit
+		// counts only viewings that played.
+		session.firstBeatId = setTimeout( function () {
+			sendHeartbeat( session, true );
+		}, 5000 );
+
+		// Where the member stopped, the moment they stop, so a reload a few
+		// seconds later offers "Resume from" that place (QA: pause at 15.9 s,
+		// reload, the page still had the last 30 s beat). A <video> says so at
+		// once; platform players are caught by sample() within a second.
+		if ( session.adapter && session.adapter._video ) {
+			session.adapter._video.addEventListener( 'pause', function () {
+				if ( ! session.stopped && ! session.adapter._video.ended ) reportStop( session );
+			} );
+		}
+
 		activeSessions.push( session );
+		emitWatched( session );
+	}
+
+	/**
+	 * Tell the page how much of the video this member has watched.
+	 *
+	 * `mediashield:watched` bubbles from the player container
+	 * (.ms-protected-player) with detail { videoId, watchedPct, requiredPct },
+	 * once when the session starts and after every heartbeat that carries the
+	 * share, so a lesson's "Watch 70%: x% / 70%" line can follow along
+	 * (Learnomy). Only for a logged-in member: a guest's share is not kept.
+	 *
+	 * @param {Object} session Tracked session.
+	 */
+	function emitWatched( session ) {
+		if ( 'number' !== typeof session.watchedPct ) return;
+		session.el.dispatchEvent( new CustomEvent( 'mediashield:watched', {
+			bubbles: true,
+			detail: {
+				videoId: parseInt( session.el.dataset.videoId, 10 ) || 0,
+				watchedPct: session.watchedPct,
+				requiredPct: session.requiredPct || 0,
+			},
+		} ) );
+	}
+
+	/**
+	 * The % a lesson asks for on this player, 0 when none: the LMS passes it
+	 * as [mediashield watch_required="N"] (Learnomy 2.4.1+).
+	 *
+	 * @param {HTMLElement} el Player container.
+	 * @return {number}
+	 */
+	function lessonRequired( el ) {
+		var n = el && el.dataset ? parseInt( el.dataset.watchRequired, 10 ) : 0;
+		return n > 0 ? Math.min( 100, n ) : 0;
 	}
 
 	/**
@@ -64,6 +131,12 @@
 		var playing = isPlaying( session.el, session.adapter );
 		var last = session.lastPos;
 		session.lastPos = pos;
+		// A platform player that just paused (a <video> reports its own pause).
+		var justPaused = session.wasPlaying && ! playing;
+		session.wasPlaying = playing;
+		if ( justPaused && ! ( session.adapter && session.adapter._video ) ) {
+			setTimeout( function () { reportStop( session ); }, 0 );
+		}
 		if ( ! playing || null === last || pos <= last || pos - last > 2.5 ) {
 			// Paused since the last sample: keep the part played before it.
 			if ( ! playing && session.open && pos > last && pos - last <= 2.5 ) {
@@ -119,11 +192,21 @@
 	/**
 	 * Send a heartbeat to the REST API.
 	 */
-	function sendHeartbeat( session ) {
+	function sendHeartbeat( session, force ) {
 		var position = getPlayerPosition( session.el, session.adapter );
 		var duration = session.duration || getPlayerDuration( session.el, session.adapter );
 		var playing = isPlaying( session.el, session.adapter );
 		var focused = document.hasFocus();
+
+		// Paused with nothing new to report: one beat in four (every 2 min at
+		// the 30 s default), enough to keep the viewing open (5 min window)
+		// without a request every 30 s from a player nobody is watching.
+		if ( ! force && ! playing && ! session.spans.length && ! session.open ) {
+			session.idleTicks = ( session.idleTicks || 0 ) + 1;
+			if ( session.idleTicks % 4 ) return;
+		} else {
+			session.idleTicks = 0;
+		}
 
 		if ( duration > 0 ) {
 			session.duration = duration;
@@ -150,12 +233,13 @@
 			.then( function ( res ) {
 				if ( res.ok ) {
 					session.failCount = 0;
-					res.clone().json().then( function ( data ) {
+					window.mediashieldRequest.readJSON( res.clone() ).then( function ( data ) {
 						if ( data && 'number' === typeof data.watched_pct ) {
 							session.watchedPct = data.watched_pct;
-							session.requiredPct = data.required_pct || 0;
+							session.requiredPct = lessonRequired( session.el ) || data.required_pct || 0;
 							// Still short after the early beat: allow another.
 							session.earlySent = session.watchedPct >= session.requiredPct;
+							emitWatched( session );
 						}
 					// ms-silent-ok: the share is only a hint for an early beat.
 					} ).catch( function () {} );
@@ -232,19 +316,65 @@
 	}
 
 	/**
+	 * A REST address for a beacon, which cannot send headers: the nonce rides
+	 * in the query, after `?` or, on plain permalinks (?rest_route=), `&`.
+	 *
+	 * @param {string} route Route under mediashield/v1/.
+	 * @return {string} URL.
+	 */
+	function beaconUrl( route ) {
+		var url = config.restUrl + route;
+		return url + ( url.indexOf( '?' ) > -1 ? '&' : '?' ) + '_wpnonce=' + encodeURIComponent( config.nonce );
+	}
+
+	/**
+	 * Report where the member stopped now: a beat, closing the stretch just played.
+	 *
+	 * @param {Object} session Tracked session.
+	 */
+	function reportStop( session ) {
+		// Up to the moment of the pause, not the last once-a-second sample.
+		var pos = getPlayerPosition( session.el, session.adapter ) || 0;
+		if ( session.open && pos > session.open[ 1 ] && pos - session.open[ 1 ] <= 2.5 ) {
+			session.open[ 1 ] = pos;
+		}
+		closeSpan( session );
+		sendHeartbeat( session, true );
+	}
+
+	/**
+	 * The tab is being hidden (switched away, phone locked, closing): send
+	 * where each playing member is, as a beacon that survives the page.
+	 */
+	function beaconStops() {
+		activeSessions.forEach( function ( session ) {
+			if ( session.stopped || ! navigator.sendBeacon ) return;
+			closeSpan( session );
+			var beat = finalBeat( session );
+			beat.playing = false;
+			beat.focused = false;
+			navigator.sendBeacon(
+				beaconUrl( 'session/heartbeat' ),
+				new Blob( [ JSON.stringify( beat ) ], { type: 'application/json' } )
+			);
+		} );
+	}
+
+	/**
 	 * End all sessions on page unload.
 	 */
 	function endAllSessions() {
 		activeSessions.forEach( function ( session ) {
 			if ( session.intervalId ) clearInterval( session.intervalId );
 			if ( session.sampleId ) clearInterval( session.sampleId );
+			clearTimeout( session.firstBeatId );
 
 			var data = JSON.stringify( finalBeat( session ) );
 
 			if ( navigator.sendBeacon ) {
 				var blob = new Blob( [ data ], { type: 'application/json' } );
 				navigator.sendBeacon(
-					config.restUrl + 'session/end?_wpnonce=' + encodeURIComponent( config.nonce ),
+					beaconUrl( 'session/end' ),
 					blob
 				);
 			}
@@ -289,6 +419,7 @@
 
 			if ( session.intervalId ) clearInterval( session.intervalId );
 			if ( session.sampleId ) clearInterval( session.sampleId );
+			clearTimeout( session.firstBeatId );
 			fetch( config.restUrl + 'session/end', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
@@ -306,6 +437,7 @@
 
 	document.addEventListener( 'visibilitychange', function () {
 		if ( document.visibilityState === 'hidden' ) {
+			beaconStops();
 			pauseAllHeartbeats();
 		} else {
 			resumeAllHeartbeats();

@@ -86,7 +86,7 @@ Each account can watch on a set number of devices at once. Default is 2. The pla
 
 **Can I revoke a user's access?**
 
-You can end their sessions. Go to **MediaShield > Viewers**, click **Revoke session** on their row and confirm. Developers can use the administrator REST endpoint:
+You can stop what they are watching. Go to **MediaShield > Viewers**, click **Stop playback** on their row and confirm. Developers can use the administrator REST endpoint:
 
 ```
 POST /wp-json/mediashield/v1/session/revoke-user

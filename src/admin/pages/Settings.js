@@ -12,7 +12,6 @@ import {
 	ToggleControl,
 	TextControl,
 	RangeControl,
-	ColorPicker,
 	TextareaControl,
 	SelectControl,
 	Spinner,
@@ -24,9 +23,16 @@ import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
 import { applyFilters } from '@wordpress/hooks';
 import Icon from '../components/Icon';
+import LevelPicker from '../components/LevelPicker';
+import ColorField from '../components/ColorField';
+import { protectionLevels } from '../utils/protection';
+import '../components/upsell.css';
+import './settings.css';
 
 const config = window.mediashieldAdmin || {};
 const lmsConfig = window.mediashieldProLMS || {};
+// Learnomy 2.4.1+ owns "watch the video to complete" (Integrations\Learnomy::owns_watch_rule()).
+const learnomyOwnsWatchRule = !! ( config.isLearnomyActive && config.learnomyOwnsWatchRule );
 const DEBOUNCE_MS = 800;
 
 /**
@@ -121,12 +127,6 @@ const LMS_PCT_OPTIONS = [
 	{ label: '100%', value: 100 },
 ];
 
-const PROTECTION_OPTIONS = [
-	{ label: __( 'None', 'mediashield' ), value: 'none' },
-	{ label: __( 'Basic', 'mediashield' ), value: 'basic' },
-	{ label: __( 'Standard', 'mediashield' ), value: 'standard' },
-	{ label: __( 'Strict', 'mediashield' ), value: 'strict' },
-];
 
 // Reference video used only to make the mid-roll spacing concrete in the
 // help text below -- picking a real-feeling lesson length (46 minutes) so
@@ -156,19 +156,30 @@ const midrollExampleTimes = ( count ) => {
 };
 
 /**
- * The Settings sections in the left-hand navigation (Basecamp 10530930776).
- * Each card names its group with `group`; the nav jumps to the group's first
- * card.
+ * The Settings sections in the left-hand navigation (Basecamp 10530930776):
+ * one nav item per card, named as the card is (Basecamp 10545260577). A
+ * card whose plugin or feature is not on this site is not rendered and has
+ * no nav item. `integrations` keeps its key for old #/settings links.
  */
 const SETTINGS_GROUPS = [
 	{ key: 'protection', label: __( 'Protection', 'mediashield' ) },
+	{ key: 'access', label: __( 'Who can watch', 'mediashield' ) },
 	{ key: 'watermark', label: __( 'Watermark', 'mediashield' ) },
 	{ key: 'player', label: __( 'Player', 'mediashield' ) },
-	{ key: 'access', label: __( 'Access & messages', 'mediashield' ) },
+	{ key: 'messages', label: __( 'Messages', 'mediashield' ) },
 	{ key: 'ads', label: __( 'Video ads', 'mediashield' ) },
-	{ key: 'storage', label: __( 'Upload & storage', 'mediashield' ) },
-	{ key: 'integrations', label: __( 'Integrations', 'mediashield' ) },
+	{ key: 'uploads', label: __( 'Uploads', 'mediashield' ) },
+	{ key: 'history', label: __( 'Viewing history', 'mediashield' ) },
+	{ key: 'integrations', label: __( 'Lesson completion', 'mediashield' ) },
 ];
+
+/**
+ * The card title for a group: the same words as its nav item.
+ *
+ * @param {string} key Group key.
+ * @return {string} Label.
+ */
+const groupLabel = ( key ) => SETTINGS_GROUPS.find( ( g ) => g.key === key )?.label || '';
 
 /**
  * Jump to a group's first section and move focus there for keyboard users.
@@ -237,7 +248,51 @@ const SettingsNav = ( { groups } ) => {
 		setShown( '' === q ? -1 : count );
 	}, [ query ] );
 
+	// The nav follows the scroll: the item lit is the card at the top of the
+	// screen, not the last one clicked (Basecamp 10545260577).
+	// A picked item stays lit while the page scrolls to it, until the owner
+	// scrolls by hand: the last cards cannot reach the top of the screen, so
+	// the spy alone lit the card above them.
+	const pickedRef = useRef( false );
+	useEffect( () => {
+		let frame = 0;
+		const spy = () => {
+			if ( pickedRef.current ) {
+				return;
+			}
+			cancelAnimationFrame( frame );
+			frame = requestAnimationFrame( () => {
+				const cards = [ ...document.querySelectorAll( '.mediashield-settings__sections [data-group]:not([hidden])' ) ];
+				let current = '';
+				cards.forEach( ( card ) => {
+					if ( card.getBoundingClientRect().top <= 140 ) {
+						current = card.dataset.group;
+					}
+				} );
+				// At the bottom of the page the last card is the one in view.
+				if ( cards.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2 ) {
+					current = cards[ cards.length - 1 ].dataset.group;
+				}
+				if ( current ) {
+					setActive( current );
+				}
+			} );
+		};
+		const release = () => {
+			pickedRef.current = false;
+		};
+		const events = [ 'wheel', 'touchstart', 'keydown' ];
+		window.addEventListener( 'scroll', spy, { passive: true } );
+		events.forEach( ( ev ) => window.addEventListener( ev, release, { passive: true } ) );
+		return () => {
+			cancelAnimationFrame( frame );
+			window.removeEventListener( 'scroll', spy );
+			events.forEach( ( ev ) => window.removeEventListener( ev, release ) );
+		};
+	}, [] );
+
 	const pick = ( key ) => {
+		pickedRef.current = true;
 		setActive( key );
 		goToGroup( key );
 		// The address names the section, so it can be copied and shared.
@@ -271,10 +326,14 @@ const SettingsNav = ( { groups } ) => {
 		};
 		const follow = () => {
 			const key = linkedGroup();
+			const extra = key ? document.getElementById( 'mediashield-settings-' + key ) : null;
 			if ( key && groups.some( ( g ) => g.key === key ) ) {
 				setActive( key );
 				goToGroup( key, false );
 				hold( key );
+			} else if ( extra ) {
+				setActive( extra.dataset.group );
+				extra.scrollIntoView( { block: 'start' } );
 			} else if ( key ) {
 				window.history.replaceState( null, '', '#/settings' );
 				window.scrollTo( 0, 0 );
@@ -346,7 +405,7 @@ const SectionCard = ( { icon, title, description, group, children } ) => (
 				<Icon name={ icon } />
 			</div>
 			<div>
-				<div className="mediashield-settings__section-title">{ title }</div>
+				<h2 className="mediashield-settings__section-title">{ title }</h2>
 				{ description && (
 					<div className="mediashield-settings__section-desc">{ description }</div>
 				) }
@@ -363,6 +422,9 @@ const Settings = () => {
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const debounceRef = useRef( null );
+	// The values the server last confirmed. A save that fails puts these
+	// back, so a control never shows a value that was not saved.
+	const savedRef = useRef( {} );
 	// What the watermark preview says. Pro owns its field names and sends
 	// { text, caption } whenever its Watermark Fields change.
 	const [ previewWords, setPreviewWords ] = useState( null );
@@ -383,7 +445,10 @@ const Settings = () => {
 			headers: { 'X-WP-Nonce': config.nonce },
 		} )
 			.then( ( res ) => {
-				if ( ! cancelled ) setSettings( res );
+				if ( ! cancelled ) {
+					setSettings( res );
+					savedRef.current = res;
+				}
 			} )
 			.catch( ( err ) => {
 				if ( ! cancelled ) setError( window.mediashieldRequest.message( err, __( 'Failed to load settings.', 'mediashield' ) ) );
@@ -423,21 +488,59 @@ const Settings = () => {
 				data,
 				keepalive,
 			} )
-				.then( () => {
-					createSuccessNotice( __( 'Saved', 'mediashield' ), notice );
+				.then( ( res ) => {
+					// The server's answer is the truth: a value it refused (out of
+					// range, wrong type) comes back as the stored one, so the
+					// control goes back to it instead of showing a value not kept.
+					// Text is left as typed (the server trims it), so only switches,
+					// numbers and choices are compared.
+					const keys = Object.keys( data ).filter( ( k ) => 'string' !== typeof data[ k ] || [ 'ms_default_protection' ].includes( k ) );
+					const refused = keys.filter( ( k ) => k in res && JSON.stringify( res[ k ] ) !== JSON.stringify( data[ k ] ) );
+					Object.keys( data ).forEach( ( k ) => {
+						savedRef.current[ k ] = k in res ? res[ k ] : data[ k ];
+					} );
+					if ( 'ms_legacy_switches' in res ) savedRef.current.ms_legacy_switches = res.ms_legacy_switches;
+					setSettings( ( prev ) => {
+						const next = { ...prev, ms_legacy_switches: res.ms_legacy_switches };
+						keys.forEach( ( k ) => {
+							// Only keys not changed again since this save started.
+							if ( k in res && ! ( k in pendingRef.current ) ) next[ k ] = res[ k ];
+						} );
+						return next;
+					} );
+					if ( refused.length ) {
+						createErrorNotice( __( 'Not saved: that value is not allowed, so the setting is back to what it was.', 'mediashield' ), notice );
+					} else {
+						createSuccessNotice( __( 'Saved', 'mediashield' ), notice );
+					}
 				} )
 				.catch( ( err ) => {
-					// Keep what failed for the next save, unless changed since.
-					pendingRef.current = { ...data, ...pendingRef.current };
-					// Say plainly that nothing was saved, and offer the retry, so
-					// a field showing the new value is not mistaken for saved.
+					// Switch the controls back to what is saved, and say so; Try
+					// again sends the same change (Basecamp 10545260577).
+					setSettings( ( prev ) => {
+						const next = { ...prev };
+						Object.keys( data ).forEach( ( k ) => {
+							if ( ! ( k in pendingRef.current ) ) next[ k ] = savedRef.current[ k ];
+						} );
+						return next;
+					} );
 					createErrorNotice(
 						sprintf(
 							/* translators: %s: why the save failed. */
-							__( 'Not saved. %s', 'mediashield' ),
-							window.mediashieldRequest.message( err, __( 'Failed to save.', 'mediashield' ) )
+							__( 'Not saved, so the setting is switched back. %s', 'mediashield' ),
+							window.mediashieldRequest.message( err, __( 'The site could not be reached.', 'mediashield' ) )
 						),
-						{ ...notice, actions: [ { label: __( 'Retry', 'mediashield' ), onClick: () => flush() } ] }
+						{
+							...notice,
+							actions: [ {
+								label: __( 'Try again', 'mediashield' ),
+								onClick: () => {
+									setSettings( ( prev ) => ( { ...prev, ...data } ) );
+									pendingRef.current = { ...data, ...pendingRef.current };
+									flush();
+								},
+							} ],
+						}
 					);
 				} );
 		},
@@ -494,39 +597,55 @@ const Settings = () => {
 		);
 	}
 
-	// Sections other plugins add (Pro's Watermark Fields) render inside the
-	// settings column, get a nav entry after the group they follow, and are
-	// covered by the search (Basecamp 10530930776).
+	// Which cards this site shows; a card that cannot work here is not
+	// rendered and has no nav item (Basecamp 10545260577).
+	const lmsName = lmsConfig.lmsName || '';
+	const shows = {
+		ads: !! config.isAdManagerActive,
+		uploads: !! ( settings?.ms_connected_platforms && settings.ms_connected_platforms.length ),
+		integrations: !! ( config.isLearnomyActive || lmsConfig.enforcesWatchRule || ( lmsConfig.isLMSActive && settings?.ms_lms_auto_complete !== undefined ) ),
+	};
+
+	// Sections other plugins add (Pro's Watermark fields) render inside the
+	// settings column under the nav item of the topic they follow (one
+	// Watermark item, not two), and are covered by the search (Basecamp
+	// 10530930776, 10545260577). #/settings/<their key> still opens them.
 	const extras = applyFilters( 'mediashield_settings_sections', [] ).filter( ( x ) => x && x.key && x.component );
 	const navGroups = [];
-	SETTINGS_GROUPS.filter( ( g ) => 'integrations' !== g.key || config.isLearnomyActive || lmsConfig.isLMSActive ).forEach( ( g ) => {
+	SETTINGS_GROUPS.filter( ( g ) => false !== shows[ g.key ] ).forEach( ( g ) => {
 		navGroups.push( g );
-		extras.filter( ( x ) => x.after === g.key ).forEach( ( x ) => navGroups.push( { key: x.key, label: x.label } ) );
 	} );
 	const renderExtras = ( after ) => extras
 		.filter( ( x ) => x.after === after )
 		.map( ( x ) => {
 			const Extra = x.component;
 			return (
-				<div key={ x.key } className="mediashield-settings__extra" data-group={ x.key }>
+				<div key={ x.key } id={ `mediashield-settings-${ x.key }` } className="mediashield-settings__extra" data-group={ x.after }>
 					<Extra />
 				</div>
 			);
 		} );
 
+	const levels = protectionLevels();
+	const legacy = Array.isArray( settings?.ms_legacy_switches ) ? settings.ms_legacy_switches : [];
+	const legacyNames = {
+		ms_hide_source: __( 'Hide the file address', 'mediashield' ),
+		ms_detect_devtools: __( 'Detect developer tools', 'mediashield' ),
+		ms_pause_on_devtools: __( 'Pause when developer tools open', 'mediashield' ),
+	};
+	const pickLevel = ( val ) => {
+		updateSetting( 'ms_default_protection', val );
+		// Videos reads the default from the page config, printed once at
+		// load; keep it current so "Site default (X)" is right without a reload.
+		if ( window.mediashieldAdmin ) window.mediashieldAdmin.defaultProtection = val;
+	};
+
 	return (
 		<div className="mediashield-page mediashield-settings">
 			<header className="mediashield-page__header">
 				<h1>{ __( 'Settings', 'mediashield' ) }</h1>
-				<span style={ {
-					fontSize: '12px',
-					background: 'var(--ms-color-success-light)',
-					padding: '4px 10px',
-					borderRadius: 'var(--ms-radius-full)',
-					fontWeight: 600,
-					color: 'var(--ms-color-success)',
-				} }>
-					{ __( 'Auto-save enabled', 'mediashield' ) }
+				<span className="mediashield-settings__autosave">
+					{ __( 'Changes save automatically', 'mediashield' ) }
 				</span>
 			</header>
 
@@ -535,129 +654,98 @@ const Settings = () => {
 				<div className="mediashield-settings__sections">
 
 			<SectionCard
-				icon="admin-settings"
+				icon="shield"
 				group="protection"
-				title={ __( 'General', 'mediashield' ) }
-				description={ __( 'Core plugin behavior and protection defaults.', 'mediashield' ) }
+				title={ groupLabel( 'protection' ) }
+				description={ __( 'The level a video uses unless it sets its own. Each level includes the one above it.', 'mediashield' ) }
 			>
 				<ToggleControl
-					label={ __( 'Enable MediaShield', 'mediashield' ) }
-					help={ __( 'Turn video protection on or off globally.', 'mediashield' ) }
+					label={ __( 'Protect videos', 'mediashield' ) }
+					help={ __( 'Off: every video plays with no MediaShield protection.', 'mediashield' ) }
 					checked={ !! settings?.ms_enabled }
 					onChange={ ( val ) => updateSetting( 'ms_enabled', val ) }
 					__nextHasNoMarginBottom
 				/>
-				<SelectControl
-					label={ __( 'Default Protection Level', 'mediashield' ) }
-					help={ __( 'Applied to new videos unless overridden per-video.', 'mediashield' ) }
+				{ legacy.length > 0 && (
+					<div className="mediashield-settings__rule-note" role="note">
+						<strong>{ __( 'Your site keeps its earlier protection switches.', 'mediashield' ) }</strong>{ ' ' }
+						{ sprintf(
+							/* translators: %s: the switches still on, e.g. "Hide the file address, Detect developer tools". */
+							__( 'Before this version these were site-wide switches. On your site these are on, and keep working for every protected video, so nothing changed for your members: %s. Pick a level below to use the levels instead: then hiding the file address and detecting developer tools belong to Strict.', 'mediashield' ),
+							legacy.map( ( k ) => legacyNames[ k ] || k ).join( ', ' )
+						) }
+						<div>
+							<Button variant="secondary" onClick={ () => pickLevel( settings?.ms_default_protection || 'standard' ) } __next40pxDefaultSize>
+								{ sprintf(
+									/* translators: %s: the current protection level, e.g. Standard. */
+									__( 'Use the levels (keep %s)', 'mediashield' ),
+									levels[ settings?.ms_default_protection || 'standard' ]?.label || ''
+								) }
+							</Button>
+						</div>
+					</div>
+				) }
+				<LevelPicker
+					legend={ __( 'Protection level', 'mediashield' ) }
 					value={ settings?.ms_default_protection || 'standard' }
-					options={ PROTECTION_OPTIONS }
-					onChange={ ( val ) => {
-						updateSetting( 'ms_default_protection', val );
-						// Videos reads the default from the page config, printed
-						// once at load; keep it current so "Default (X)" is right
-						// without a reload.
-						if ( window.mediashieldAdmin ) window.mediashieldAdmin.defaultProtection = val;
-					} }
-					__nextHasNoMarginBottom
-					__next40pxDefaultSize
+					onChange={ pickLevel }
+					note={ __( 'Login is set once, under Who can watch, and applies at every level.', 'mediashield' ) }
 				/>
-				{ /* Protection level descriptions */ }
-				<div className="mediashield-settings__protection-descriptions" style={ {
-					fontSize: '13px',
-					color: 'var(--ms-color-text-tertiary, #757575)',
-					lineHeight: '1.6',
-					marginTop: '-8px',
-					marginBottom: '16px',
-					paddingLeft: '2px',
-				} }>
-					<div><strong>{ __( 'None:', 'mediashield' ) }</strong> { __( 'No extra protection for the video. The site-wide Require Login setting still applies.', 'mediashield' ) }</div>
-					<div><strong>{ __( 'Basic:', 'mediashield' ) }</strong> { __( 'Login required, right-click disabled', 'mediashield' ) }</div>
-					<div><strong>{ __( 'Standard:', 'mediashield' ) }</strong> { __( 'Basic + watermark + session tracking', 'mediashield' ) }</div>
-					<div><strong>{ __( 'Strict:', 'mediashield' ) }</strong> { __( 'Standard + devtools detection + source hiding', 'mediashield' ) }</div>
-				</div>
 				<ToggleControl
-					label={ __( 'Require Login', 'mediashield' ) }
-					help={ __( 'Only logged-in users can view protected videos.', 'mediashield' ) }
-					checked={ !! settings?.ms_require_login }
-					onChange={ ( val ) => updateSetting( 'ms_require_login', val ) }
-					__nextHasNoMarginBottom
-				/>
-			</SectionCard>
-
-			<SectionCard
-				icon="shield"
-				group="protection"
-				title={ __( 'Protection', 'mediashield' ) }
-				description={ __( 'Anti-download behavior applied to the player.', 'mediashield' ) }
-			>
-				<ToggleControl
-					label={ __( 'Block Right-Click', 'mediashield' ) }
-					help={ __( 'Prevent the browser context menu inside the player.', 'mediashield' ) }
+					label={ __( 'Block right-click on every video', 'mediashield' ) }
+					help={ __( 'Basic, Standard and Strict always block it. On: videos set to None block it too.', 'mediashield' ) }
 					checked={ settings?.ms_block_right_click !== false }
 					onChange={ ( val ) => updateSetting( 'ms_block_right_click', val ) }
 					__nextHasNoMarginBottom
 				/>
 				<ToggleControl
-					label={ __( 'Block Save Shortcut (Ctrl+S / Cmd+S)', 'mediashield' ) }
-					help={ __( 'Intercept Ctrl+S / Cmd+S while the player has focus. Only the save shortcut: View Source (Ctrl+U), developer tools (F12) and other shortcuts are not blocked.', 'mediashield' ) }
-					checked={ settings?.ms_block_keyboard !== false }
+					label={ __( 'Block the save shortcut (Ctrl+S / Cmd+S)', 'mediashield' ) }
+					help={ __( 'While the player has focus. Only the save shortcut: View Source and developer tools shortcuts are not blocked.', 'mediashield' ) }
+					checked={ !! settings?.ms_block_keyboard }
 					onChange={ ( val ) => updateSetting( 'ms_block_keyboard', val ) }
 					__nextHasNoMarginBottom
 				/>
+			</SectionCard>
+
+			<SectionCard
+				icon="admin-users"
+				group="access"
+				title={ groupLabel( 'access' ) }
+				description={ __( 'Who may play protected videos, wherever they are shown.', 'mediashield' ) }
+			>
 				<ToggleControl
-					label={ __( 'Hide Video Source URL', 'mediashield' ) }
-					help={ __(
-						'Self-hosted videos only: play them through a permission-checked URL so the real file path never appears in the page. Does not apply to YouTube, Vimeo, Wistia or Bunny embeds - those players are iframes whose address necessarily contains the provider’s video ID.',
-						'mediashield'
-					) }
-					checked={ settings?.ms_hide_source !== false }
-					onChange={ ( val ) => updateSetting( 'ms_hide_source', val ) }
+					label={ __( 'Require login', 'mediashield' ) }
+					help={ __( 'Only logged-in members can watch. Applies at every protection level. A video can also allow only one role.', 'mediashield' ) }
+					checked={ !! settings?.ms_require_login }
+					onChange={ ( val ) => updateSetting( 'ms_require_login', val ) }
 					__nextHasNoMarginBottom
 				/>
-				<ToggleControl
-					label={ __( 'Detect Developer Tools', 'mediashield' ) }
-					help={ __( 'Detect when the viewer opens browser DevTools and log a warning. Skipped on mobile and touch devices.', 'mediashield' ) }
-					checked={ settings?.ms_detect_devtools !== false }
-					onChange={ ( val ) => updateSetting( 'ms_detect_devtools', val ) }
+				<RangeControl
+					label={ __( 'Streams at once per member', 'mediashield' ) }
+					help={ __( 'How many videos one member can play at the same time, on any devices.', 'mediashield' ) }
+					value={ settings?.ms_max_concurrent_streams ?? 1 }
+					onChange={ ( val ) => updateSetting( 'ms_max_concurrent_streams', val ) }
+					min={ 1 }
+					max={ 5 }
+					step={ 1 }
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+				/>
+				<TextareaControl
+					label={ __( 'Allowed domains', 'mediashield' ) }
+					help={ __( 'Sites allowed to show your videos. One domain per line, or separated by commas. A full URL is fine too; only the domain is used. Leave empty to allow all.', 'mediashield' ) }
+					value={ settings?.ms_allowed_domains || '' }
+					onChange={ ( val ) => updateSetting( 'ms_allowed_domains', val ) }
+					rows={ 3 }
 					__nextHasNoMarginBottom
 				/>
-				{ settings?.ms_detect_devtools !== false && (
-					<>
-						<ToggleControl
-							label={ __( 'Pause Video When Detected', 'mediashield' ) }
-							help={ __( 'Pause playback and show an overlay when DevTools is detected. Off by default — detection is logged either way.', 'mediashield' ) }
-							checked={ !! settings?.ms_pause_on_devtools }
-							onChange={ ( val ) => updateSetting( 'ms_pause_on_devtools', val ) }
-							__nextHasNoMarginBottom
-						/>
-						{ settings?.ms_pause_on_devtools && (
-							<>
-								<TextControl
-									label={ __( 'Overlay Title', 'mediashield' ) }
-									value={ settings?.ms_devtools_title || '' }
-									placeholder={ __( 'Developer Tools Detected', 'mediashield' ) }
-									onChange={ ( val ) => updateSetting( 'ms_devtools_title', val ) }
-									__nextHasNoMarginBottom
-								/>
-								<TextControl
-									label={ __( 'Overlay Message', 'mediashield' ) }
-									value={ settings?.ms_devtools_message || '' }
-									placeholder={ __( 'Please close developer tools to continue watching this video.', 'mediashield' ) }
-									onChange={ ( val ) => updateSetting( 'ms_devtools_message', val ) }
-									__nextHasNoMarginBottom
-								/>
-							</>
-						) }
-					</>
-				) }
 			</SectionCard>
 
 			<SectionCard
 				icon="art"
 				group="watermark"
-				title={ __( 'Watermark', 'mediashield' ) }
-				description={ __( 'Dynamic overlay that identifies the viewer.', 'mediashield' ) }
+				title={ groupLabel( 'watermark' ) }
+				description={ __( 'Text over the video that names the viewer, so a recording points to the account it came from.', 'mediashield' ) }
 			>
 				{ /* What a viewer sees, from the values on this screen. A sketch of
 				     the player, not the player: it needs no video and no session. */ }
@@ -677,18 +765,33 @@ const Settings = () => {
 							opacity: settings?.ms_watermark_opacity ?? 0.5,
 						} }
 					>
-						{ previewWords?.text || [ __( 'Viewer Name', 'mediashield' ), 'viewer@example.com', settings?.ms_watermark_show_ip ? '203.0.113.7' : '' ].filter( Boolean ).join( ' · ' ) }
-					</span>
-					<span
-						className="mediashield-settings__preview-button"
-						style={ settings?.ms_player_accent_color ? { background: settings.ms_player_accent_color } : undefined }
-					>
-						{ settings?.ms_login_button_text || __( 'Log In', 'mediashield' ) }
+						{ previewWords?.text || [ __( 'Viewer Name', 'mediashield' ), settings?.ms_watermark_show_email ? 'viewer@example.com' : '', settings?.ms_watermark_show_ip ? '203.0.113.7' : '' ].filter( Boolean ).join( ' · ' ) }
 					</span>
 				</div>
 				<p className="mediashield-settings__preview-caption">
-					{ previewWords?.caption || __( 'Preview. The watermark shows each viewer\'s own name and email and moves around the video.', 'mediashield' ) }
+					{ previewWords?.caption || __( 'Preview. Each viewer sees their own name, and moves around the video.', 'mediashield' ) }
 				</p>
+				{ ! config.isProActive && (
+					<fieldset className="mediashield-settings__fieldset">
+						<legend>{ __( 'Show on the video', 'mediashield' ) }</legend>
+						<p className="mediashield-settings__fieldset-note">{ __( 'The member\'s name is always shown.', 'mediashield' ) }</p>
+						<ToggleControl
+							label={ __( 'Email address', 'mediashield' ) }
+							checked={ !! settings?.ms_watermark_show_email }
+							onChange={ ( val ) => updateSetting( 'ms_watermark_show_email', val ) }
+							__nextHasNoMarginBottom
+						/>
+						<ToggleControl
+							label={ __( 'IP address', 'mediashield' ) }
+							checked={ !! settings?.ms_watermark_show_ip }
+							onChange={ ( val ) => updateSetting( 'ms_watermark_show_ip', val ) }
+							__nextHasNoMarginBottom
+						/>
+						<p className="mediashield-settings__fieldset-note">
+							{ __( 'Email and IP address are personal data, so both start off. Turn one on only if your privacy policy says you show it. A site that set them keeps its choice.', 'mediashield' ) }
+						</p>
+					</fieldset>
+				) }
 				<RangeControl
 					label={ __( 'Opacity', 'mediashield' ) }
 					value={ settings?.ms_watermark_opacity ?? 0.5 }
@@ -699,14 +802,12 @@ const Settings = () => {
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
-				<div className="mediashield-settings__color-field">
-					<label>{ __( 'Watermark Color', 'mediashield' ) }</label>
-					<ColorPicker
-						color={ settings?.ms_watermark_color || '#ffffff' }
-						onChange={ ( val ) => updateSetting( 'ms_watermark_color', val ) }
-						enableAlpha={ false }
-					/>
-				</div>
+				<ColorField
+					label={ __( 'Watermark color', 'mediashield' ) }
+					value={ settings?.ms_watermark_color || '#ffffff' }
+					fallback="#ffffff"
+					onChange={ ( val ) => updateSetting( 'ms_watermark_color', val ) }
+				/>
 				<NumberField
 					label={ __( 'Position Swap Interval', 'mediashield' ) }
 					help={ __( 'Seconds between watermark position changes. Moving the watermark stops a viewer cropping it out, so lower is safer and higher is less distracting.', 'mediashield' ) }
@@ -714,15 +815,6 @@ const Settings = () => {
 					onCommit={ ( val ) => updateSetting( 'ms_watermark_swap_interval', val ) }
 					min={ 1 }
 				/>
-				{ ! config.isProActive && (
-					<ToggleControl
-						label={ __( 'Show the viewer\'s IP address', 'mediashield' ) }
-						help={ __( 'Off by default. An IP address is personal data under privacy laws such as the GDPR, and each viewer sees their own on screen. Turn this on only if your privacy policy says you show it.', 'mediashield' ) }
-						checked={ !! settings?.ms_watermark_show_ip }
-						onChange={ ( val ) => updateSetting( 'ms_watermark_show_ip', val ) }
-						__nextHasNoMarginBottom
-					/>
-				) }
 				<ToggleControl
 					label={ __( 'Keep the watermark at the edges', 'mediashield' ) }
 					help={ __( 'Keeps the watermark in the corners, off the centre of the video.', 'mediashield' ) }
@@ -742,129 +834,10 @@ const Settings = () => {
 			{ renderExtras( 'watermark' ) }
 
 			<SectionCard
-				icon="admin-site-alt3"
-				group="access"
-				title={ __( 'Allowed Domains', 'mediashield' ) }
-				description={ __( 'Restrict video playback to specific domains.', 'mediashield' ) }
-			>
-				<TextareaControl
-					label={ __( 'Allowed Domains', 'mediashield' ) }
-					help={ __( 'One domain per line, or separated by commas - both work. A full URL is fine too; only the domain is used. Leave empty to allow all domains.', 'mediashield' ) }
-					value={ settings?.ms_allowed_domains || '' }
-					onChange={ ( val ) => updateSetting( 'ms_allowed_domains', val ) }
-					rows={ 4 }
-					__nextHasNoMarginBottom
-				/>
-			</SectionCard>
-
-			<SectionCard
-				icon="admin-users"
-				group="access"
-				title={ __( 'Concurrent Streams', 'mediashield' ) }
-				description={ __( 'Limit how many videos a user can watch simultaneously.', 'mediashield' ) }
-			>
-				<RangeControl
-					label={ __( 'Max Concurrent Streams', 'mediashield' ) }
-					help={ __( 'Number of simultaneous video sessions per user.', 'mediashield' ) }
-					value={ settings?.ms_max_concurrent_streams ?? 1 }
-					onChange={ ( val ) => updateSetting( 'ms_max_concurrent_streams', val ) }
-					min={ 1 }
-					max={ 5 }
-					step={ 1 }
-					__nextHasNoMarginBottom
-					__next40pxDefaultSize
-				/>
-			</SectionCard>
-
-			<SectionCard
-				icon="backup"
-				group="storage"
-				title={ __( 'Analytics Retention', 'mediashield' ) }
-				description={ __(
-					'How long to keep watch history in your reports.',
-					'mediashield'
-				) }
-			>
-				<NumberField
-					label={ __( 'Keep watch history for (months)', 'mediashield' ) }
-					help={
-						Number( settings?.ms_session_retention_months ?? 0 ) > 0
-							? __(
-									'Warning: sessions older than this are moved out of your reports every month. Views, completion rates and top-video figures will stop including anything older, and this cannot be undone from here. Set 0 to keep everything.',
-									'mediashield'
-							  )
-							: __(
-									'0 keeps every watch session forever, which is the recommended setting. Set a number of months only if you have a data-retention policy that requires older sessions to be moved out of reporting.',
-									'mediashield'
-							  )
-					}
-					min={ 0 }
-					max={ 120 }
-					value={ settings?.ms_session_retention_months ?? 0 }
-					onCommit={ ( val ) => updateSetting( 'ms_session_retention_months', val ) }
-				/>
-			</SectionCard>
-
-			<SectionCard
-				icon="lock"
-				group="access"
-				title={ __( 'Login & Access Messages', 'mediashield' ) }
-				description={ __( 'Customize the messages shown when users need to log in or lack access.', 'mediashield' ) }
-			>
-				<TextControl
-					label={ __( 'Login Overlay Text', 'mediashield' ) }
-					help={ __( 'Message shown on the video overlay when login is required.', 'mediashield' ) }
-					value={ settings?.ms_login_overlay_text || '' }
-					onChange={ ( val ) => updateSetting( 'ms_login_overlay_text', val ) }
-					placeholder={ __( 'Please log in to watch this video', 'mediashield' ) }
-					__nextHasNoMarginBottom
-				/>
-				<TextControl
-					label={ __( 'Login Button Text', 'mediashield' ) }
-					help={ __( 'Label for the login button on the video overlay.', 'mediashield' ) }
-					value={ settings?.ms_login_button_text || '' }
-					onChange={ ( val ) => updateSetting( 'ms_login_button_text', val ) }
-					placeholder={ __( 'Log In', 'mediashield' ) }
-					__nextHasNoMarginBottom
-				/>
-				<TextControl
-					label={ __( 'Access Denied Text', 'mediashield' ) }
-					help={ __( 'Message shown when a logged-in user does not have permission to view a video.', 'mediashield' ) }
-					value={ settings?.ms_access_denied_text || '' }
-					onChange={ ( val ) => updateSetting( 'ms_access_denied_text', val ) }
-					placeholder={ __( 'You do not have access to this video', 'mediashield' ) }
-					__nextHasNoMarginBottom
-				/>
-				<TextControl
-					label={ __( 'Course Access Text', 'mediashield' ) }
-					help={ /* translators: %s is typed as written; the site replaces it with the course name. */ __( 'Shown to a member who is not enrolled in the course a video belongs to, above a button to the course. %s is replaced by the course name.', 'mediashield' ) }
-					value={ settings?.ms_course_denied_text || '' }
-					onChange={ ( val ) => updateSetting( 'ms_course_denied_text', val ) }
-					placeholder={ __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) }
-					__nextHasNoMarginBottom
-				/>
-				<TextControl
-					label={ __( 'Course Button Text', 'mediashield' ) }
-					value={ settings?.ms_view_course_text || '' }
-					onChange={ ( val ) => updateSetting( 'ms_view_course_text', val ) }
-					placeholder={ __( 'View course', 'mediashield' ) }
-					__nextHasNoMarginBottom
-				/>
-				<TextControl
-					label={ __( 'Unavailable Video Text', 'mediashield' ) }
-					help={ __( 'Shown when the video host says the video was removed or made private.', 'mediashield' ) }
-					value={ settings?.ms_unavailable_text || '' }
-					onChange={ ( val ) => updateSetting( 'ms_unavailable_text', val ) }
-					placeholder={ __( 'This video is unavailable.', 'mediashield' ) }
-					__nextHasNoMarginBottom
-				/>
-			</SectionCard>
-
-			<SectionCard
 				icon="controls-play"
 				group="player"
-				title={ __( 'Player Controls', 'mediashield' ) }
-				description={ __( 'Customize the video player behavior and features.', 'mediashield' ) }
+				title={ groupLabel( 'player' ) }
+				description={ __( 'How the player behaves for every video.', 'mediashield' ) }
 			>
 				<ToggleControl
 					label={ __( 'Speed Control', 'mediashield' ) }
@@ -929,34 +902,125 @@ const Settings = () => {
 						/>
 					</>
 				) }
-				<div className="mediashield-settings__color-field">
-					<label>{ __( 'Brand Color', 'mediashield' ) }</label>
-					<p className="mediashield-settings__color-help">
-						{ settings?.ms_player_accent_color
-							? __( 'Used for the player\'s buttons, focus outlines and the current playlist item.', 'mediashield' )
-							: __( 'Following your theme\'s primary color. Pick a color to use your own for the player\'s buttons, focus outlines and the current playlist item.', 'mediashield' ) }
-					</p>
-					<ColorPicker
-						color={ settings?.ms_player_accent_color || '#2271b1' }
-						onChange={ ( val ) => updateSetting( 'ms_player_accent_color', val ) }
-						enableAlpha={ false }
-					/>
+				{ /* Unset follows the theme's colour, which this screen cannot read,
+				     so it says so instead of showing a colour as if chosen (MSUX-30). */ }
+				<ColorField
+					label={ __( 'Brand color', 'mediashield' ) }
+					value={ settings?.ms_player_accent_color || '' }
+					fallback="#2271b1"
+					emptyLabel={ __( 'Your theme\'s color', 'mediashield' ) }
+					onChange={ ( val ) => updateSetting( 'ms_player_accent_color', val ) }
+				>
 					{ !! settings?.ms_player_accent_color && (
-						<Button
-							variant="secondary"
-							onClick={ () => updateSetting( 'ms_player_accent_color', '' ) }
-							__next40pxDefaultSize
-						>
+						<Button variant="tertiary" onClick={ () => updateSetting( 'ms_player_accent_color', '' ) } __next40pxDefaultSize>
 							{ __( 'Use the theme color', 'mediashield' ) }
 						</Button>
 					) }
-				</div>
+				</ColorField>
+				<p className="mediashield-settings__color-help">
+					{ __( 'Used for the player\'s buttons, focus outlines and the current playlist item. Pick a color to use your own instead of your theme\'s.', 'mediashield' ) }
+				</p>
 			</SectionCard>
 
 			<SectionCard
+				icon="lock"
+				group="messages"
+				title={ groupLabel( 'messages' ) }
+				description={ __( 'What viewers read on the player when they cannot watch yet.', 'mediashield' ) }
+			>
+				<TextControl
+					label={ __( 'Login Overlay Text', 'mediashield' ) }
+					help={ __( 'Message shown on the video overlay when login is required.', 'mediashield' ) }
+					value={ settings?.ms_login_overlay_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_login_overlay_text', val ) }
+					placeholder={ __( 'Please log in to watch this video', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Login Button Text', 'mediashield' ) }
+					help={ __( 'Label for the login button on the video overlay.', 'mediashield' ) }
+					value={ settings?.ms_login_button_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_login_button_text', val ) }
+					placeholder={ __( 'Log in', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Access Denied Text', 'mediashield' ) }
+					help={ __( 'Message shown when a logged-in user does not have permission to view a video.', 'mediashield' ) }
+					value={ settings?.ms_access_denied_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_access_denied_text', val ) }
+					placeholder={ __( 'You do not have access to this video', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Membership Page', 'mediashield' ) }
+					help={ __( 'Where a logged-in member who may not watch a video can get access, such as your membership or pricing page. Leave empty to show no button. A course link from your LMS is used instead when there is one.', 'mediashield' ) }
+					type="url"
+					value={ settings?.ms_access_denied_url || '' }
+					onChange={ ( val ) => updateSetting( 'ms_access_denied_url', val ) }
+					placeholder="https://..."
+					__nextHasNoMarginBottom
+				/>
+				{ !! settings?.ms_access_denied_url && (
+					<TextControl
+						label={ __( 'Membership Button Text', 'mediashield' ) }
+						value={ settings?.ms_access_denied_button_text || '' }
+						onChange={ ( val ) => updateSetting( 'ms_access_denied_button_text', val ) }
+						placeholder={ __( 'See membership options', 'mediashield' ) }
+						__nextHasNoMarginBottom
+					/>
+				) }
+				{ /* Course words only where a course plugin can link a video to a course (Basecamp 10536749905). */ }
+				{ ( config.isLearnomyActive || lmsConfig.isLMSActive ) && (
+				<>
+				<TextControl
+					label={ __( 'Course Access Text', 'mediashield' ) }
+					help={ /* translators: %s is typed as written; the site replaces it with the course name. */ __( 'Shown to a member who is not enrolled in the course a video belongs to, above a button to the course. %s is replaced by the course name.', 'mediashield' ) }
+					value={ settings?.ms_course_denied_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_course_denied_text', val ) }
+					placeholder={ __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Course Button Text', 'mediashield' ) }
+					value={ settings?.ms_view_course_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_view_course_text', val ) }
+					placeholder={ __( 'View course', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				</>
+				) }
+				<TextControl
+					label={ __( 'Unavailable Video Text', 'mediashield' ) }
+					help={ __( 'Shown when the video host says the video was removed or made private.', 'mediashield' ) }
+					value={ settings?.ms_unavailable_text || '' }
+					onChange={ ( val ) => updateSetting( 'ms_unavailable_text', val ) }
+					placeholder={ __( 'This video is unavailable.', 'mediashield' ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Developer Tools Title (Strict)', 'mediashield' ) }
+					help={ __( 'Shown on a Strict video that pauses because developer tools are open.', 'mediashield' ) }
+					value={ settings?.ms_devtools_title || '' }
+					placeholder={ __( 'Developer Tools Detected', 'mediashield' ) }
+					onChange={ ( val ) => updateSetting( 'ms_devtools_title', val ) }
+					__nextHasNoMarginBottom
+				/>
+				<TextControl
+					label={ __( 'Developer Tools Message (Strict)', 'mediashield' ) }
+					value={ settings?.ms_devtools_message || '' }
+					placeholder={ __( 'Please close developer tools to continue watching this video.', 'mediashield' ) }
+					onChange={ ( val ) => updateSetting( 'ms_devtools_message', val ) }
+					__nextHasNoMarginBottom
+				/>
+			</SectionCard>
+
+			{ /* Only with WB Ad Manager's video ads installed: it is where the ads come from. */ }
+			{ shows.ads && (
+			<SectionCard
 				icon="megaphone"
 				group="ads"
-				title={ __( 'Video Ads', 'mediashield' ) }
+				title={ groupLabel( 'ads' ) }
 				description={ __( 'Site-wide placement for in-video ad breaks sourced from WB Ad Manager. Individual videos can override this under the video’s "Video Ads" box.', 'mediashield' ) }
 			>
 				<ToggleControl
@@ -1019,13 +1083,14 @@ const Settings = () => {
 					</>
 				) }
 			</SectionCard>
+			) }
 
-			{ settings?.ms_connected_platforms && settings.ms_connected_platforms.length > 0 && (
+			{ shows.uploads && (
 				<SectionCard
 					icon="upload"
-					group="storage"
-				title={ __( 'Upload & Storage', 'mediashield' ) }
-					description={ __( 'Choose where new videos are stored.', 'mediashield' ) }
+					group="uploads"
+					title={ groupLabel( 'uploads' ) }
+					description={ __( 'Where a file uploaded on Add video goes.', 'mediashield' ) }
 				>
 					<SelectControl
 						label={ __( 'Default Upload Target', 'mediashield' ) }
@@ -1033,7 +1098,7 @@ const Settings = () => {
 						value={ settings?.ms_default_upload_target ?? 'auto' }
 						options={ [
 							{ label: __( 'Auto (use connected platform)', 'mediashield' ), value: 'auto' },
-							{ label: __( 'Self-hosted (local server)', 'mediashield' ), value: 'self' },
+							{ label: __( 'This site (uploaded file)', 'mediashield' ), value: 'self' },
 							...( settings.ms_connected_platforms || [] ).map( ( p ) => ( {
 								label: ( p.platform.charAt( 0 ).toUpperCase() + p.platform.slice( 1 ) ),
 								value: p.platform,
@@ -1046,84 +1111,117 @@ const Settings = () => {
 				</SectionCard>
 			) }
 
-			{ ( config.isLearnomyActive || lmsConfig.isLMSActive ) && (
+			<SectionCard
+				icon="backup"
+				group="history"
+				title={ groupLabel( 'history' ) }
+				description={ __( 'How long viewings stay in your reports.', 'mediashield' ) }
+			>
+				{ /* 0 months means forever: a choice, not a number to know (MSUX-28). */ }
+				<ToggleControl
+					label={ __( 'Keep every viewing forever', 'mediashield' ) }
+					help={ __( 'Recommended. Turn off only if a data-retention policy requires older viewings to leave your reports.', 'mediashield' ) }
+					checked={ Number( settings?.ms_session_retention_months ?? 0 ) === 0 }
+					onChange={ ( forever ) => updateSetting( 'ms_session_retention_months', forever ? 0 : 12 ) }
+					__nextHasNoMarginBottom
+				/>
+				{ Number( settings?.ms_session_retention_months ?? 0 ) > 0 && (
+					<NumberField
+						label={ __( 'Keep viewings for (months)', 'mediashield' ) }
+						help={ __( 'Viewings older than this are moved out of your reports every month. Views, completion rates and top videos stop counting them, and this cannot be undone from here.', 'mediashield' ) }
+						min={ 1 }
+						max={ 120 }
+						value={ settings?.ms_session_retention_months }
+						onCommit={ ( val ) => updateSetting( 'ms_session_retention_months', val ) }
+					/>
+				) }
+			</SectionCard>
+
+			{ /* One card for lesson completion (Basecamp 10545260590): Learnomy sets it on
+			     each lesson; LearnDash has the one % here; Tutor LMS and LifterLMS
+			     complete on a milestone. */ }
+			{ shows.integrations && (
 				<SectionCard
 					icon="welcome-learn-more"
 					group="integrations"
-				title={ __( 'Lesson Completion', 'mediashield' ) }
-					description={ __( 'Make students watch a lesson\'s protected video before they can complete the lesson.', 'mediashield' ) }
+					title={ groupLabel( 'integrations' ) }
+					description={ __( 'When a lesson that plays a protected video counts as complete.', 'mediashield' ) }
 				>
+					{ learnomyOwnsWatchRule && (
+						<>
+							<p className="mediashield-settings__rule-note">
+								{ __( 'Learnomy: set this on each lesson (Completion: Auto: video watched).', 'mediashield' ) }
+							</p>
+							<NumberField
+								label={ __( 'Default for new protected video lessons (%)', 'mediashield' ) }
+								help={ __( 'The share a new Learnomy lesson that plays a protected video starts with. It changes only lessons created from now on; each existing lesson keeps its own % in Learnomy. 0: MediaShield sets no starting %, and Learnomy uses its own.', 'mediashield' ) }
+								value={ settings?.ms_learnomy_new_lesson_pct ?? 80 }
+								onCommit={ ( val ) => updateSetting( 'ms_learnomy_new_lesson_pct', val ) }
+								min={ 0 }
+								max={ 100 }
+							/>
+						</>
+					) }
+					{ ( ( config.isLearnomyActive && ! learnomyOwnsWatchRule ) || lmsConfig.enforcesWatchRule ) && (
 					<NumberField
-						label={ __( 'Require this % of the video watched before Complete', 'mediashield' ) }
-						help={ __( '0 turns this off. With 80, the lesson\'s Complete button stays disabled with "Watch 80% to complete" until the student has watched 80% of the lesson video (time spent watching; skipping ahead does not count, and a part watched twice counts once), and a completion sent any other way is refused. Works with Learnomy lessons that play a protected video and, with Pro, LearnDash lessons linked to a video. Site administrators are not held back.', 'mediashield' ) }
+						label={ lmsConfig.enforcesWatchRule
+							? __( 'LearnDash lessons: require this % of the video watched', 'mediashield' )
+							: __( 'Require this % of the video watched before Complete', 'mediashield' ) }
+						help={ lmsConfig.enforcesWatchRule
+							? __( '0 turns this off. With 80, the Mark Complete button of a LearnDash lesson linked to a video stays disabled until the member has watched 80% of it, and the lesson completes by itself at that point when Auto-complete is on. Time spent watching counts; skipping ahead does not, and a part watched twice counts once. Site administrators are not held back.', 'mediashield' )
+							: __( '0 turns this off. With 80, the lesson\'s Complete button stays disabled with "Watch 80% to complete" until the member has watched 80% of the lesson video (time spent watching; skipping ahead does not count, and a part watched twice counts once). Site administrators are not held back.', 'mediashield' ) }
 						value={ settings?.ms_lms_require_watch_pct ?? 0 }
 						onCommit={ ( val ) => updateSetting( 'ms_lms_require_watch_pct', val ) }
 						min={ 0 }
 						max={ 100 }
 					/>
+					) }
+					{ lmsConfig.isLMSActive && settings?.ms_lms_auto_complete !== undefined && (
+						<>
+							<ToggleControl
+								label={ __( 'Auto-complete lessons', 'mediashield' ) }
+								help={ lmsConfig.lmsLabel
+									? sprintf( /* translators: %s: LMS name, e.g. Tutor LMS. */ __( 'Mark the linked %s lesson complete when the member reaches the % below.', 'mediashield' ), lmsConfig.lmsLabel )
+									: __( 'Mark the linked lesson complete when the member reaches the % below.', 'mediashield' ) }
+								checked={ !! settings?.ms_lms_auto_complete }
+								onChange={ ( val ) => updateSetting( 'ms_lms_auto_complete', val ) }
+								__nextHasNoMarginBottom
+							/>
+							<ToggleControl
+								label={ __( 'Require enrollment', 'mediashield' ) }
+								help={ __( 'On: a video linked to a lesson plays only for members enrolled in its course, where the video\'s own box asks for it. Off: enrollment is never checked.', 'mediashield' ) }
+								checked={ !! settings?.ms_lms_enrollment_check }
+								onChange={ ( val ) => updateSetting( 'ms_lms_enrollment_check', val ) }
+								__nextHasNoMarginBottom
+							/>
+							{ /* LearnDash completes at its required % while that is above 0; at 0
+							     the stored % below decides, so it is shown, never a hidden rule. */ }
+							{ ( 'learndash' !== lmsName || 0 === Number( settings?.ms_lms_require_watch_pct ?? 0 ) ) && (
+								<SelectControl
+									label={ 'learndash' === lmsName
+										? __( 'LearnDash lessons complete at (while the required % above is 0)', 'mediashield' )
+										: __( 'Complete lessons at', 'mediashield' ) }
+									help={ 'learndash' === lmsName
+										? __( 'Set a required % above and the lesson completes there instead; this choice then no longer applies and is hidden.', 'mediashield' )
+										: __( 'The share of the video watched that completes the lesson. A video can set its own.', 'mediashield' ) }
+									value={ settings?.ms_lms_complete_pct ?? 100 }
+									options={ LMS_PCT_OPTIONS }
+									onChange={ ( val ) => updateSetting( 'ms_lms_complete_pct', parseInt( val, 10 ) ) }
+									__nextHasNoMarginBottom
+									__next40pxDefaultSize
+								/>
+							) }
+						</>
+					) }
 				</SectionCard>
 			) }
 
-			{ lmsConfig.isLMSActive && settings?.ms_lms_auto_complete !== undefined && (
-				<SectionCard
-					icon="welcome-learn-more"
-					group="integrations"
-				title={ __( 'LMS Integration', 'mediashield' ) }
-					description={ lmsConfig.lmsLabel
-						? __( 'Settings for', 'mediashield' ) + ' ' + lmsConfig.lmsLabel + ' ' + __( 'integration.', 'mediashield' )
-						: __( 'Automatically complete lessons when students finish watching videos.', 'mediashield' )
-					}
-				>
-					<ToggleControl
-						label={ __( 'Auto-complete lessons', 'mediashield' ) }
-						help={ __( 'Mark the associated LMS lesson as complete when a student finishes the video.', 'mediashield' ) }
-						checked={ !! settings?.ms_lms_auto_complete }
-						onChange={ ( val ) => updateSetting( 'ms_lms_auto_complete', val ) }
-						__nextHasNoMarginBottom
-					/>
-					<ToggleControl
-						label={ __( 'Require enrollment', 'mediashield' ) }
-						help={ __( 'Master switch for enrollment checks. When on, each video\'s own "Require enrollment" setting decides. Turn off to disable enrollment checks everywhere.', 'mediashield' ) }
-						checked={ !! settings?.ms_lms_enrollment_check }
-						onChange={ ( val ) => updateSetting( 'ms_lms_enrollment_check', val ) }
-						__nextHasNoMarginBottom
-					/>
-					<SelectControl
-						label={ __( 'Global completion %', 'mediashield' ) }
-						help={ __( 'Minimum video watch percentage required to trigger lesson completion.', 'mediashield' ) }
-						value={ settings?.ms_lms_complete_pct ?? 100 }
-						options={ LMS_PCT_OPTIONS }
-						onChange={ ( val ) => updateSetting( 'ms_lms_complete_pct', parseInt( val, 10 ) ) }
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-					/>
-				</SectionCard>
-			) }
-
+			{ /* One line, not a sales box (Basecamp 10545260681). */ }
 			{ ! config.isProActive && (
-				<div className="ms-upsell-section">
-					<div className="ms-upsell-section__header">
-						<Icon name="lock" />
-						<div>
-							<strong>{ __( 'Pro Features', 'mediashield' ) }</strong>
-							<span>{ __( 'Available with MediaShield Pro', 'mediashield' ) }</span>
-						</div>
-					</div>
-					<div className="ms-upsell-section__features">
-						<div className="ms-upsell-feature">
-							<strong>{ __( 'Advanced Watermark', 'mediashield' ) }</strong> — { __( '7 configurable fields (username, email, IP, user ID, timestamp, site name, custom text)', 'mediashield' ) }
-						</div>
-						<div className="ms-upsell-feature">
-							<strong>{ __( 'LMS Integration', 'mediashield' ) }</strong> — { __( 'Auto-complete LearnDash, Tutor LMS, or LifterLMS lessons on video completion', 'mediashield' ) }
-						</div>
-						<div className="ms-upsell-feature">
-							<strong>{ __( 'Platform Browsers', 'mediashield' ) }</strong> — { __( 'Browse & bulk import videos from Bunny, YouTube, Vimeo, Wistia', 'mediashield' ) }
-						</div>
-					</div>
-					<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer" className="ms-upsell-section__btn">
-						{ __( 'Get MediaShield Pro', 'mediashield' ) } &rarr;
-					</a>
-				</div>
+				<p className="ms-upsell-line">
+					{ __( 'MediaShield Pro adds watermark fields, Bunny Stream, LMS lesson completion and viewing heatmaps.', 'mediashield' ) }{ ' ' }
+					<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer">{ __( 'See MediaShield Pro', 'mediashield' ) }</a>
+				</p>
 			) }
 				</div>
 			</div>

@@ -15,7 +15,8 @@ Registered with `register_post_meta()` and `show_in_rest`, so they round-trip th
 | `_ms_source_url` | string | empty | Source or file URL, `esc_url_raw`. |
 | `_ms_protection_level` | string | empty | `none`, `basic`, `standard`, `strict`, or a level an add-on registers. Empty follows `ms_default_protection`. |
 | `_ms_access_role` | string | empty | A role slug. Empty or `any` means any logged-in user. |
-| `_ms_duration` | integer | 0 | Length in seconds. 0 means unknown, and the player then reports it. |
+| `_ms_duration` | integer | 0 | Length in seconds. 0 means unknown, and the player then reports it. Since 1.4.4 a Vimeo or Wistia video saved with 0 takes the platform's oEmbed `duration` (Pro: a Bunny video takes Bunny's length); a typed value is never replaced. |
+| `_ms_measured_duration` | array | none | Since 1.4.4. The lengths viewers' players reported, `[ user_id => seconds ]`, from at most 5 members (a member's own length only rises). Their median is the length for the watched share while `_ms_duration` is 0. A length over 24 hours, or more than twice the median once 3 are kept, is ignored. Changing the video's link or file deletes it. |
 | `_ms_stream_url` | string | empty | Direct stream URL (for example a Bunny HLS playlist). |
 | `_ms_milestone_tags` | object | empty | `{ "<pct>": { "enabled": bool, "tag": string } }`. Percentages 1-100 become extra milestone thresholds. |
 
@@ -30,6 +31,8 @@ Saved from the video edit screen. Not registered for REST.
 | `_ms_player_endscreen_text`, `_ms_player_endscreen_url` | string | Per-video end screen message and link. |
 | `_ms_library_id` | string | Bunny library ID, read from the pasted URL. |
 | `_ms_owned_file` | string | File name this video owns in `uploads/mediashield/`. An empty string means "claimed, no file". The stream endpoint serves only the owner's file. |
+| `_ms_used_in` | post ID, one row each | Since 1.4.4. On a video or playlist: each published, scheduled, draft or private post that shows it by shortcode or block. Written when that post is saved, trashed or deleted. |
+| `_ms_embeds` | array `{ v: int[], p: int[] }` | Since 1.4.4. On a post that shows MediaShield: the video and playlist IDs it showed when last saved, so the next save moves only the difference onto `_ms_used_in`. |
 | `_ms_library_file` | `moved`, `in_use`, `not_in_library`, `none`, `restored` | Since 1.4.2. Whether this video's Media Library file was moved into `uploads/mediashield/`, left because the file is used elsewhere, left because it has no Media Library item (1.4.3), needed nothing, or was moved back. Its presence marks the video as checked. |
 | `_ms_library_kept` | string | Since 1.4.2. The source URL the owner moved back with restore. While the video still plays it, saving does not move it again. |
 | `_ms_library_restore` | array | Since 1.4.2. On a video and on its Media Library item: the old path, source URL and status, so the move can be undone. |
@@ -52,7 +55,7 @@ Registered with `show_in_rest`; edited through `/wp/v2/mediashield-playlists/{id
 
 | Meta key | Purpose |
 |----------|---------|
-| `_ms_video_tags` | Map of `{video_id}_{pct}` to `{ video_id, pct, tag, tag_id, earned_at }`: the milestone tags a user has earned. Included in the GDPR export and removed by the eraser. |
+| `_ms_video_tags` | Map of `{video_id}_{pct}` to `{ video_id, pct, tag, earned_at }`: the milestone tags a user has earned (records from before 1.4.4 also carry `tag_id`). Not video tags. Included in the GDPR export and removed by the eraser. |
 
 ## Options in the settings schema
 
@@ -107,6 +110,9 @@ Options in the schema are deleted on uninstall automatically. Do not add your ow
 | `ms_activated_at` | Activator, admin notice | Activation time (Unix), used to delay the Pro notice by 7 days. |
 | `ms_pro_notice_dismissed` | `ms_dismiss_pro_notice` AJAX | Pro upsell notice dismissed. |
 | `ms_library_files_repair_pending` | Migrator, repair job | Since 1.4.3. Last video ID the one-off `ms_repair_library_files` job checked; deleted when the job finishes. |
+| `ms_usage_index_pending` | Migrator, `ms_index_usage` job | Since 1.4.4. Last post ID the usage index job read; deleted when it finishes. |
+| `ms_lengths_pending` | Migrator, `ms_backfill_lengths` job | Since 1.4.4. Last video ID the length backfill read; deleted when the job finishes. |
+| `ms_member_tags_pending` | Migrator, `ms_separate_member_tags` job | Since 1.4.4. Last usermeta ID the tag separation read; deleted when the job finishes. |
 | `ms_file_claims_pending` | Migrator, cleanup job | Highest video ID the 1.4.0 ownership backfill must still cover; deleted when the job finishes. |
 | `ms_default_upload_target` | Pro (settings filter) | `auto`, `self`, or a driver name. Free reads it in `UploadManager::resolve_default_driver()`; without Pro it is unset and behaves as `auto`. |
 

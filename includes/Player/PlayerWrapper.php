@@ -149,6 +149,11 @@ class PlayerWrapper {
 			'player.mediadelivery.net'   => 'bunny',
 			'wistia_async_'              => 'wistia',
 			'<video'                     => Platforms::SELF_HOSTED,
+			// Core's [video] shortcode stores no tag: its <video> is
+			// printed at render time, so without this a post holding
+			// only the shortcode was never buffered and a guest got the
+			// file's address and a download link.
+			'[video'                     => Platforms::SELF_HOSTED,
 		);
 
 		if ( (bool) apply_filters( 'mediashield_force_output_buffer', false ) ) {
@@ -353,6 +358,9 @@ class PlayerWrapper {
 					? ' data-access-type="' . esc_attr( $access_type ) . '"'
 					: '';
 				$access_type_attr .= Renderer::guest_allowed_attr( $video_post_id );
+				if ( '' !== \MediaShield\Access\AccessControl::context_string() ) {
+					$access_type_attr .= ' data-ms-context="' . esc_attr( \MediaShield\Access\AccessControl::context_string() ) . '"';
+				}
 				if ( Renderer::withhold_addresses( $video_post_id, $platform_video_id, $src_url, $stream_url, (string) $platform ) ) {
 					$access_type_attr .= ' data-access-denied="1"';
 				}
@@ -456,14 +464,28 @@ class PlayerWrapper {
 	 */
 	private static function extract_source_url( string $embed ): string {
 		if ( preg_match( '/<video[^>]*\ssrc=["\']([^"\']+)["\']/i', $embed, $m ) ) {
-			return $m[1];
+			return self::without_core_counter( $m[1] );
 		}
 
 		if ( preg_match( '/<source[^>]*\ssrc=["\']([^"\']+)["\']/i', $embed, $m ) ) {
-			return $m[1];
+			return self::without_core_counter( $m[1] );
 		}
 
 		return '';
+	}
+
+	/**
+	 * A source URL as the video's own address: without the `_` counter
+	 * core's [video] shortcode adds (`file.mp4?_=1`). With it the address
+	 * never matched the video's `_ms_source_url`, so a library file placed
+	 * with [video] played unprotected, its address and a download link in
+	 * the page for guests.
+	 *
+	 * @param string $url Source URL as found in the markup.
+	 * @return string
+	 */
+	private static function without_core_counter( string $url ): string {
+		return remove_query_arg( '_', html_entity_decode( $url, ENT_QUOTES ) );
 	}
 
 	/**

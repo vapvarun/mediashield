@@ -15,12 +15,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $current_user_id = get_current_user_id();
 
+/*
+ * The empty and logged-out states: an icon, one line, one next step
+ * (front-end walk F28). $ms_state_action is [ url, label ] or null.
+ */
+$ms_state = static function ( string $icon, string $title, string $line, ?array $action ): void {
+	?>
+	<div <?php echo get_block_wrapper_attributes( array( 'class' => 'ms-my-videos ms-my-videos--state' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core escapes the wrapper attributes. ?>>
+		<div class="ms-my-videos__state">
+			<?php
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Inline SVG from a vendored path map.
+			echo \MediaShield\Support\Icons::svg(
+				$icon,
+				array(
+					'size'  => 28,
+					'class' => 'ms-my-videos__state-icon',
+				)
+			);
+			?>
+			<p class="ms-my-videos__state-title"><?php echo esc_html( $title ); ?></p>
+			<p class="ms-my-videos__state-line"><?php echo esc_html( $line ); ?></p>
+			<?php if ( $action ) : ?>
+				<a class="ms-my-videos__state-action" href="<?php echo esc_url( $action[0] ); ?>"><?php echo esc_html( $action[1] ); ?></a>
+			<?php endif; ?>
+		</div>
+	</div>
+	<?php
+};
+
 if ( ! $current_user_id ) {
-	printf(
-		'<p class="ms-my-videos__login-required">%s <a href="%s">%s</a></p>',
-		esc_html__( 'Please log in to see your video history.', 'mediashield' ),
-		esc_url( wp_login_url( get_permalink() ?: home_url( '/' ) ) ),
-		esc_html__( 'Log in', 'mediashield' )
+	$ms_state(
+		'lock',
+		__( 'Please log in to see your video history.', 'mediashield' ),
+		__( 'Your videos and where you stopped are kept with your account.', 'mediashield' ),
+		array( wp_login_url( get_permalink() ?: home_url( '/' ) ), __( 'Log in', 'mediashield' ) )
 	);
 	return;
 }
@@ -53,12 +81,13 @@ if ( ! isset( $filters[ $filter ] ) ) {
 $per_page = min( 100, max( 1, (int) apply_filters( 'mediashield_my_videos_per_page', 12 ) ) );
 
 $sessions_table = "{$wpdb->prefix}ms_watch_sessions";
+$played_s       = \MediaShield\Access\SessionManager::played_sql( 's' ); // Only videos the member played: every page load opens a session.
 $grouped        = "SELECT s.video_id,
 		MAX( s.completion_pct ) AS completion_pct,
 		MAX( s.last_heartbeat ) AS last_watched
 	 FROM {$sessions_table} s
 	 INNER JOIN {$wpdb->posts} p ON s.video_id = p.ID AND p.post_type = 'mediashield_video' AND p.post_status = 'publish'
-	 WHERE s.user_id = %d
+	 WHERE s.user_id = %d AND {$played_s}
 	 GROUP BY s.video_id " . $filters[ $filter ][1];
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Custom table; the HAVING clause is a fixed string from $filters. Served by idx_user.
@@ -76,9 +105,15 @@ $videos = $total ? $wpdb->get_results(
 // phpcs:enable
 
 if ( ! $total && 'all' === $filter ) {
-	echo '<p class="ms-my-videos__empty">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
-	echo esc_html( $filters['all'][2] );
-	echo '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
+	// The owner's "Browse videos" link (block setting, or the shortcode's
+	// browse_url); no link, no button.
+	$ms_browse = isset( $attributes['browseUrl'] ) ? esc_url_raw( (string) $attributes['browseUrl'] ) : '';
+	$ms_state(
+		'video',
+		$filters['all'][2],
+		__( 'Videos you start appear here, with where you stopped.', 'mediashield' ),
+		'' !== $ms_browse ? array( $ms_browse, __( 'Browse videos', 'mediashield' ) ) : null
+	);
 	return;
 }
 
@@ -104,6 +139,36 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 		<p class="ms-my-videos__empty"><?php echo esc_html( $filters[ $filter ][2] ); ?></p>
 	<?php endif; ?>
 	<div class="ms-my-videos__grid">
+		<?php
+		// The page where the member watches each video. An integration (an
+		// LMS lesson) answers first; only the videos it leaves without a page
+		// are looked up in the content, in one batch (VideoUsage::prime()).
+		$watch_urls = array();
+		foreach ( $videos as $video ) {
+			$video_id = (int) $video->video_id;
+			/**
+			 * Filter the page where a member watches this video.
+			 *
+			 * The video post type is not public, so it has no page of its own:
+			 * its permalink lands on the home page. An integration that embeds
+			 * the video (an LMS lesson, a course page) returns that page's URL.
+			 * Left empty, MediaShield links the first published page or post
+			 * that shows the video and that this member may read (the Videos
+			 * list's "Used in"), so a site with no LMS still leads back to the
+			 * video. With none, the video's own signed player page (1.4.4;
+			 * before, no Resume link). The player there offers to resume by
+			 * itself.
+			 *
+			 * @since 1.4.1
+			 *
+			 * @param string $url      Watch page URL. Default ''.
+			 * @param int    $video_id Video CPT post ID.
+			 * @param int    $user_id  Member the list is for.
+			 */
+			$watch_urls[ $video_id ] = (string) apply_filters( 'mediashield_video_watch_url', '', $video_id, $current_user_id );
+		}
+		\MediaShield\CPT\VideoUsage::prime( array_keys( array_filter( $watch_urls, static fn( $url ) => '' === $url ) ) );
+		?>
 		<?php foreach ( $videos as $video ) : ?>
 			<?php
 			$video_post = get_post( (int) $video->video_id );
@@ -112,24 +177,18 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 			}
 			$completion  = round( (float) $video->completion_pct, 1 );
 			$is_complete = $completion >= 100;
-			$thumbnail   = get_the_post_thumbnail_url( $video_post->ID, 'medium' );
+			$thumbnail   = \MediaShield\CPT\Thumbnail::poster_url( $video_post->ID, 'medium' );
 
-			/**
-			 * Filter the page where a member watches this video.
-			 *
-			 * The video post type is not public, so it has no page of its own:
-			 * its permalink lands on the home page. An integration that embeds
-			 * the video (an LMS lesson, a course page) returns that page's URL.
-			 * Left empty, the title shows as plain text and no Resume link is
-			 * printed. The player on that page offers to resume by itself.
-			 *
-			 * @since 1.4.1
-			 *
-			 * @param string $url      Watch page URL. Default ''.
-			 * @param int    $video_id Video CPT post ID.
-			 * @param int    $user_id  Member the list is for.
-			 */
-			$watch_url = (string) apply_filters( 'mediashield_video_watch_url', '', $video_post->ID, $current_user_id );
+			$watch_url = $watch_urls[ $video_post->ID ] ?? '';
+			if ( '' === $watch_url ) {
+				$watch_url = \MediaShield\CPT\VideoUsage::page_for_viewer( $video_post->ID, $current_user_id );
+			}
+			// On no page this member can open: the video on a page of its own
+			// (the signed player page apps use), so every card in progress
+			// still has Resume (UX test MSUX-19). Minted for this member only.
+			if ( '' === $watch_url ) {
+				$watch_url = \MediaShield\Embed\EmbedLink::url( $video_post->ID, $current_user_id, 12 * HOUR_IN_SECONDS );
+			}
 			?>
 			<div class="ms-my-videos-item ms-my-videos__card" data-completion-pct="<?php echo esc_attr( $completion ); ?>">
 				<?php if ( $thumbnail ) : ?>

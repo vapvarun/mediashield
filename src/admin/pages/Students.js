@@ -118,6 +118,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 					sessions,
 					videoCount: res.videos_watched ?? new Set( sessions.map( ( s ) => s.video_id ) ).size,
 					totalPages: res.total_pages || 1,
+					milestoneTags: res.milestone_tags || [],
 				} );
 			} )
 			.catch( ( err ) => {
@@ -167,6 +168,14 @@ const StudentDetail = ( { userId, onBack } ) => {
 						<div className="mediashield-student-detail__info">
 							<h2>{ detail.name || __( 'Unknown User', 'mediashield' ) }</h2>
 							<p>{ detail.email }</p>
+							{ detail.milestoneTags.length > 0 && (
+								<p className="mediashield-student-detail__tags">
+									{ __( 'Milestone tags:', 'mediashield' ) }{ ' ' }
+									{ detail.milestoneTags.map( ( tag ) => (
+										<span key={ tag } className="mediashield-badge mediashield-badge--standard">{ tag }</span>
+									) ) }
+								</p>
+							) }
 						</div>
 					</div>
 
@@ -266,18 +275,18 @@ const RevokeSessions = ( { user } ) => {
 				createSuccessNotice(
 					count
 						? sprintf(
-							/* translators: 1: number of sessions, 2: viewer name. */
-							_n( 'Ended %1$d active session for %2$s.', 'Ended %1$d active sessions for %2$s.', count, 'mediashield' ),
+							/* translators: 1: number of viewings stopped, 2: viewer name. */
+							_n( 'Stopped %1$d viewing for %2$s.', 'Stopped %1$d viewings for %2$s.', count, 'mediashield' ),
 							count,
 							name
 						)
-						: sprintf( /* translators: %s: viewer name. */ __( '%s had no active session to end.', 'mediashield' ), name ),
+						: sprintf( /* translators: %s: viewer name. */ __( '%s was not watching anything.', 'mediashield' ), name ),
 					{ type: 'snackbar' }
 				);
 			} )
 			.catch( ( err ) =>
 				createErrorNotice(
-					window.mediashieldRequest.message( err, __( 'The session could not be revoked.', 'mediashield' ) ),
+					window.mediashieldRequest.message( err, __( 'Playback could not be stopped.', 'mediashield' ) ),
 					{ type: 'snackbar' }
 				)
 			)
@@ -291,15 +300,15 @@ const RevokeSessions = ( { user } ) => {
 				className="mediashield-action-btn mediashield-action-btn--delete"
 				onClick={ () => setState( 'confirm' ) }
 			>
-				{ __( 'Revoke session', 'mediashield' ) }
+				{ __( 'Stop playback', 'mediashield' ) }
 			</button>
 		);
 	}
 
 	return (
-		<div className="mediashield-revoke-confirm" role="group" aria-label={ __( 'Confirm revoke', 'mediashield' ) }>
+		<div className="mediashield-revoke-confirm" role="group" aria-label={ __( 'Confirm stop playback', 'mediashield' ) }>
 			<span>
-				{ sprintf( /* translators: %s: viewer name. */ __( 'End every active session for %s?', 'mediashield' ), name ) }
+				{ sprintf( /* translators: %s: viewer name. */ __( 'Stop every video %s is watching now?', 'mediashield' ), name ) }
 			</span>
 			<button
 				type="button"
@@ -307,7 +316,7 @@ const RevokeSessions = ( { user } ) => {
 				disabled={ 'busy' === state }
 				onClick={ revoke }
 			>
-				{ 'busy' === state ? __( 'Revoking...', 'mediashield' ) : __( 'Revoke', 'mediashield' ) }
+				{ 'busy' === state ? __( 'Stopping...', 'mediashield' ) : __( 'Stop', 'mediashield' ) }
 			</button>
 			<button
 				type="button"
@@ -326,7 +335,21 @@ const Students = () => {
 	const [ search, setSearch ] = useState( '' );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
-	const [ selectedUser, setSelectedUser ] = useState( null );
+	// A viewer's page has its own address, #/viewers/<id>, so Back and a
+	// bookmark work (MSUX-35).
+	const fromHash = () => {
+		const m = window.location.hash.match( /^#\/viewers\/(\d+)/ );
+		return m ? parseInt( m[ 1 ], 10 ) : null;
+	};
+	const [ selectedUser, setSelected ] = useState( fromHash );
+	const setSelectedUser = ( id ) => {
+		window.location.hash = id ? `#/viewers/${ id }` : '#/viewers';
+	};
+	useEffect( () => {
+		const follow = () => setSelected( fromHash() );
+		window.addEventListener( 'hashchange', follow );
+		return () => window.removeEventListener( 'hashchange', follow );
+	}, [] );
 	// Paged: a big site has thousands of viewers.
 	const [ page, setPage ] = useState( 1 );
 	const [ totalPages, setTotalPages ] = useState( 1 );
@@ -416,7 +439,7 @@ const Students = () => {
 
 			{ ! loading && ! error && (
 				<div className="mediashield-table-card">
-					<table className="mediashield-table">
+					<table className="mediashield-table ms-viewers__table">
 						<thead>
 							<tr>
 								<th>{ __( 'Viewer', 'mediashield' ) }</th>
@@ -455,6 +478,9 @@ const Students = () => {
 												<div className="mediashield-user__email">
 													{ user.email || '' }
 												</div>
+												{ user.watching_now && (
+													<span className="mediashield-badge mediashield-badge--success ms-viewers__live">{ __( 'Watching now', 'mediashield' ) }</span>
+												) }
 											</div>
 										</div>
 									</td>
@@ -468,7 +494,8 @@ const Students = () => {
 										{ timeAgo( user.last_active ) }
 									</td>
 									<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
-										<RevokeSessions user={ user } />
+										{ /* Only a member watching now has a viewing to stop (MSUX-13). */ }
+										{ user.watching_now ? <RevokeSessions user={ user } /> : <span className="ms-viewers__idle" aria-hidden="true">—</span> }
 									</td>
 								</tr>
 							) ) }

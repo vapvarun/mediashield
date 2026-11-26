@@ -3,6 +3,7 @@
 /.git
 /.github
 /.gitignore
+/.gate-check-allow
 /.gitattributes
 /.editorconfig
 /.distignore

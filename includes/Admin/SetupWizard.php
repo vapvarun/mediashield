@@ -167,7 +167,7 @@ class SetupWizard {
 				'siteUrl'     => home_url(),
 				'isProActive' => defined( 'MEDIASHIELD_PRO_VERSION' ),
 				'isWizard'    => true,
-			)
+			) + Menu::vocabulary()
 		);
 	}
 }

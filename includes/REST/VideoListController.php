@@ -85,13 +85,28 @@ class VideoListController extends WP_REST_Controller {
 			)
 		);
 
+		// The filter chips' counts, one COUNT(*) for the library (Basecamp 10545260458).
+		register_rest_route(
+			$this->namespace,
+			'/videos/counts',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => static function () {
+					return rest_ensure_response( \MediaShield\CPT\VideoStatus::counts() );
+				},
+				'permission_callback' => static function () {
+					return current_user_can( 'edit_posts' );
+				},
+			)
+		);
+
 		register_rest_field(
 			'mediashield_video',
 			'ms_list',
 			array(
 				'get_callback' => array( $this, 'list_field' ),
 				'schema'       => array(
-					'description' => 'Videos list columns: thumbnail, duration, status, used_in. Null for users who cannot edit the video.',
+					'description' => 'Videos list columns: thumbnail, duration, status (ready, encoding, failed, unavailable, no_source, draft), source (uploaded file name), used_in. Null for users who cannot edit the video.',
 					'type'        => array( 'object', 'null' ),
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -110,7 +125,7 @@ class VideoListController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Document the two filters on the collection.
+	 * Document the filters on the collection (platform, state, tag, protection).
 	 *
 	 * @param array $params Collection params.
 	 * @return array
@@ -120,6 +135,16 @@ class VideoListController extends WP_REST_Controller {
 			'description' => 'Only videos on this platform.',
 			'type'        => 'string',
 			'enum'        => self::PLATFORMS,
+		);
+		$params['ms_state']      = array(
+			'description' => 'Only videos with this status: ready, attention (no source, or unavailable at the platform) or draft.',
+			'type'        => 'string',
+			'enum'        => array( 'ready', 'attention', 'draft' ),
+		);
+		$params['ms_tag']        = array(
+			'description' => 'Only videos carrying this video tag (an id from /mediashield/v1/tags).',
+			'type'        => 'integer',
+			'minimum'     => 1,
 		);
 		$params['ms_protection'] = array(
 			'description' => 'Only videos at this protection level; "default" means the video follows the site setting.',
@@ -131,7 +156,7 @@ class VideoListController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Turn the two filters into a meta query.
+	 * Turn the filters into query args.
 	 *
 	 * @param array           $args    WP_Query args.
 	 * @param WP_REST_Request $request Request.
@@ -139,6 +164,12 @@ class VideoListController extends WP_REST_Controller {
 	 */
 	public static function filter_query( $args, $request ): array {
 		$args = (array) $args;
+
+		// "Used in" scans post content, so it is primed only for a response
+		// that carries ms_list: the Videos list, not a picker asking for a
+		// few fields (prime_usage()).
+		$fields                 = $request instanceof WP_REST_Request ? wp_parse_list( (string) $request->get_param( '_fields' ) ) : array();
+		$args['ms_prime_usage'] = empty( $fields ) || rest_is_field_included( 'ms_list', $fields );
 
 		// The filters read protection settings; only people who edit videos may use them.
 		if ( ! current_user_can( 'edit_posts' ) ) {
@@ -188,6 +219,28 @@ class VideoListController extends WP_REST_Controller {
 				);
 		}
 
+		$tag = (int) $request->get_param( 'ms_tag' );
+		if ( $tag > 0 ) {
+			// shortcut: one IN list of the tag's videos; fine into the tens of thousands per tag.
+			$ids              = \MediaShield\Tags\TagManager::get_videos_for_tag( $tag );
+			$args['post__in'] = isset( $args['post__in'] ) && $args['post__in'] ? array_values( array_intersect( (array) $args['post__in'], $ids ) ) : $ids;
+			$args['post__in'] = $args['post__in'] ? $args['post__in'] : array( 0 );
+		}
+
+		$state = (string) $request->get_param( 'ms_state' );
+		$chip  = in_array( $state, array( 'ready', 'attention', 'draft' ), true ) ? \MediaShield\CPT\VideoStatus::query_args( $state ) : array();
+		if ( isset( $chip['post_status'] ) && 'trash' !== ( $args['post_status'] ?? '' ) ) {
+			// Within the statuses asked for: the block picker asks for
+			// status=publish&ms_state=ready and gets published, playable
+			// videos only; the Videos list asks for every status.
+			$asked               = array_filter( (array) ( $args['post_status'] ?? array() ) );
+			$within              = $asked ? array_values( array_intersect( $chip['post_status'], $asked ) ) : $chip['post_status'];
+			$args['post_status'] = $within ? $within : array( 'ms-none' );
+		}
+		foreach ( $chip['meta_query'] ?? array() as $clause ) {
+			$meta_query[] = $clause;
+		}
+
 		if ( $meta_query ) {
 			$meta_query['relation'] = 'AND';
 			$args['meta_query']     = $meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
@@ -199,12 +252,17 @@ class VideoListController extends WP_REST_Controller {
 	/**
 	 * Before the list's rows are prepared, look up "used in" for all of them at once.
 	 *
+	 * Only for a collection request whose response includes ms_list
+	 * (filter_query() sets `ms_prime_usage`); a picker that asks for
+	 * `_fields=id,title,...` gets no content scan.
+	 *
 	 * @param WP_Post[] $posts Posts found.
 	 * @param WP_Query  $query The query.
 	 * @return WP_Post[]
 	 */
 	public static function prime_usage( $posts, $query ) {
-		if ( defined( 'REST_REQUEST' ) && REST_REQUEST && $query instanceof WP_Query
+		// The flag is set only by the REST collection filter (filter_query()).
+		if ( $query instanceof WP_Query && $query->get( 'ms_prime_usage' )
 			&& 'mediashield_video' === $query->get( 'post_type' ) && is_array( $posts ) && current_user_can( 'edit_posts' ) ) {
 			VideoUsage::prime( wp_list_pluck( $posts, 'ID' ) );
 		}
@@ -236,18 +294,53 @@ class VideoListController extends WP_REST_Controller {
 		 *
 		 * @since 1.4.3
 		 *
-		 * @param string $status   'ready', 'encoding' or 'failed'.
+		 * @param string $status   'ready', 'encoding', 'failed' or 'unavailable' (the platform refuses it, CPT\SourceStatus).
 		 * @param int    $video_id Video ID.
 		 * @param string $platform Platform slug.
 		 */
 		$status = (string) apply_filters( 'mediashield_video_status', 'ready', $id, $platform );
 
+		// Nothing to play outranks what a platform says; a draft that is
+		// otherwise fine is a Draft (CPT\VideoStatus, Basecamp 10545260458).
+		if ( '' !== (string) get_post_meta( $id, \MediaShield\CPT\VideoStatus::NO_SOURCE, true ) ) {
+			$status = 'no_source';
+		} elseif ( 'ready' === $status && in_array( get_post_status( $id ), \MediaShield\CPT\VideoStatus::DRAFT_STATUSES, true ) ) {
+			$status = 'draft';
+		}
+
 		return array(
-			'thumbnail' => Thumbnail::poster_url( $id, 'thumbnail', true ),
-			'duration'  => (int) get_post_meta( $id, '_ms_duration', true ),
-			'status'    => in_array( $status, array( 'ready', 'encoding', 'failed' ), true ) ? $status : 'ready',
-			'used_in'   => VideoUsage::for_video( $id ),
+			'thumbnail'    => Thumbnail::poster_url( $id, 'thumbnail', true ),
+			// The stored length, else the length members' players reported
+			// (WatchedSpans::measured(), the watch rule's own number), so a
+			// watched YouTube video is not "-" (MSUX-12).
+			'duration'     => (int) get_post_meta( $id, '_ms_duration', true ) ?: (int) round( \MediaShield\Access\WatchedSpans::measured( $id ) ),
+			'status'       => in_array( $status, array( 'ready', 'encoding', 'failed', 'unavailable', 'no_source', 'draft' ), true ) ? $status : 'ready',
+			'source'       => self::source_label( $id, $platform ),
+			'used_in'      => VideoUsage::for_video( $id ),
+			// No Duration while a watch rule uses it (1.4.4): the list asks for one.
+			'needs_length' => \MediaShield\CPT\VideoStatus::needs_length( $id ),
 		);
+	}
+
+	/**
+	 * The uploaded file's name, for a video whose file MediaShield holds.
+	 *
+	 * The source URL of an upload is the signed /stream/ address, which means
+	 * nothing to an owner; the file name does.
+	 *
+	 * @param int    $id       Video ID.
+	 * @param string $platform Platform slug.
+	 * @return string File name, or '' for a link.
+	 */
+	public static function source_label( int $id, string $platform ): string {
+		if ( 'self' !== $platform ) {
+			return '';
+		}
+		$file = (string) get_post_meta( $id, '_ms_owned_file', true );
+		if ( '' === $file ) {
+			$file = \MediaShield\REST\StreamController::resolve_file( $id );
+		}
+		return '' !== $file ? \MediaShield\Upload\Drivers\SelfHosted::display_name( $id, $file ) : '';
 	}
 
 	/**

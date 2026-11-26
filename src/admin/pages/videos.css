@@ -62,11 +62,11 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-platform {
-	width: 124px;
+	width: 108px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-duration {
-	width: 84px;
+	width: 64px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-status {
@@ -74,18 +74,19 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-protection {
-	width: 148px;
+	width: 112px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-used {
-	width: 104px;
+	width: 128px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-actions {
-	width: 120px;
+	width: 156px;
 }
 
-/* The title column (no width) takes what is left: about 300px at 1440. */
+/* The title column (no width) takes what is left: about 250px at 1440, with
+   Used in wide enough for a place name on one line (MSUX-12). */
 .mediashield-videos .ms-videos__table th,
 .mediashield-videos .ms-videos__table td {
 	padding-inline: var( --ms-space-2 );
@@ -95,18 +96,32 @@
 	text-overflow: clip;
 }
 
-/* Actions stack in their column instead of needing 250px in a row. */
+/* Actions wrap into two short rows (34px, the dense-list floor), so a row
+   stays under about 80px instead of three stacked buttons. */
 @media ( min-width: 783px ) {
 	.ms-videos__table td.ms-videos__col-actions {
 		display: flex;
-		flex-direction: column;
-		align-items: stretch;
+		flex-direction: row;
+		flex-wrap: nowrap;
+		align-items: center;
 		gap: var( --ms-space-1 );
+	}
+
+	/* Copy shortcode is its icon on wide screens (named by aria-label and
+	   its tooltip), so Edit, Preview and Copy fit one 34px row. */
+	.ms-videos__table td.ms-videos__col-actions .ms-videos__copy-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect( 0, 0, 0, 0 );
+		white-space: nowrap;
 	}
 
 	.ms-videos__table td.ms-videos__col-actions .mediashield-action-btn {
 		justify-content: center;
-		width: 100%;
+		width: auto;
+		min-height: 34px;
 		margin: 0;
 		padding-inline: var( --ms-space-2 );
 		box-sizing: border-box;
@@ -117,7 +132,8 @@
    the title keeps room; both stay on the edit screen and the phone cards. */
 @media ( min-width: 783px ) and ( max-width: 1100px ) {
 	.ms-videos__table .ms-videos__col-duration,
-	.ms-videos__table .ms-videos__col-used {
+	.ms-videos__table .ms-videos__col-used,
+	.ms-videos__table .ms-videos__thumb {
 		display: none;
 	}
 }
@@ -129,9 +145,23 @@
 	vertical-align: middle;
 }
 
-.ms-videos__table .mediashield-badge,
 .ms-videos__table .mediashield-platform {
 	white-space: nowrap;
+}
+
+/* A long badge ("Site default (Standard)") wraps inside its cell. */
+.ms-videos__table .mediashield-badge {
+	white-space: normal;
+	max-width: 100%;
+}
+
+/* A long title stays on two lines; the full title is in its tooltip. */
+.ms-videos__title-link strong {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	overflow-wrap: anywhere;
 }
 
 .ms-videos__table tr.is-selected td {
@@ -186,6 +216,151 @@
 	margin-block-start: 2px;
 }
 
+/* Status chips with counts, and the needs-attention line (Basecamp 10545260458). */
+.ms-videos__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --ms-space-2 );
+	margin-bottom: var( --ms-space-4 );
+}
+
+.ms-videos__chip-count {
+	margin-inline-start: var( --ms-space-2 );
+	font-variant-numeric: tabular-nums;
+	opacity: 0.85;
+}
+
+.ms-videos__attention {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-1 ) var( --ms-space-2 );
+	margin-bottom: var( --ms-space-3 );
+	padding: var( --ms-space-2 ) var( --ms-space-4 );
+	border: 1px solid var( --ms-palette-yellow-border );
+	border-radius: var( --ms-radius-md );
+	background: var( --ms-color-warning-light );
+	color: var( --ms-palette-yellow-text );
+}
+
+.ms-videos__attention .components-button.is-link {
+	min-height: 40px;
+}
+
+.ms-videos__hint {
+	display: block;
+	margin-block-start: var( --ms-space-1 );
+	font-size: var( --ms-font-size-sm );
+	color: var( --ms-color-text-secondary );
+	white-space: normal;
+}
+
+/* No Duration while a watch rule uses the video: one calm line under the
+   title, linking to the edit screen's Duration field. */
+.ms-videos__needs-length {
+	display: block;
+	margin-block-start: var( --ms-space-1 );
+	font-size: var( --ms-font-size-sm );
+	line-height: 1.3;
+}
+
+.ms-videos__needs-length a {
+	color: var( --ms-palette-yellow-text );
+	text-decoration: none;
+}
+
+/* The chip is the visible part; on a phone the link around it is the 40px target. */
+.ms-videos__chip {
+	display: inline-block;
+	padding: 1px var( --ms-space-2 );
+	border-radius: 999px;
+	background: var( --ms-color-warning-light );
+	white-space: nowrap;
+}
+
+.ms-videos__needs-length a:hover,
+.ms-videos__needs-length a:focus-visible {
+	text-decoration: underline;
+}
+
+.ms-videos__needs-length a:focus-visible {
+	outline: 2px solid var( --ms-color-primary );
+	outline-offset: 2px;
+}
+
+@media ( max-width: 480px ) {
+	.mediashield-videos .ms-videos__needs-length a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+	}
+}
+
+/* A long uploaded file name is cut with an ellipsis; the full name is in
+   the title attribute. The platform cell may shrink below its content. */
+.ms-videos__table td.ms-videos__col-platform {
+	min-width: 0;
+}
+
+.ms-videos__table td.ms-videos__col-platform .mediashield-platform {
+	display: flex;
+	flex-wrap: wrap;
+	min-width: 0;
+	max-width: 100%;
+	white-space: normal;
+}
+
+.ms-videos__file {
+	display: block;
+	flex-basis: 100%;
+	min-width: 0;
+	max-width: 100%;
+	padding-inline-start: 14px;
+	box-sizing: border-box;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: var( --ms-font-size-sm );
+	font-weight: 400;
+	color: var( --ms-color-text-secondary );
+}
+
+/* One line per place, cut with an ellipsis (the full name is the row's
+   tooltip): a playlist name never breaks mid-word (MSUX-12). */
+.ms-videos__used li {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.ms-videos__title-link {
+	color: var( --ms-color-text );
+	text-decoration: none;
+}
+
+.ms-videos__title-link:focus-visible {
+	outline: 2px solid var( --ms-color-primary );
+	outline-offset: 2px;
+}
+
+@media ( hover: hover ) {
+	.ms-videos__title-link:hover {
+		color: var( --ms-color-primary );
+		text-decoration: underline;
+	}
+}
+
+/* Shown only on a phone, where the Source, Length and Protection columns hide. */
+.ms-videos__phone-meta {
+	display: none;
+	font-size: var( --ms-font-size-sm );
+	color: var( --ms-color-text-secondary );
+}
+
+.mediashield-videos table.ms-videos__table thead th.ms-videos__col-status {
+	width: 112px;
+}
+
 @media ( max-width: 782px ) {
 	.ms-videos__search {
 		max-width: none;
@@ -208,5 +383,128 @@
 	.ms-videos__table td.ms-videos__col-title::before,
 	.ms-videos__table td.ms-videos__col-check::before {
 		content: none;
+	}
+}
+
+/* Phone (Basecamp 10545260681): one compact card per video, the status on the
+   title line and one meta line under it; no sideways scroll at 390. */
+@media ( max-width: 480px ) {
+	.mediashield-videos .ms-videos__table tbody tr {
+		display: grid;
+		grid-template-columns: auto minmax( 0, 1fr ) auto;
+		gap: var( --ms-space-1 ) var( --ms-space-2 );
+		align-items: start;
+		padding: var( --ms-space-3 );
+	}
+
+	.mediashield-videos .ms-videos__table td {
+		padding: 0;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-platform,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-duration,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-protection,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-used {
+		display: none;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-check {
+		grid-column: 1;
+		grid-row: 1;
+		width: auto;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-title {
+		grid-column: 2;
+		grid-row: 1;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-status {
+		grid-column: 3;
+		grid-row: 1;
+		flex-direction: column;
+		align-items: flex-end;
+		width: auto;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-status::before,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-actions::before {
+		content: none;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-actions {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+		gap: var( --ms-space-2 );
+		padding-top: var( --ms-space-2 );
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-actions .mediashield-action-btn {
+		flex: 0 0 auto;
+		width: auto;
+		min-height: 40px;
+		padding-inline: var( --ms-space-3 );
+		justify-content: center;
+	}
+
+	/* The title is the Edit link on a phone. */
+	.mediashield-videos .ms-videos__table td.ms-videos__col-actions .mediashield-action-btn--edit {
+		display: none;
+	}
+
+	.mediashield-videos .ms-videos__thumb {
+		display: none;
+	}
+
+	/* One line: a long file name ends in an ellipsis. */
+	.mediashield-videos .ms-videos__phone-meta {
+		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.mediashield-videos .ms-videos__col-status .ms-videos__hint {
+		display: none;
+	}
+
+	.mediashield-videos .ms-videos__phone-meta a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+	}
+
+	.ms-videos__toolbar .components-base-control {
+		flex-basis: 100%;
+	}
+
+	/* 40px tap areas; the visible sizes stay as they are. */
+	.mediashield-videos .mediashield-page__header .components-button,
+	.mediashield-videos .ms-videos__bulk .components-button {
+		min-height: 40px;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-check,
+	.mediashield-videos .ms-videos__bulk .components-checkbox-control {
+		position: relative;
+	}
+
+	.mediashield-videos .ms-videos__table td.ms-videos__col-check .components-checkbox-control__label,
+	.mediashield-videos .ms-videos__table td.ms-videos__col-check label {
+		position: absolute;
+		inset-block-start: -8px;
+		inset-inline-start: -8px;
+		width: 40px;
+		height: 40px;
+		z-index: 1;
+	}
+
+	.mediashield-videos .ms-videos__title-link {
+		display: inline-block;
+		padding-block: 11px;
+		margin-block: -11px;
 	}
 }

@@ -16,12 +16,13 @@ window.addEventListener( 'mediashield:player-ready', function ( e ) {
 
 | Event | Target | Detail | When |
 |-------|--------|--------|------|
-| `mediashield:player-ready` | `window` | `el`, `videoId`, `token`, `resumePosition`, `watermarkConfig`, `video`, `adapter` | A watch session has started and the player is wired up. The watermark, tracker, protection and ad scripts all key off it. |
+| `mediashield:player-ready` | `window` | `el`, `videoId`, `token`, `resumePosition`, `watermarkConfig`, `video`, `adapter` | A watch session has started and the player is wired up. Since 1.4.4 a session starts at the viewer's first play, not when the page loads, so a player nobody presses play on never fires it. `trackingOnly` is true at None and Basic, where a viewing opens only to measure a lesson's watch rule: no watermark, protection or ads attach. The watermark, tracker, protection and ad scripts all key off it. |
 | `mediashield:player-ready` | `window` | `el`, `videoId` (0), `adapter` | Fired without a session when the player has no video ID (nothing to track). Check `token` before using it. |
-| `mediashield:access-denied` | `window`, cancelable | `el`, `videoId`, `reason` | `POST /session/start` was refused. Call `event.preventDefault()` to suppress the built-in overlay and draw your own. |
+| `mediashield:access-denied` | `window`, cancelable | `el`, `videoId`, `reason` | `POST /session/start` was refused. Call `event.preventDefault()` to suppress the built-in overlay and draw your own. Since 1.4.4 a player the page renders refused carries the reason and next step (`data-denied-code`, `data-denied-message`, `data-access-url`, `data-access-label`, the same answer `/session/start` gives), fires this event on load and makes no request. |
 | `mediashield:concurrent-limit` | `window` | `el`, `videoId`, `message` | Session start was refused because the viewer is at the stream limit. |
 | `mediashield:devtools-detected` | `window` | `strategy` (`debugger_timing`; `size_delta` before 1.4.2) | Developer tools were detected, before the beacon is sent. |
 | `mediashield:ended` | the player element, bubbles | none | Playback reached the end. The playlist uses it to advance. |
+| `mediashield:watched` | the player element (`.ms-protected-player`), bubbles | `{ videoId, watchedPct, requiredPct }` (numbers; `requiredPct` is the lesson's `data-watch-required` %, else the site's "Require X% watched", else 0) | Since 1.4.4. A logged-in member's watched share of this video: once when the session starts, then after every heartbeat. Use it to keep a "Watch 70%: 42% / 70%" line live. Not fired for guests. |
 | `mediashield:player-destroy` | `window` | `el` | A player element is being replaced (the playlist does this when it swaps in the next video). The tracker ends the session and the wrapper cleans up. |
 | `mediashield:watermark-preview` | `window` (admin Settings screen) | `{ text, caption }`, or `null` | Since 1.4.2. Sets the words in the Watermark preview on MediaShield > Settings; `null` puts back the default name and IP. Pro sends it from its Watermark Fields. |
 
@@ -39,7 +40,7 @@ Localized onto the player script by `Settings::frontend_config()` and filterable
 | `requireLogin` | The `ms_require_login` setting. |
 | `interval` | Heartbeat interval in milliseconds (30000). |
 | `player` | `speedControl`, `preventForwardSeek`, `keyboard`, `resume`, `sticky`, `endscreen`, `endscreenText`, `endscreenUrl`, from the matching `ms_player_*` settings. A video's own overrides are merged per player. |
-| `messages` | Every viewer-facing string (login overlay, access denied, load failed, concurrent limit, resume prompt, ad labels and so on). Owner-edited messages are passed through untouched; defaults are translated. |
+| `messages` | Every viewer-facing string (login overlay, access denied and its "Ask the site owner for access." fallback, load failed, concurrent limit, resume prompt, ad labels and so on). Owner-edited messages are passed through untouched; defaults are translated. |
 
 Protection settings travel separately, through `mediashield_protection_config`.
 

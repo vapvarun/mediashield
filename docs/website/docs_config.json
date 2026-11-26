@@ -32,6 +32,10 @@
         {
           "slug": "04-add-your-first-video",
           "title": "Add Your First Video"
+        },
+        {
+          "slug": "05-glossary",
+          "title": "Glossary"
         }
       ]
     },
@@ -142,6 +146,10 @@
         {
           "slug": "17-privacy-retention-and-uninstall",
           "title": "Privacy, Retention and Uninstall"
+        },
+        {
+          "slug": "22-whats-new-in-1-4-4",
+          "title": "What's New in 1.4.4"
         },
         {
           "slug": "21-whats-new-in-1-4-2",

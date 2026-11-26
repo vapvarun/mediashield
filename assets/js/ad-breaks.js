@@ -119,7 +119,8 @@
 		var detail  = e.detail || {};
 		var el      = detail.el;
 		var adapter = detail.adapter;
-		if ( ! el || ! adapter ) {
+		// None or Basic measuring a watch rule: those levels never ran ads.
+		if ( ! el || ! adapter || detail.trackingOnly ) {
 			return;
 		}
 
@@ -141,7 +142,7 @@
 		// the first miss — we poll briefly for the adapter to become
 		// controllable, and only give up if it never does.
 		var isControllable = function () {
-			return !! ( adapter._video || adapter._player || adapter._pjs );
+			return !! ( adapter._video || adapter._player || adapter._pjs || adapter._wistia );
 		};
 
 		if ( isControllable() ) {
@@ -222,6 +223,8 @@
 		this.inAd    = false;
 		this.pollId  = null;
 		this.markers = null;
+		// The ad playing now, for the timeline: { video, duration, start }.
+		this.adNow   = null;
 	}
 
 	AdController.prototype.start = function () {
@@ -334,27 +337,52 @@
 		} else {
 			self.el.appendChild( wrap );
 		}
-		self.markers = { wrap: wrap, progress: progress, metaDur: metaDur };
+		self.markers = { wrap: wrap, caption: caption, progress: progress, metaDur: metaDur };
 
 		// Keep the playhead + marker placement + played-state in sync.
 		setInterval( function () {
-			var dur = ( self.adapter.getDuration ? self.adapter.getDuration() : 0 ) || self.markers.metaDur;
-			var pos = self.adapter.getPosition ? self.adapter.getPosition() : 0;
-			if ( dur > 0 ) {
-				self.markers.progress.style.width = Math.min( 100, ( pos / dur ) * 100 ) + '%';
-				// Re-place mid markers once a real duration is known.
-				self.breaks.forEach( function ( b ) {
-					if ( b.type === 'mid' && b._marker ) {
-						b._marker.style.left = Math.min( 100, ( b.at / dur ) * 100 ) + '%';
-					}
-				} );
-			}
+			self.syncTimeline();
+		}, 1000 );
+	};
+
+	/**
+	 * Move the timeline's playhead: the ad's own progress while an ad plays
+	 * (the lesson is paused then, so its position would sit still), else
+	 * the lesson's, with the markers placed on it (Basecamp 10235688440).
+	 */
+	AdController.prototype.syncTimeline = function () {
+		var self = this;
+		var m    = self.markers;
+		if ( ! m ) {
+			return;
+		}
+		var ad = self.adNow;
+		m.wrap.classList.toggle( 'is-ad', !! ad );
+		m.caption.textContent = ad ? t( 'ad', 'Ad' ) : t( 'adBreaks', 'Ad breaks' );
+		if ( ad ) {
+			var video  = ad.video;
+			var adDur  = video && isFinite( video.duration ) && video.duration > 0 ? video.duration : ad.duration;
+			var adPos  = video ? video.currentTime : ( Date.now() - ad.start ) / 1000;
+			m.progress.style.width = adDur > 0 ? Math.min( 100, ( adPos / adDur ) * 100 ) + '%' : '0%';
+			return;
+		}
+
+		var dur = ( self.adapter.getDuration ? self.adapter.getDuration() : 0 ) || m.metaDur;
+		var pos = self.adapter.getPosition ? self.adapter.getPosition() : 0;
+		if ( dur > 0 ) {
+			m.progress.style.width = Math.min( 100, ( pos / dur ) * 100 ) + '%';
+			// Re-place mid markers once a real duration is known.
 			self.breaks.forEach( function ( b ) {
-				if ( b.played && b._marker && ! b._marker.classList.contains( 'is-played' ) ) {
-					b._marker.classList.add( 'is-played' );
+				if ( b.type === 'mid' && b._marker ) {
+					b._marker.style.left = Math.min( 100, ( b.at / dur ) * 100 ) + '%';
 				}
 			} );
-		}, 1000 );
+		}
+		self.breaks.forEach( function ( b ) {
+			if ( b.played && b._marker && ! b._marker.classList.contains( 'is-played' ) ) {
+				b._marker.classList.add( 'is-played' );
+			}
+		} );
 	};
 
 	/**
@@ -461,6 +489,13 @@
 		var adVideo  = body.querySelector( 'video' );
 		var duration = adVideo && isFinite( adVideo.duration ) ? adVideo.duration : 12;
 
+		// The timeline follows the ad while it plays.
+		self.adNow = { video: adVideo, duration: duration, start: Date.now() };
+		if ( adVideo ) {
+			adVideo.addEventListener( 'timeupdate', function () { self.syncTimeline(); } );
+		}
+		self.syncTimeline();
+
 		// Mandatory viewing (ms_ads_require_full_view): no Skip button at all —
 		// the viewer must watch the whole ad before the lesson resumes. Otherwise
 		// honour the per-break skip delay.
@@ -473,7 +508,9 @@
 			finished = true;
 			clearInterval( countId );
 			if ( overlay.parentNode ) { overlay.remove(); }
-			self.inAd = false;
+			self.inAd  = false;
+			self.adNow = null;
+			self.syncTimeline();
 			onComplete();
 		}
 

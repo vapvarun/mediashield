@@ -100,9 +100,11 @@
 /* ── Design Tokens ────────────────────────────────── */
 /* Scoped to .mediashield-admin per wbcom-modern-admin standard */
 /* The playlist meta box on the WP edit screen mounts outside .mediashield-admin,
-   so it had no tokens and every token-driven space in it collapsed to 0. */
+   so it had no tokens and every token-driven space in it collapsed to 0.
+   The Manage items modal renders in a portal outside both, the same gap. */
 .mediashield-admin,
-#mediashield-playlist-items-root {
+#mediashield-playlist-items-root,
+.components-modal__frame.mediashield-playlist-items-modal {
 	--ms-sidebar-width: 260px;
 
 	/* Palette */
@@ -619,16 +621,86 @@
 .mediashield-videos .mediashield-table th:nth-child(4) { width: 13%; }
 .mediashield-videos .mediashield-table th:nth-child(5) { width: 35%; }
 
-.mediashield-playlists .mediashield-table th:nth-child(1) { width: 30%; }
-.mediashield-playlists .mediashield-table th:nth-child(2) { width: 20%; }
-.mediashield-playlists .mediashield-table th:nth-child(3) { width: 15%; }
-.mediashield-playlists .mediashield-table th:nth-child(4) { width: 35%; }
+.mediashield-playlists .mediashield-table th:nth-child(1) { width: 26%; }
+.mediashield-playlists .mediashield-table th:nth-child(2) { width: 18%; }
+.mediashield-playlists .mediashield-table th:nth-child(3) { width: 18%; }
+.mediashield-playlists .mediashield-table th:nth-child(4) { width: 12%; }
+.mediashield-playlists .mediashield-table th:nth-child(5) { width: 26%; }
+
+.mediashield-playlists__empty-hint {
+	display: block;
+	font-size: 12px;
+	color: var( --ms-color-text-secondary );
+}
 
 .mediashield-students .mediashield-table th:nth-child(1) { width: 26%; }
 .mediashield-students .mediashield-table th:nth-child(2) { width: 17%; }
 .mediashield-students .mediashield-table th:nth-child(3) { width: 22%; }
 .mediashield-students .mediashield-table th:nth-child(4) { width: 14%; }
 .mediashield-students .mediashield-table th:nth-child(5) { width: 21%; }
+
+/* Viewers: Watching now badge, and a dash where there is nothing to stop. */
+.mediashield-tags__rename {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-2 );
+}
+
+.mediashield-student-detail__tags {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-1 );
+}
+
+.ms-viewers__live {
+	margin-block-start: var( --ms-space-1 );
+}
+
+.ms-viewers__idle {
+	color: var( --ms-color-text-tertiary );
+}
+
+/* Viewers on a phone (MSUX-13): one compact card per member, the same
+   pattern as the Videos list. Name and email, then videos, completion and
+   last active side by side; Stop playback only for a member watching now. */
+@media ( max-width: 782px ) {
+	.mediashield-table.ms-viewers__table tbody tr {
+		display: grid;
+		grid-template-columns: repeat( 3, minmax( 0, 1fr ) );
+		column-gap: var( --ms-space-3 );
+		padding: var( --ms-space-3 ) var( --ms-space-4 );
+	}
+
+	.mediashield-table.ms-viewers__table td:first-child,
+	.mediashield-table.ms-viewers__table td.mediashield-table__actions,
+	.mediashield-table.ms-viewers__table td.mediashield-table__empty {
+		grid-column: 1 / -1;
+	}
+
+	.mediashield-table.ms-viewers__table td:first-child::before,
+	.mediashield-table.ms-viewers__table td.mediashield-table__actions::before {
+		display: none;
+	}
+
+	.mediashield-table.ms-viewers__table td:not( :first-child ):not( .mediashield-table__actions ) {
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: flex-start;
+		gap: 2px;
+		padding: var( --ms-space-1 ) 0;
+		min-width: 0;
+	}
+
+	.mediashield-table.ms-viewers__table td.mediashield-table__actions:has( .ms-viewers__idle ) {
+		display: none;
+	}
+
+	.mediashield-table.ms-viewers__table td.mediashield-table__actions {
+		padding-top: var( --ms-space-2 );
+	}
+}
 
 .mediashield-tags .mediashield-table th:nth-child(1) { width: 30%; }
 .mediashield-tags .mediashield-table th:nth-child(2) { width: 25%; }
@@ -827,8 +899,8 @@
 }
 
 .mediashield-milestone-badge__ring {
-	width: 28px;
-	height: 28px;
+	width: 36px;
+	height: 36px;
 	border-radius: 50%;
 	display: flex;
 	align-items: center;
@@ -1232,7 +1304,15 @@
 	align-items: center;
 	gap: var( --ms-space-2 );
 	max-width: min( 600px, calc( 100vw - var( --ms-space-4 ) * 2 ) );
+	/* A width of its own: sized by its content, a long message became a
+	   narrow seven-line column (Basecamp 10545260577). */
+	width: min( 520px, calc( 100vw - var( --ms-space-4 ) * 2 ) );
 	pointer-events: none;
+}
+
+.mediashield-toast .components-snackbar {
+	width: 100%;
+	box-sizing: border-box;
 }
 
 .mediashield-toast .components-snackbar-list,
@@ -1516,6 +1596,10 @@
 }
 
 .mediashield-settings__section-title {
+	/* An h2 for screen readers; WordPress admin styles h2 larger. */
+	margin: 0;
+	padding: 0;
+	line-height: 1.4;
 	font-size: 14px;
 	font-weight: 700;
 	color: var( --ms-color-text );
@@ -1542,9 +1626,6 @@
 	margin-bottom: 0;
 }
 
-.mediashield-settings__color-field {
-	margin-bottom: var( --ms-space-5 );
-}
 
 /* ── Player preview (Watermark card) ─────────────────── */
 .mediashield-settings__preview {
@@ -1594,13 +1675,6 @@
 	inset-inline-end: var( --ms-space-3 );
 }
 
-.mediashield-settings__preview-button {
-	padding: var( --ms-space-2 ) var( --ms-space-5 );
-	border-radius: 4px;
-	background: var( --wp-admin-theme-color, #2271b1 );
-	color: var( --ms-palette-white );
-	font-weight: 600;
-}
 
 .mediashield-settings__preview-caption {
 	margin: var( --ms-space-2 ) 0 var( --ms-space-5 );
@@ -1608,24 +1682,57 @@
 	color: var( --ms-color-text-secondary );
 }
 
-.mediashield-settings__color-help {
+.mediashield-settings__rule-note {
 	margin: 0 0 var( --ms-space-3 );
-	color: var( --ms-color-text-secondary );
+	color: var( --ms-color-text );
 }
 
-.mediashield-settings__color-field > .components-button {
-	margin-top: var( --ms-space-3 );
+/* Colour setting: a swatch button that opens the picker (ColorField). */
+.mediashield-color-field {
+	margin-bottom: var( --ms-space-3 );
 }
 
-.mediashield-settings__color-field > label {
+.mediashield-color-field__label {
 	display: block;
-	margin-bottom: 6px;
+	margin-bottom: var( --ms-space-2 );
 	font-size: 11px;
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var( --ms-color-text-secondary );
 }
+
+.mediashield-color-field__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-2 );
+}
+
+.mediashield-color-field__toggle.components-button {
+	gap: var( --ms-space-2 );
+	font-family: inherit;
+}
+
+.mediashield-color-field__swatch {
+	inline-size: 20px;
+	block-size: 20px;
+	border-radius: 4px;
+	border: 1px solid var( --ms-color-border );
+	flex-shrink: 0;
+}
+
+/* No colour set: an outlined square with a slash, not a colour as if chosen. */
+.mediashield-color-field__swatch.is-empty {
+	background: linear-gradient( to top right, transparent calc( 50% - 1px ), var( --ms-color-text-tertiary ) 50%, transparent calc( 50% + 1px ) );
+}
+
+.mediashield-settings__color-help {
+	margin: 0 0 var( --ms-space-3 );
+	color: var( --ms-color-text-secondary );
+}
+
+
 
 /* ── Quick Stats Row (Dashboard) ──────────────────── */
 .mediashield-quick-stats {
@@ -1664,6 +1771,30 @@
 	justify-content: space-between;
 	padding: 6px 0;
 	font-size: 13px;
+}
+
+/* Top Videos: a long title gives way; "17 viewings" stays on one line. */
+.mediashield-quick-stat__item {
+	gap: var( --ms-space-3 );
+}
+
+.mediashield-quick-stat__item > span {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mediashield-quick-stat__item > strong {
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+/* On a phone the Free dashboard keeps the one-line Pro banner, not four cards. */
+@media ( max-width: 640px ) {
+	.mediashield-page .ms-upsell-grid {
+		display: none;
+	}
 }
 
 .mediashield-quick-stat__item + .mediashield-quick-stat__item {
@@ -2688,8 +2819,15 @@
 /* ── First Video URL input ───────────────────────── */
 .ms-wizard__url-input {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 10px;
 	align-items: flex-end;
+}
+
+/* The refusal and the upload link sit on their own lines under the field. */
+.ms-wizard__url-input > .ms-wizard__hint {
+	flex-basis: 100%;
+	margin: 0;
 }
 
 .ms-wizard__url-input .components-base-control {
@@ -2729,6 +2867,14 @@
 	flex-shrink: 0;
 }
 
+.ms-wizard__success-banner span {
+	display: block;
+}
+
+.ms-wizard__success-next {
+	margin-top: var( --ms-space-1 );
+}
+
 .ms-wizard__success-banner strong {
 	display: block;
 	color: var( --ms-color-text );
@@ -2742,19 +2888,7 @@
 }
 
 /* ── Watermark fields ────────────────────────────── */
-.ms-wizard__color-field {
-	margin-bottom: var( --ms-space-4 );
-}
 
-.ms-wizard__field-label {
-	display: block;
-	font-size: 11px;
-	font-weight: 500;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: var( --ms-color-text );
-	margin-bottom: var( --ms-space-2 );
-}
 
 .ms-wizard__watermark-preview {
 	margin-top: var( --ms-space-5 );
@@ -2920,8 +3054,9 @@
 	}
 }
 
-/* First-run checklist: three steps, shown on the Dashboard until all are
-   done (Basecamp 10530930901). */
+/* First-run checklist: four steps, on the Dashboard and above every
+   Analytics screen until the first viewing (Basecamp 10530930901,
+   10478806397). */
 .mediashield-first-run,
 .mediashield-protection-card {
 	background: var( --ms-color-surface );
@@ -2946,6 +3081,13 @@
 	font-size: 15px;
 	font-weight: 600;
 	color: var( --ms-color-text );
+}
+
+.mediashield-first-run__intro {
+	margin: calc( -1 * var( --ms-space-2 ) ) 0 var( --ms-space-4 );
+	font-size: 13px;
+	line-height: 1.5;
+	color: var( --ms-color-text-secondary );
 }
 
 .mediashield-first-run__count {
@@ -3234,8 +3376,6 @@
 	border-radius: 9999px;
 	font-size: 11px;
 	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.02em;
 	background: var( --ms-color-border-light );
 	color: var( --ms-color-text-secondary );
 }
@@ -3252,8 +3392,7 @@
 
 .ms-playlist-items__status {
 	font-style: italic;
-	color: var( --ms-color-warning, #b54708 );
-	text-transform: capitalize;
+	color: var( --ms-palette-amber-800 ); /* --ms-color-warning is 2:1 on white. */
 }
 
 .ms-playlist-items__row-actions {
@@ -3278,6 +3417,38 @@
 /* ── Playlist Items Panel (meta box on CPT edit screen) ─────── */
 .ms-playlist-items-panel {
 	padding: var( --ms-space-2 ) 0;
+}
+
+/* Phone: the row wraps. Number, small poster and title on top, labels free
+   to wrap under the title, the order buttons on their own line. */
+@media ( max-width: 600px ) {
+	.ms-playlist-items__row {
+		flex-wrap: wrap;
+		row-gap: var( --ms-space-2 );
+	}
+
+	.ms-playlist-items__thumb {
+		width: 56px;
+		height: 32px;
+		flex-shrink: 0;
+	}
+
+	.ms-playlist-items__meta {
+		flex-basis: calc( 100% - 120px );
+	}
+
+	.ms-playlist-items__title {
+		white-space: normal;
+	}
+
+	.ms-playlist-items__sub {
+		flex-wrap: wrap;
+	}
+
+	.ms-playlist-items__row-actions {
+		flex-basis: 100%;
+		justify-content: flex-end;
+	}
 }
 
 .ms-playlist-items__panel-actions {

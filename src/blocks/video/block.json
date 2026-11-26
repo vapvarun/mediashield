@@ -6,7 +6,7 @@
 	"title": "MediaShield Video",
 	"category": "media",
 	"icon": "video-alt3",
-	"description": "Embed a protected video with watermarking, session tracking, and access control.",
+	"description": "A protected video: watermark, viewing tracking and who can watch.",
 	"keywords": [ "video", "protect", "mediashield", "watermark" ],
 	"textdomain": "mediashield",
 	"attributes": {

@@ -1,7 +1,6 @@
 <?php
 /**
- * Playlist pages after an update from a release whose activation saved rules
- * without the playlist post type.
+ * Rewrite rules after an update.
  *
  * @package MediaShield\Tests
  */
@@ -13,34 +12,38 @@ use MediaShield\Core\Migrator;
 use WP_UnitTestCase;
 
 /**
- * The v7 step drops the stale rules so WordPress rebuilds them with /playlist/.
+ * The v13 step drops saved rules so WordPress rebuilds them without /playlist/.
  */
 class RewriteRulesUpgradeTest extends WP_UnitTestCase {
 
 	/**
-	 * Fails before the fix: a site at DB version 6 kept rules with no playlist route.
+	 * Fails before 1.4.4: a site at v12 kept its /playlist/<slug>/ rule, which
+	 * then sent that address to the home page (Basecamp 10545260546).
 	 */
-	public function test_upgrade_from_v6_rebuilds_rules_with_playlist_route(): void {
-		global $wp_rewrite;
+	public function test_upgrade_from_v12_drops_the_playlist_route(): void {
+		global $wp_rewrite, $wpdb;
+		$before = get_option( 'rewrite_rules' );
 		$wp_rewrite->set_permalink_structure( '/%postname%/' );
-		// The suite registered the post type with plain permalinks, which adds no
-		// route; register it again as a site with pretty permalinks would.
 		\MediaShield\CPT\PlaylistPostType::register_post_type();
 
-		// What a 1.4.0 activation saved: rules built without the playlist type.
-		update_option( 'rewrite_rules', array( '(.?.+?)/?$' => 'index.php?pagename=$matches[1]' ) );
-		update_option( 'ms_db_version', 6 );
+		// What a 1.4.3 site saved: rules with the playlist route.
+		update_option( 'rewrite_rules', array( 'playlist/([^/]+)/?$' => 'index.php?mediashield_playlist=$matches[1]' ) );
+		update_option( 'ms_db_version', 12 );
 
 		Migrator::run();
 
-		$this->assertFalse( get_option( 'rewrite_rules' ), 'The stale rules are dropped.' );
+		$this->assertFalse( get_option( 'rewrite_rules' ), 'The saved rules are dropped.' );
 		$this->assertSame( MEDIASHIELD_DB_VERSION, (int) get_option( 'ms_db_version' ) );
 
 		$rules = $wp_rewrite->wp_rewrite_rules();
-		$this->assertNotEmpty(
+		$this->assertEmpty(
 			array_filter( array_keys( $rules ), static fn( $rule ) => str_starts_with( $rule, 'playlist/' ) ),
-			'Rebuilt rules carry the playlist route.'
+			'Rebuilt rules carry no playlist route.'
 		);
+
+		$wp_rewrite->set_permalink_structure( '' );
+		update_option( 'rewrite_rules', $before );
+		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Test isolation: dbDelta committed the transaction.
 	}
 
 	/**
@@ -59,23 +62,15 @@ class RewriteRulesUpgradeTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A site already at v7 keeps its rules: the step runs once.
+	 * A site already at v13 keeps its rules: the step runs once.
 	 */
-	public function test_site_at_v7_keeps_its_rules(): void {
-		global $wpdb;
-		$before = get_option( 'rewrite_rules' );
-		$rules  = array( 'custom/?$' => 'index.php?custom=1' );
+	public function test_site_at_v13_keeps_its_rules(): void {
+		$rules = array( 'custom/?$' => 'index.php?custom=1' );
 		update_option( 'rewrite_rules', $rules );
-		update_option( 'ms_db_version', 7 );
+		update_option( 'ms_db_version', 13 );
 
 		Migrator::run();
 
 		$this->assertSame( $rules, get_option( 'rewrite_rules' ) );
-
-		// Since v8 a v7 site runs the migrator, whose dbDelta commits the test
-		// transaction, so the custom rules above would outlive this test and
-		// break permalinks in later ones. Put back what was there and commit that.
-		update_option( 'rewrite_rules', $before );
-		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Test isolation, see above.
 	}
 }

@@ -40,6 +40,7 @@ class Assets {
 	public static function register(): void {
 		add_action( 'init', array( __CLASS__, 'register_request_reader' ) );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_frontend' ) );
+		add_filter( 'pre_load_script_translations', array( __CLASS__, 'script_translations' ), 10, 4 );
 		// The block editor's Video and Playlist blocks make requests too.
 		add_action(
 			'enqueue_block_editor_assets',
@@ -113,6 +114,65 @@ class Assets {
 			true
 		);
 		wp_set_script_translations( $handle, 'mediashield', MEDIASHIELD_PATH . 'languages' );
+	}
+
+	/**
+	 * Every JS translation of a MediaShield text domain, for any of its scripts.
+	 *
+	 * WordPress loads one JSON per enqueued script, named after the script's
+	 * path (build/admin/index.js). `wp i18n make-json` names each JSON after
+	 * the source file in the .po (src/admin/pages/Settings.js), so none of
+	 * them matched, and the admin screens' lazy chunks are never enqueued at
+	 * all. Answering `pre_load_script_translations` with all of the domain's
+	 * JSON for the locale, merged, translates the entry and every chunk (they
+	 * share the entry's wp.i18n data) and the block scripts, whatever way the
+	 * JSON was generated. The plugin's languages folder is read first, then
+	 * wp-content/languages/plugins, which wins.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param string|false|null $translations JSON so far (null: WordPress reads the file).
+	 * @param string|false      $file         File WordPress would read.
+	 * @param string            $handle       Script handle.
+	 * @param string            $domain       Text domain.
+	 * @return string|false|null
+	 */
+	public static function script_translations( $translations, $file, $handle, $domain ) {
+		/**
+		 * Text domains whose JS translations are merged, with their plugin
+		 * languages folder. Pro adds `mediashield-pro`.
+		 *
+		 * @since 1.4.4
+		 *
+		 * @param array<string, string> $dirs Text domain => languages folder.
+		 */
+		$dirs = (array) apply_filters( 'mediashield_script_translation_dirs', array( 'mediashield' => MEDIASHIELD_PATH . 'languages' ) );
+		if ( null !== $translations || ! isset( $dirs[ $domain ] ) ) {
+			return $translations;
+		}
+
+		$locale = determine_locale();
+		$files  = array_merge(
+			(array) glob( trailingslashit( $dirs[ $domain ] ) . "{$domain}-{$locale}-*.json" ),
+			(array) glob( WP_LANG_DIR . "/plugins/{$domain}-{$locale}-*.json" )
+		);
+
+		$merged = null;
+		foreach ( array_filter( $files ) as $json_file ) {
+			$data     = json_decode( (string) file_get_contents( $json_file ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- A local language file.
+			$messages = is_array( $data['locale_data'] ?? null ) ? reset( $data['locale_data'] ) : null;
+			if ( ! is_array( $messages ) ) {
+				continue;
+			}
+			if ( null === $merged ) {
+				$data['locale_data'] = array( 'messages' => $messages );
+				$merged              = $data;
+				continue;
+			}
+			$merged['locale_data']['messages'] = array_merge( $merged['locale_data']['messages'], $messages );
+		}
+
+		return null === $merged ? $translations : (string) wp_json_encode( $merged );
 	}
 
 	/**

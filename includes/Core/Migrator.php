@@ -38,15 +38,7 @@ class Migrator {
 		}
 
 		Schema::create_tables();
-		Settings::seed_defaults();
-
-		// v3 — promote legacy free-form milestone tags into the unified
-		// `ms_tags` dictionary and record the canonical `tag_id` alongside
-		// the display string in each user's `_ms_video_tags` meta entry.
-		// The per-version gate lives inside the helper itself so each
-		// migration step is independently idempotent and PHPStan can't
-		// narrow the comparison via the outer version-bump branch.
-		self::backfill_milestone_tags();
+		Settings::seed_defaults( $installed > 0 );
 
 		// v5 — give back the analytics history that unconditional archiving
 		// moved out of reach. Scheduled rather than run inline: a long-lived
@@ -58,10 +50,11 @@ class Migrator {
 		// videos to claim; a fresh install writes the claim at upload.
 		self::claim_uploaded_files( $installed );
 
-		// v7 - rebuild the rewrite rules once. Before 1.4.1 the activation
-		// flush ran before the post types were registered, so sites activated
-		// on 1.4.0 or earlier saved rules without /playlist/ and an update by
-		// zip never re-activates.
+		// v13 - rebuild the rewrite rules. Playlists are no longer a page of
+		// their own (1.4.4), and a saved /playlist/<slug>/ rule would send that
+		// address to the home page instead of a 404. An update by zip never
+		// re-activates, so the upgrade drops the rules. (v7 did the same when
+		// 1.4.1 added the route; v13 covers sites from before and after it.)
 		self::rebuild_rewrite_rules();
 
 		// v8 - move Media Library files that protected videos play from into
@@ -81,6 +74,53 @@ class Migrator {
 		// 1.4.3 ones once (Admin\NewDefaultsNotice). A fresh install has
 		// them already.
 		self::offer_new_defaults( $installed );
+
+		// v14 - store which existing videos have nothing to play, for the
+		// Videos list status and counts. Local checks only.
+		if ( $installed > 0 && $installed < 14 ) {
+			\MediaShield\CPT\VideoStatus::backfill();
+			// An update keeps the old site-wide protection switches working
+			// until the owner picks a level (Protection::legacy_switches()).
+			add_option( \MediaShield\Player\Protection::SWITCHES_KEPT, 1 );
+		}
+
+		// v15 - the length of files uploaded before 1.4.4, read from the file.
+		// Background job (SelfHosted::backfill_lengths(), 50 files a run):
+		// reading files is slow, and an upgrade is the worst moment to block.
+		if ( $installed > 0 && $installed < 15 ) {
+			add_option( \MediaShield\Upload\Drivers\SelfHosted::LENGTHS_PENDING, '0', '', false );
+		}
+
+		// v16 - no step of its own: the bump makes seed_defaults() above
+		// store ms_learnomy_new_lesson_pct (the stored Require X% watched) on
+		// sites that reached v15 before that setting existed, so the saved
+		// value is what Settings shows, never a missing row read as 80.
+
+		// v17 - take "No source" off videos v14 flagged that still play: a
+		// stored link with a stored platform (VideoStatus::lacks_source()).
+		// One read and one delete. Sites below v14 get the fixed backfill.
+		if ( $installed >= 14 && $installed < 17 ) {
+			\MediaShield\CPT\VideoStatus::clear_played_links();
+		}
+
+		// v18 - index where each video and playlist is placed (VideoUsage),
+		// so My Videos and "Used in" never scan post content. Background job
+		// over existing content (ms_index_usage, 100 posts a run); a fresh
+		// install's first run finds nothing and finishes. Reads scan until
+		// it is done.
+		if ( $installed < 18 ) {
+			add_option( \MediaShield\CPT\VideoUsage::INDEX_PENDING, '0', '', false );
+		}
+
+		// v19 - member milestone tags were also linked to the video (v3 and
+		// MilestoneTracker before 1.4.4), mixing them into the owner's video
+		// tags. Take those links off; the member keeps the tag (MSUX-18).
+		// Background job (ms_separate_member_tags), so the update stays instant.
+		// No `< 19` check: run() already returned for $installed >= MEDIASHIELD_DB_VERSION (19).
+		// When v20 lands, add `&& $installed < 19` back here.
+		if ( $installed > 0 ) {
+			add_option( TagManager::MEMBER_TAGS_PENDING, '0', '', false );
+		}
 
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
 	}
@@ -159,7 +199,7 @@ class Migrator {
 	 * runs on plugins_loaded, before the post types exist.
 	 */
 	private static function rebuild_rewrite_rules(): void {
-		if ( (int) get_option( 'ms_db_version', 0 ) >= 7 ) {
+		if ( (int) get_option( 'ms_db_version', 0 ) >= 13 ) {
 			return;
 		}
 		delete_option( 'rewrite_rules' );
@@ -216,58 +256,5 @@ class Migrator {
 			},
 			20
 		);
-	}
-
-	/**
-	 * Walk every `_ms_video_tags` user meta record and ensure each `tag`
-	 * string exists in `ms_tags`. Stores the resolved `tag_id` back into the
-	 * meta entry and links the originating video to the tag via `ms_video_tags`.
-	 *
-	 * Idempotent: a re-run only touches entries that don't already carry a
-	 * non-zero `tag_id`. Self-gates by reading `ms_db_version` so installs
-	 * already at v3+ short-circuit before any usermeta scan.
-	 */
-	private static function backfill_milestone_tags(): void {
-		if ( (int) get_option( 'ms_db_version', 0 ) >= 3 ) {
-			return;
-		}
-
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-shot migration of legacy user meta records.
-		$rows = $wpdb->get_results(
-			"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags'"
-		);
-		if ( empty( $rows ) ) {
-			return;
-		}
-
-		foreach ( $rows as $row ) {
-			$user_id   = (int) $row->user_id;
-			$user_tags = maybe_unserialize( $row->meta_value );
-			if ( ! is_array( $user_tags ) ) {
-				continue;
-			}
-			$changed = false;
-			foreach ( $user_tags as $key => $entry ) {
-				if ( ! is_array( $entry ) || empty( $entry['tag'] ) ) {
-					continue;
-				}
-				if ( ! empty( $entry['tag_id'] ) ) {
-					continue; // Already migrated.
-				}
-				$tag_id = TagManager::ensure( (string) $entry['tag'], $user_id );
-				if ( $tag_id > 0 ) {
-					$user_tags[ $key ]['tag_id'] = $tag_id;
-					if ( ! empty( $entry['video_id'] ) ) {
-						TagManager::assign_to_video( (int) $entry['video_id'], $tag_id, $user_id );
-					}
-					$changed = true;
-				}
-			}
-			if ( $changed ) {
-				update_user_meta( $user_id, '_ms_video_tags', $user_tags );
-			}
-		}
 	}
 }

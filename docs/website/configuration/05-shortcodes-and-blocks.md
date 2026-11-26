@@ -36,7 +36,7 @@ Renders a protected playlist player: the current video, plus a sidebar list of t
 |-----------|----------|-------------|
 | `id` | Yes | The ID number of the playlist from your MediaShield library |
 
-Access control, session tracking, milestones, the watermark and "Hide Video Source URL" all apply per video as the queue advances, using each video's own protection level.
+Access control, session tracking, milestones, the watermark and Strict's hidden file address all apply per video as the queue advances, using each video's own protection level.
 
 ### [mediashield_my_videos] - User's watched videos
 
@@ -46,7 +46,11 @@ Renders a grid of every video the current logged-in user has watched, with compl
 [mediashield_my_videos]
 ```
 
-No attributes. Visitors who are not logged in see "Please log in to see your video history." Use this on a member dashboard or course completion page.
+One optional attribute, `browse_url`: where a member with no videos yet can find some, shown as a **Browse videos** button (the block has the same setting, **Browse videos link**). Without it the empty list has no button. Visitors who are not logged in see "Please log in to see your video history." with a **Log in** button. Use this on a member dashboard or course completion page.
+
+```
+[mediashield_my_videos browse_url="https://example.com/courses/"]
+```
 
 Only videos at Standard or Strict protection appear here, because those are the levels that record watch sessions.
 
@@ -56,7 +60,13 @@ All three blocks are available in the block inserter by searching for "MediaShie
 
 ### MediaShield Video block
 
-Embeds a single protected video. In the block editor it opens a video picker, and you can also paste a video URL to create a library entry on the fly. The editor shows a preview, and the block sidebar exposes the video's protection level and duration so you can change them without leaving the page.
+Embeds a single protected video. Paste a video link into the block, or click **Choose from library**. The library picker lists only published videos that can play (never a draft or a video with "No source"), searches as you type and shows 20 videos at a time with **Show more**; each row shows the poster, the title, and the platform, length and protection, for example "YouTube · 12:04 · Site default (Standard)".
+
+- **A link already in your library.** The block says "This link is already in your library" with the video's title, platform, length and protection, and offers **Use this video** first. Choose **Add as a new video** only when you really want a second copy, for example to give it different protection. A YouTube link matches however it is written (`youtu.be/...`, `watch?v=...`, with or without a start time).
+- **A new link.** The video is added to your library and placed in the block.
+- **A link that is not a video.** The block says so and adds nothing.
+
+Once a video is chosen, the block shows its poster, title, platform and length. The block sidebar shows the same, the video's protection level with a **Change on the video** link, and the other pages that show the video. Protection is set once, on the video, so every page that shows it is protected the same way. **Pick a different video** and **Remove video** are at the bottom of the sidebar.
 
 Frontend output includes the player, watermark, session tracking, and the login overlay when required.
 

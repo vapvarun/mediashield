@@ -4,40 +4,46 @@ The Protection section of **MediaShield > Settings** governs the technical layer
 
 ## Protection levels
 
-Before tuning individual controls, set the right protection level. The levels are not a simple ladder of extras - each one changes what the player does:
+Settings, the video edit screen, the setup wizard, the Videos list and the block use the same four levels in the same words. Each level includes the one above it:
 
-| Level | What happens |
+| Level | What the viewer gets |
 |-------|-------------|
-| None | No extra protection for this video: no watermark, no session tracking. The site-wide **Require Login** setting still applies, so while it is on a guest is asked to log in. For a public preview, turn Require Login off. Player features (speed, resume, sticky, end screen) still work. |
-| Basic | Login gate plus the protection controls below. Right-click is always blocked on a Basic player, even with Block Right-Click off. No watermark, and no session tracking or milestones, because no watch session is started. |
-| Standard | Login gate, watermark, session tracking, and milestones. |
-| Strict | Everything in Standard, and forces developer-tools detection, pause-on-detection, and source-URL hiding on for that video even when those toggles are off globally. |
+| None | The video plays as the platform shows it. Right-click stays blocked while **Block right-click on every video** is on (the default). Player features (speed, resume, sticky, end screen) still work. |
+| Basic | Right-click and download blocked. No watermark, and no tracked viewing or milestones, because no watch session is started (except to measure a lesson's "Watch X% to complete", below). |
+| Standard | Basic, plus a watermark with the viewer's name and tracked viewing (milestones, resume, analytics, the stream limit). |
+| Strict | Standard, plus the file address hidden from the page and developer tools detected (the video pauses while they are open). |
 
-The important one to know is Basic: it protects the player but records nothing. If you want analytics for a video, use Standard or Strict.
+Login is not part of a level. **Require login** is one site setting, under **Settings > Who can watch**, and applies at every level, None included.
 
-Set the default level under General. Override it per video on the video edit screen.
+Basic protects the player but records nothing. If you want analytics for a video, use Standard or Strict.
+
+**YouTube, Vimeo and Wistia videos.** These platforms serve the video from their own sites, so there is no file address for MediaShield to hide. At Standard and Strict MediaShield covers the platform's own links instead: the title and share buttons, the "Watch on YouTube" and Vimeo logos, Vimeo's like, watch later and share buttons, the related videos shown on pause and the end screen. Clicking them plays or pauses the video. YouTube videos also load from YouTube's privacy-enhanced domain, with annotations off and related videos limited to the same channel. Someone determined can still find the video on the platform; for files only your members can reach, upload them or use Bunny Stream.
+
+**A lesson's watch rule works at every level.** When a lesson asks the member to watch a share of the video ("Watch 70% to complete", set on the lesson or by **Lesson Completion** in Settings), MediaShield measures how much a logged-in member watches even at None or Basic, so Complete unlocks when they reach it. Nothing else is added at those levels: no watermark, no stream limit and no developer-tools detection. The site-wide **Lesson Completion** percentage is measured only on lesson screens: LearnDash lessons and topics (with Pro), or a Learnomy lesson that sets its own percentage. The same video in a blog post or on a landing page records nothing. Without a watch rule, None and Basic record nothing, as before. Guests are never measured. At None and Basic the video starts playing at once; the measuring starts alongside it and never holds the video.
+
+Pick the site's level on the Protection card. A video can set its own on its edit screen.
+
+### Sites updated from 1.4.3 or earlier
+
+Before 1.4.4, **Hide Video Source URL**, **Detect Developer Tools** and **Pause Video When Detected** were site-wide switches that applied at every protected level. They now belong to Strict.
+
+An update changes nothing for your members: on a site that ran 1.4.3 or earlier, the switches that were on keep working for every protected video, whether you ever changed them or not. The Protection card names them, with a **Use the levels** button. Picking a level (or pressing that button) moves the site onto the levels, and from then on Standard videos no longer hide a pasted file's address or watch for developer tools; Strict videos do. A new install starts on the levels.
 
 ## Protection controls
 
-These apply to every player except those set to None.
+**Block right-click on every video** - Basic, Standard and Strict always block the browser's context menu over the player. On by default, so a video set to None blocks it too; turn it off to leave None videos untouched.
 
-**Block Right-Click** - Disables the browser context menu over the player so viewers can't use "Save video as". On by default. A video at the Basic level blocks it whatever this toggle says.
+**Block the save shortcut (Ctrl+S / Cmd+S)** - Intercepts the save shortcut when the keypress happens inside a protected player. Off by default. This is the only shortcut it blocks; it does not intercept View Source, print, or developer-tools shortcuts, because browsers do not let a page do that reliably.
 
-**Block Save Shortcut (Ctrl+S / Cmd+S)** - Intercepts the save shortcut when the keypress happens inside a protected player. Off by default. This is the only shortcut it blocks; it does not intercept View Source, print, or developer-tools shortcuts, because browsers do not let a page do that reliably.
+**File address (Strict)** - Self-hosted video only. MediaShield stops printing the file's own address in the page and points the player at `/wp-json/mediashield/v1/stream/<id>` instead. That endpoint runs the same access check as the player on every request, including every seek, so a URL copied out of the page is useless to somebody without access. The URL carries a signed token naming the viewer, because a `<video>` element cannot send an authentication header.
 
-**Hide Video Source URL** - On by default, and **self-hosted video only**.
+Videos you upload to MediaShield, and files it moved into its protected folder, always play through that signed address, at every level. A file you pasted from elsewhere in your Media Library plays through it on Strict.
 
-When on, MediaShield stops printing the file's own address in the page and points the player at `/wp-json/mediashield/v1/stream/<id>` instead. That endpoint runs the same access check as the player on every request, including every seek, so a URL copied out of the page is useless to somebody without access. The URL carries a signed token naming the viewer, because a `<video>` element cannot send an authentication header.
+It does nothing for YouTube, Vimeo, Wistia, or Bunny embeds. Those play in the provider's iframe, whose address has to contain the provider's video ID for playback to work at all.
 
-Videos you upload to MediaShield, and files it moved into its protected folder, always play through that signed address, whether this setting is on or off. Their raw address is never printed, because the protected folder refuses direct requests anyway. The setting decides only for a file you pasted from elsewhere in your Media Library: off, the page uses that file's own address, except on a video at the Strict level, which always plays through the signed address.
+**Developer tools (Strict)** - Detects when a viewer opens browser developer tools while watching a Strict video, using a debugger-timing check, which browser zoom does not affect, and pauses the video with an overlay until they close.
 
-It does nothing for YouTube, Vimeo, Wistia, or Bunny embeds, and the setting says so in the admin. Those play in the provider's iframe, whose address has to contain the provider's video ID for playback to work at all. Blanking it would break the video and protect nothing.
-
-**Detect Developer Tools** - Detects when a viewer opens browser developer tools while watching, using a debugger-timing check, which browser zoom does not affect. On by default. Detection runs only on pages with a protected player (any level except None), so other pages on your site never show the overlay.
-
-**Pause Video When Detected** - Pauses playback and shows an overlay when developer tools are detected. Off by default; detection is recorded either way. Videos set to Strict force this on.
-
-**Overlay Title** and **Overlay Message** - The heading and body of that overlay. Defaults: "Developer Tools Detected" and "Please close developer tools to continue watching this video."
+**Developer Tools Title (Strict)** and **Developer Tools Message (Strict)**, under **Settings > Messages** - The heading and body of that overlay. Defaults: "Developer Tools Detected" and "Please close developer tools to continue watching this video."
 
 ## What detection does and does not do
 

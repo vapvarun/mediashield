@@ -113,11 +113,10 @@
 						message = labels.bunnyStreamFile || '';
 					}
 
-					if ( ! message && 'self' === detected && /^https?:\/\//i.test( url ) && ! /\.(mp4|webm|ogg|ogv|mov|m3u8|mpd)(\?|#|$)/i.test( url ) ) {
-						// A URL we could not place, pointing at something that is
-						// not obviously a media file. Saving it as self-hosted is
-						// still allowed — an operator may know better than we do —
-						// but they should hear that we did not recognise it.
+					if ( ! message && 'self' === detected && ! /\.(mp4|webm|ogg|ogv|mov|m4v|m3u8|mpd)(\?|#|$)/i.test( url ) && ! /mediashield\/v1\/stream\//.test( url ) ) {
+						// Not a link MediaShield can play. The server refuses to
+						// save it (Platforms::recognise()); say so now, with what
+						// to use instead (Basecamp 10545260436).
 						message = labels.unrecognised || '';
 					}
 				}
@@ -215,6 +214,77 @@
 			uploadBtn.disabled = ! file || tooLarge( file );
 		} );
 
+		// An uploaded file's poster: its frame at one second (or a tenth of a
+		// short clip), drawn from the file still in the browser and saved as
+		// the video's featured image, unless the owner set one (MSUX-11).
+		// Best effort: any failure leaves the video without a poster.
+		var capturePoster = function ( file, name ) {
+			var thumb = document.getElementById( '_thumbnail_id' );
+			if ( ( thumb && parseInt( thumb.value, 10 ) > 0 ) || ! window.URL || ! window.fetch || ! data.postId ) {
+				return;
+			}
+			var root = String( data.restUrl || '/wp-json/mediashield/v1/' ).replace( /mediashield\/v1\/?$/, '' );
+			var src = URL.createObjectURL( file );
+			var video = document.createElement( 'video' );
+			video.muted = true;
+			video.preload = 'auto';
+			video.playsInline = true;
+			video.addEventListener( 'error', function () {
+				URL.revokeObjectURL( src );
+			} );
+			video.addEventListener( 'loadeddata', function () {
+				video.currentTime = Math.min( 1, ( video.duration || 2 ) / 10 );
+			}, { once: true } );
+			video.addEventListener( 'seeked', function () {
+				var w = video.videoWidth;
+				var h = video.videoHeight;
+				if ( ! w || ! h ) {
+					URL.revokeObjectURL( src );
+					return;
+				}
+				var scale = Math.min( 1, 1280 / w );
+				var canvas = document.createElement( 'canvas' );
+				canvas.width = Math.round( w * scale );
+				canvas.height = Math.round( h * scale );
+				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+				URL.revokeObjectURL( src );
+				canvas.toBlob( function ( blob ) {
+					if ( ! blob ) {
+						return;
+					}
+					var body = new FormData();
+					body.append( 'file', blob, String( name || 'video' ).replace( /\.[^.]+$/, '' ) + '-poster.jpg' );
+					body.append( 'post', String( data.postId ) );
+					fetch( root + 'wp/v2/media', { method: 'POST', credentials: 'same-origin', headers: { 'X-WP-Nonce': data.nonce || '' }, body: body } )
+						.then( function ( r ) {
+							return window.mediashieldRequest.readJSON( r );
+						} )
+						.then( function ( media ) {
+							if ( ! media || ! media.id ) {
+								return;
+							}
+							// The edit form posts _thumbnail_id on save; keep it in step.
+							if ( thumb ) {
+								thumb.value = String( media.id );
+							}
+							return fetch( root + 'wp/v2/mediashield-videos/' + data.postId, {
+								method: 'POST',
+								credentials: 'same-origin',
+								headers: { 'X-WP-Nonce': data.nonce || '', 'Content-Type': 'application/json' },
+								body: JSON.stringify( { featured_media: media.id } ),
+							} ).then( function ( r ) {
+								return window.mediashieldRequest.readJSON( r );
+							} );
+						} )
+						.catch( function ( err ) {
+							// The video is uploaded; only the poster failed. Say so and why.
+							uploadMsg.appendChild( document.createTextNode( ' ' + ( labels.posterFailed || '' ) + ' ' + window.mediashieldRequest.message( err ) ) );
+						} );
+				}, 'image/jpeg', 0.85 );
+			}, { once: true } );
+			video.src = src;
+		};
+
 		// done (optional) runs only after a successful upload.
 		var startUpload = function ( done ) {
 			if ( busy || ! fileField.files.length ) {
@@ -303,7 +373,22 @@
 				// Reflect the result in the fields the operator can see, so the
 				// screen agrees with what was just stored rather than needing a
 				// reload to tell the truth.
-				if ( urlField && body.embed_url ) {
+				// A file this site holds shows by its name; its internal
+				// /stream/ address never goes in the field (MSUX-09). The field
+				// stays empty and the held-file marker keeps the file on save,
+				// as on the screen shown after a reload.
+				var heldName = 'self' === body.platform && body.file_name ? body.file_name : '';
+				if ( urlField && heldName ) {
+					urlField.value = '';
+					var postForm = urlField.form;
+					if ( postForm && ! postForm.querySelector( 'input[name="_ms_source_held"]' ) ) {
+						var held = document.createElement( 'input' );
+						held.type = 'hidden';
+						held.name = '_ms_source_held';
+						held.value = '1';
+						postForm.appendChild( held );
+					}
+				} else if ( urlField && body.embed_url ) {
 					urlField.value = body.embed_url;
 				}
 				// The driver the server chose - Pro's default upload target may
@@ -314,6 +399,12 @@
 				}
 				if ( videoIdField && body.platform_video_id ) {
 					videoIdField.value = body.platform_video_id;
+				}
+				// The length read from the file; left at 0 the next save
+				// would have overwritten it.
+				var durationField = document.getElementById( 'ms-duration' );
+				if ( durationField && parseInt( body.duration, 10 ) > 0 ) {
+					durationField.value = String( parseInt( body.duration, 10 ) );
 				}
 				if ( platformLabel ) {
 					platformLabel.textContent = labels[ uploaded ] || uploaded;
@@ -326,7 +417,12 @@
 					note.style.display = 'none';
 				}
 
-				uploadMsg.textContent = labels.uploadDone || 'Uploaded.';
+				uploadMsg.textContent = heldName
+					? ( labels.uploadedFile || 'Uploaded file:' ) + ' ' + heldName
+					: ( labels.uploadDone || 'Uploaded.' );
+				if ( heldName ) {
+					capturePoster( file, heldName );
+				}
 				// The file is stored now; clear it so a later save does not
 				// upload it a second time.
 				fileField.value = '';
@@ -413,4 +509,50 @@
 			endscreenFields.style.display = this.value === 'on' ? '' : 'none';
 		} );
 	}
+
+	// Tags: suggestions for the tag being typed after a comma. A datalist
+	// matches the whole field, so after "one, t" nothing matched and only the
+	// first tag could be picked (Basecamp 10536871245). Each suggestion keeps
+	// what is already typed and offers only tags not typed yet.
+	var tagsField = document.getElementById( 'ms-add-tags' );
+	var tagsList  = document.getElementById( 'ms-tag-names' );
+	if ( tagsField && tagsList ) {
+		var tagNames = Array.prototype.map.call( tagsList.options, function ( o ) { return o.value; } );
+		tagsField.addEventListener( 'input', function () {
+			var value  = tagsField.value;
+			var cut    = value.lastIndexOf( ',' );
+			// What is typed up to the tag being written, spaces after the comma
+			// included, so each suggestion starts with exactly the typed text.
+			var prefix = cut === -1 ? '' : value.slice( 0, cut + 1 ) + value.slice( cut + 1 ).match( /^\s*/ )[ 0 ];
+			var typed  = value.slice( 0, cut === -1 ? 0 : cut ).split( ',' ).map( function ( t ) {
+				return t.trim().toLowerCase();
+			} );
+			while ( tagsList.firstChild ) {
+				tagsList.removeChild( tagsList.firstChild );
+			}
+			tagNames.forEach( function ( name ) {
+				if ( typed.indexOf( name.toLowerCase() ) !== -1 ) {
+					return;
+				}
+				var option   = document.createElement( 'option' );
+				option.value = prefix + name;
+				tagsList.appendChild( option );
+			} );
+		} );
+	}
 } )();
+
+// The chosen protection level's words under the select (Protection::levels()).
+( function () {
+	'use strict';
+
+	var select = document.getElementById( 'ms-protection-level' );
+	var summary = document.getElementById( 'ms-protection-summary' );
+	if ( ! select || ! summary ) {
+		return;
+	}
+	select.addEventListener( 'change', function () {
+		var option = select.options[ select.selectedIndex ];
+		summary.textContent = option ? option.getAttribute( 'data-summary' ) || '' : '';
+	} );
+}() );

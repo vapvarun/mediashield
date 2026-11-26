@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
+use MediaShield\Access\WatchedSpans;
 use MediaShield\Core\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -299,30 +300,9 @@ class SessionController extends WP_REST_Controller {
 		// Access control check.
 		$access = AccessControl::can_watch( $video_id, $user_id );
 		if ( ! $access['allowed'] ) {
-			// Promote the access reason to the WP_Error code so the client can
-			// route to the right overlay for whichever gate denied it. Falls
-			// back to the legacy 'access_denied' so any integrator listening for
-			// the old code still works.
-			$code = ! empty( $access['reason'] ) ? sanitize_key( $access['reason'] ) : 'access_denied';
-			// A course to enrol in: name it and link to it, in the owner's
-			// words (Basecamp 10530930631).
-			if ( ! empty( $access['link'] ) ) {
-				return new WP_Error(
-					$code,
-					// An integration that says the viewer is already in the
-					// course (keep_reason) gets its own words, not "Enroll".
-					! empty( $access['keep_reason'] ) && '' !== (string) ( $access['reason'] ?? '' )
-						? (string) $access['reason']
-						/* translators: %s: course title. */
-						: sprintf( Settings::message( 'ms_course_denied_text', __( 'This video is part of %s. Enroll to watch it.', 'mediashield' ) ), $access['link']['title'] ),
-					array(
-						'status'       => 403,
-						'access_url'   => $access['link']['url'],
-						'access_label' => '' !== (string) ( $access['link']['label'] ?? '' ) ? (string) $access['link']['label'] : Settings::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
-					)
-				);
-			}
-			return new WP_Error( $code, $access['reason'], array( 'status' => 403 ) );
+			// The same refusal the page carries for a player it renders refused
+			// (Renderer), so the player needs no request to show it.
+			return AccessControl::refusal( $access, $user_id );
 		}
 
 		// Start session.
@@ -330,10 +310,16 @@ class SessionController extends WP_REST_Controller {
 		$ua     = $request->get_header( 'user-agent' ) ?? '';
 		$result = SessionManager::start( $video_id, $user_id, $ip, $ua );
 
+		// The database could not record the session (busy after every retry,
+		// or failing): ask the viewer to try again, never blame their streams.
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
 		if ( false === $result ) {
 			return new WP_Error(
 				'concurrent_limit',
-				__( 'Too many active streams. Please close another video first.', 'mediashield' ),
+				__( 'You are playing too many videos at once. Close another video first.', 'mediashield' ),
 				array( 'status' => 429 )
 			);
 		}
@@ -372,14 +358,18 @@ class SessionController extends WP_REST_Controller {
 			array(
 				// The member's watched share, so the player can report the
 				// moment they reach "Require X% watched" (null when off).
-				'watch'            => $watch ? array(
-					'watched_pct'  => $watch['watched'],
-					'required_pct' => $watch['required'],
+				// For a member always, so a player whose lesson sets its own %
+				// (data-watch-required) can report on time too.
+				'watch'            => $user_id > 0 ? array(
+					'watched_pct'  => $watch ? $watch['watched'] : WatchedSpans::percent( $user_id, $video_id ),
+					'required_pct' => $watch ? $watch['required'] : 0,
 				) : null,
 				'session_token'    => $result['session_token'],
 				'resume_position'  => $result['resume_position'],
 				'is_resumed'       => $result['is_resumed'],
-				'watermark_config' => $watermark_config,
+				// None and Basic show no watermark; their viewing only
+				// measures a lesson's watch rule (SessionManager::tracking_only()).
+				'watermark_config' => SessionManager::tracking_only( $video_id ) ? array( 'enabled' => false ) : $watermark_config,
 				'video'            => array(
 					'id'               => $video_id,
 					'title'            => sanitize_text_field( $video->post_title ),
@@ -480,6 +470,11 @@ class SessionController extends WP_REST_Controller {
 		if ( $watch ) {
 			$response['watched_pct']  = $watch['watched'];
 			$response['required_pct'] = $watch['required'];
+		} elseif ( $parsed && (int) $parsed['user_id'] > 0 ) {
+			// No site-wide rule: still the member's share, for a player whose
+			// lesson sets its own % (data-watch-required).
+			$response['watched_pct']  = WatchedSpans::percent( (int) $parsed['user_id'], (int) $parsed['video_id'] );
+			$response['required_pct'] = 0;
 		}
 
 		return rest_ensure_response( $response );

@@ -8,13 +8,13 @@ A series plays in order in the protected player, with the same access rules, wat
 
 ## Creating a playlist
 
-Go to **MediaShield > Playlists** and click **Add New Playlist**. That opens a standard WordPress edit screen with a **Playlist Items** panel.
+Go to **MediaShield > Playlists** and click **Add New Playlist**. That opens the playlist's edit screen, laid out like a video's: the title, then **Videos in this playlist** (the videos, their order and the playback options), then an optional description.
 
 Give the playlist a title, then click **Add video** to pick videos from your library. Each row has Move up, Move down, and Remove buttons; the order you build is the order they play. Changes to the item list save as you make them - the Publish/Update button saves the title, description, and featured image.
 
 ## Playback options
 
-A playlist has four playback options. Set them under **Playback**, either in the **Manage items** popup on the Playlists screen or in the **Playlist Items** panel on the playlist's edit screen. Each one saves as you change it.
+A playlist has four playback options. Set them under **Playback**, either in the **Manage items** popup on the Playlists screen or under **Videos in this playlist** on the playlist's edit screen. Each one saves as you change it.
 
 - **Play the next video automatically** - when a video ends, a short countdown runs and the next one starts.
 - **Seconds before the next video starts** - the length of that countdown, 1 to 30. Default is 5.
@@ -45,6 +45,10 @@ In the block inserter, search for **MediaShield Playlist**. The block opens a pl
 
 Both embedding methods produce the same output. An empty playlist, or one that is not published, renders nothing for visitors and a short explanation for anyone who can edit posts.
 
+Only published videos play. A draft or private video can stay in the playlist: **Manage items** and the block in the editor mark it **Not published, not shown on the page**, and the block's video count leaves it out, so the editor shows the same number as the page.
+
+A playlist has no page of its own. Viewers see it only where you place it with the shortcode or the block, the same as a single video. Links to the old `/playlist/<name>/` address (MediaShield 1.4.1 to 1.4.3) keep working: they lead to a published page that shows the playlist with the block or shortcode. If no page shows it, the old address answers "page not found", so place the playlist on a page.
+
 ## How playlists work with protection
 
 Each video in the queue is treated on its own terms:
@@ -62,4 +66,6 @@ Set a **Featured Image** on the playlist post to use as the playlist thumbnail i
 
 ## Reordering videos
 
-Open the playlist edit screen and use the Move up and Move down buttons in the Playlist Items panel. The new order saves immediately and takes effect for all future playback.
+Open the playlist edit screen and use the Move up and Move down buttons under **Videos in this playlist**, or **Manage items** on the Playlists screen. The new order saves immediately and takes effect for all future playback. If a save fails, the panel says so and shows the order that is saved.
+
+Anyone who can edit the playlist can change its videos and their order. A contributor can build their own playlists but cannot reorder someone else's.

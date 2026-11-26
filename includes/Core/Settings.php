@@ -26,7 +26,11 @@ class Settings {
 	/**
 	 * Schema for every free-plugin option.
 	 *
-	 * Each entry: `array( 'type' => <scalar>, 'default' => <value>, 'validate' => ?callable )`.
+	 * Each entry: `array( 'type' => <scalar>, 'default' => <value>, 'validate' => ?callable, 'upgrade_default' => ?<value> )`.
+	 *
+	 * `upgrade_default` is the value a site that updates from an older version
+	 * starts with when the setting is new to it (seed_defaults()); a Closure is
+	 * called for it, to start from what the site stored.
 	 *
 	 * Translatable defaults must be returned from a method (not a const) so the
 	 * text domain is loaded before the strings are read.
@@ -98,6 +102,16 @@ class Settings {
 				'default'  => 30,
 				'validate' => $min_int( 1 ),
 			),
+			// The viewer's email address in the watermark. Off on a new install:
+			// an email on screen ends up in screen recordings and shared
+			// screens. A site that updates from before 1.4.4 keeps showing it,
+			// as it always did (`upgrade_default`, seed_defaults()), until the
+			// owner turns it off (Basecamp 10545260667).
+			'ms_watermark_show_email'    => array(
+				'type'            => 'boolean',
+				'default'         => false,
+				'upgrade_default' => true,
+			),
 			// The viewer's IP address in the watermark. Off by default: an IP
 			// is personal data (GDPR), so showing it is the owner's choice,
 			// made next to a privacy note (Basecamp 10530930695).
@@ -154,6 +168,19 @@ class Settings {
 					return max( 0, min( 100, (int) $v ) );
 				},
 			),
+			// Where a new Learnomy protected video lesson starts its "watch %"
+			// (answers learnomy_protected_video_default_watch_pct). 80 on a new
+			// install, as the Lesson completion card says; a site that updates
+			// starts from its Require X% watched, which is also what Learnomy's
+			// one-time move copies onto existing lessons (Basecamp 10545260590).
+			'ms_learnomy_new_lesson_pct' => array(
+				'type'            => 'integer',
+				'default'         => 80,
+				'upgrade_default' => static fn() => (int) get_option( 'ms_lms_require_watch_pct', 0 ),
+				'validate'        => static function ( $v ) {
+					return max( 0, min( 100, (int) $v ) );
+				},
+			),
 
 			// Badge. Off for new installs: a vendor credit on the owner's paid
 			// video is the owner's call (wordpress.org guideline 10, credits on
@@ -176,8 +203,12 @@ class Settings {
 				'default' => 'Please log in to watch this video',
 			),
 			'ms_login_button_text'       => array(
-				'type'    => 'string',
-				'default' => 'Log In',
+				'type'            => 'string',
+				'default'         => 'Log in',
+				// "Log in", as WordPress and My Videos write it (UX test
+				// MSUX-33). A site still storing the old default is not
+				// a custom text (message()).
+				'former_defaults' => array( 'Log In' ),
 			),
 			'ms_access_denied_text'      => array(
 				'type'    => 'string',
@@ -197,6 +228,18 @@ class Settings {
 			'ms_unavailable_text'        => array(
 				'type'    => 'string',
 				'default' => 'This video is unavailable.',
+			),
+			// Where a logged-in member who may not watch a video can get access:
+			// the owner's membership or pricing page. Empty = no button
+			// (Basecamp 10545260568). A course link from an LMS wins.
+			'ms_access_denied_url'       => array(
+				'type'     => 'string',
+				'default'  => '',
+				'validate' => $url_or_empty,
+			),
+			'ms_access_denied_button_text' => array(
+				'type'    => 'string',
+				'default' => 'See membership options',
 			),
 
 			// Player controls.
@@ -370,11 +413,32 @@ class Settings {
 	/**
 	 * Seed defaults for every option that does not yet exist. Idempotent — safe
 	 * to call on every activation.
+	 *
+	 * A site that already ran MediaShield is updating, not installing: a
+	 * setting new to it that declares `upgrade_default` starts at that value,
+	 * so an update never changes what the site did before. The caller decides
+	 * which, once, before anything is seeded (Migrator::run(), Activator),
+	 * because the version option is written by the first seeding run.
+	 *
+	 * A false default is stored as '0': WordPress does not store an
+	 * add_option() of false, so the row stayed missing and the next seeding
+	 * run read the site as one updating and stored the upgrade_default
+	 * instead (a fresh install got the watermark email on).
+	 *
+	 * @param bool|null $updating True for a site that ran MediaShield before; null reads ms_db_version.
 	 */
-	public static function seed_defaults(): void {
-		foreach ( self::defaults() as $key => $value ) {
+	public static function seed_defaults( ?bool $updating = null ): void {
+		if ( null === $updating ) {
+			$updating = (int) get_option( 'ms_db_version', 0 ) > 0;
+		}
+		foreach ( self::schema() as $key => $entry ) {
 			if ( false === get_option( $key, false ) ) {
-				add_option( $key, $value );
+				$value = $updating && array_key_exists( 'upgrade_default', $entry ) ? $entry['upgrade_default'] : $entry['default'];
+				// An upgrade_default may be worked out from what the site stored.
+				if ( $value instanceof \Closure ) {
+					$value = $value();
+				}
+				add_option( $key, false === $value ? '0' : $value );
 			}
 		}
 	}
@@ -457,8 +521,11 @@ class Settings {
 	 */
 	public static function message( string $key, string $translated ): string {
 		$value = (string) self::get( $key );
+		$entry = self::schema()[ $key ] ?? array();
 
-		return ( self::schema()[ $key ]['default'] ?? null ) === $value ? $translated : $value;
+		// The default (or a default an earlier version stored) shows translated.
+		$defaults = array_merge( array( $entry['default'] ?? null ), $entry['former_defaults'] ?? array() );
+		return in_array( $value, $defaults, true ) ? $translated : $value;
 	}
 
 	/**
@@ -504,10 +571,23 @@ class Settings {
 			// for a page cached before the key existed.
 			'messages'   => array(
 				'loginOverlay'    => self::message( 'ms_login_overlay_text', __( 'Please log in to watch this video', 'mediashield' ) ),
-				'loginButton'     => self::message( 'ms_login_button_text', __( 'Log In', 'mediashield' ) ),
+				'loginButton'     => self::message( 'ms_login_button_text', __( 'Log in', 'mediashield' ) ),
 				'accessDenied'    => self::message( 'ms_access_denied_text', __( 'You do not have access to this video', 'mediashield' ) ),
 				'unavailable'     => self::message( 'ms_unavailable_text', __( 'This video is unavailable.', 'mediashield' ) ),
 				'viewCourse'      => self::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),
+				// The second line of each state (Basecamp 10545260568).
+				'loginSub'        => __( 'It is for members of this site.', 'mediashield' ),
+				'unavailableSub'  => __( 'The site owner has been told. Please try again later.', 'mediashield' ),
+				// A refused member with no course or membership page to go to.
+				'askOwner'        => __( 'Ask the site owner for access.', 'mediashield' ),
+				// Shown only to someone who may edit the video, with an Edit video link.
+				'adminNote'       => __( 'Only editors see this:', 'mediashield' ),
+				'editVideo'       => __( 'Edit video', 'mediashield' ),
+				/* translators: %s: video platform, for example YouTube. */
+				'causeRemoved'    => __( '%s says this video was removed or is private.', 'mediashield' ),
+				/* translators: %s: video platform, for example YouTube. */
+				'causeNoEmbed'    => __( '%s will not play this video here. It may be private, removed, or not allowed on other sites.', 'mediashield' ),
+				'thePlatform'     => __( 'The video platform', 'mediashield' ),
 				// Shown when the media element never loads anything and never
 				// fires an error either - the silent-hang case a bad source URL
 				// produces. Without it the viewer just stares at a dead player.
@@ -515,7 +595,7 @@ class Settings {
 				// Shown while a stalled single-file stream is reset (Basecamp 10506484970).
 				'reconnecting'    => __( 'Reconnecting…', 'mediashield' ),
 				'loadFailed'      => __( 'This video could not be loaded. If you are the site owner, check the video URL in the admin.', 'mediashield' ),
-				'concurrentLimit' => __( 'Too many active streams. Please close another video first.', 'mediashield' ),
+				'concurrentLimit' => __( 'You are playing too many videos at once. Close another video first.', 'mediashield' ),
 				'playlistFailed'  => __( 'This video could not be loaded. Please try again.', 'mediashield' ),
 				'badge'           => __( 'Protected by MediaShield', 'mediashield' ),
 				'speed'           => __( 'Playback speed', 'mediashield' ),
@@ -536,7 +616,7 @@ class Settings {
 				'auto'            => __( 'Auto', 'mediashield' ),
 				/* translators: %s: playback position, for example 12:34. */
 				'resumeFrom'      => __( 'Resume from %s', 'mediashield' ),
-				'dismiss'         => __( 'Dismiss', 'mediashield' ),
+				'startOver'       => __( 'Start over', 'mediashield' ),
 				'adBreaks'        => __( 'Ad breaks', 'mediashield' ),
 				'ad'              => __( 'Ad', 'mediashield' ),
 				'advertisement'   => __( 'Advertisement', 'mediashield' ),

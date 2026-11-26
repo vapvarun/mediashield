@@ -1,0 +1,2 @@
+P9 includes/CPT/Thumbnail.php  # get_thumbnail_url() runs only in the ms_fetch_poster background job (Thumbnail::fetch_poster()); a save only queues it
+P2 build/admin/chunks/chartjs.  # Chart.js, the Dashboard's activity chart: about 50 KB gzipped on its own, loaded only when the Dashboard opens; the admin entry is 8 KB

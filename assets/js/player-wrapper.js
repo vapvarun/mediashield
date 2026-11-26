@@ -64,12 +64,16 @@
 			var playerEl = target.closest( '.ms-protected-player' );
 
 			function initPlayer() {
-				var pv = { modestbranding: 1, rel: 0, fs: 0 };
+				// No annotations, related videos from the same channel only, no
+				// platform fullscreen (MediaShield's keeps the watermark).
+				var pv = { modestbranding: 1, rel: 0, fs: 0, iv_load_policy: 3, playsinline: 1 };
 				if ( options.autoplay === true ) pv.autoplay = 1;
 				if ( options.loop === true ) { pv.loop = 1; pv.playlist = videoId; }
 				if ( options.muted === true ) pv.mute = 1;
 				if ( options.controls === false ) pv.controls = 0;
 				adapter._player = new YT.Player( target, {
+					// The privacy-enhanced domain: no YouTube cookies until play.
+					host: 'https://www.youtube-nocookie.com',
 					videoId: videoId,
 					playerVars: pv,
 					events: {
@@ -87,11 +91,18 @@
 						// turned embedding off. Either way it will not play here.
 						onError: function ( e ) {
 							if ( playerEl && [ 100, 101, 150 ].indexOf( e.data ) > -1 ) {
-								showUnavailable( playerEl );
+								showUnavailable( playerEl, 100 === e.data ? 'removed' : 'not_embeddable', 'YouTube' );
 							}
 						},
 						onStateChange: function ( e ) {
-							adapter._playing = ( e.data === YT.PlayerState.PLAYING );
+							// Only a real play or stop changes it: BUFFERING (every
+							// seek and stall) and CUED leave it as it was, so a
+							// stall is not reported as a pause (Free review #6).
+							if ( e.data === YT.PlayerState.PLAYING ) {
+								adapter._playing = true;
+							} else if ( e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED ) {
+								adapter._playing = false;
+							}
 							if ( e.data === YT.PlayerState.ENDED && adapter._endedCb ) {
 								adapter._endedCb();
 							}
@@ -119,14 +130,6 @@
 
 	// ─── Vimeo Adapter ───────────────────────────────────────────
 
-	// Vimeo's own full screen button takes only its iframe full screen and
-	// leaves the watermark behind, and next to ours it is a second control for
-	// one job. Withdrawing the iframe's permission removes it.
-	function withdrawFullscreen( iframe ) {
-		iframe.removeAttribute( 'allowfullscreen' );
-		iframe.setAttribute( 'allow', ( iframe.getAttribute( 'allow' ) || '' ).replace( /\bfullscreen\s*;?\s*/, '' ) );
-	}
-
 	var VimeoAdapter = {
 		create: function ( target, videoId, options ) {
 			options = options || {};
@@ -146,20 +149,23 @@
 
 			loadSDK( 'https://player.vimeo.com/api/player.js', function () { return window.Vimeo; } )
 				.then( function () {
-					var vimeoOpts = { id: videoId, responsive: true, fullscreen: false };
-					if ( options.autoplay === true ) vimeoOpts.autoplay = true;
-					if ( options.loop === true ) vimeoOpts.loop = true;
-					if ( options.muted === true ) vimeoOpts.muted = true;
-					if ( options.controls === false ) vimeoOpts.controls = false;
-					// The SDK adds its iframe asynchronously; take the permission
-					// away the moment it appears, before the frame navigates.
-					new MutationObserver( function ( records, observer ) {
-						var frame = target.querySelector( 'iframe' );
-						if ( ! frame ) return;
-						withdrawFullscreen( frame );
-						observer.disconnect();
-					} ).observe( target, { childList: true } );
-					adapter._player = new Vimeo.Player( target, vimeoOpts );
+					// Our own iframe, so it never has the fullscreen or
+					// picture-in-picture permission: Vimeo then draws no
+					// fullscreen button next to MediaShield's (UX test MSUX-15,
+					// the SDK's own frame got them before it could be changed),
+					// and no title, byline, portrait or badge links out.
+					var params = { title: 0, byline: 0, portrait: 0, badge: 0, dnt: 1, pip: 0, vimeo_logo: 0 };
+					if ( options.autoplay === true ) params.autoplay = 1;
+					if ( options.loop === true ) params.loop = 1;
+					if ( options.muted === true ) params.muted = 1;
+					if ( options.controls === false ) params.controls = 0;
+					var frame = document.createElement( 'iframe' );
+					frame.src = 'https://player.vimeo.com/video/' + encodeURIComponent( videoId ) + '?' + Object.keys( params ).map( function ( k ) { return k + '=' + params[ k ]; } ).join( '&' );
+					frame.setAttribute( 'allow', 'autoplay; encrypted-media' );
+					frame.setAttribute( 'title', 'Vimeo' );
+					frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;';
+					target.appendChild( frame );
+					adapter._player = new Vimeo.Player( frame );
 
 					adapter._player.on( 'timeupdate', function ( data ) {
 						adapter._position = data.seconds;
@@ -179,7 +185,7 @@
 					} ).catch( function () {
 						// Vimeo refuses a removed or private video here.
 						var vimeoEl = target.closest( '.ms-protected-player' );
-						if ( vimeoEl ) showUnavailable( vimeoEl );
+						if ( vimeoEl ) showUnavailable( vimeoEl, 'private', 'Vimeo' );
 					} );
 				} )
 				.catch( function ( err ) {
@@ -211,18 +217,21 @@
 	var WistiaAdapter = {
 		create: function ( target, hashedId, options ) {
 			options = options || {};
+			// The Wistia API handle is _wistia, not _video: everything that
+			// reads _video treats it as a <video> element, and Wistia's
+			// handle is not one (it got a second play button, UX test MSUX-15).
 			var adapter = {
-				_video: null, _position: 0, _duration: 0, _playing: false,
+				_wistia: null, _position: 0, _duration: 0, _playing: false,
 				_readyCb: null, _endedCb: null,
 				getPosition: function () { return adapter._position; },
 				getDuration: function () { return adapter._duration; },
 				isPlaying: function () { return adapter._playing; },
-				seekTo: function ( s ) { if ( adapter._video ) adapter._video.time( s ); },
-				play: function () { if ( adapter._video ) adapter._video.play(); },
-				pause: function () { if ( adapter._video ) adapter._video.pause(); },
+				seekTo: function ( s ) { if ( adapter._wistia ) adapter._wistia.time( s ); },
+				play: function () { if ( adapter._wistia ) adapter._wistia.play(); },
+				pause: function () { if ( adapter._wistia ) adapter._wistia.pause(); },
 				onReady: function ( cb ) { adapter._readyCb = cb; },
 				onEnded: function ( cb ) { adapter._endedCb = cb; },
-				destroy: function () { if ( adapter._video ) adapter._video.remove(); },
+				destroy: function () { if ( adapter._wistia ) adapter._wistia.remove(); },
 			};
 
 			// Create Wistia embed div inside target. Per-video options become
@@ -232,6 +241,11 @@
 			if ( options.autoplay === true ) embedClasses.push( 'autoPlay=true' );
 			if ( options.loop === true ) embedClasses.push( 'endVideoBehavior=loop' );
 			if ( options.muted === true ) embedClasses.push( 'volume=0' );
+			// One fullscreen button, MediaShield's (it keeps the watermark),
+			// and one play button, the cover's, where the player is shielded
+			// (UX test MSUX-15).
+			embedClasses.push( 'fullscreenButton=false' );
+			if ( options.shield ) embedClasses.push( 'playButton=false' );
 			if ( options.controls === false ) embedClasses.push( 'playbar=false', 'fullscreenButton=false', 'volumeControl=false', 'settingsControl=false', 'playbackRateControl=false', 'controlsVisibleOnLoad=false' );
 			var embedDiv = document.createElement( 'div' );
 			embedDiv.className = embedClasses.join( ' ' );
@@ -243,7 +257,7 @@
 			window._wq.push( {
 				id: hashedId,
 				onReady: function ( video ) {
-					adapter._video = video;
+					adapter._wistia = video;
 					adapter._duration = video.duration();
 					video.bind( 'secondchange', function ( s ) {
 						adapter._position = s;
@@ -252,6 +266,9 @@
 					video.bind( 'pause', function () { adapter._playing = false; } );
 					video.bind( 'end', function () {
 						adapter._playing = false;
+						// Wistia reports whole seconds, so a finished 16.5 s video
+						// stopped at 16 and never reached 100% or Completed.
+						adapter._position = adapter._duration || video.duration() || adapter._position;
 						if ( adapter._endedCb ) adapter._endedCb();
 					} );
 					if ( adapter._readyCb ) adapter._readyCb();
@@ -462,7 +479,8 @@
 				lastRefreshAt = Date.now();
 				var resumeAt   = video.currentTime;
 				var wasPlaying = ! video.paused;
-				refreshing = fetch( config.restUrl + 'stream/' + refreshVideoId + '/url', {
+				var refreshCtx = playerEl && playerEl.dataset.msContext ? ( config.restUrl.indexOf( '?' ) > -1 ? '&' : '?' ) + 'ms_context=' + encodeURIComponent( playerEl.dataset.msContext ) : '';
+				refreshing = fetch( config.restUrl + 'stream/' + refreshVideoId + '/url' + refreshCtx, {
 					headers: { 'X-WP-Nonce': config.nonce },
 				} )
 					.then( function ( res ) { return window.mediashieldRequest.readJSON( res ); } )
@@ -605,6 +623,31 @@
 	// This adapter loads them in an <iframe>. Cross-origin iframes expose no
 	// playback position/duration, so tracking + watermark are best-effort (0).
 
+	// The video's Player Options on a Bunny Stream embed: Bunny's embed page
+	// reads autoplay, loop and muted from its query string. It has no switch
+	// for its controls, so Show player controls applies only when Bunny plays
+	// as a direct stream (NativeAdapter). Any other embed URL is left as it is.
+	//
+	// All three are always sent. Bunny's embed autoplays when its query string
+	// says nothing, while MediaShield's default is no autoplay, no loop, not
+	// muted, so a video whose Player Options were never saved (an import, a
+	// pasted URL) sends false for each instead of nothing.
+	function bunnyEmbedUrl( sourceUrl, options ) {
+		var url;
+		try {
+			url = new URL( sourceUrl, window.location.href );
+		} catch ( e ) {
+			return sourceUrl;
+		}
+		if ( ! /(^|\.)mediadelivery\.net$/i.test( url.hostname ) ) {
+			return sourceUrl;
+		}
+		[ 'autoplay', 'loop', 'muted' ].forEach( function ( key ) {
+			url.searchParams.set( key, options && options[ key ] === true ? 'true' : 'false' );
+		} );
+		return url.toString();
+	}
+
 	var IframeAdapter = {
 		create: function ( target, sourceUrl, options ) {
 			options = options || {};
@@ -625,7 +668,7 @@
 			};
 
 			var iframe = document.createElement( 'iframe' );
-			iframe.src = sourceUrl;
+			iframe.src = bunnyEmbedUrl( sourceUrl, options );
 			iframe.setAttribute( 'frameborder', '0' );
 			iframe.setAttribute( 'allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media' );
 			iframe.setAttribute( 'allowfullscreen', '' );
@@ -699,11 +742,84 @@
 			// platform's thumbnail, so the owner's Featured Image goes on top
 			// until the viewer clicks play (Basecamp 10526098472).
 			var isNative = adapter._video instanceof HTMLVideoElement;
-			if ( poster && ! isNative && ! ( target && target.dataset.autoplay === '1' ) ) {
+			var shield = ! isNative && shielded( el );
+			// Shielded, the cover always goes on, so the platform's title,
+			// share and "Watch on" links are never the first thing offered:
+			// the owner's poster, YouTube's own thumbnail, or the platform's
+			// picture seen through it (UX test MSUX-04).
+			if ( shield && ! poster && 'youtube' === el.dataset.platform && target && target.dataset.platformVideoId ) {
+				poster = 'https://i.ytimg.com/vi/' + encodeURIComponent( target.dataset.platformVideoId ) + '/hqdefault.jpg';
+			}
+			if ( ( poster || shield ) && ! isNative && ! ( target && target.dataset.autoplay === '1' ) ) {
 				addIframePoster( el, adapter, poster );
 			}
 		}
 		return adapter;
+	}
+
+	/**
+	 * Does this player cover a platform's own links? Standard and Strict, on
+	 * YouTube, Vimeo and Wistia (UX test MSUX-04). The platform still serves
+	 * the video; the covers keep its title, share, "Watch on" and related
+	 * videos from handing the address out with one click.
+	 *
+	 * @param {HTMLElement} el Player container.
+	 * @return {boolean}
+	 */
+	function shielded( el ) {
+		return [ 'youtube', 'vimeo', 'wistia' ].indexOf( el.dataset.platform ) > -1
+			&& [ 'standard', 'strict' ].indexOf( el.dataset.protectionLevel ) > -1;
+	}
+
+	/**
+	 * Lay click shields over a platform player's own links: its title bar,
+	 * its logo corner (and Vimeo's side buttons), and, while paused or ended,
+	 * everything above its control bar (related videos, end screen). A click
+	 * on a shield plays or pauses, as a click on the picture does.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {Object}      adapter Platform adapter.
+	 */
+	function addPlatformShields( el, adapter ) {
+		var toggle = function () {
+			if ( adapter.isPlaying() ) {
+				adapter.pause();
+				return;
+			}
+			if ( el.classList.contains( 'ms-shield-ended' ) ) {
+				el.classList.remove( 'ms-shield-ended' );
+				if ( adapter.seekTo ) adapter.seekTo( 0 );
+			}
+			adapter.play();
+		};
+		[ 'top', 'side', 'corner' ].forEach( function ( part ) {
+			var s = document.createElement( 'div' );
+			s.className = 'ms-shield ms-shield--' + part;
+			s.setAttribute( 'aria-hidden', 'true' );
+			s.addEventListener( 'click', toggle );
+			el.appendChild( s );
+		} );
+		var rest = document.createElement( 'button' );
+		rest.type = 'button';
+		rest.className = 'ms-shield ms-shield--rest';
+		rest.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
+		setIcon( rest, 'play', 32 );
+		rest.addEventListener( 'click', toggle );
+		el.appendChild( rest );
+
+		var started = false;
+		clearInterval( el._msShieldWatch );
+		el._msShieldWatch = setInterval( function () {
+			var playing = adapter.isPlaying();
+			if ( playing ) {
+				started = true;
+				el.classList.remove( 'ms-shield-ended' );
+			}
+			el.classList.toggle( 'ms-shield-paused', started && ! playing );
+		}, 300 );
+		el.addEventListener( 'mediashield:ended', function () {
+			el.classList.add( 'ms-shield-ended' );
+		} );
 	}
 
 	/**
@@ -723,7 +839,11 @@
 		cover.type = 'button';
 		cover.className = 'ms-iframe-poster';
 		cover.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
-		cover.style.backgroundImage = 'url("' + poster.replace( /"/g, '%22' ) + '")';
+		if ( poster ) {
+			cover.style.backgroundImage = 'url("' + poster.replace( /"/g, '%22' ) + '")';
+		} else {
+			cover.classList.add( 'ms-iframe-poster--clear' );
+		}
 		cover.addEventListener( 'click', function () {
 			cover.remove();
 			var tries = 0;
@@ -757,6 +877,8 @@
 			muted:    tri( target.dataset.muted ),
 			controls: tri( target.dataset.controls ),
 			poster:   target.dataset.poster || '',
+			// Standard and Strict cover a platform's own links (shielded()).
+			shield:   shielded( el ),
 		};
 
 		switch ( platform ) {
@@ -914,6 +1036,7 @@
 		volume: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>',
 		muted: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
 		captions: '<rect width="18" height="14" x="3" y="5" rx="2" ry="2"/><path d="M7 15h4M15 15h2M7 11h2M13 11h4"/>',
+		lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
 	};
 
 	function setIcon( btn, name, size ) {
@@ -927,6 +1050,43 @@
 		var m = Math.floor( ( s % 3600 ) / 60 );
 		var sec = s % 60;
 		return ( h ? h + ':' + ( m < 10 ? '0' : '' ) : '' ) + m + ':' + ( sec < 10 ? '0' : '' ) + sec;
+	}
+
+	/**
+	 * Make a native <video> startable without a control bar: a central play
+	 * button, and a click or tap on the picture that plays or pauses, as on
+	 * every video site.
+	 *
+	 * With the bar, the button shows whenever the video is paused (the bar
+	 * sets .ms-is-playing). Without it (the owner switched Show player
+	 * controls off) the button shows only until the first play, so the
+	 * picture stays clean afterwards; a click still pauses and resumes.
+	 * Without this, controls off and autoplay off left a video nobody could
+	 * start.
+	 *
+	 * @param {HTMLElement} el            Player container.
+	 * @param {Object}      adapter       Native adapter.
+	 * @param {boolean}     untilFirstPlay Remove the button once playback starts.
+	 */
+	function addTapToPlay( el, adapter, untilFirstPlay ) {
+		var video = adapter._video;
+		var big = document.createElement( 'button' );
+		big.type = 'button';
+		big.className = 'ms-bigplay';
+		big.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
+		setIcon( big, 'play', 32 );
+		big.addEventListener( 'click', function () { adapter.play(); } );
+		el.appendChild( big );
+
+		video.addEventListener( 'click', function () {
+			adapter.isPlaying() ? adapter.pause() : adapter.play();
+		} );
+
+		if ( untilFirstPlay ) {
+			// An autoplaying video removes it at once; one the browser refused
+			// to autoplay keeps it.
+			video.addEventListener( 'play', function () { big.remove(); }, { once: true } );
+		}
 	}
 
 	/**
@@ -952,14 +1112,9 @@
 		bar.setAttribute( 'role', 'group' );
 		bar.setAttribute( 'aria-label', t( 'videoControls', 'Video controls' ) );
 
-		// Central play button, shown while the video is paused.
-		var big = document.createElement( 'button' );
-		big.type = 'button';
-		big.className = 'ms-bigplay';
-		big.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
-		setIcon( big, 'play', 32 );
-		big.addEventListener( 'click', function () { adapter.play(); } );
-		el.appendChild( big );
+		// Central play button, shown while the video is paused, and a click
+		// on the picture plays or pauses.
+		addTapToPlay( el, adapter, false );
 
 		var play = document.createElement( 'button' );
 		play.type = 'button';
@@ -1077,10 +1232,6 @@
 			video.addEventListener( ev, syncTime );
 		} );
 		video.addEventListener( 'volumechange', syncMute );
-		// A click on the picture plays or pauses, as on every video site.
-		video.addEventListener( 'click', function () {
-			adapter.isPlaying() ? adapter.pause() : adapter.play();
-		} );
 		el.addEventListener( 'pointermove', wake );
 		el.addEventListener( 'focusin', wake );
 
@@ -1155,15 +1306,16 @@
 		}
 
 		var container = el;
-		var platform = el.dataset.platform || '';
 
 		// ── Control bar (native video only — YouTube/Vimeo/Wistia draw their own) ──
 		// Speed sits in the bar. A video whose owner switched controls off
-		// gets no bar, as before.
+		// gets no bar and no Speed menu, only a way to start it (play button
+		// until the first play, click to play or pause) and the Fullscreen
+		// button the page already holds.
 		if ( adapter._video && adapter._wantsControls ) {
 			buildControlBar( el, adapter, feat( 'speedControl' ) );
-		} else if ( feat( 'speedControl' ) && ( platform === 'self' || platform === 'bunny' ) && adapter._video ) {
-			buildSpeedControl( el, container );
+		} else if ( adapter._video ) {
+			addTapToPlay( el, adapter, true );
 		}
 
 		// ── Prevent forward skipping (watch enforcement / CLE compliance) ──
@@ -1331,6 +1483,13 @@
 		if ( el.dataset.msInitialized ) return;
 		el.dataset.msInitialized = '1';
 
+		// The markup as printed, so Try again can start the player afresh
+		// after a platform has replaced the target with its iframe.
+		if ( ! el._msTarget ) {
+			var printed = el.querySelector( '.ms-player-target' );
+			if ( printed ) el._msTarget = printed.cloneNode( true );
+		}
+
 		var protectionLevel = el.dataset.protectionLevel || 'standard';
 		var videoId = parseInt( el.dataset.videoId, 10 ) || 0;
 
@@ -1349,22 +1508,35 @@
 		// watch it. A visitor is asked to log in; a member gets the reason from
 		// /session/start, whose denial path shows the access message and raises
 		// mediashield:access-denied for integrations without a player adapter.
+		// The refusal is on the page (AccessControl::refusal(), printed by
+		// Renderer), so a refused member's player asks the server nothing.
+		// A page cached before 1.4.4 carries no reason: ask, as before.
 		if ( el.dataset.accessDenied ) {
 			if ( ! config.isLoggedIn ) {
 				showLoginOverlay( el );
+			} else if ( undefined !== el.dataset.deniedMessage ) {
+				showRefusal( el, videoId, el.dataset.deniedCode || 'access_denied', el.dataset.deniedMessage, {
+					access_url: el.dataset.accessUrl || '',
+					access_label: el.dataset.accessLabel || '',
+				} );
 			} else {
 				startSession( el, videoId, null );
 			}
 			return;
 		}
 
-		// No protection — free preview.
+		// No protection — free preview. A lesson's watch rule is still
+		// measured (measuresWatch()), with nothing else added.
 		if ( protectionLevel === 'none' ) {
 			var adapter = createAdapter( el );
 			if ( adapter ) {
 				el._msAdapter = adapter;
 				adapter.onReady( function () {
 					applyPlayerFeatures( el, adapter );
+					if ( measuresWatch( el, videoId ) ) {
+						el._msTrackingOnly = true;
+						startOnFirstPlay( el, videoId, adapter );
+					}
 				} );
 			}
 			return;
@@ -1399,20 +1571,112 @@
 		if ( ! playerAdapter ) return;
 		el._msAdapter = playerAdapter;
 
-		// Basic tier: player features only, no session/tracking/watermark/milestones.
+		// Basic tier: player features only, no watermark. A viewing opens only
+		// to measure a lesson's watch rule (measuresWatch()).
 		if ( protectionLevel === 'basic' ) {
 			playerAdapter.onReady( function () {
 				applyPlayerFeatures( el, playerAdapter );
+				if ( measuresWatch( el, videoId ) ) {
+					el._msTrackingOnly = true;
+					startOnFirstPlay( el, videoId, playerAdapter );
+				}
 			} );
 			return;
 		}
 
-		// Standard / strict: full treatment — start session (tracking + watermark
-		// + milestones) and apply player features after the adapter is ready.
+		// Standard / strict: full treatment (tracking + watermark + milestones).
+		// The viewing starts at the first play, not on load (Basecamp
+		// 10545260660): a page with several players opened one per player,
+		// each counted as watching and sending a heartbeat every 30 s.
 		playerAdapter.onReady( function () {
 			applyPlayerFeatures( el, playerAdapter );
-			startSession( el, videoId, playerAdapter );
+			if ( ! ( playerAdapter._video instanceof HTMLVideoElement ) && shielded( el ) ) {
+				addPlatformShields( el, playerAdapter );
+			}
+			// Where this member stopped, printed by the server so the offer
+			// needs no viewing (Renderer, data-resume-position).
+			var target = el.querySelector( '.ms-player-target' );
+			var resumeAt = target ? parseFloat( target.dataset.resumePosition ) || 0 : 0;
+			if ( resumeAt > 0 && resumeEnabled( el ) ) {
+				showResumePrompt( el, resumeAt, playerAdapter );
+			}
+			startOnFirstPlay( el, videoId, playerAdapter );
 		} );
+	}
+
+	/**
+	 * Must this player measure watch time although its level opens no viewing?
+	 *
+	 * Measuring a lesson's required watch is not protection (Basecamp
+	 * 10541776164, 10537102216): at None and Basic a logged-in member's
+	 * player records watched time when the lesson sets a % on it
+	 * (data-watch-required) or the site's "Watch X% to complete" applies
+	 * (data-watch-track, printed by Renderer). Nothing else of Standard is
+	 * added: no watermark, no stream limit, no developer-tools detection.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {number}      videoId Video ID.
+	 * @return {boolean}
+	 */
+	function measuresWatch( el, videoId ) {
+		if ( ! config.isLoggedIn || ! videoId ) return false;
+		var target = el.querySelector( '.ms-player-target' );
+		return parseInt( el.dataset.watchRequired, 10 ) > 0 || !! ( target && '1' === target.dataset.watchTrack );
+	}
+
+	/**
+	 * Start the viewing (session) at the first real play, then play.
+	 *
+	 * Every way a video starts is caught: the player's own play (big Play,
+	 * poster, keyboard, a click on the picture all call adapter.play()), a
+	 * native <video> play event (autoplay), and for platform iframes their own
+	 * play button, seen through adapter.isPlaying() once a second. The video
+	 * is held still until the session answers, so it never plays without its
+	 * watermark; a player that only measures watch time (el._msTrackingOnly,
+	 * None and Basic) has no watermark to wait for and plays at once.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {number}      videoId Video ID.
+	 * @param {Object}      adapter Player adapter.
+	 */
+	function startOnFirstPlay( el, videoId, adapter ) {
+		var started = false;
+		var play = adapter.play;
+		var gate = function () {
+			if ( ! started ) {
+				begin();
+				// Only measuring watch time (None, Basic): never held.
+				if ( ! el._msTrackingOnly ) return;
+			}
+			return play.apply( adapter, arguments );
+		};
+		var begin = function () {
+			if ( started ) return;
+			started = true;
+			clearInterval( el._msFirstPlayWatch );
+			if ( adapter.play === gate ) adapter.play = play;
+			// None and Basic keep playing while the viewing starts in the
+			// background: no watermark waits on it (Free review #7). The
+			// tracker counts from where play began (tracker.js startTracking()).
+			if ( el._msTrackingOnly ) {
+				el._msPlayFrom = adapter.getPosition ? adapter.getPosition() || 0 : 0;
+			} else {
+				el._msPlayOnStart = true;
+				blockPlayback( el, adapter );
+			}
+			startSession( el, videoId, adapter );
+		};
+
+		adapter.play = gate;
+		if ( adapter._video ) {
+			adapter._video.addEventListener( 'play', begin );
+		}
+		// A platform player started from inside its own frame. Once a second
+		// is enough, and Try again (rebuildPlayer) clears it (Free review #13).
+		clearInterval( el._msFirstPlayWatch );
+		el._msFirstPlayWatch = setInterval( function () {
+			if ( adapter.isPlaying() ) begin();
+		}, 1000 );
 	}
 
 	function startSession( el, videoId, adapter ) {
@@ -1426,7 +1690,9 @@
 		fetch( config.restUrl + 'session/start', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
-			body: JSON.stringify( { video_id: videoId } ),
+			// The page it is shown on, for a grant scoped to one page (a free
+			// preview lesson): AccessControl::context().
+			body: JSON.stringify( el.dataset.msContext ? { video_id: videoId, ms_context: el.dataset.msContext } : { video_id: videoId } ),
 		} )
 			.then( function ( res ) {
 				// Refusals (403, 429) are JSON and handled below; an answer that
@@ -1443,12 +1709,18 @@
 				var status = result.status;
 				var data = result.data;
 
+				// Only measuring a lesson's watch rule (None, Basic): a start
+				// that fails never holds a video those levels always played.
+				if ( el._msTrackingOnly && ! data.session_token ) {
+					return;
+				}
+
 				// Concurrent-stream limit (HTTP 429) — show the operator-configured
 				// message inline so the viewer knows why the player is idle. The
 				// REST handler returns the localised text in `data.message`.
 				if ( status === 429 || data.code === 'concurrent_limit' ) {
 					blockPlayback( el, adapter );
-					showErrorOverlay( el, data.message || t( 'concurrentLimit', 'Too many active streams. Please close another video first.' ) );
+					showErrorOverlay( el, data.message || t( 'concurrentLimit', 'You are playing too many videos at once. Close another video first.' ) );
 					window.dispatchEvent( new CustomEvent( 'mediashield:concurrent-limit', {
 						bubbles: true,
 						detail: { el: el, videoId: videoId, message: data.message },
@@ -1467,27 +1739,7 @@
 						return;
 					}
 
-					// Give upstream listeners (custom access integrations) the
-					// chance to handle the denial BEFORE the generic error overlay
-					// paints — otherwise their own UI renders on top of a redundant
-					// denial overlay. Listeners suppress the fallback by calling
-					// event.preventDefault().
-					var ev = new CustomEvent( 'mediashield:access-denied', {
-						bubbles: true,
-						cancelable: true,
-						detail: { el: el, videoId: videoId, reason: reason },
-					} );
-					var handled = ! window.dispatchEvent( ev );
-
-					if ( ! handled ) {
-						var msg = data.message || t( 'accessDenied', 'You do not have access to this video.' );
-						showErrorOverlay( el, msg );
-						// The course to enrol in, when the server named one.
-						var access = data.data || {};
-						if ( access.access_url ) {
-							addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
-						}
-					}
+					showRefusal( el, videoId, reason, data.message, data.data || {} );
 					return;
 				}
 
@@ -1502,13 +1754,16 @@
 					el._msBlocked = false;
 					el.dataset.sessionToken = data.session_token;
 
-					// Resume position via adapter — only when Resume Playback is
-					// enabled for this video. Server already gates the position
-					// (returns 0 when disabled); this is the matching client guard
-					// so the prompt respects the per-video override / global setting
-					// consistently with the other player features.
-					if ( data.resume_position > 0 && resumeEnabled( el ) ) {
-						showResumePrompt( el, data.resume_position, adapter );
+					// The member pressed play. A page cached before the resume
+					// position was printed on the player still resumes: Play
+					// means resume (Basecamp 10545260660).
+					var printed = el.querySelector( '.ms-player-target' );
+					if ( adapter && printed && undefined === printed.dataset.resumePosition && data.resume_position > 0 && resumeEnabled( el ) && resumeWorthOffering( data.resume_position, adapter.getDuration() ) ) {
+						adapter.seekTo( data.resume_position );
+					}
+					if ( adapter && el._msPlayOnStart ) {
+						el._msPlayOnStart = false;
+						adapter.play();
 					}
 
 					window.dispatchEvent( new CustomEvent( 'mediashield:player-ready', {
@@ -1519,6 +1774,10 @@
 							resumePosition: data.resume_position,
 							watch: data.watch || null,
 							watermarkConfig: data.watermark_config,
+							// None or Basic measuring a watch rule: no watermark,
+							// protection or ads attach (watermark.js, protection.js,
+							// ad-breaks.js).
+							trackingOnly: !! el._msTrackingOnly,
 							video: data.video,
 							adapter: adapter,
 						},
@@ -1529,12 +1788,18 @@
 				// Any other answer without a session token (a JSON 5xx is what
 				// WordPress sends for a fatal in REST) is a failed start: no
 				// token means no watermark, so keep the video stopped and say so.
+				// The server's own words only when it says the session could
+				// not be recorded (a busy database); a fatal's text is not for
+				// viewers.
 				blockPlayback( el, adapter );
-				showErrorOverlay( el, window.mediashieldRequest.networkMessage, function () {
+				showErrorOverlay( el, ( data.code === 'mediashield_session_failed' && data.message ) || window.mediashieldRequest.networkMessage, function () {
 					startSession( el, videoId, adapter );
 				} );
 			} )
 			.catch( function ( err ) {
+				if ( el._msTrackingOnly ) {
+					return;
+				}
 				// No session means no watermark: never leave a protected video
 				// playing unmarked. Say why, calmly, keep it stopped until a
 				// session starts, and offer a retry (the failure may pass).
@@ -1543,6 +1808,35 @@
 					startSession( el, videoId, adapter );
 				} );
 			} );
+	}
+
+	/**
+	 * A member may not watch: the reason and one next step.
+	 *
+	 * Upstream listeners (custom access integrations) get the denial first
+	 * and suppress the built-in overlay with event.preventDefault(), so their
+	 * own UI does not sit under a redundant one. Otherwise: the message, then
+	 * the course or membership page when the server named one, else "Ask the
+	 * site owner for access."
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {number}      videoId Video ID.
+	 * @param {string}      reason  Refusal code.
+	 * @param {string}      message Refusal message.
+	 * @param {Object}      access  { access_url, access_label }.
+	 */
+	function showRefusal( el, videoId, reason, message, access ) {
+		var ev = new CustomEvent( 'mediashield:access-denied', {
+			bubbles: true,
+			cancelable: true,
+			detail: { el: el, videoId: videoId, reason: reason },
+		} );
+		if ( ! window.dispatchEvent( ev ) ) return;
+
+		showErrorOverlay( el, message || t( 'accessDenied', 'You do not have access to this video.' ), null, access.access_url ? {} : { sub: t( 'askOwner', 'Ask the site owner for access.' ) } );
+		if ( access.access_url ) {
+			addOverlayAction( el, access.access_url, access.access_label || t( 'viewCourse', 'View course' ) );
+		}
 	}
 
 	/**
@@ -1661,6 +1955,7 @@
 			reset();
 			var p = video.play();
 			if ( p && p.catch ) {
+				// ms-silent-ok: play() is not a request; a refusal is the stall this watchdog counts.
 				p.catch( function () {} );
 			}
 		};
@@ -1729,6 +2024,7 @@
 			if ( waitingToPlay && video.paused && video.readyState >= 2 ) {
 				var resumed = video.play();
 				if ( resumed && resumed.catch ) {
+					// ms-silent-ok: play() is not a request; if the browser keeps refusing, the count below runs on.
 					resumed.catch( function () {} );
 				}
 			}
@@ -1778,7 +2074,22 @@
 	// access denied when no upstream listener handles the dispatch, etc. Sits
 	// on top of the player container so the viewer can read why the player
 	// isn't loading. Single instance per container — repeated calls replace.
-	function showErrorOverlay( el, message, onRetry ) {
+	/**
+	 * Show a state over the player: what happened, and one next step.
+	 *
+	 * Every refusal and failure goes through here (Basecamp 10545260568):
+	 * the message, an optional second line, a Try again button when the
+	 * failure may pass, and for someone who may edit the video (the server
+	 * printed data-edit-url) the cause and an Edit video link. A notice, not
+	 * a dialog: it never takes focus or traps Tab.
+	 *
+	 * @param {HTMLElement} el       Player container.
+	 * @param {string}      message  What happened.
+	 * @param {Function}    [onRetry] Offers Try again when given.
+	 * @param {Object}      [extra]   { sub: second line, cause: admin-only cause }.
+	 */
+	function showErrorOverlay( el, message, onRetry, extra ) {
+		extra = extra || {};
 		// The stall watchdog is reconnecting: a load or refresh failure seen in
 		// the meantime is part of that attempt, not a verdict. Keep showing
 		// "Reconnecting…"; the watchdog shows the error itself if it gives up.
@@ -1800,9 +2111,17 @@
 		inner.className = 'ms-error-message';
 
 		var text = document.createElement( 'p' );
+		text.className = 'ms-error-title';
 		text.textContent = String( message || '' );
 
 		inner.appendChild( text );
+
+		if ( extra.sub ) {
+			var sub = document.createElement( 'p' );
+			sub.className = 'ms-error-sub';
+			sub.textContent = String( extra.sub );
+			inner.appendChild( sub );
+		}
 
 		// A failure that may pass (a dropped connection, an expired stream
 		// address) offers a retry instead of a dead end.
@@ -1818,8 +2137,35 @@
 			inner.appendChild( retry );
 		}
 
+		addAdminNote( el, inner, extra.cause );
+
 		overlay.appendChild( inner );
 		el.appendChild( overlay );
+	}
+
+	/**
+	 * For someone who may edit the video: the cause, and a link to fix it.
+	 *
+	 * The server prints data-edit-url only for a user with edit_post on the
+	 * video, so viewers never see it.
+	 *
+	 * @param {HTMLElement} el    Player container.
+	 * @param {HTMLElement} inner Message box to add to.
+	 * @param {string}      cause What went wrong, '' when not known.
+	 */
+	function addAdminNote( el, inner, cause ) {
+		var editUrl = el.dataset ? el.dataset.editUrl : '';
+		if ( ! editUrl ) return;
+		var note = document.createElement( 'p' );
+		note.className = 'ms-error-admin';
+		var label = document.createElement( 'span' );
+		label.textContent = t( 'adminNote', 'Only editors see this:' ) + ' ' + ( cause ? String( cause ) + ' ' : '' );
+		note.appendChild( label );
+		var link = document.createElement( 'a' );
+		link.href = editUrl;
+		link.textContent = t( 'editVideo', 'Edit video' );
+		note.appendChild( link );
+		inner.appendChild( note );
 	}
 
 	/**
@@ -1836,19 +2182,80 @@
 		link.className = 'ms-error-action';
 		link.href = url;
 		link.textContent = label;
-		inner.appendChild( link );
+		inner.insertBefore( link, inner.querySelector( '.ms-error-admin' ) );
 	}
 
 	/**
-	 * The host removed the video or made it private (Basecamp 10530930631).
+	 * The platform removed the video, made it private or refuses to embed it
+	 * (Basecamp 10530930631, 10545260568).
 	 *
-	 * @param {HTMLElement} el Player container.
+	 * The viewer reads that the owner has been told and can try again; the
+	 * owner also reads the cause. The report lets the Videos list show
+	 * "Unavailable at platform"; the server checks with the platform before
+	 * it records anything.
+	 *
+	 * @param {HTMLElement} el       Player container.
+	 * @param {string}      code     'removed', 'private', 'not_embeddable' or 'unknown'.
+	 * @param {string}      platform Platform name for the cause, e.g. 'YouTube'.
 	 */
-	function showUnavailable( el ) {
-		showErrorOverlay( el, t( 'unavailable', 'This video is unavailable.' ) );
+	function showUnavailable( el, code, platform ) {
+		code = code || 'unknown';
+		var cause = 'not_embeddable' === code
+			? t( 'causeNoEmbed', '%s will not play this video here. It may be private, removed, or not allowed on other sites.' )
+			: t( 'causeRemoved', '%s says this video was removed or is private.' );
+		showErrorOverlay(
+			el,
+			t( 'unavailable', 'This video is unavailable.' ),
+			function () { rebuildPlayer( el ); },
+			{
+				sub: t( 'unavailableSub', 'The site owner has been told. Please try again later.' ),
+				cause: cause.replace( '%s', platform || t( 'thePlatform', 'The video platform' ) ),
+			}
+		);
 		// Opaque, so the host's own error text does not show through.
 		var overlay = el.querySelector( '.ms-error-overlay' );
 		if ( overlay ) overlay.classList.add( 'ms-error-overlay--solid' );
+
+		// A beacon: nothing waits on the answer, and the viewer's screen is
+		// the same whatever the server decides. The nonce rides in the URL so
+		// a logged-in editor's report counts as theirs.
+		var videoId = parseInt( el.dataset.videoId, 10 ) || 0;
+		if ( videoId && config.restUrl && navigator.sendBeacon && ! el._msReported ) {
+			el._msReported = true;
+			var reportUrl = config.restUrl + 'videos/' + videoId + '/unavailable';
+			reportUrl += ( reportUrl.indexOf( '?' ) > -1 ? '&' : '?' ) + '_wpnonce=' + encodeURIComponent( config.nonce || '' );
+			navigator.sendBeacon( reportUrl, new Blob( [ JSON.stringify( { code: code } ) ], { type: 'application/json' } ) );
+		}
+	}
+
+	/**
+	 * Start a player again from the markup the page printed (Try again).
+	 *
+	 * @param {HTMLElement} el Player container.
+	 */
+	function rebuildPlayer( el ) {
+		clearInterval( el._msFirstPlayWatch );
+		clearInterval( el._msShieldWatch );
+		el.classList.remove( 'ms-shield-paused', 'ms-shield-ended' );
+		Array.prototype.forEach.call( el.querySelectorAll( '.ms-shield' ), function ( node ) { node.remove(); } );
+		if ( el._msAdapter && el._msAdapter.destroy ) {
+			try { el._msAdapter.destroy(); } catch ( e ) {}
+		}
+		el._msAdapter = null;
+		var fresh = el._msTarget ? el._msTarget.cloneNode( true ) : null;
+		if ( ! fresh ) {
+			window.location.reload();
+			return;
+		}
+		// The platform swapped its iframe in for the target; put the target back.
+		Array.prototype.forEach.call( el.children, function ( child ) {
+			if ( child.matches( '.ms-player-target, iframe, .ms-iframe-poster, .ms-error-overlay' ) ) {
+				child.remove();
+			}
+		} );
+		el.insertBefore( fresh, el.firstChild );
+		delete el.dataset.msInitialized;
+		initPlayer( el );
 	}
 
 	// ─── Login Overlay ───────────────────────────────────────────
@@ -1856,8 +2263,11 @@
 	function showLoginOverlay( el ) {
 		var overlay = document.createElement( 'div' );
 		overlay.className = 'ms-login-overlay';
-		overlay.setAttribute( 'role', 'dialog' );
-		overlay.setAttribute( 'aria-modal', 'true' );
+		// A notice in the player, shown on page load, not a dialog the
+		// viewer opened: it neither takes focus nor traps Tab, so a page with
+		// videos below the fold opens at the top (it jumped to the last
+		// player's Log In link). The link stays in the normal Tab order.
+		overlay.setAttribute( 'role', 'region' );
 		// Screen-reader label mirrors the admin-configured overlay text so it
 		// stays in sync with the visible message (not a separate hardcoded key).
 		overlay.setAttribute( 'aria-label', t( 'loginOverlay', 'Login required' ) );
@@ -1873,49 +2283,37 @@
 		var message = document.createElement( 'div' );
 		message.className = 'ms-login-message';
 
+		// A lock and the video's title, so the wall says what is behind it
+		// (UX test MSUX-07). The title is printed by the server (data-title).
+		var lock = document.createElement( 'span' );
+		lock.className = 'ms-login-lock';
+		setIcon( lock, 'lock', 28 );
+		message.appendChild( lock );
+		if ( el.dataset.title ) {
+			var heading = document.createElement( 'p' );
+			heading.className = 'ms-login-title';
+			heading.textContent = el.dataset.title;
+			message.appendChild( heading );
+		}
+
 		var text = document.createElement( 'p' );
 		text.textContent = t( 'loginOverlay', 'Please log in to watch this video.' );
 
 		var link = document.createElement( 'a' );
 		link.href = config.loginUrl || '/wp-login.php';
 		link.className = 'ms-login-button';
-		link.textContent = t( 'loginButton', 'Log In' );
+		link.textContent = t( 'loginButton', 'Log in' );
+
+		// Who it is for, so the viewer knows logging in is the way in.
+		var sub = document.createElement( 'p' );
+		sub.className = 'ms-login-sub';
+		sub.textContent = t( 'loginSub', 'It is for members of this site.' );
 
 		message.appendChild( text );
+		message.appendChild( sub );
 		message.appendChild( link );
 		overlay.appendChild( message );
 		el.appendChild( overlay );
-
-		// Focus the login link for keyboard accessibility.
-		link.focus();
-
-		// Focus trap: keep Tab within the overlay.
-		overlay.addEventListener( 'keydown', function ( e ) {
-			if ( e.key === 'Escape' ) {
-				overlay.remove();
-				return;
-			}
-
-			if ( e.key !== 'Tab' ) return;
-
-			var focusable = overlay.querySelectorAll( 'a, button, input, [tabindex]:not([tabindex="-1"])' );
-			if ( focusable.length === 0 ) return;
-
-			var first = focusable[0];
-			var last = focusable[ focusable.length - 1 ];
-
-			if ( e.shiftKey ) {
-				if ( document.activeElement === first ) {
-					e.preventDefault();
-					last.focus();
-				}
-			} else {
-				if ( document.activeElement === last ) {
-					e.preventDefault();
-					first.focus();
-				}
-			}
-		} );
 	}
 
 	// ─── Resume Prompt ───────────────────────────────────────────
@@ -1925,26 +2323,44 @@
 	 *
 	 * Only between 10 seconds in and 95% of the length: a viewer who stopped
 	 * 3 seconds in, or who finished, starts from the top (Basecamp
-	 * 10530930523). With no known length only the 10 second floor applies.
+	 * 10530930523). On a short video the floor is a tenth of it, at least
+	 * 3 seconds: half of an 18 s clip was never offered (UX test MSUX-03).
+	 * With no known length only the 10 second floor applies.
 	 *
 	 * @param {number} position Seconds where the viewer stopped.
 	 * @param {number} duration Video length in seconds, 0 when unknown.
 	 * @return {boolean}
 	 */
 	function resumeWorthOffering( position, duration ) {
-		if ( ! ( position >= 10 ) ) return false;
-		return ! ( duration > 0 ) || position < duration * 0.95;
+		var known = duration > 0;
+		var floor = known ? Math.min( 10, Math.max( 3, duration * 0.1 ) ) : 10;
+		if ( ! ( position >= floor ) ) return false;
+		return ! known || position < duration * 0.95;
 	}
 
 	/**
-	 * A small "Resume from 2:00" chip just above the control bar, never on
-	 * it. It goes away on its own after about 8 seconds, as soon as the video
-	 * plays, or with its close button.
+	 * "Resume from 4:12 · Start over", above the control bar (Basecamp 10545260660).
+	 *
+	 * Play means resume: the big Play, the poster, the keyboard and the
+	 * platform's own play button all continue from the saved position. The
+	 * chip stays until the member picks: Resume, Start over, or Play.
+	 *
+	 * @param {HTMLElement} el       Player container.
+	 * @param {number}      position Saved position in seconds.
+	 * @param {Object}      adapter  Player adapter.
 	 */
 	function showResumePrompt( el, position, adapter ) {
 		var target = el.querySelector( '.ms-player-target' );
 		var duration = adapter.getDuration() || parseFloat( target ? target.dataset.duration : 0 ) || 0;
 		if ( ! resumeWorthOffering( position, duration ) ) return;
+
+		var label = t( 'resumeFrom', 'Resume from %s' ).replace( '%s', clock( position ) );
+		var pending = true;
+		var watch = null;
+		var play = adapter.play;
+		var big = el.querySelector( '.ms-bigplay' );
+		var cover = el.querySelector( '.ms-iframe-poster' );
+		var labels = [];
 
 		var chip = document.createElement( 'div' );
 		chip.className = 'ms-resume-chip';
@@ -1952,42 +2368,70 @@
 		var go = document.createElement( 'button' );
 		go.type = 'button';
 		go.className = 'ms-resume-chip__go';
-		go.textContent = t( 'resumeFrom', 'Resume from %s' ).replace( '%s', clock( position ) );
+		go.textContent = label;
 
-		var close = document.createElement( 'button' );
-		close.type = 'button';
-		close.className = 'ms-resume-chip__close';
-		close.setAttribute( 'aria-label', t( 'dismiss', 'Dismiss' ) );
-		close.textContent = '×';
+		var over = document.createElement( 'button' );
+		over.type = 'button';
+		over.className = 'ms-resume-chip__over';
+		over.textContent = t( 'startOver', 'Start over' );
 
-		var watch = null;
+		var resumePlay = function () {
+			if ( pending ) {
+				done();
+				adapter.seekTo( position );
+			}
+			return play.apply( adapter, arguments );
+		};
 		var done = function () {
+			pending = false;
 			clearInterval( watch );
+			// Only our own wrapper: the first-play gate may sit on top of it.
+			if ( adapter.play === resumePlay ) adapter.play = play;
+			labels.forEach( function ( pair ) { pair[ 0 ].setAttribute( 'aria-label', pair[ 1 ] ); } );
 			el.classList.remove( 'ms-has-resume' );
 			if ( chip.parentNode ) chip.remove();
 		};
-		go.addEventListener( 'click', function () {
+
+		// Every play while the choice is open starts at the saved position.
+		adapter.play = resumePlay;
+
+		go.addEventListener( 'click', function () { adapter.play(); } );
+		over.addEventListener( 'click', function () {
 			done();
-			adapter.seekTo( position );
+			adapter.seekTo( 0 );
 			adapter.play();
 		} );
-		close.addEventListener( 'click', done );
 
 		chip.appendChild( go );
-		chip.appendChild( close );
+		chip.appendChild( over );
+
+		// The big Play and the poster say what they do.
+		[ big, cover ].forEach( function ( button ) {
+			if ( ! button ) return;
+			labels.push( [ button, button.getAttribute( 'aria-label' ) || '' ] );
+			button.setAttribute( 'aria-label', label );
+		} );
 
 		// Above MediaShield's control bar when there is one; platform players
 		// keep their own bar in the bottom 52px, which the CSS default clears.
 		var bar = el.querySelector( '.ms-controls' );
 		if ( bar && bar.offsetHeight ) {
 			chip.style.bottom = ( bar.offsetHeight + 8 ) + 'px';
+		} else if ( cover ) {
+			// The poster hides the platform's bar until play: sit low, clear
+			// of the poster's play mark (a phone player is only 186px tall).
+			chip.classList.add( 'ms-resume-chip--low' );
 		}
 		el.appendChild( chip );
 		el.classList.add( 'ms-has-resume' );
 
-		var started = Date.now();
+		// Started some other way (the platform's own button inside its iframe,
+		// autoplay): jump to the saved position once it plays.
 		watch = setInterval( function () {
-			if ( adapter.isPlaying() || Date.now() - started > 8000 ) done();
+			if ( pending && adapter.isPlaying() ) {
+				done();
+				if ( adapter.getPosition() < position - 2 ) adapter.seekTo( position );
+			}
 		}, 250 );
 	}
 

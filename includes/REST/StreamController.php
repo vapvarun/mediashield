@@ -116,9 +116,16 @@ class StreamController extends WP_REST_Controller {
 	 * @return string Absolute URL.
 	 */
 	public static function signed_url( int $video_id, int $user_id ): string {
+		// Where it is shown travels with it, for a grant scoped to one page
+		// (AccessControl::context()); a refresh keeps it (player-wrapper.js).
+		$context = AccessControl::context_string();
 		return add_query_arg(
-			'ms_token',
-			EmbedLink::token( $video_id, $user_id, EmbedLink::STREAM_TTL ),
+			array_filter(
+				array(
+					'ms_token'   => EmbedLink::token( $video_id, $user_id, EmbedLink::STREAM_TTL ),
+					'ms_context' => rawurlencode( $context ),
+				)
+			),
 			rest_url( 'mediashield/v1/stream/' . $video_id )
 		);
 	}

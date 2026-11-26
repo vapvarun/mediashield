@@ -35,7 +35,8 @@
 		var main = container.querySelector( '.ms-playlist-main' );
 		var countdownEl = container.querySelector( '.ms-playlist-countdown' );
 		var timerEl = container.querySelector( '.ms-countdown-timer' );
-		var currentIndex = 0;
+		// The server opens the playlist on the first item this viewer may watch.
+		var currentIndex = Math.max( 0, items.findIndex( function ( it ) { return it.classList.contains( 'is-active' ); } ) );
 		var countdownInterval = null;
 		var request = 0;
 
@@ -53,6 +54,28 @@
 			item.setAttribute( 'tabindex', '0' );
 		} );
 
+		// A video file's row shows its first frame, read when the row comes
+		// into view, so a long playlist does not load every file at once.
+		var frames = container.querySelectorAll( 'video[data-frame-src]' );
+		var showFrame = function ( video ) {
+			video.preload = 'metadata';
+			video.src = video.dataset.frameSrc + '#t=0.5';
+			video.removeAttribute( 'data-frame-src' );
+		};
+		if ( frames.length && 'IntersectionObserver' in window ) {
+			var seen = new IntersectionObserver( function ( entries ) {
+				entries.forEach( function ( entry ) {
+					if ( entry.isIntersecting ) {
+						seen.unobserve( entry.target );
+						showFrame( entry.target );
+					}
+				} );
+			} );
+			frames.forEach( function ( v ) { seen.observe( v ); } );
+		} else {
+			frames.forEach( showFrame );
+		}
+
 		// player-wrapper.js fires this on the player element for every
 		// platform, so the queue advances on YouTube, Vimeo, Wistia and Bunny
 		// as well as on a self-hosted <video>.
@@ -63,16 +86,20 @@
 			if ( nextIndex !== null ) startCountdown( nextIndex );
 		} );
 
+		// Autoplay moves only to items this viewer may watch (not .is-locked).
 		function getNextIndex() {
+			var open = items.map( function ( _, i ) { return i; } ).filter( function ( i ) {
+				return ! items[ i ].classList.contains( 'is-locked' );
+			} );
 			if ( config.shuffle ) {
-				var others = items.map( function ( _, i ) { return i; } ).filter( function ( i ) { return i !== currentIndex; } );
-				if ( others.length === 0 ) return config.loop ? 0 : null;
+				var others = open.filter( function ( i ) { return i !== currentIndex; } );
+				if ( others.length === 0 ) return config.loop && open.length ? open[ 0 ] : null;
 				return others[ Math.floor( Math.random() * others.length ) ];
 			}
 
-			var next = currentIndex + 1;
-			if ( next >= items.length ) return config.loop ? 0 : null;
-			return next;
+			var after = open.filter( function ( i ) { return i > currentIndex; } );
+			if ( after.length ) return after[ 0 ];
+			return config.loop && open.length ? open[ 0 ] : null;
 		}
 
 		function stopCountdown() {
@@ -117,7 +144,13 @@
 			var mine = ++request;
 			main.setAttribute( 'aria-busy', 'true' );
 
-			fetch( shared.restUrl + 'playlists/' + container.dataset.playlistId + '/player/' + item.dataset.videoId, {
+			// The page the playlist is on, for a grant scoped to it (AccessControl::context()).
+			var shown = main.querySelector( '.ms-protected-player' );
+			var ctx = ( shown && shown.dataset.msContext ) || container.dataset.msContext || '';
+			var url = shared.restUrl + 'playlists/' + container.dataset.playlistId + '/player/' + item.dataset.videoId;
+			if ( ctx ) url += ( url.indexOf( '?' ) > -1 ? '&' : '?' ) + 'ms_context=' + encodeURIComponent( ctx );
+			container.dataset.msContext = ctx;
+			fetch( url, {
 				headers: shared.nonce ? { 'X-WP-Nonce': shared.nonce } : {},
 			} )
 				.then( function ( res ) {

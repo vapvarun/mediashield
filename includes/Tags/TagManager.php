@@ -361,4 +361,150 @@ class TagManager {
 
 		return array_map( 'intval', ! empty( $results ) ? $results : array() );
 	}
+
+	/**
+	 * Option that holds the job's cursor (last usermeta ID read) while the
+	 * v19 tag separation is pending; deleted when it is done.
+	 */
+	const MEMBER_TAGS_PENDING = 'ms_member_tags_pending';
+
+	/**
+	 * Earn records read per run of the job.
+	 */
+	const MEMBER_TAGS_BATCH = 1000;
+
+	/**
+	 * Queue the separation job while it is pending (init).
+	 */
+	public static function ensure_member_tags_job(): void {
+		if ( false !== get_option( self::MEMBER_TAGS_PENDING ) ) {
+			\MediaShield\Cron\Cleanup::schedule_single( 'ms_separate_member_tags', time() );
+		}
+	}
+
+	/**
+	 * Take member milestone tags off the videos they were linked to.
+	 *
+	 * Before 1.4.4 reaching a milestone also linked its tag to the video, as
+	 * if the owner had tagged it, and created the tag in the owner's list.
+	 * Removed: a link the member's own milestone made (tagged by that member,
+	 * the same video and tag as their earn record), then, once every link is
+	 * gone, a tag a member created which no video carries. A tag the owner
+	 * created or put on a video stays. Earn records in user meta are kept.
+	 *
+	 * Background job (Migrator v19 queues it; `ms_separate_member_tags`): one
+	 * batch of earn records above the cursor per run, rescheduled until none
+	 * are left. Timed inline at 200k records it took 3 s on MySQL 8 and 27 s
+	 * on MariaDB 10.6, too long for an update.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function separate_member_tags(): void {
+		$after = get_option( self::MEMBER_TAGS_PENDING );
+		if ( false === $after ) {
+			return;
+		}
+
+		global $wpdb;
+		$links = "{$wpdb->prefix}ms_video_tags";
+		$tags  = "{$wpdb->prefix}ms_tags";
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off upgrade walk on the primary key.
+		$rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT umeta_id, user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags' AND umeta_id > %d ORDER BY umeta_id LIMIT %d", (int) $after, self::MEMBER_TAGS_BATCH ) );
+		// A milestone wrote its link and its earn record in one request (1.4.3
+		// MilestoneTracker), so only a link stamped within seconds of the earn
+		// time is the milestone's. An owner's own tag on the same video, made
+		// before or after, keeps its own time and stays.
+		$earned = array(); // "video,tag,member" => earned_at.
+		foreach ( $rows as $row ) {
+			foreach ( (array) maybe_unserialize( $row->meta_value ) as $entry ) {
+				if ( is_array( $entry ) && ! empty( $entry['tag_id'] ) && ! empty( $entry['video_id'] ) && ! empty( $entry['earned_at'] ) ) {
+					$earned[ (int) $entry['video_id'] . ',' . (int) $entry['tag_id'] . ',' . (int) $row->user_id ] = (string) $entry['earned_at'];
+				}
+			}
+		}
+		if ( $earned ) {
+			$tuples = array_map( static fn( $key ) => array_map( 'intval', explode( ',', $key ) ), array_keys( $earned ) );
+			$videos = array_values( array_unique( array_column( $tuples, 0 ) ) );
+			// The video_id list lets MariaDB use the unique key; the tuples alone scan the table.
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off background job.
+			$found = (array) $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT video_id, tag_id, tagged_by, tagged_at FROM %i WHERE video_id IN (' . implode( ',', array_fill( 0, count( $videos ), '%d' ) ) . ') AND (video_id, tag_id, tagged_by) IN (' . implode( ',', array_fill( 0, count( $tuples ), '(%d,%d,%d)' ) ) . ')',
+					$links,
+					...$videos,
+					...array_merge( ...$tuples )
+				)
+			);
+			$gone = array();
+			foreach ( $found as $link ) {
+				if ( self::same_request( (string) $link->tagged_at, $earned[ "{$link->video_id},{$link->tag_id},{$link->tagged_by}" ] ?? '' ) ) {
+					$gone[] = array( (int) $link->video_id, (int) $link->tag_id );
+				}
+			}
+			if ( $gone ) {
+				$wpdb->query(
+					$wpdb->prepare(
+						'DELETE FROM %i WHERE video_id IN (' . implode( ',', array_fill( 0, count( $videos ), '%d' ) ) . ') AND (video_id, tag_id) IN (' . implode( ',', array_fill( 0, count( $gone ), '(%d,%d)' ) ) . ')',
+						$links,
+						...$videos,
+						...array_merge( ...$gone )
+					)
+				);
+			}
+			// phpcs:enable
+		}
+
+		if ( count( $rows ) === self::MEMBER_TAGS_BATCH ) {
+			update_option( self::MEMBER_TAGS_PENDING, (string) (int) end( $rows )->umeta_id, false );
+			\MediaShield\Cron\Cleanup::schedule_single( 'ms_separate_member_tags', time() );
+			return;
+		}
+
+		// Every link is gone now: a tag on no video is a milestone's when its
+		// creator earned it in the request that created it. A tag the owner
+		// made on the Tags screen, then earned while testing, stays. Checked
+		// in PHP, 1000 tags a query: a correlated LIKE over usermeta ran for
+		// minutes on MySQL 8.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off background job.
+		$orphans = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT t.id, t.created_by, t.created_at FROM %i t LEFT JOIN %i l ON l.tag_id = t.id WHERE l.tag_id IS NULL AND t.created_by > 0', $tags, $links ) );
+		foreach ( array_chunk( $orphans, 1000 ) as $chunk ) {
+			$times = array();
+			$users = array_values( array_unique( array_map( 'intval', wp_list_pluck( $chunk, 'created_by' ) ) ) );
+			foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, meta_value FROM %i WHERE meta_key = %s AND user_id IN (' . implode( ',', array_fill( 0, count( $users ), '%d' ) ) . ')', $wpdb->usermeta, '_ms_video_tags', ...$users ) ) as $row ) {
+				foreach ( (array) maybe_unserialize( $row->meta_value ) as $entry ) {
+					if ( is_array( $entry ) && ! empty( $entry['tag_id'] ) && ! empty( $entry['earned_at'] ) ) {
+						$times[ (int) $row->user_id . ':' . (int) $entry['tag_id'] ][] = (string) $entry['earned_at'];
+					}
+				}
+			}
+			$gone = array();
+			foreach ( $chunk as $tag ) {
+				foreach ( $times[ (int) $tag->created_by . ':' . (int) $tag->id ] ?? array() as $at ) {
+					if ( self::same_request( (string) $tag->created_at, $at ) ) {
+						$gone[] = (int) $tag->id;
+						break;
+					}
+				}
+			}
+			if ( $gone ) {
+				$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE id IN (' . implode( ',', array_fill( 0, count( $gone ), '%d' ) ) . ')', $tags, ...$gone ) );
+			}
+		}
+		// phpcs:enable
+		delete_option( self::MEMBER_TAGS_PENDING );
+	}
+
+	/**
+	 * Were two UTC times written by the same request (within 5 seconds)?
+	 *
+	 * @param string $a MySQL datetime.
+	 * @param string $b MySQL datetime.
+	 * @return bool
+	 */
+	private static function same_request( string $a, string $b ): bool {
+		$a = strtotime( $a . ' UTC' );
+		$b = strtotime( $b . ' UTC' );
+		return $a && $b && abs( $a - $b ) <= 5;
+	}
 }

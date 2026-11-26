@@ -23,6 +23,8 @@ namespace MediaShield\Integrations;
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Access\SessionManager;
+use MediaShield\Access\WatchedSpans;
+use MediaShield\Core\Settings;
 use MediaShield\Embed\EmbedLink;
 use MediaShield\Upload\LibraryFiles;
 
@@ -43,10 +45,265 @@ class Learnomy {
 	 */
 	public static function register(): void {
 		add_filter( 'learnomy_rest_lesson_payload', array( __CLASS__, 'add_embed_to_payload' ), 10, 3 );
-		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 3 );
+		add_filter( 'mediashield_library_file_in_use', array( __CLASS__, 'library_file_in_use' ), 10, 5 );
 		add_filter( 'learnomy_lesson_completion_rules', array( __CLASS__, 'require_watch' ), 10, 3 );
 		add_filter( 'mediashield_video_access_link', array( __CLASS__, 'course_link' ), 10, 2 );
+		add_filter( 'mediashield_watch_rule_applies', array( __CLASS__, 'watch_rule_applies' ), 10, 2 );
+		add_filter( 'mediashield_video_used_in', array( __CLASS__, 'used_in' ), 10, 2 );
+		// Learnomy 2.4.1 owns "watch the video to complete" on each lesson;
+		// MediaShield reports how much was watched and the starting %.
+		// Hooking the first filter is what tells Learnomy a provider measures
+		// protected videos (\Learnomy\protected_video_measured()).
+		add_filter( 'learnomy_lesson_watched_pct', array( __CLASS__, 'watched_pct' ), 10, 3 );
+		add_filter( 'learnomy_protected_video_default_watch_pct', array( __CLASS__, 'default_watch_pct' ) );
+		// When Learnomy has copied the % onto its Manual protected lessons it
+		// saves the option learnomy_protected_video_rule_moved, which
+		// owns_watch_rule() waits for. The setting ms_lms_require_watch_pct
+		// stays as it is: it still gates LearnDash lessons (Pro), feeds the
+		// player's early report (SessionController) and is the starting % for
+		// new Learnomy lessons (default_watch_pct()), so clearing it would
+		// change those.
 	}
+
+	/**
+	 * Does Learnomy decide "watch the video to complete" on each lesson?
+	 *
+	 * True from Learnomy 2.4.1, which defines protected_video_measured(), once
+	 * it has finished moving the site-wide % onto each lesson (it saves
+	 * `learnomy_protected_video_rule_moved`, { pct, moved, at }, on the last
+	 * page of its background move), or straight away when the site-wide % is
+	 * 0 and there is nothing to move. Then the lesson's own Completion rule
+	 * decides and MediaShield only reports the watched share (watched_pct()).
+	 *
+	 * False with Learnomy 2.4.0 or older, and with 2.4.1 while the move is
+	 * still running: until then the lessons have no watch gate of their own,
+	 * so the site-wide "Require X% watched" keeps applying (require_watch())
+	 * and Settings keeps its control. The admin Settings screen reads the
+	 * same answer (Admin\Menu, learnomyOwnsWatchRule).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return bool
+	 */
+	public static function owns_watch_rule(): bool {
+		if ( ! function_exists( '\\Learnomy\\protected_video_measured' ) ) {
+			return false;
+		}
+		return ! empty( get_option( self::RULE_MOVED_OPTION ) )
+			|| (int) Settings::get( 'ms_lms_require_watch_pct' ) <= 0;
+	}
+
+	/**
+	 * Does a published protected video lesson complete by watching this video?
+	 *
+	 * The lesson's own watch % once Learnomy owns the rule, else the site's
+	 * "Watch X% to complete" (owns_watch_rule()). For the owner's "add this
+	 * video's length" line (VideoStatus::needs_length()).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param bool $applies  Earlier answer.
+	 * @param int  $video_id Video ID.
+	 * @return bool
+	 */
+	public static function watch_rule_applies( $applies, $video_id ): bool {
+		if ( $applies ) {
+			return true;
+		}
+		$owns = self::owns_watch_rule();
+		$site = (int) Settings::get( 'ms_lms_require_watch_pct' );
+		foreach ( self::lessons_playing( (int) $video_id ) as $lesson ) {
+			if ( $owns ? (int) ( $lesson->min_video_watch_pct ?? 0 ) > 0 : $site > 0 ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Add the Learnomy lessons that play each listed video to "Used in"
+	 * (the Videos list, the Video block's sidebar): a video used only in a
+	 * lesson said "Not used yet", so an owner tidying up could trash a
+	 * lesson's video (Basecamp 10545260458).
+	 *
+	 * Lessons are rows in Learnomy's table, not posts: each entry's id is
+	 * "learnomy_lesson:N", so it never matches a post id, and the link is
+	 * Learnomy's lesson editor for someone who may edit lessons, else the
+	 * lesson page.
+	 * ponytail: one cached Learnomy lookup per listed video (a page of 20);
+	 * batch it in Learnomy if lists grow.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param array $usage     Places by video ID.
+	 * @param int[] $video_ids Videos being listed.
+	 * @return array
+	 */
+	public static function used_in( $usage, $video_ids ): array {
+		$usage = (array) $usage;
+		$label = function_exists( '\\Learnomy\\lesson_label' ) ? (string) \Learnomy\lesson_label() : __( 'Lesson', 'mediashield' );
+		$edits = current_user_can( 'learnomy_manage_own_courses' ) || current_user_can( 'manage_options' );
+		foreach ( (array) $video_ids as $video_id ) {
+			// Drafts too, as Used in lists draft pages: an owner tidying up
+			// must not trash the video a lesson in progress needs (round 2).
+			$lessons = self::lessons_playing( (int) $video_id, false );
+			if ( ! $lessons ) {
+				continue;
+			}
+			$places = isset( $usage[ $video_id ] ) ? (array) $usage[ $video_id ] : array();
+			foreach ( $lessons as $lesson ) {
+				$places[] = array(
+					'id'    => 'learnomy_lesson:' . (int) $lesson->id,
+					'title' => '' !== (string) ( $lesson->title ?? '' ) ? wp_strip_all_tags( (string) $lesson->title ) : __( '(no title)', 'mediashield' ),
+					'url'   => $edits ? admin_url( 'admin.php?page=learnomy-lesson-editor&lesson_id=' . (int) $lesson->id ) : self::lesson_url( $lesson ),
+					'type'  => $label,
+				);
+			}
+			$usage[ $video_id ] = $places;
+		}
+		return $usage;
+	}
+
+	/**
+	 * A lesson's page, '' when Learnomy cannot say.
+	 *
+	 * @param object $lesson Lesson row.
+	 * @return string
+	 */
+	private static function lesson_url( $lesson ): string {
+		if ( ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
+			return '';
+		}
+		$course = \Learnomy\Models\Course::find( (int) ( $lesson->course_id ?? 0 ) );
+		if ( ! $course || empty( $course->slug ) || empty( $lesson->slug ) ) {
+			return '';
+		}
+		return \Learnomy\route_url(
+			'lesson',
+			array(
+				'slug'        => (string) $course->slug,
+				'lesson_slug' => (string) $lesson->slug,
+			)
+		);
+	}
+
+	/**
+	 * The published protected video lessons that play this video, free
+	 * previews first, through Learnomy's own cached lookup:
+	 * Lesson::naming_mediashield_video() (2.4.1, every lesson naming it in
+	 * any status, so the published protected ones are kept here), else
+	 * Lesson::for_mediashield_video() (2.4.0, published ones only). MediaShield
+	 * 1.4.4 called only the second, which 2.4.1 does not have, so neither the
+	 * "Length needed" prompt nor the course link on a refusal ever showed for
+	 * a Learnomy lesson (Learnomy card 10536470184).
+	 *
+	 * Used in passes $published_only false: there a draft lesson counts too.
+	 * Access, the watch rule and the course link keep published lessons only.
+	 *
+	 * @param int  $video_id       Video ID.
+	 * @param bool $published_only Only published lessons (default), or any status.
+	 * @return object[] Lesson rows.
+	 */
+	private static function lessons_playing( int $video_id, bool $published_only = true ): array {
+		if ( $video_id <= 0 || ! class_exists( '\\Learnomy\\Models\\Lesson' ) ) {
+			return array();
+		}
+		if ( is_callable( '\\Learnomy\\Models\\Lesson::naming_mediashield_video' ) ) {
+			$rows = \Learnomy\Models\Lesson::naming_mediashield_video( $video_id );
+		} elseif ( is_callable( '\\Learnomy\\Models\\Lesson::for_mediashield_video' ) ) {
+			$rows = \Learnomy\Models\Lesson::for_mediashield_video( $video_id );
+		} else {
+			return array();
+		}
+		$rows = array_values(
+			array_filter(
+				(array) $rows,
+				static function ( $lesson ) use ( $video_id, $published_only ) {
+					return self::lesson_video( $lesson ) === $video_id && ( ! $published_only || 'published' === (string) ( $lesson->status ?? 'published' ) );
+				}
+			)
+		);
+		usort(
+			$rows,
+			static function ( $a, $b ) {
+				return (int) ( $b->is_preview ?? 0 ) <=> (int) ( $a->is_preview ?? 0 );
+			}
+		);
+		return $rows;
+	}
+
+	/**
+	 * The MediaShield video a protected video lesson plays, 0 when none.
+	 *
+	 * Learnomy stores the video's post ID in `video_url` for content type
+	 * 'mediashield'. Anything else (another content type, a URL, an ID that
+	 * is not a MediaShield video) is not ours to answer.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param object $lesson Lesson row.
+	 * @return int
+	 */
+	private static function lesson_video( $lesson ): int {
+		if ( ! is_object( $lesson ) || self::CONTENT_TYPE !== (string) ( $lesson->content_type ?? '' ) ) {
+			return 0;
+		}
+		$id = trim( (string) ( $lesson->video_url ?? '' ) );
+		if ( '' === $id || ! ctype_digit( $id ) ) {
+			return 0;
+		}
+		return 'mediashield_video' === get_post_type( (int) $id ) ? (int) $id : 0;
+	}
+
+	/**
+	 * How much of a protected video lesson's video has this member watched?
+	 *
+	 * Answers Learnomy 2.4.1's `learnomy_lesson_watched_pct` with the share
+	 * measured on the server (WatchedSpans: time spent watching, merged
+	 * across sittings, so skipping ahead earns nothing). Another lesson's
+	 * value is passed through untouched (null by default), so other
+	 * providers are not overridden. For the site-wide rule use
+	 * SessionManager::watch_requirement().
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int|null $pct     Share so far; null when no provider answered.
+	 * @param int      $user_id Member; 0 (a guest) has watched nothing.
+	 * @param object   $lesson  Lesson row.
+	 * @return int|null 0-100, or $pct for a lesson that is not a protected video.
+	 */
+	public static function watched_pct( $pct, $user_id, $lesson ) {
+		$video_id = self::lesson_video( $lesson );
+		if ( ! $video_id ) {
+			return $pct;
+		}
+		return (int) $user_id > 0 ? WatchedSpans::percent( (int) $user_id, $video_id ) : 0;
+	}
+
+	/**
+	 * Starting "watch %" for a new Learnomy protected video lesson.
+	 *
+	 * Answers `learnomy_protected_video_default_watch_pct` with Settings >
+	 * Lesson completion "Default for new protected video lessons"
+	 * (ms_learnomy_new_lesson_pct: 80 on a new install, the stored Require X%
+	 * watched on a site that updates); 0 leaves Learnomy's own default.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $pct Default so far.
+	 * @return int
+	 */
+	public static function default_watch_pct( $pct ): int {
+		$setting = (int) Settings::get( 'ms_learnomy_new_lesson_pct' );
+		return $setting > 0 ? $setting : (int) $pct;
+	}
+
+	/**
+	 * Learnomy's record of its one-time move of the site-wide watch rule.
+	 * Learnomy owns it and writes it, including on a site with nothing to
+	 * move; MediaShield only reads it (owns_watch_rule()).
+	 */
+	public const RULE_MOVED_OPTION = 'learnomy_protected_video_rule_moved';
 
 	/**
 	 * The Learnomy course a refused viewer can enrol in to watch this video.
@@ -65,12 +322,12 @@ class Learnomy {
 	 * @return array|null { title, url }.
 	 */
 	public static function course_link( $link, $video_id ) {
-		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Lesson' ) || ! is_callable( '\\Learnomy\\Models\\Lesson::for_mediashield_video' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
+		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
 			return $link;
 		}
 		// Learnomy's own lookup (published lessons playing the video, cached).
 		$course = null;
-		foreach ( \Learnomy\Models\Lesson::for_mediashield_video( (int) $video_id ) as $lesson ) {
+		foreach ( self::lessons_playing( (int) $video_id ) as $lesson ) {
 			$candidate = \Learnomy\Models\Course::find( (int) ( $lesson->course_id ?? 0 ) );
 			if ( $candidate && 'published' === (string) ( $candidate->status ?? '' ) && ! empty( $candidate->slug ) ) {
 				$course = $candidate;
@@ -107,6 +364,13 @@ class Learnomy {
 	 * (admins, the course's instructor) is untouched, 'advisory' shows the
 	 * requirement without blocking. A completed lesson stays completed.
 	 *
+	 * Once Learnomy owns the rule (owns_watch_rule(): 2.4.1 with the % moved
+	 * onto each lesson) the lesson's own Completion rule decides (it asks
+	 * watched_pct() for the share), so this adds nothing: two rules on one
+	 * lesson would show two strips and could disagree. With Learnomy 2.4.0,
+	 * and with 2.4.1 until its move has finished, it behaves exactly as in
+	 * 1.4.3, so no lesson is left without a watch gate in between.
+	 *
 	 * @since 1.4.3
 	 *
 	 * @param array  $status  Learnomy completion status.
@@ -116,6 +380,9 @@ class Learnomy {
 	 */
 	public static function require_watch( $status, $user_id, $lesson ): array {
 		$status = (array) $status;
+		if ( self::owns_watch_rule() ) {
+			return $status;
+		}
 		if ( self::CONTENT_TYPE !== (string) ( $lesson->content_type ?? '' )
 			|| ! empty( $status['is_completed'] ) || 'off' === ( $status['enforcement'] ?? 'strict' ) ) {
 			return $status;
@@ -161,17 +428,22 @@ class Learnomy {
 	 * @param string $where      Where it is used so far, '' when nowhere.
 	 * @param string $relative   File path relative to the uploads folder.
 	 * @param int    $attachment Media Library item.
+	 * @param int    $video_id   Video being protected (unused).
+	 * @param array  $replacing  { type, id }: a lesson being switched to this
+	 *                           video ('learnomy_lesson') is not a use (1.4.4).
 	 * @return string
 	 */
-	public static function library_file_in_use( $where, $relative, $attachment ): string {
+	public static function library_file_in_use( $where, $relative, $attachment, $video_id = 0, $replacing = array() ): string {
+		unset( $video_id );
 		if ( '' !== (string) $where || ! function_exists( '\\Learnomy\\table' ) ) {
 			return (string) $where;
 		}
 		$relative = (string) $relative;
 		$lessons  = \Learnomy\table( 'lessons' );
+		$skip     = 'learnomy_lesson' === ( $replacing['type'] ?? '' ) ? absint( $replacing['id'] ?? 0 ) : 0;
 		// Older Learnomy schemas have no media_id; that query's error is ignored, the URL check stands.
-		if ( LibraryFiles::table_mentions_file( $lessons, array( 'video_url', 'content' ), $relative )
-			|| LibraryFiles::table_has_value( $lessons, 'media_id', (int) $attachment ) ) {
+		if ( LibraryFiles::table_mentions_file( $lessons, array( 'video_url', 'content' ), $relative, $skip )
+			|| LibraryFiles::table_has_value( $lessons, 'media_id', (int) $attachment, $skip ) ) {
 			return __( 'a Learnomy lesson', 'mediashield' );
 		}
 		return LibraryFiles::table_mentions_file( \Learnomy\table( 'courses' ), array( 'video_url', 'content', 'description' ), $relative )

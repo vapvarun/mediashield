@@ -1,12 +1,13 @@
 {
     "name": "mediashield",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "description": "Video protection for WordPress",
     "scripts": {
         "build": "wp-scripts build",
         "start": "wp-scripts start",
         "lint:js": "wp-scripts lint-js",
         "lint:css": "wp-scripts lint-style",
+        "test:js": "wp-scripts test-unit-js tests/js",
         "i18n": "grunt i18n",
         "dist": "grunt dist",
         "zip": "grunt dist"

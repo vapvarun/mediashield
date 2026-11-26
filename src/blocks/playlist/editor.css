@@ -108,7 +108,6 @@
 	border-radius: 2px;
 	color: var( --ms-pl-muted );
 	font-size: 11px;
-	text-transform: uppercase;
 }
 
 .ms-playlist-preview .ms-playlist-more {

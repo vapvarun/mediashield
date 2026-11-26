@@ -40,8 +40,10 @@ PLUGIN_SLUG="mediashield"
 PLUGIN_TEXT_DOMAIN="mediashield"
 # MODELS_GLOB / MODEL_BASE_REGEX intentionally unset — see U2 deviation note above.
 CONTROLLER_GLOB="includes/REST/*Controller.php"
-# MediaShield controllers extend WP_REST_Controller directly (no Base_Controller).
-CONTROLLER_BASE_REGEX="extends\s+WP_REST_Controller\b"
+# MediaShield controllers extend WP_REST_Controller directly (no Base_Controller),
+# or one of core's WP_REST_*_Controller subclasses (LibraryPostsController keeps
+# core's posts routes and adds an edit_posts read check).
+CONTROLLER_BASE_REGEX="extends\s+WP_REST_([A-Za-z_]+_)?Controller\b"
 CONTROLLER_NAMESPACE_REGEX="^namespace\s+MediaShield\\\\REST;"
 
 VIOLATIONS_FILE="$(mktemp)"

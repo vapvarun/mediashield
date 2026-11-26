@@ -73,6 +73,18 @@ class Plugin {
 		VideoPostType::register();
 		PlaylistPostType::register();
 		Thumbnail::register();
+		// A video the platform no longer plays (Basecamp 10545260568).
+		\MediaShield\CPT\SourceStatus::register();
+		// The page a player is shown on, for its REST requests.
+		\MediaShield\Access\AccessControl::register();
+		// Another plugin adds a video through one door (mediashield_create_video).
+		\MediaShield\CPT\VideoCreator::register();
+		// Each video's library status, stored when it can change (Basecamp 10545260458).
+		\MediaShield\CPT\VideoStatus::register();
+		// A new source forgets the length players measured for the old one.
+		\MediaShield\Access\WatchedSpans::register();
+		// Where each video is placed, cached until an embed changes.
+		\MediaShield\CPT\VideoUsage::register();
 
 		// REST API.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
@@ -153,6 +165,10 @@ class Plugin {
 		// Videos list: columns, filters, bulk actions (Basecamp 10530930295).
 		( new VideoListController() )->register_routes();
 		VideoListController::register_hooks();
+		// The player reports a video its platform refuses (Basecamp 10545260568).
+		( new \MediaShield\REST\SourceReportController() )->register_routes();
+		// The Video block: is a pasted link already a video, and what is it (Basecamp 10545260523).
+		( new \MediaShield\REST\VideoSummaryController() )->register_routes();
 	}
 
 	/**

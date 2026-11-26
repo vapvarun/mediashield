@@ -100,5 +100,5 @@ See `plan/QA_RELEASE_PROSPECT.md` for the full release-day walkthrough. Short ve
 3. Regenerate `.pot` file
 4. Bump version in all five places (plugin header, `MEDIASHIELD_VERSION`, `readme.txt` Stable tag, `composer.json`, `package.json`)
 5. Update `readme.txt` changelog
-6. Create dist zip excluding `node_modules/`, `plan/`, `tests/`, `.git*`, `*.md` except `readme.txt`
+6. `bash bin/build-release.sh` builds `dist/mediashield-{version}.zip` and checks it (required files, admin chunks, no dev files, every entry deflated)
 7. `git tag v1.0.0 && git push origin v1.0.0`

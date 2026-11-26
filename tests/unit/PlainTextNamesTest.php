@@ -58,6 +58,8 @@ class PlainTextNamesTest extends WP_UnitTestCase {
 				'started_at'     => $now,
 				'last_heartbeat' => $now,
 				'completion_pct' => 50,
+				'max_position'   => 30, // A session that played; page loads do not count (1.4.4).
+				'total_seconds'  => 30,
 				'is_active'      => 0,
 			)
 		);

@@ -185,14 +185,16 @@ The filter does not run for administrators: `manage_options` users are allowed b
 
 *Since 1.4.1.* Lets an integration allow a logged-out visitor to watch a video while **Require Login** is on. An LMS uses it for free-preview lessons. Return `true` to let the guest past the login check. The default is `false`, so guests stay blocked unless something opts in.
 
-**Parameters:** `$allow` (bool, default `false`), `$video_id` (int)
+**Parameters:** `$allow` (bool, default `false`), `$video_id` (int), `$context` (array, since 1.4.4: where the video is being shown, `array( 'type' => 'post', 'id' => 123 )`; `id` is 0 when unknown)
 
 ```php
-// Allow guests on videos that belong to a free-preview lesson.
-add_filter( 'mediashield_guest_can_watch', function( $allow, $video_id ) {
-    return $allow || my_lms_video_is_preview( $video_id );
-}, 10, 2 );
+// Allow guests on a video only on the free-preview lesson that shows it.
+add_filter( 'mediashield_guest_can_watch', function( $allow, $video_id, $context = array() ) {
+    return $allow || my_lms_is_preview_page( $video_id, $context );
+}, 10, 3 );
 ```
+
+Since 1.4.4 a grant can be scoped to one page: the same video embedded elsewhere (another lesson, a landing page) stays behind the login. `$context` is the page being shown during a page render, and the same page again when the player starts its viewing and streams the file, because the player carries it with those requests. A plugin whose lessons are not WordPress posts names its own with `mediashield_page_context` below. Naming another page in a request only gets what opening that page would give.
 
 It runs only for guests, and only to answer the Require Login check. It does not turn Require Login off, and it is not a way to skip other rules: the per-video role and Allowed Domains checks still apply. Learnomy 2.2.0 uses this filter for its free-preview lessons. See [Courses with Learnomy](../using-mediashield/15-courses-with-learnomy.md).
 
@@ -200,7 +202,7 @@ It runs only for guests, and only to answer the Require Login check. It does not
 
 ### mediashield_video_watch_url
 
-*Since 1.4.1.* Supplies the page where a member can watch a video. The My Videos block and shortcode use it to link each title and to show the **Resume** link. The default is an empty string. With no URL the title shows as plain text and there is no Resume link. Videos have no public page of their own (their permalink lands on the home page), so MediaShield cannot guess one.
+*Since 1.4.1.* Supplies the page where a member can watch a video. The My Videos block and shortcode use it to link each title and to show the **Resume** link. The default is an empty string. With no URL MediaShield links the first published page or post that shows the video and the member may read; since 1.4.4, when there is none, the video's own player page, a signed link minted for that member (the same page the embed links for apps open). Videos have no public page of their own (their permalink lands on the home page).
 
 **Parameters:** `$url` (string, default empty), `$video_id` (int), `$user_id` (int, the member the list is for)
 
@@ -225,6 +227,31 @@ Return a full URL on your own site. The player on that page offers to resume by 
 ```php
 add_filter( 'mediashield_my_videos_per_page', fn() => 24 );
 ```
+
+---
+
+### mediashield_library_choices
+
+*Since 1.4.4.* A read for other plugins: the videos ready to be chosen, as `[ id => title ]`, newest first. Ready means published, with something to play (not "No source", not unavailable at its platform), the same rule as the Video block's picker. Use it for a video select in your own screens, for example a lesson editor.
+
+**Parameters:** `$choices` (array, pass `[]`), `$args` (array: `page` int, default 1; `per_page` int, default 20, at most 100; `search` string)
+
+Ask one page at a time; a page shorter than `per_page` is the last one.
+
+```php
+$videos = apply_filters( 'mediashield_library_choices', array(), array( 'page' => 1, 'per_page' => 50, 'search' => 'intro' ) );
+foreach ( $videos as $id => $title ) {
+	printf( '<option value="%d">%s</option>', $id, esc_html( $title ) );
+}
+```
+
+---
+
+### mediashield_plays_bunny
+
+*Since 1.4.4.* Whether Bunny Stream links play on this site. False in the free plugin; MediaShield Pro answers true when a Bunny library is connected. It decides whether the "which links work" words (link field hints, the setup wizard, the refusal for a link that cannot play) name Bunny Stream.
+
+**Parameters:** `$plays` (bool)
 
 ---
 
@@ -275,13 +302,20 @@ add_filter( 'mediashield_upload_drivers', function( $drivers ) {
 
 *Since 1.4.2.* Report a use of a Media Library file that MediaShield cannot see, so the file is left in place instead of being moved into the protected folder. Return where it is used, in a few words the owner will read in the notice (for example `a Learnomy lesson`). MediaShield's Learnomy integration uses it for lesson and course URLs.
 
-**Parameters:** `$where` (string, '' when unused so far), `$relative` (string, path below the uploads folder), `$attachment_id` (int; since 1.4.3 always set, because a file with no Media Library item is never moved), `$video_id` (int)
+**Parameters:** `$where` (string, '' when unused so far), `$relative` (string, path below the uploads folder), `$attachment_id` (int; since 1.4.3 always set, because a file with no Media Library item is never moved), `$video_id` (int), `$replacing` (array, since 1.4.4: `array( 'type' => string, 'id' => int )` naming the one reference that is about to switch to this video, or an empty array; see `replacing` under [mediashield_create_video](#mediashield_create_video))
 
 ```php
-add_filter( 'mediashield_library_file_in_use', function( $where, $relative ) {
-    return '' === $where && my_plugin_uses_file( $relative ) ? 'a My Plugin page' : $where;
-}, 10, 2 );
+add_filter( 'mediashield_library_file_in_use', function( $where, $relative, $attachment_id, $video_id, $replacing ) {
+    if ( '' !== $where ) {
+        return $where;
+    }
+    // The page that is switching to the new video is not a use.
+    $skip = 'my_page' === ( $replacing['type'] ?? '' ) ? (int) $replacing['id'] : 0;
+    return my_plugin_uses_file( $relative, $skip ) ? 'a My Plugin page' : $where;
+}, 10, 5 );
 ```
+
+If you keep file URLs in your own table, `\MediaShield\Upload\LibraryFiles::table_mentions_file( $table, $columns, $relative, $skip_id )` and `table_has_value( $table, $column, $id, $skip_id )` do the lookup; `$skip_id` (since 1.4.4) leaves out the row whose `id` column has that value.
 
 ---
 
@@ -443,7 +477,7 @@ Defaults to `true` when the `ms_require_login` setting is off (*since 1.3.0*), o
 
 ### mediashield_shortcode_source_url
 
-*Since 1.1.0.* Override the source URL resolved by the `[mediashield]` shortcode at render time.
+*Since 1.1.0.* Override the source URL resolved by the `[mediashield]` shortcode at render time. Since 1.4.4 the URL is used for that one render only and is never saved to the video (earlier versions wrote it to `_ms_source_url` and back on every view).
 
 **Parameters:** `$source_url` (string), `$video_id` (int), `$atts` (array)
 
@@ -580,6 +614,113 @@ add_filter( 'mediashield_display_timezone', function( $timezone, $user_id ) {
     return $own ? new DateTimeZone( $own ) : $timezone;
 }, 10, 2 );
 ```
+
+---
+
+### mediashield_page_context
+
+*Since 1.4.4.* Where the current page shows its videos, as `array( 'type' => string, 'id' => int )`. The default is `array( 'type' => 'post', 'id' => <the queried post> )`. A plugin whose lessons are not WordPress posts returns its own on those pages, for example Learnomy's `array( 'type' => 'learnomy_lesson', 'id' => 42 )`, so `mediashield_guest_can_watch` sees which lesson is open. The player prints it as `data-ms-context` and sends it back as `ms_context` with its requests.
+
+**Parameters:** `$context` (array)
+
+```php
+add_filter( 'mediashield_page_context', function( $context ) {
+    $lesson = my_lms_current_lesson_id();
+    return $lesson ? array( 'type' => 'my_lms_lesson', 'id' => $lesson ) : $context;
+} );
+```
+
+`type` is lowercase letters, digits and underscores (up to 32), `id` a positive integer.
+
+---
+
+### mediashield_watch_rule_applies
+
+*Since 1.4.4.* Does a watch rule complete a lesson by this video? When the answer is `true` and the video has no stored Duration, the video's edit screen and the Videos list ask the owner for its length ("Add this video's length so the watch rule can't be skipped."): without one, the watched share is measured against the lengths viewers' players report.
+
+**Parameters:** `$applies` (bool, default `false`), `$video_id` (int)
+
+```php
+add_filter( 'mediashield_watch_rule_applies', function( $applies, $video_id ) {
+    return $applies || my_lms_lesson_needs_watching( $video_id );
+}, 10, 2 );
+```
+
+MediaShield answers for Learnomy protected video lessons with a watch %, and MediaShield Pro for a video linked to a LearnDash lesson or topic while the site-wide % is on.
+
+---
+
+### mediashield_measure_watch
+
+*Since 1.4.4.* Decides whether a player at the **None** or **Basic** level measures a logged-in member's watch time for the site-wide "Watch X% to complete" (**Settings > Lesson Completion**). That percentage is about lessons, and the player cannot tell a lesson from a blog post, so the default is `false`: return `true` on the screens where your LMS completes a lesson by it. Standard and Strict videos measure anyway. A lesson that sets its own percentage on the player (`data-watch-required`, the shortcode's `watch_required`) is measured without this filter.
+
+**Parameters:** `$measure` (bool, default `false`), `$video_id` (int), `$post_id` (int, the post or page being shown; 0 when there is none)
+
+```php
+// Measure on my LMS's lesson pages.
+add_filter( 'mediashield_measure_watch', function( $measure, $video_id, $post_id ) {
+    return $measure || 'my_lesson' === get_post_type( $post_id );
+}, 10, 3 );
+```
+
+MediaShield Pro answers `true` on LearnDash lessons and topics. When nothing answers, a None or Basic video makes no requests at all.
+
+---
+
+### mediashield_create_video
+
+*Since 1.4.4.* The one way another plugin adds a video to the MediaShield library, for example an LMS lesson editor that offers "Add a video" or turns an ordinary video lesson into a protected one. Call it instead of writing MediaShield's posts or meta yourself.
+
+```php
+$video_id = apply_filters( 'mediashield_create_video', null, array(
+    'source_url'    => 'https://youtu.be/jNQXAC9IVRw', // a YouTube, Vimeo, Wistia or Bunny Stream link, or a link to an .mp4 file
+    // or 'attachment_id' => 123,                       // a video file in the Media Library
+    'title'         => 'Lesson 1',                      // optional
+) );
+
+if ( is_wp_error( $video_id ) ) {
+    // $video_id->get_error_message() is ready to show; get_error_data()['status'] is 400, 403, 404 or 500.
+} elseif ( is_int( $video_id ) ) {
+    $shortcode = '[mediashield id="' . $video_id . '"]';
+}
+// null: MediaShield is not active (nothing answered the filter).
+```
+
+**Parameters:** `$result` (`null`; a callback that already holds an `int` or `WP_Error` keeps it), `$args` (array):
+
+| Key | Type | Meaning |
+|-----|------|---------|
+| `source_url` | string | A link MediaShield can play: YouTube, Vimeo, Wistia, Bunny Stream (with Pro), or a link to a video file. |
+| `attachment_id` | int | A video file already in the Media Library. Used instead of `source_url` when both are given. |
+| `title` | string | Optional. Empty: the platform's title (or "Video 123"), or the Media Library item's title for a file. |
+| `replacing` | array | Optional, since 1.4.4. `array( 'type' => 'post', 'id' => 123 )` or `array( 'type' => 'learnomy_lesson', 'id' => 42 )`: the one thing that still uses the file and is about to switch to the new video. |
+
+**Returns** the video ID (`int`), or a `WP_Error`:
+
+| Code | Status | When |
+|------|--------|------|
+| `mediashield_cannot_create_video` | 403 | The current user may not add videos (needs `edit_posts`), or may not edit that Media Library file. |
+| `mediashield_unplayable_source` | 400 | The link is not a video MediaShield can play. The message says what to use instead, in the same words as the Add video screen. |
+| `mediashield_not_a_video_file` | 404 | `attachment_id` is not a video in the Media Library. |
+| (WordPress's code) | 500 | The video could not be saved. |
+
+A video added by someone who may publish posts is published at once; anyone else's (a Contributor, say) is saved as **Pending Review** for an editor to publish, as WordPress does for posts. Check `get_post_status( $video_id )` if your screen needs to say so.
+
+It takes the same path as **Videos > Add New**: the same link check, the same save (platform and id stored in one shape, the platform's title fetched when none is given, the Videos list status), no protection level stamped (the video follows the site default), and a Media Library file is moved into the protected folder with its Media Library item made private, as when an owner pastes that file's link. A file keeps the name it was uploaded with and its length is read from it. A link already in the library, however it is written (`youtu.be/…` or `watch?v=…`), returns that video instead of adding a copy, as the Video block does; so does the same Media Library file twice.
+
+A file the site still uses somewhere else (a lesson's own video field, a post) is left where it is and played from there. Point that use at the new video first if the file should be protected, or name it in `replacing` when you switch it only after MediaShield succeeds:
+
+```php
+$video_id = apply_filters( 'mediashield_create_video', null, array(
+    'attachment_id' => $lesson->media_id,
+    'replacing'     => array( 'type' => 'learnomy_lesson', 'id' => (int) $lesson->id ),
+) );
+if ( is_int( $video_id ) ) {
+    // Now point the lesson at $video_id.
+}
+```
+
+With `replacing` set, the check that decides whether the file may move does not count that one reference: for `post`, that WordPress post's content and meta; for `learnomy_lesson`, that row in Learnomy's lessons table (MediaShield's Learnomy integration). Any other type is passed to `mediashield_library_file_in_use` for the integration that owns it. Every other use still keeps the file in place, and the video then plays it from where it is. A video MediaShield already made for the file, left in place because of that reference, is checked again.
 
 ---
 

@@ -26,6 +26,127 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Protection {
 
 	/**
+	 * Options that were site-wide switches before 1.4.4 and now belong to Strict.
+	 */
+	public const LEGACY_SWITCHES = array( 'ms_hide_source', 'ms_detect_devtools', 'ms_pause_on_devtools' );
+
+	/**
+	 * The four protection levels in the words every screen uses.
+	 *
+	 * One list for Settings, the video edit screen, the setup wizard, the
+	 * Videos list and the block (Basecamp 10545260510). Each level includes
+	 * the one before it. Login is not part of a level: it is the Who can
+	 * watch setting (`ms_require_login`) and applies at every level.
+	 *
+	 * `summary` is the whole promise of the level; `adds` is the one line it
+	 * adds to the level before it, for a list that reads top to bottom.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return array<string, array{label: string, summary: string, adds: string}>
+	 */
+	public static function levels(): array {
+		// None follows the site-wide right-click switch (owner decision,
+		// Basecamp 10537111817), so its words say so while the switch is on.
+		$none = Settings::get( 'ms_block_right_click' )
+			? __( 'The video plays as the platform shows it. Right-click stays blocked while Block right-click on every video is on.', 'mediashield' )
+			: __( 'The video plays as the platform shows it.', 'mediashield' );
+
+		return array(
+			'none'     => array(
+				'label'   => __( 'None', 'mediashield' ),
+				'summary' => $none,
+				'adds'    => $none,
+			),
+			'basic'    => array(
+				'label'   => __( 'Basic', 'mediashield' ),
+				'summary' => __( 'Right-click and download blocked.', 'mediashield' ),
+				'adds'    => __( 'Right-click and download blocked.', 'mediashield' ),
+			),
+			'standard' => array(
+				'label'   => __( 'Standard', 'mediashield' ),
+				'summary' => __( 'Right-click and download blocked, a watermark with the viewer\'s name, and each viewing tracked.', 'mediashield' ),
+				'adds'    => __( 'Plus a watermark and tracked viewing.', 'mediashield' ),
+			),
+			'strict'   => array(
+				'label'   => __( 'Strict', 'mediashield' ),
+				// YouTube, Vimeo and Wistia serve their own videos: there is no
+				// file address to hide, only their links to cover (UX test MSUX-04).
+				'summary' => __( 'Everything in Standard, plus the file address hidden from the page and developer tools detected. On YouTube, Vimeo and Wistia videos MediaShield covers the platform\'s own links, but the platform still serves the video.', 'mediashield' ),
+				'adds'    => __( 'Plus file address hidden and developer tools detected.', 'mediashield' ),
+			),
+		);
+	}
+
+	/**
+	 * The label for a video that follows the site default: "Site default (Standard)".
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return string
+	 */
+	public static function site_default_label(): string {
+		$levels = self::levels();
+		$level  = self::default_level();
+
+		return sprintf(
+			/* translators: %s: the site-wide protection level, e.g. Standard. */
+			__( 'Site default (%s)', 'mediashield' ),
+			$levels[ $level ]['label'] ?? $level
+		);
+	}
+
+	/**
+	 * Option set on a site that updated from 1.4.3 or earlier (Migrator v14).
+	 */
+	public const SWITCHES_KEPT = 'ms_protection_switches_kept';
+
+	/**
+	 * The pre-1.4.4 site-wide protection switches that still apply on this site.
+	 *
+	 * Until 1.4.4, Hide Video Source, Detect Developer Tools and Pause Video
+	 * When Detected were site-wide switches that applied at every protected
+	 * level. They now belong to Strict only (Basecamp 10545260510). An update
+	 * must not change what members get, so a site that ran 1.4.3 or earlier
+	 * (SWITCHES_KEPT, set by Migrator v14), or that changed a switch, keeps
+	 * the switches that are on working site-wide, and Settings names them,
+	 * until the owner picks a level there (SettingsController removes the
+	 * switches and the marker then). A new install gets the levels only.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return string[] Switch options still applying site-wide; empty = the levels decide.
+	 */
+	public static function legacy_switches(): array {
+		$defaults = Settings::defaults();
+		$old      = (bool) get_option( self::SWITCHES_KEPT, false );
+		foreach ( self::LEGACY_SWITCHES as $key ) {
+			$stored = get_option( $key, null );
+			if ( null !== $stored && (bool) $stored !== (bool) $defaults[ $key ] ) {
+				$old = true;
+			}
+		}
+		if ( ! $old ) {
+			return array();
+		}
+		return array_values( array_filter( self::LEGACY_SWITCHES, static fn( string $key ): bool => (bool) Settings::get( $key ) ) );
+	}
+
+	/**
+	 * Does the site hide a pasted file's address at every level, not only Strict?
+	 *
+	 * Only a site that kept its pre-1.4.4 switches (legacy_switches()) with
+	 * Hide Video Source on. Otherwise hiding is Strict's.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return bool
+	 */
+	public static function site_hides_source(): bool {
+		return in_array( 'ms_hide_source', self::legacy_switches(), true );
+	}
+
+	/**
 	 * Resolve the protection level that applies to one video.
 	 *
 	 * WHY THIS IS SHARED RATHER THAN INLINE
@@ -99,12 +220,18 @@ class Protection {
 		// failed migration, a site restored from an incomplete export) keyboard
 		// blocking switched itself on against the documented default. Settings
 		// resolves the schema default and casts, so there is one source.
+		//
+		// Source hiding and developer-tools detection belong to Strict, which
+		// the player turns on from the video's level (protection.js). These
+		// three keys are the site-wide versions, on only for a site that kept
+		// its pre-1.4.4 switches (legacy_switches()).
+		$legacy = self::legacy_switches();
 		$config = array(
 			'block_right_click' => (bool) Settings::get( 'ms_block_right_click' ),
 			'block_keyboard'    => (bool) Settings::get( 'ms_block_keyboard' ),
-			'hide_source'       => (bool) Settings::get( 'ms_hide_source' ),
-			'detect_devtools'   => (bool) Settings::get( 'ms_detect_devtools' ),
-			'pause_on_devtools' => (bool) Settings::get( 'ms_pause_on_devtools' ),
+			'hide_source'       => in_array( 'ms_hide_source', $legacy, true ),
+			'detect_devtools'   => in_array( 'ms_detect_devtools', $legacy, true ),
+			'pause_on_devtools' => in_array( 'ms_pause_on_devtools', $legacy, true ),
 			'devtools_title'    => Settings::message( 'ms_devtools_title', __( 'Developer Tools Detected', 'mediashield' ) ),
 			'devtools_message'  => Settings::message( 'ms_devtools_message', __( 'Please close developer tools to continue watching this video.', 'mediashield' ) ),
 		);
@@ -143,6 +270,7 @@ class Protection {
 	 * @since 1.3.0
 	 * @since 1.4.3 A file MediaShield holds is always signed, whatever Hide Video Source says.
 	 * @since 1.4.3 A Strict video hides its source whatever Hide Video Source says.
+	 * @since 1.4.4 A Bunny video with a direct stream URL no longer prints its embed URL.
 	 *
 	 * @param int    $video_id   Video CPT post ID.
 	 * @param string $platform   Platform slug (self, bunny, youtube…).
@@ -155,6 +283,18 @@ class Protection {
 			'source_url' => $source_url,
 			'stream_url' => $stream_url,
 		);
+
+		// Bunny playing as a direct stream (Pro's Direct playback supplies the
+		// signed playlist URL): the player never loads the embed page, so its
+		// unsigned address is not printed. It would play the video in Bunny's
+		// own player with no watermark and no tracking. With Direct off there
+		// is no stream URL and the embed is what plays, so it stays.
+		if ( 'bunny' === $platform && '' !== $stream_url ) {
+			return array(
+				'source_url' => '',
+				'stream_url' => $stream_url,
+			);
+		}
 
 		if ( 'self' !== $platform ) {
 			return $unchanged;
@@ -190,7 +330,7 @@ class Protection {
 		// /stream/ when it can serve the file: an explicit stream URL, or one we
 		// can find on disk. An external direct URL has no local file, and
 		// routing it there was a guaranteed 404 (BC#10258678064).
-		if ( ( ! get_option( 'ms_hide_source', true ) && 'strict' !== self::resolve_level( $video_id ) )
+		if ( ( ! self::site_hides_source() && 'strict' !== self::resolve_level( $video_id ) )
 			|| ( '' === $stream_url && '' === \MediaShield\REST\StreamController::resolve_file( $video_id ) ) ) {
 			return $unchanged;
 		}

@@ -1,7 +1,7 @@
 /**
  * MediaShield Admin -- Milestones Page
  *
- * Premium milestone tracking with colored achievement rings,
+ * Milestones members reached, with a coloured ring per percentage,
  * user avatars, and paginated table.
  *
  * @package MediaShield
@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from '@wordpress/element';
 import { Button, Spinner } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import Icon from '../components/Icon';
 import { restUrl } from '../utils/rest';
@@ -64,9 +64,8 @@ const MilestoneBadge = ( { pct } ) => {
 	return (
 		<span className="mediashield-milestone-badge">
 			<span className={ `mediashield-milestone-badge__ring mediashield-milestone-badge__ring--${ tier }` }>
-				{ pct }
+				{ `${ pct }%` }
 			</span>
-			<span>{ `${ pct }%` }</span>
 		</span>
 	);
 };
@@ -118,7 +117,7 @@ const Milestones = () => {
 					{ __( 'Milestones', 'mediashield' ) }
 					{ ! loading && total > 0 && (
 						<span className="mediashield-page__header-subtitle">
-							{ total } { __( 'achievements', 'mediashield' ) }
+							{ sprintf( /* translators: %d: number of milestones members reached. */ _n( '%d milestone', '%d milestones', total, 'mediashield' ), total ) }
 						</span>
 					) }
 				</h1>
@@ -144,7 +143,7 @@ const Milestones = () => {
 					<table className="mediashield-table">
 						<thead>
 							<tr>
-								<th>{ __( 'Student', 'mediashield' ) }</th>
+								<th>{ __( 'Viewer', 'mediashield' ) }</th>
 								<th>{ __( 'Video', 'mediashield' ) }</th>
 								<th>{ __( 'Milestone', 'mediashield' ) }</th>
 								<th>{ __( 'Reached', 'mediashield' ) }</th>
@@ -155,13 +154,13 @@ const Milestones = () => {
 								<tr>
 									<td colSpan="4" className="mediashield-table__empty">
 										<Icon name="flag" className="mediashield-table__empty-icon" />
-										{ __( 'No milestones recorded yet. They appear as students watch videos.', 'mediashield' ) }
+										{ __( 'No milestones recorded yet. They appear as viewers watch videos.', 'mediashield' ) }
 									</td>
 								</tr>
 							) }
 							{ milestones.map( ( m, idx ) => (
 								<tr key={ m.id ?? idx }>
-									<td data-label={ __( 'Student', 'mediashield' ) }>
+									<td data-label={ __( 'Viewer', 'mediashield' ) }>
 										<div className="mediashield-user">
 											<div className="mediashield-user__avatar">
 												{ getInitials( m.user_name ) }

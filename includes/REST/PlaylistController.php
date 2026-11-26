@@ -6,7 +6,7 @@
  *   GET    /mediashield/v1/playlists/<id>/items          — List videos in order
  *   POST   /mediashield/v1/playlists/<id>/items          — Add video to playlist
  *   DELETE /mediashield/v1/playlists/<id>/items/<item_id> — Remove video
- *   PUT    /mediashield/v1/playlists/<id>/items/reorder   — Batch reorder
+ *   POST   /mediashield/v1/playlists/<id>/items/reorder   — Batch reorder (PUT also accepted)
  *
  * @package MediaShield\REST
  */
@@ -71,7 +71,7 @@ class PlaylistController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'add_item' ),
-					'permission_callback' => array( $this, 'edit_permissions_check' ),
+					'permission_callback' => array( $this, 'change_permissions_check' ),
 					'args'                => array(
 						'video_id'   => array(
 							'type'              => 'integer',
@@ -96,20 +96,24 @@ class PlaylistController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'remove_item' ),
-					'permission_callback' => array( $this, 'edit_permissions_check' ),
+					'permission_callback' => array( $this, 'change_permissions_check' ),
 				),
 			)
 		);
 
-		// PUT /playlists/<id>/items/reorder.
+		// POST (or PUT) /playlists/<id>/items/reorder.
+		// POST is what the admin screens send. PUT alone reached WordPress only
+		// as POST plus X-HTTP-Method-Override, a header some hosts, firewalls
+		// and security plugins strip; the request then found no route and the
+		// new order was lost (Basecamp 10545260546).
 		register_rest_route(
 			$this->namespace,
 			'/playlists/(?P<playlist_id>\d+)/items/reorder',
 			array(
 				array(
-					'methods'             => 'PUT',
+					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'reorder_items' ),
-					'permission_callback' => array( $this, 'edit_permissions_check' ),
+					'permission_callback' => array( $this, 'change_permissions_check' ),
 					'args'                => array(
 						'order' => array(
 							'type'     => 'array',
@@ -189,6 +193,24 @@ class PlaylistController extends WP_REST_Controller {
 	}
 
 	/**
+	 * May this user change this playlist's videos or their order?
+	 *
+	 * Editing rights on that playlist, as for its title: a contributor can
+	 * build their own playlists but not reorder someone else's. An unknown
+	 * id falls through to the callback, which answers 404.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
+	 */
+	public function change_permissions_check( WP_REST_Request $request ): bool {
+		$playlist_id = (int) $request['playlist_id'];
+		if ( 'mediashield_playlist' !== get_post_type( $playlist_id ) ) {
+			return current_user_can( 'edit_posts' );
+		}
+		return current_user_can( 'edit_post', $playlist_id );
+	}
+
+	/**
 	 * Validate that the playlist exists.
 	 *
 	 * @param int $playlist_id Playlist CPT post ID.
@@ -238,22 +260,27 @@ class PlaylistController extends WP_REST_Controller {
 
 		// Sanitize output.
 		$result = array();
+		update_meta_cache( 'post', array_map( 'intval', wp_list_pluck( (array) $items, 'video_id' ) ) );
 		foreach ( ( ! empty( $items ) ? $items : array() ) as $item ) {
-			$thumb_url = get_the_post_thumbnail_url( (int) $item->video_id, 'thumbnail' );
+			$platform = ! empty( $item->platform ) ? (string) $item->platform : 'self';
+			// Editors only (Manage items): the same poster as every list (MSUX-11).
+			$thumb_url = \MediaShield\CPT\Thumbnail::poster_url( (int) $item->video_id, 'thumbnail', true );
 			$result[]  = array(
-				'item_id'    => (int) $item->item_id,
-				'video_id'   => (int) $item->video_id,
-				'sort_order' => (int) $item->sort_order,
-				'added_at'   => $item->added_at,
-				'title'      => sanitize_text_field( $item->video_title ),
-				'status'     => $item->video_status,
-				'platform'   => sanitize_text_field( ! empty( $item->platform ) ? $item->platform : 'self' ),
+				'item_id'        => (int) $item->item_id,
+				'video_id'       => (int) $item->video_id,
+				'sort_order'     => (int) $item->sort_order,
+				'added_at'       => $item->added_at,
+				'title'          => sanitize_text_field( $item->video_title ),
+				'status'         => $item->video_status,
+				'platform'       => sanitize_text_field( $platform ),
+				// "Uploaded file" / "YouTube", never the slug (MSUX-23).
+				'platform_label' => \MediaShield\Support\Platforms::label( $platform, 'self' === $platform ? '' !== VideoListController::source_label( (int) $item->video_id, $platform ) : null ),
 				// Only for people who may edit that video, the same bar as its
 				// meta on /wp/v2/mediashield-videos: an author editing a playlist
 				// must not read the file address of someone else's paid video.
-				'source_url' => ! empty( $item->source_url ) && current_user_can( 'edit_post', (int) $item->video_id ) ? esc_url( $item->source_url ) : '',
-				'duration'   => (int) ( ! empty( $item->duration ) ? $item->duration : 0 ),
-				'thumbnail'  => ! empty( $thumb_url ) ? $thumb_url : '',
+				'source_url'     => ! empty( $item->source_url ) && current_user_can( 'edit_post', (int) $item->video_id ) ? esc_url( $item->source_url ) : '',
+				'duration'       => (int) ( ! empty( $item->duration ) ? $item->duration : 0 ),
+				'thumbnail'      => ! empty( $thumb_url ) ? $thumb_url : '',
 			);
 		}
 

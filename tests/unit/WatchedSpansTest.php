@@ -99,4 +99,17 @@ class WatchedSpansTest extends WP_UnitTestCase {
 		$this->assertSame( 0.0, WatchedSpans::record( $this->user, $this->video, array( array( 0, 290 ) ), 300 ) );
 		$this->assertSame( 0, WatchedSpans::percent( $this->user, $this->video ) );
 	}
+
+	/**
+	 * Review 1.4.4 #7: the share watched and the completion use one end rule,
+	 * so a lesson's watch rule and the 100% milestone never differ by a second.
+	 */
+	public function test_share_watched_follows_the_one_end_rule(): void {
+		WatchedSpans::start( $this->user, $this->video );
+		$this->elapsed( 30 );
+		WatchedSpans::record( $this->user, $this->video, array( array( 0, 17.808 ) ), 18 );
+		$this->assertSame( 100, WatchedSpans::percent( $this->user, $this->video, 18 ) );
+		$this->assertSame( (int) floor( \MediaShield\Access\SessionManager::completion( 17.808, 18 ) ), WatchedSpans::percent( $this->user, $this->video, 18 ) );
+		$this->assertSame( (int) floor( \MediaShield\Access\SessionManager::completion( 17.808, 60 ) ), WatchedSpans::percent( $this->user, $this->video, 60 ) );
+	}
 }

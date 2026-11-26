@@ -206,6 +206,14 @@ class UploadController extends WP_REST_Controller {
 				// not esc_url - this is JSON, and esc_url turns & into &#038;.
 				'embed_url'         => esc_url_raw( (string) get_post_meta( $result['video_id'], '_ms_source_url', true ) ),
 				'platform'          => (string) get_post_meta( $result['video_id'], '_ms_platform', true ),
+				// A file this site holds is shown by its name, never by its
+				// internal /stream/ address (MSUX-09).
+				'file_name'         => 'self' === get_post_meta( $result['video_id'], '_ms_platform', true )
+					? \MediaShield\Upload\Drivers\SelfHosted::display_name( (int) $result['video_id'], (string) $result['platform_video_id'] )
+					: '',
+				// The length read from the file, so the edit screen's Duration
+				// field shows it and the next save keeps it.
+				'duration'          => (int) get_post_meta( $result['video_id'], '_ms_duration', true ),
 				'status'            => 'complete',
 			),
 			201

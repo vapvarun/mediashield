@@ -6,7 +6,7 @@
 	"title": "MediaShield Playlist",
 	"category": "media",
 	"icon": "playlist-video",
-	"description": "Embed a video playlist with auto-play, countdown timer, loop, and shuffle.",
+	"description": "A playlist of videos that play one after another, with countdown, loop and shuffle options.",
 	"keywords": [ "playlist", "video", "mediashield", "course" ],
 	"textdomain": "mediashield",
 	"attributes": {

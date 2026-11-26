@@ -9,23 +9,122 @@
 	overflow: hidden;
 }
 
-.ms-block-thumbnail img {
+.ms-block-preview__poster {
 	width: 100%;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
 	display: block;
 }
 
-.ms-block-platform-badge {
+/* The video's name on the block, not an id (Basecamp 10545260523). */
+.ms-block-preview__caption {
 	position: absolute;
-	top: 8px;
-	inset-inline-end: 8px;
-	background: rgba(0, 0, 0, 0.7);
+	inset-inline: 0;
+	bottom: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 8px;
+	align-items: baseline;
+	padding: 24px 14px 12px;
+	background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
 	color: #fff;
-	font-size: 11px;
-	padding: 2px 8px;
-	border-radius: 3px;
-	text-transform: uppercase;
-	font-weight: 600;
-	letter-spacing: 0.5px;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+.ms-block-preview__caption span {
+	opacity: 0.85;
+}
+
+/* Paste a link or pick: one column of full-width controls. */
+.ms-block-paste {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+}
+
+.ms-block-paste__row {
+	display: flex;
+	gap: 8px;
+	align-items: flex-end;
+}
+
+.ms-block-paste__row > :first-child {
+	flex: 1;
+	min-width: 0;
+}
+
+.ms-block-paste .components-notice {
+	margin: 0;
+}
+
+/* "This link is already in your library". */
+.ms-block-found {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr);
+	gap: 12px;
+	align-items: center;
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	background: #f6f7f7;
+}
+
+.ms-block-found__thumb {
+	width: 96px;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	border-radius: 4px;
+	background: #1d2327;
+	display: block;
+}
+
+.ms-block-found__text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font-size: 14px;
+	min-width: 0;
+}
+
+.ms-block-found__text span {
+	color: #50575e;
+	overflow-wrap: anywhere;
+}
+
+.ms-block-found__actions {
+	grid-column: 1 / -1;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+/* Sidebar. */
+.ms-block-sidebar p {
+	margin: 0 0 12px;
+}
+
+.ms-block-sidebar__muted {
+	color: #50575e;
+}
+
+.ms-block-sidebar__places {
+	margin: 0 0 12px;
+	padding-inline-start: 18px;
+	list-style: disc;
+}
+
+.ms-block-sidebar__places li {
+	margin-block-end: 4px;
+}
+
+.ms-block-sidebar__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-block-start: 12px;
 }
 
 .ms-block-placeholder-preview {
@@ -44,9 +143,17 @@
 	height: 48px;
 }
 
-.ms-block-embed-preview iframe {
-	width: 100%;
+.ms-block-placeholder-preview {
 	aspect-ratio: 16 / 9;
-	border: none;
-	display: block;
+}
+
+@media (max-width: 640px) {
+	.ms-block-paste__row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.ms-block-found {
+		grid-template-columns: 1fr;
+	}
 }

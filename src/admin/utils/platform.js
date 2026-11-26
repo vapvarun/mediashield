@@ -63,3 +63,19 @@ export function extractVideoId( url, platform ) {
 			return '';
 	}
 }
+
+/**
+ * Can MediaShield play this link? Mirrors Platforms::recognise() in PHP,
+ * which refuses the save; this only lets a screen say so before sending.
+ *
+ * @param {string} url Link as pasted.
+ * @return {boolean} True for a YouTube, Vimeo, Wistia or Bunny video link, or a video file link.
+ */
+export function isPlayableLink( url ) {
+	const link = ( url || '' ).trim();
+	if ( ! /^https?:\/\//i.test( link ) ) return false;
+	const platform = detectPlatform( link );
+	if ( 'iframe' === platform ) return false;
+	if ( 'self' === platform ) return true;
+	return '' !== extractVideoId( link, platform );
+}
