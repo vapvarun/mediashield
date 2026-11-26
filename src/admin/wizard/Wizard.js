@@ -41,6 +41,10 @@ export default function Wizard() {
 	// A step may act before the wizard moves on (step 3 adds a pasted link).
 	// It answers { proceed, done }; proceed false keeps the step open.
 	const beforeContinue = useRef( null );
+	// Save & Continue may wait for the step (a video being added): a second
+	// press meanwhile is ignored, and the button shows busy.
+	const advancing = useRef( false );
+	const [ busy, setBusy ] = useState( false );
 
 	const { createErrorNotice } = useDispatch( noticesStore );
 
@@ -90,7 +94,18 @@ export default function Wizard() {
 	};
 
 	const handleNext = async () => {
-		const result = beforeContinue.current ? await beforeContinue.current() : { proceed: true, done: true };
+		if ( advancing.current ) {
+			return;
+		}
+		advancing.current = true;
+		setBusy( true );
+		let result;
+		try {
+			result = beforeContinue.current ? await beforeContinue.current() : { proceed: true, done: true };
+		} finally {
+			advancing.current = false;
+			setBusy( false );
+		}
 		if ( ! result.proceed ) {
 			return;
 		}
@@ -230,7 +245,9 @@ export default function Wizard() {
 						className="ms-wizard__btn ms-wizard__btn--next"
 						variant="primary"
 						onClick={ handleNext }
-						isBusy={ saving }
+						isBusy={ saving || busy }
+						disabled={ saving || busy }
+						__experimentalIsFocusable
 					>
 						{ isLast ? __( 'Finish Setup', 'mediashield' ) : __( 'Save & Continue', 'mediashield' ) }
 						{ ! isLast && <Icon name="arrow-right-alt2" /> }

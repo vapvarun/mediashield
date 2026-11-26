@@ -157,3 +157,33 @@ test( 'step 1 asks who can watch and saves the answer', async () => {
 	await act( async () => anyone.click() );
 	expect( saved ).toContainEqual( { ms_require_login: false } );
 } );
+
+test( 'a double press while the video is being added creates it once', async () => {
+	let finish;
+	apiFetch.mockImplementation( ( opts ) => {
+		if ( '/wp/v2/mediashield-videos' === opts.path && 'POST' === opts.method ) {
+			created.push( opts.data );
+			return new Promise( ( resolve ) => {
+				finish = () => resolve( { id: 42, title: { raw: 'Me at the zoo' }, meta: { _ms_platform: 'youtube' } } );
+			} );
+		}
+		return Promise.resolve( {} );
+	} );
+	await toFirstVideo();
+	await type( 'https://www.youtube.com/watch?v=jNQXAC9IVRw' );
+
+	const continueButton = host.querySelector( '.ms-wizard__btn--next' );
+	await act( async () => {
+		continueButton.click();
+	} );
+	expect( continueButton.disabled ).toBe( true );
+	await act( async () => {
+		continueButton.click();
+		// The step's own Add button, pressed while Continue is still adding.
+		[ ...host.querySelectorAll( 'button' ) ].find( ( b ) => /Check and add/.test( b.textContent ) )?.click();
+	} );
+	await act( async () => finish() );
+
+	expect( created ).toHaveLength( 1 );
+	expect( heading() ).not.toBe( 'Protect your first video' );
+} );

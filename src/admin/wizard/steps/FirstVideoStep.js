@@ -33,8 +33,19 @@ export default function FirstVideoStep( { hosts = [], created = null, setCreated
 
 	const refusal = config.unplayableMessage || __( 'This link is not a video MediaShield can play. Use a YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file.', 'mediashield' );
 
-	// Adds the pasted link; true once the video exists.
-	const handleCreate = async () => {
+	// Adds the pasted link; true once the video exists. A press while it is
+	// being added (Add, then Save & Continue, or a double click) shares the
+	// same request instead of creating a second video.
+	const pending = useRef( null );
+	const handleCreate = () => {
+		if ( ! pending.current ) {
+			pending.current = addVideo().finally( () => {
+				pending.current = null;
+			} );
+		}
+		return pending.current;
+	};
+	const addVideo = async () => {
 		const link = url.trim();
 		if ( ! link ) return false;
 
