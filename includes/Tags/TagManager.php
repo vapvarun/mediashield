@@ -363,48 +363,102 @@ class TagManager {
 	}
 
 	/**
+	 * Option that holds the job's cursor (last usermeta ID read) while the
+	 * v19 tag separation is pending; deleted when it is done.
+	 */
+	const MEMBER_TAGS_PENDING = 'ms_member_tags_pending';
+
+	/**
+	 * Earn records read per run of the job.
+	 */
+	const MEMBER_TAGS_BATCH = 1000;
+
+	/**
+	 * Queue the separation job while it is pending (init).
+	 */
+	public static function ensure_member_tags_job(): void {
+		if ( false !== get_option( self::MEMBER_TAGS_PENDING ) ) {
+			\MediaShield\Cron\Cleanup::schedule_single( 'ms_separate_member_tags', time() );
+		}
+	}
+
+	/**
 	 * Take member milestone tags off the videos they were linked to.
 	 *
 	 * Before 1.4.4 reaching a milestone also linked its tag to the video, as
 	 * if the owner had tagged it, and created the tag in the owner's list.
 	 * Removed: a link the member's own milestone made (tagged by that member,
-	 * the same video and tag as their earn record), then a tag that member
-	 * created which no video carries any more. A tag the owner created or put
-	 * on a video stays. The earn records in user meta are not changed.
+	 * the same video and tag as their earn record), then, once every link is
+	 * gone, a tag a member created which no video carries. A tag the owner
+	 * created or put on a video stays. Earn records in user meta are kept.
 	 *
-	 * Reads the earn records 500 at a time, one delete per page.
+	 * Background job (Migrator v19 queues it; `ms_separate_member_tags`): one
+	 * batch of earn records above the cursor per run, rescheduled until none
+	 * are left. Timed inline at 200k records it took 3 s on MySQL 8 and 27 s
+	 * on MariaDB 10.6, too long for an update.
 	 *
 	 * @since 1.4.4
 	 */
 	public static function separate_member_tags(): void {
+		$after = get_option( self::MEMBER_TAGS_PENDING );
+		if ( false === $after ) {
+			return;
+		}
+
 		global $wpdb;
 		$links = "{$wpdb->prefix}ms_video_tags";
 		$tags  = "{$wpdb->prefix}ms_tags";
-		$after = 0;
 
-		do {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time upgrade over user meta.
-			$rows  = (array) $wpdb->get_results( $wpdb->prepare( "SELECT umeta_id, user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags' AND umeta_id > %d ORDER BY umeta_id LIMIT 500", $after ) );
-			$made  = array();
-			$owned = array();
-			$read  = count( $rows );
-			foreach ( $rows as $row ) {
-				$after = (int) $row->umeta_id;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off upgrade walk on the primary key.
+		$rows   = (array) $wpdb->get_results( $wpdb->prepare( "SELECT umeta_id, user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags' AND umeta_id > %d ORDER BY umeta_id LIMIT %d", (int) $after, self::MEMBER_TAGS_BATCH ) );
+		$made   = array();
+		$videos = array();
+		foreach ( $rows as $row ) {
+			foreach ( (array) maybe_unserialize( $row->meta_value ) as $entry ) {
+				if ( is_array( $entry ) && ! empty( $entry['tag_id'] ) && ! empty( $entry['video_id'] ) ) {
+					$made[]   = $wpdb->prepare( '(%d,%d,%d)', $entry['video_id'], $entry['tag_id'], $row->user_id );
+					$videos[] = (int) $entry['video_id'];
+				}
+			}
+		}
+		if ( $made ) {
+			// The video_id list lets MariaDB use the unique key; the tuples alone scan the table.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Values prepared or cast above.
+			$wpdb->query( "DELETE FROM {$links} WHERE video_id IN (" . implode( ',', array_unique( $videos ) ) . ') AND (video_id, tag_id, tagged_by) IN (' . implode( ',', array_unique( $made ) ) . ')' );
+		}
+
+		if ( count( $rows ) === self::MEMBER_TAGS_BATCH ) {
+			update_option( self::MEMBER_TAGS_PENDING, (string) (int) end( $rows )->umeta_id, false );
+			\MediaShield\Cron\Cleanup::schedule_single( 'ms_separate_member_tags', time() );
+			return;
+		}
+
+		// Every link is gone now: a tag on no video is a member's when its
+		// creator earned it at a milestone. Checked in PHP, 1000 tags a query:
+		// a correlated LIKE over usermeta ran for minutes on MySQL 8.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Ids cast to int.
+		$orphans = (array) $wpdb->get_results( "SELECT t.id, t.created_by FROM {$tags} t LEFT JOIN {$links} l ON l.tag_id = t.id WHERE l.tag_id IS NULL AND t.created_by > 0" );
+		foreach ( array_chunk( $orphans, 1000 ) as $chunk ) {
+			$earned = array();
+			$users  = implode( ',', array_unique( array_map( 'intval', wp_list_pluck( $chunk, 'created_by' ) ) ) );
+			foreach ( (array) $wpdb->get_results( "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags' AND user_id IN ({$users})" ) as $row ) {
 				foreach ( (array) maybe_unserialize( $row->meta_value ) as $entry ) {
-					if ( is_array( $entry ) && ! empty( $entry['tag_id'] ) && ! empty( $entry['video_id'] ) ) {
-						$made[]  = $wpdb->prepare( '(%d,%d,%d)', $entry['video_id'], $entry['tag_id'], $row->user_id );
-						$owned[] = $wpdb->prepare( '(%d,%d)', $entry['tag_id'], $row->user_id );
+					if ( is_array( $entry ) && ! empty( $entry['tag_id'] ) ) {
+						$earned[ (int) $row->user_id . ':' . (int) $entry['tag_id'] ] = true;
 					}
 				}
 			}
-			if ( $made ) {
-				$made  = implode( ',', array_unique( $made ) );
-				$owned = implode( ',', array_unique( $owned ) );
-				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Tuples prepared above.
-				$wpdb->query( "DELETE FROM {$links} WHERE (video_id, tag_id, tagged_by) IN ({$made})" );
-				$wpdb->query( "DELETE t FROM {$tags} t LEFT JOIN {$links} l ON l.tag_id = t.id WHERE l.tag_id IS NULL AND (t.id, t.created_by) IN ({$owned})" );
-				// phpcs:enable
+			$gone = array();
+			foreach ( $chunk as $tag ) {
+				if ( isset( $earned[ (int) $tag->created_by . ':' . (int) $tag->id ] ) ) {
+					$gone[] = (int) $tag->id;
+				}
 			}
-		} while ( 500 === $read );
+			if ( $gone ) {
+				$wpdb->query( "DELETE FROM {$tags} WHERE id IN (" . implode( ',', $gone ) . ')' );
+			}
+		}
+		// phpcs:enable
+		delete_option( self::MEMBER_TAGS_PENDING );
 	}
 }

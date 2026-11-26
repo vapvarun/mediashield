@@ -112,6 +112,7 @@ Options in the schema are deleted on uninstall automatically. Do not add your ow
 | `ms_library_files_repair_pending` | Migrator, repair job | Since 1.4.3. Last video ID the one-off `ms_repair_library_files` job checked; deleted when the job finishes. |
 | `ms_usage_index_pending` | Migrator, `ms_index_usage` job | Since 1.4.4. Last post ID the usage index job read; deleted when it finishes. |
 | `ms_lengths_pending` | Migrator, `ms_backfill_lengths` job | Since 1.4.4. Last video ID the length backfill read; deleted when the job finishes. |
+| `ms_member_tags_pending` | Migrator, `ms_separate_member_tags` job | Since 1.4.4. Last usermeta ID the tag separation read; deleted when the job finishes. |
 | `ms_file_claims_pending` | Migrator, cleanup job | Highest video ID the 1.4.0 ownership backfill must still cover; deleted when the job finishes. |
 | `ms_default_upload_target` | Pro (settings filter) | `auto`, `self`, or a driver name. Free reads it in `UploadManager::resolve_default_driver()`; without Pro it is unset and behaves as `auto`. |
 

@@ -46,28 +46,47 @@ class MemberTagsApartTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The upgrade takes off links a member's milestone made, and only those.
+	 * The update only queues the job; the job takes off links members'
+	 * milestones made, and only those, across batches.
 	 */
 	public function test_upgrade_takes_member_tags_off_videos_and_keeps_the_owners(): void {
+		global $wpdb;
 		$owner  = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		$member = self::factory()->user->create();
+		$first  = self::factory()->user->create();
+		$later  = self::factory()->user->create();
 		$video  = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$video2 = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$record = static fn( $v, $t ) => array( $v . '_50' => array( 'video_id' => $v, 'pct' => 50, 'tag' => 'finished-intro', 'tag_id' => $t, 'earned_at' => '2026-11-01 10:00:00' ) );
 
-		// What 1.4.3 did when the member reached 50%.
-		$earned = TagManager::ensure( 'finished-intro', $member );
-		TagManager::assign_to_video( $video, $earned, $member );
-		update_user_meta( $member, '_ms_video_tags', array( $video . '_50' => array( 'video_id' => $video, 'pct' => 50, 'tag' => 'finished-intro', 'tag_id' => $earned, 'earned_at' => '2026-11-01 10:00:00' ) ) );
-		// The owner's own tag on the same video, and an owner tag on no video.
+		// What 1.4.3 did: the first member to reach 50% created the tag.
+		$earned = TagManager::ensure( 'finished-intro', $first );
+		TagManager::assign_to_video( $video, $earned, $first );
+		update_user_meta( $first, '_ms_video_tags', $record( $video, $earned ) );
+		// A full batch of other earn records, then a later member on another video.
+		$wpdb->query( "INSERT INTO {$wpdb->usermeta} (user_id, meta_key, meta_value) VALUES " . implode( ',', array_fill( 0, TagManager::MEMBER_TAGS_BATCH, "(999999, '_ms_video_tags', 'a:0:{}')" ) ) ); // phpcs:ignore WordPress.DB
+		TagManager::assign_to_video( $video2, $earned, $later );
+		update_user_meta( $later, '_ms_video_tags', $record( $video2, $earned ) );
+		// The owner's own tag on a video, and an owner tag on no video.
 		$mine = TagManager::ensure( 'beginner', $owner );
 		TagManager::assign_to_video( $video, $mine, $owner );
 		$spare = TagManager::ensure( 'spare', $owner );
 
-		TagManager::separate_member_tags();
+		update_option( 'ms_db_version', 18 );
+		\MediaShield\Core\Migrator::run();
+		$this->assertSame( '0', get_option( TagManager::MEMBER_TAGS_PENDING ), 'The update only queues the job.' );
+		$this->assertCount( 2, TagManager::get_for_video( $video ), 'Nothing removed during the update.' );
 
+		for ( $runs = 1; false !== get_option( TagManager::MEMBER_TAGS_PENDING ) && $runs < 10; $runs++ ) {
+			do_action( 'ms_separate_member_tags' );
+		}
+		$wpdb->delete( $wpdb->usermeta, array( 'user_id' => 999999 ) ); // phpcs:ignore WordPress.DB
+
+		$this->assertSame( 2, $runs - 1, 'Two batches.' );
 		$this->assertSame( array( 'beginner' ), wp_list_pluck( TagManager::get_for_video( $video ), 'name' ) );
-		$this->assertNull( TagManager::get( $earned ), 'The member-made tag on no video is gone.' );
+		$this->assertSame( array(), TagManager::get_for_video( $video2 ) );
+		$this->assertNull( TagManager::get( $earned ), 'The member-made tag, now on no video, is gone.' );
 		$this->assertNotNull( TagManager::get( $spare ), 'An owner tag stays even on no video.' );
-		$this->assertSame( 'finished-intro', get_user_meta( $member, '_ms_video_tags', true )[ $video . '_50' ]['tag'], 'The member keeps it.' );
+		$this->assertSame( 'finished-intro', get_user_meta( $first, '_ms_video_tags', true )[ $video . '_50' ]['tag'], 'The member keeps it.' );
 	}
 
 	/**

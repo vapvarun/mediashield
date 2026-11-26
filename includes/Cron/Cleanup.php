@@ -48,6 +48,8 @@ class Cleanup {
 		// 1.4.4: lengths of files uploaded before, read in the background.
 		add_action( 'ms_backfill_lengths', array( \MediaShield\Upload\Drivers\SelfHosted::class, 'backfill_lengths' ) );
 		add_action( 'init', array( \MediaShield\Upload\Drivers\SelfHosted::class, 'ensure_lengths_job' ), 20 );
+		add_action( 'ms_separate_member_tags', array( \MediaShield\Tags\TagManager::class, 'separate_member_tags' ) );
+		add_action( 'init', array( \MediaShield\Tags\TagManager::class, 'ensure_member_tags_job' ), 20 );
 		add_filter( 'update_post_metadata', array( __CLASS__, 'forfeit_claim_on_edit' ), 10, 4 );
 
 		// Register monthly schedule for WP-Cron fallback.

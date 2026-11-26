@@ -80,7 +80,7 @@ MediaShield has two kinds of tags, kept apart:
 - **Video tags** organise your videos. Add them on this screen or in the **Tags** box on a video. **MediaShield > Tags** lists each one with its slug and how many videos carry it. Click the count to open the Videos list filtered to that tag, or pick a tag in the Videos list's **Tag** filter. **Rename** changes a tag everywhere it is used; **Delete** also removes it from every video. Deleting a video removes its tag links, and any tag left attached to no videos is removed with it.
 - **Milestone tags** go on a member when they reach a milestone you set on a video (see above), for your CRM, LMS or automation rules. They show on the member's page under **MediaShield > Viewers** and are not video tags.
 
-Before 1.4.4 a milestone tag was also put on the video and listed here. Updating to 1.4.4 takes those links off; the member keeps every tag they earned, and tags you created or put on videos yourself stay.
+Before 1.4.4 a milestone tag was also put on the video and listed here. After updating to 1.4.4 a background job takes those links off (a large site may take a few minutes); the member keeps every tag they earned, and tags you created or put on videos yourself stay.
 
 ## What to expect on a fresh install
 

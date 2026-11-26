@@ -73,6 +73,7 @@ if ( ! defined( 'MEDIASHIELD_PRO_VERSION' ) ) {
 			'ms_library_files_repair_pending',
 			'ms_poster_names_pending',
 			'ms_lengths_pending',
+			'ms_member_tags_pending',
 			'ms_usage_index_pending',
 			'ms_new_defaults_decided',
 			'ms_protection_switches_kept',
