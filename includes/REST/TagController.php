@@ -140,12 +140,12 @@ class TagController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_video_tags' ),
-					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+					'permission_callback' => array( $this, 'video_permissions_check' ),
 				),
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'assign_video_tag' ),
-					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'permission_callback' => array( $this, 'video_permissions_check' ),
 					'args'                => array(
 						'tag_id' => array(
 							'type'              => 'integer',
@@ -165,30 +165,49 @@ class TagController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'unassign_video_tag' ),
-					'permission_callback' => array( $this, 'create_item_permissions_check' ),
+					'permission_callback' => array( $this, 'video_permissions_check' ),
 				),
 			)
 		);
 	}
 
 	/**
-	 * Permissions: any logged-in user can read tags.
+	 * May this user read the tag list? Anyone who writes posts, as for
+	 * picking a tag on their own video. Only the admin screens read it.
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return bool
 	 */
 	public function get_items_permissions_check( $request ): bool {
-		return is_user_logged_in();
+		return current_user_can( 'edit_posts' );
 	}
 
 	/**
-	 * Permissions: only editors+ can create/modify/delete tags.
+	 * May this user create, rename or delete a tag? Tags are shared by every
+	 * video, so it is WordPress's own bar for shared terms: manage_categories
+	 * (editors and administrators).
 	 *
 	 * @param WP_REST_Request $request Request object.
 	 * @return bool
 	 */
 	public function create_item_permissions_check( $request ): bool {
-		return current_user_can( 'edit_posts' );
+		return current_user_can( 'manage_categories' );
+	}
+
+	/**
+	 * May this user read or change the tags on this video? Only someone who
+	 * may edit that video. Anything else answers 404, exactly like an id that
+	 * is not a video, so the route cannot be used to probe which ids exist.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return true|WP_Error
+	 */
+	public function video_permissions_check( WP_REST_Request $request ) {
+		$video_id = (int) $request['video_id'];
+		if ( 'mediashield_video' !== get_post_type( $video_id ) || ! current_user_can( 'edit_post', $video_id ) ) {
+			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
+		}
+		return true;
 	}
 
 	/**
@@ -316,10 +335,6 @@ class TagController extends WP_REST_Controller {
 	public function get_video_tags( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$video_id = (int) $request['video_id'];
 
-		if ( ! get_post( $video_id ) ) {
-			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
-		}
-
 		return rest_ensure_response( TagManager::get_for_video( $video_id ) );
 	}
 
@@ -332,10 +347,6 @@ class TagController extends WP_REST_Controller {
 	public function assign_video_tag( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$video_id = (int) $request['video_id'];
 		$tag_id   = (int) $request->get_param( 'tag_id' );
-
-		if ( ! get_post( $video_id ) ) {
-			return new WP_Error( 'not_found', __( 'Video not found.', 'mediashield' ), array( 'status' => 404 ) );
-		}
 
 		if ( ! TagManager::get( $tag_id ) ) {
 			return new WP_Error( 'not_found', __( 'Tag not found.', 'mediashield' ), array( 'status' => 404 ) );

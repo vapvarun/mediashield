@@ -55,11 +55,13 @@ Legend: **C** = Create · **R** = Read · **U** = Update · **D** = Delete · **
 
 | Action | Administrator | Editor | Author | Subscriber | Anonymous |
 |---|---|---|---|---|---|
-| List all tags (`GET /tags`) | R | – | – | – | – |
-| Create tag (`POST /tags`) | C | – | – | – | – |
-| Update / delete tag (`PUT/DELETE /tags/{id}`) | UD | – | – | – | – |
-| Get tags for a video (`GET /videos/{id}/tags`) | R | – | – | – | – |
-| Assign / remove tag from video | CD | – | – | – | – |
+| List / read tags (`GET /tags`, `GET /tags/{id}`) | R | R | R | – | – |
+| Create tag (`POST /tags`) | C | C | – | – | – |
+| Update / delete tag (`PATCH/DELETE /tags/{id}`) | UD | UD | – | – | – |
+| Get tags for a video (`GET /videos/{id}/tags`) | R | R | R* | – | – |
+| Assign / remove tag from video | CD | CD | CD* | – | – |
+
+> Tag list: `edit_posts`. Create, rename, delete: `manage_categories`. Per-video tag routes: `edit_post` on that video, 404 otherwise (and 404 for any id that is not a video). R*/CD* = the author's own videos only. Enforced by `tests/unit/TagRouteAccessTest.php`.
 
 ## Playlists
 

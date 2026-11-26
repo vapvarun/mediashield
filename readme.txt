@@ -175,6 +175,7 @@ A guided first run, a calmer player, clearer video and tag lists, and a safer up
 * Fix      - A double press on Save & Continue no longer adds the first video twice.
 * Fix      - The member tag clean-up runs in the background and removes only tags a milestone created, never your own.
 * Security - Hardened playback checks for members who may not watch and for guest access grants.
+* Security - Tag routes now check that you can edit the video, and renaming or deleting a tag needs the Manage categories capability.
 * Dev      - New filter mediashield_create_video adds a video the way Add New does, for other plugins to call.
 * Compat   - Aligned with MediaShield Pro 1.4.4. Install both updates together.
 
