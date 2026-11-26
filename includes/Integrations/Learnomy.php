@@ -144,7 +144,9 @@ class Learnomy {
 		$label = function_exists( '\\Learnomy\\lesson_label' ) ? (string) \Learnomy\lesson_label() : __( 'Lesson', 'mediashield' );
 		$edits = current_user_can( 'learnomy_manage_own_courses' ) || current_user_can( 'manage_options' );
 		foreach ( (array) $video_ids as $video_id ) {
-			$lessons = self::lessons_playing( (int) $video_id );
+			// Drafts too, as Used in lists draft pages: an owner tidying up
+			// must not trash the video a lesson in progress needs (round 2).
+			$lessons = self::lessons_playing( (int) $video_id, false );
 			if ( ! $lessons ) {
 				continue;
 			}
@@ -195,10 +197,14 @@ class Learnomy {
 	 * "Length needed" prompt nor the course link on a refusal ever showed for
 	 * a Learnomy lesson (Learnomy card 10536470184).
 	 *
-	 * @param int $video_id Video ID.
+	 * Used in passes $published_only false: there a draft lesson counts too.
+	 * Access, the watch rule and the course link keep published lessons only.
+	 *
+	 * @param int  $video_id       Video ID.
+	 * @param bool $published_only Only published lessons (default), or any status.
 	 * @return object[] Lesson rows.
 	 */
-	private static function lessons_playing( int $video_id ): array {
+	private static function lessons_playing( int $video_id, bool $published_only = true ): array {
 		if ( $video_id <= 0 || ! class_exists( '\\Learnomy\\Models\\Lesson' ) ) {
 			return array();
 		}
@@ -212,8 +218,8 @@ class Learnomy {
 		$rows = array_values(
 			array_filter(
 				(array) $rows,
-				static function ( $lesson ) use ( $video_id ) {
-					return self::lesson_video( $lesson ) === $video_id && 'published' === (string) ( $lesson->status ?? 'published' );
+				static function ( $lesson ) use ( $video_id, $published_only ) {
+					return self::lesson_video( $lesson ) === $video_id && ( ! $published_only || 'published' === (string) ( $lesson->status ?? 'published' ) );
 				}
 			)
 		);

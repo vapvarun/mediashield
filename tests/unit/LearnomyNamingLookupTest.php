@@ -64,8 +64,8 @@ class LearnomyNamingLookupTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Basecamp 10545260458: "Used in" names the published lesson that plays
-	 * the video; such a place is never taken for a post (get_post( 0 )).
+	 * Basecamp 10545260458: "Used in" names every lesson that plays the
+	 * video, a draft too; such a place is never taken for a post (get_post( 0 )).
 	 * Fails before 1.4.4's Learnomy provider ("Not used yet").
 	 */
 	public function test_used_in_names_the_learnomy_lesson(): void {
@@ -77,7 +77,8 @@ class LearnomyNamingLookupTest extends WP_UnitTestCase {
 
 		$places = \MediaShield\CPT\VideoUsage::for_video( $video );
 
-		$this->assertCount( 1, $places );
+		// The draft lesson too, as draft pages are listed (QA round 2).
+		$this->assertSame( array( 'learnomy_lesson:3', 'learnomy_lesson:4' ), wp_list_pluck( $places, 'id' ) );
 		$this->assertSame( 'learnomy_lesson:3', $places[0]['id'] );
 		$this->assertSame( 'Week 1: Lighting', $places[0]['title'] );
 		$this->assertStringContainsString( 'page=learnomy-lesson-editor&lesson_id=3', $places[0]['url'] );
