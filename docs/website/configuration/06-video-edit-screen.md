@@ -41,7 +41,7 @@ See [Video Hosts](../using-mediashield/10-video-hosts.md) for what each host sup
 
 ## Embed This Video
 
-Shown in the sidebar once the video is saved. It gives you the shortcode `[mediashield id=NN]` with a copy button, a note on finding the MediaShield Video block, and a PHP template snippet for theme developers.
+Shown in the sidebar once the video is saved. It tells you to add the MediaShield Video block and pick the video, and gives the shortcode `[mediashield id=NN]` with a copy button for the Classic editor, widgets and page builders. In a theme template, use `<?php echo do_shortcode( '[mediashield id=NN]' ); ?>`.
 
 ## 3. Milestones
 

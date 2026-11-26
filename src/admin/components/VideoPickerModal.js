@@ -127,7 +127,7 @@ export default function VideoPickerModal( { onSelect, onClose } ) {
 							<li key={ video.id }>
 								<button type="button" className="ms-video-picker__row" onClick={ () => onSelect( video ) }>
 									{ card?.thumbnail ? (
-										<img className="ms-video-picker__thumb" src={ card.thumbnail } alt="" loading="lazy" />
+										<img className="ms-video-picker__thumb" src={ card.thumbnail } alt="" onError={ ( e ) => { e.currentTarget.hidden = true; } } loading="lazy" />
 									) : (
 										<span className="ms-video-picker__thumb ms-video-picker__thumb--empty" aria-hidden="true">
 											<Icon name="video-alt3" />

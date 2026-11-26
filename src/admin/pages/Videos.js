@@ -221,13 +221,29 @@ const UsedIn = ( { places } ) => {
 	return (
 		<ul className="ms-videos__used">
 			{ places.map( ( place ) => (
-				<li key={ place.id }>
+				<li key={ place.id } title={ `${ decodeEntities( place.title ) } (${ place.type })` }>
 					<a href={ place.url }>{ decodeEntities( place.title ) }</a>
 					<span className="ms-videos__muted"> { place.type }</span>
 				</li>
 			) ) }
 		</ul>
 	);
+};
+
+/**
+ * A video's thumbnail, or the video icon when there is none or the image
+ * does not load (a YouTube video removed before MediaShield checked it).
+ *
+ * @param {Object} props     Props.
+ * @param {string} props.src Image URL.
+ * @return {JSX.Element} Thumbnail.
+ */
+const Thumb = ( { src } ) => {
+	const [ failed, setFailed ] = useState( false );
+	if ( ! src || failed ) {
+		return <span className="ms-videos__thumb ms-videos__thumb--empty" aria-hidden="true"><Icon name="format-video" /></span>;
+	}
+	return <img className="ms-videos__thumb" src={ src } alt="" loading="lazy" onError={ () => setFailed( true ) } />;
 };
 
 /**
@@ -629,11 +645,7 @@ const Videos = () => {
 										</td>
 										<td className="ms-videos__col-title" data-label={ __( 'Video', 'mediashield' ) }>
 											<div className="ms-videos__title">
-												{ list.thumbnail ? (
-													<img className="ms-videos__thumb" src={ list.thumbnail } alt="" loading="lazy" />
-												) : (
-													<span className="ms-videos__thumb ms-videos__thumb--empty" aria-hidden="true"><Icon name="format-video" /></span>
-												) }
+												<Thumb src={ list.thumbnail } />
 												<span className="ms-videos__title-text">
 													<a className="ms-videos__title-link" href={ editUrl } title={ title }><strong>{ title }</strong></a>
 													<span className="ms-videos__phone-meta">
@@ -657,7 +669,7 @@ const Videos = () => {
 										</td>
 										<td data-label={ __( 'Source', 'mediashield' ) } className="ms-videos__col-platform">
 											{ 'no_source' === list.status && ! list.source
-												? <span className="ms-videos__muted">{ __( 'None', 'mediashield' ) }</span>
+												? <span className="ms-videos__muted" aria-label={ __( 'No source', 'mediashield' ) }>—</span>
 												: <PlatformLabel platform={ video.meta?._ms_platform } file={ list.source } /> }
 										</td>
 										<td data-label={ __( 'Length', 'mediashield' ) } className="ms-videos__num ms-videos__col-duration">

@@ -297,7 +297,10 @@ class VideoListController extends WP_REST_Controller {
 
 		return array(
 			'thumbnail'    => Thumbnail::poster_url( $id, 'thumbnail', true ),
-			'duration'     => (int) get_post_meta( $id, '_ms_duration', true ),
+			// The stored length, else the length members' players reported
+			// (WatchedSpans::measured(), the watch rule's own number), so a
+			// watched YouTube video is not "-" (MSUX-12).
+			'duration'     => (int) get_post_meta( $id, '_ms_duration', true ) ?: (int) round( \MediaShield\Access\WatchedSpans::measured( $id ) ),
 			'status'       => in_array( $status, array( 'ready', 'encoding', 'failed', 'unavailable', 'no_source', 'draft' ), true ) ? $status : 'ready',
 			'source'       => self::source_label( $id, $platform ),
 			'used_in'      => VideoUsage::for_video( $id ),

@@ -213,7 +213,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						{ found && (
 							<div className="ms-block-found" role="status">
 								{ found.thumbnail ? (
-									<img className="ms-block-found__thumb" src={ found.thumbnail } alt="" />
+									<img className="ms-block-found__thumb" src={ found.thumbnail } alt="" onError={ ( e ) => { e.currentTarget.hidden = true; } } />
 								) : (
 									<span className="ms-block-found__thumb" aria-hidden="true" />
 								) }
@@ -328,7 +328,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			<div className="ms-block-preview">
 				{ summary && summary.thumbnail ? (
-					<img className="ms-block-preview__poster" src={ summary.thumbnail } alt="" />
+					<img className="ms-block-preview__poster" src={ summary.thumbnail } alt="" onError={ ( e ) => { e.currentTarget.hidden = true; } } />
 				) : (
 					<div className="ms-block-placeholder-preview">
 						<Video size={ 48 } strokeWidth={ 1.75 } className="ms-icon" aria-hidden="true" />

@@ -679,7 +679,18 @@ class VideoPostType {
 					<?php esc_html_e( 'Save the video first to get the embed codes.', 'mediashield' ); ?>
 				</p>
 			<?php else : ?>
-				<label class="ms-embed-label"><?php esc_html_e( 'Shortcode', 'mediashield' ); ?></label>
+				<?php
+				// The block first: it is how most pages are built today. The
+				// shortcode is for the Classic editor, widgets and page builders.
+				// A theme template uses do_shortcode() (developer docs), not this
+				// box (MSUX-27).
+				?>
+				<label class="ms-embed-label"><?php esc_html_e( 'On a page or post', 'mediashield' ); ?></label>
+				<p class="description">
+					<?php esc_html_e( 'Add the MediaShield Video block and pick this video, or paste this video\'s link into the block.', 'mediashield' ); ?>
+				</p>
+
+				<label class="ms-embed-label ms-embed-label--spaced" for="ms-shortcode-input"><?php esc_html_e( 'Shortcode', 'mediashield' ); ?></label>
 				<div class="ms-embed-copy-row">
 					<input type="text" value="<?php echo esc_attr( $shortcode ); ?>" readonly class="ms-embed-input" id="ms-shortcode-input" />
 					<button type="button" class="button ms-embed-copy-btn" data-copy="ms-shortcode-input" title="<?php esc_attr_e( 'Copy', 'mediashield' ); ?>">
@@ -702,36 +713,7 @@ class VideoPostType {
 						?>
 					</button>
 				</div>
-				<p class="description"><?php esc_html_e( 'Paste in any page, post, or lesson using the Classic Editor.', 'mediashield' ); ?></p>
-
-				<label class="ms-embed-label" style="margin-top: 14px; display: block;"><?php esc_html_e( 'Gutenberg Block', 'mediashield' ); ?></label>
-				<p class="description">
-					<?php esc_html_e( 'In the Block Editor, search for "MediaShield" to find the Video block. Select this video from the block settings.', 'mediashield' ); ?>
-				</p>
-
-				<label class="ms-embed-label ms-embed-label--spaced"><?php esc_html_e( 'PHP Template', 'mediashield' ); ?></label>
-				<div class="ms-embed-copy-row">
-					<input type="text" value="<?php echo esc_attr( '<?php echo do_shortcode(\'[mediashield id=' . $post_id . ']\'); ?>' ); ?>" readonly class="ms-embed-input" id="ms-php-input" />
-					<button type="button" class="button ms-embed-copy-btn" data-copy="ms-php-input" title="<?php esc_attr_e( 'Copy', 'mediashield' ); ?>">
-						<?php
-						// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Two Icons::svg calls concatenated; each returns inline SVG from a vendored Lucide path map; no user input.
-						echo \MediaShield\Support\Icons::svg(
-							'clipboard',
-							array(
-								'size'  => 16,
-								'class' => 'ms-copy-idle',
-							)
-						) . \MediaShield\Support\Icons::svg(
-							'check',
-							array(
-								'size'  => 16,
-								'class' => 'ms-copy-done',
-							)
-						);
-						// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
-						?>
-					</button>
-				</div>
+				<p class="description"><?php esc_html_e( 'For the Classic editor, widgets and page builders.', 'mediashield' ); ?></p>
 			<?php endif; ?>
 		</div>
 

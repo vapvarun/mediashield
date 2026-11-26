@@ -62,11 +62,11 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-platform {
-	width: 124px;
+	width: 108px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-duration {
-	width: 84px;
+	width: 64px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-status {
@@ -74,18 +74,19 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-protection {
-	width: 124px;
+	width: 112px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-used {
-	width: 96px;
+	width: 128px;
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-actions {
-	width: 184px;
+	width: 156px;
 }
 
-/* The title column (no width) takes what is left: about 300px at 1440. */
+/* The title column (no width) takes what is left: about 250px at 1440, with
+   Used in wide enough for a place name on one line (MSUX-12). */
 .mediashield-videos .ms-videos__table th,
 .mediashield-videos .ms-videos__table td {
 	padding-inline: var( --ms-space-2 );
@@ -324,8 +325,12 @@
 	color: var( --ms-color-text-secondary );
 }
 
-.ms-videos__used a {
-	overflow-wrap: anywhere;
+/* One line per place, cut with an ellipsis (the full name is the row's
+   tooltip): a playlist name never breaks mid-word (MSUX-12). */
+.ms-videos__used li {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .ms-videos__title-link {
@@ -353,7 +358,7 @@
 }
 
 .mediashield-videos table.ms-videos__table thead th.ms-videos__col-status {
-	width: 132px;
+	width: 112px;
 }
 
 @media ( max-width: 782px ) {

@@ -536,7 +536,8 @@ class Thumbnail {
 		$url = (string) get_the_post_thumbnail_url( $video_id, $size );
 		if ( '' === $url ) {
 			$platform_id = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
-			if ( 'youtube' !== get_post_meta( $video_id, '_ms_platform', true ) || ! preg_match( '/^[A-Za-z0-9_-]{11}$/', $platform_id ) ) {
+			// Not for a video YouTube no longer plays: its image is gone too.
+			if ( 'youtube' !== get_post_meta( $video_id, '_ms_platform', true ) || ! preg_match( '/^[A-Za-z0-9_-]{11}$/', $platform_id ) || null !== SourceStatus::get( $video_id ) ) {
 				return '';
 			}
 			if ( null === $may_watch ) {

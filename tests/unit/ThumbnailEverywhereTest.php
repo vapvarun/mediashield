@@ -72,4 +72,10 @@ class ThumbnailEverywhereTest extends WP_UnitTestCase {
 		Thumbnail::fetch_poster( $id );
 		$this->assertNotEmpty( array_filter( $this->asked, fn( $u ) => false !== strpos( $u, '/hqdefault.jpg' ) ), 'After maxresdefault fails, hqdefault is tried.' );
 	}
+
+	public function test_no_youtube_image_for_a_video_youtube_no_longer_plays(): void {
+		$id = $this->youtube();
+		\MediaShield\CPT\SourceStatus::mark_unavailable( $id, 'removed' );
+		$this->assertSame( '', Thumbnail::poster_url( $id, 'thumbnail', true ) );
+	}
 }

@@ -135,7 +135,7 @@ export default function PlaylistItemsPanel( { playlistId, playlistTitle } ) {
 							<span className="ms-playlist-items__position">{ index + 1 }</span>
 							<div className="ms-playlist-items__thumb">
 								{ item.thumbnail ? (
-									<img src={ item.thumbnail } alt="" />
+									<img src={ item.thumbnail } alt="" onError={ ( e ) => { e.currentTarget.hidden = true; } } />
 								) : (
 									<Icon name="video-alt3" />
 								) }
