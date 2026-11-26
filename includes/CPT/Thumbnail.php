@@ -277,15 +277,15 @@ class Thumbnail {
 			return;
 		}
 
-		// Skip if featured image is already set.
-		if ( has_post_thumbnail( $post_id ) ) {
-			return;
-		}
-
 		$platform = get_post_meta( $post_id, '_ms_platform', true );
 		$video_id = get_post_meta( $post_id, '_ms_platform_video_id', true );
 
 		if ( empty( $video_id ) || 'self' === $platform ) {
+			return;
+		}
+		// The job also asks YouTube and Vimeo whether the video still plays
+		// (MSUX-10), so a video with a poster is queued too.
+		if ( has_post_thumbnail( $post_id ) && ! in_array( $platform, array( 'youtube', 'vimeo' ), true ) ) {
 			return;
 		}
 
@@ -310,13 +310,29 @@ class Thumbnail {
 	public static function fetch_poster( $post_id ): void {
 		$post_id = (int) $post_id;
 		$post    = get_post( $post_id );
-		if ( ! $post || 'mediashield_video' !== $post->post_type || has_post_thumbnail( $post_id ) ) {
+		if ( ! $post || 'mediashield_video' !== $post->post_type ) {
 			return;
 		}
 
 		$platform = (string) get_post_meta( $post_id, '_ms_platform', true );
 		$video_id = (string) get_post_meta( $post_id, '_ms_platform_video_id', true );
 		if ( '' === $video_id || 'self' === $platform ) {
+			return;
+		}
+
+		// Does the platform still play it? A removed or private YouTube or
+		// Vimeo video is recorded now, after the save, not when a member
+		// first fails to play it (MSUX-10). null: the platform cannot say.
+		$plays = SourceStatus::check( $post_id );
+		if ( false === $plays ) {
+			SourceStatus::mark_unavailable( $post_id, 'removed' );
+			return;
+		}
+		if ( true === $plays ) {
+			SourceStatus::clear( $post_id );
+		}
+
+		if ( has_post_thumbnail( $post_id ) ) {
 			return;
 		}
 

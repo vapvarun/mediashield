@@ -224,6 +224,7 @@ class VideoPostType {
 					'tooLargeBunny'   => __( 'Upload it in Bunny, then use Browse & Import.', 'mediashield' ),
 					'tooLargeOther'   => __( 'Ask your host to raise the upload limit, or upload the file to your video platform and paste its URL above.', 'mediashield' ),
 					'uploadDone'      => __( 'Uploaded. Save the video to keep this file.', 'mediashield' ),
+					'uploadedFile'    => __( 'Uploaded file (save the video to keep it):', 'mediashield' ),
 					'uploadFailed'    => __( 'Upload failed:', 'mediashield' ),
 					'uploadNetwork'   => __( 'Upload failed: the connection dropped or the file is larger than this server accepts.', 'mediashield' ),
 				),
@@ -279,6 +280,18 @@ class VideoPostType {
 			// the form is "leaking" state across posts.
 			?>
 			<input type="text" style="display:none !important" autocomplete="username" tabindex="-1" aria-hidden="true">
+			<?php
+			// The Videos list says "Unavailable at YouTube - Replace link" and
+			// sends the owner here; say it here too (MSUX-10).
+			if ( null !== SourceStatus::get( $post->ID ) ) :
+				?>
+				<div class="notice notice-warning inline ms-source-unavailable">
+					<p>
+						<strong><?php echo esc_html( sprintf( /* translators: %s: platform name, e.g. YouTube. */ __( 'Unavailable at %s', 'mediashield' ), \MediaShield\Support\Platforms::label( (string) $platform ) ) ); ?></strong>
+						<?php echo esc_html( sprintf( /* translators: %s: platform name, e.g. YouTube. */ __( '%s no longer plays this video (it was removed or made private), so members cannot watch it. Paste a new link below, or make the video public again there.', 'mediashield' ), \MediaShield\Support\Platforms::label( (string) $platform ) ) ); ?>
+					</p>
+				</div>
+			<?php endif; ?>
 			<?php if ( $is_new ) : ?>
 				<p class="ms-source-intro">
 					<?php
@@ -309,27 +322,19 @@ class VideoPostType {
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=mediashield#/platforms' ) ); ?>"><?php esc_html_e( 'Manage Platforms →', 'mediashield' ); ?></a>
 					</p>
 				<?php elseif ( $has_pro ) : ?>
-					<div class="notice notice-info inline" style="margin: 8px 0;">
-						<p>
-							<?php
-							// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons::svg returns inline SVG built from a vendored Lucide path map; no user input.
-							echo \MediaShield\Support\Icons::svg(
-								'cloud',
-								array(
-									'size'  => 16,
-									'class' => 'ms-inline-icon',
-								)
-							);
-							?>
-							<?php
-							printf(
-								/* translators: %s: link to Platforms page */
-								esc_html__( 'No cloud platforms connected. %s to enable browsing, bulk import, and protected streaming from Bunny, YouTube, Vimeo, or Wistia.', 'mediashield' ),
-								'<a href="' . esc_url( admin_url( 'admin.php?page=mediashield#/platforms' ) ) . '"><strong>' . esc_html__( 'Connect a platform', 'mediashield' ) . '</strong></a>'
-							);
-							?>
-						</p>
-					</div>
+					<?php
+					// Links need no account; connecting is only for browsing and
+					// importing a library (MSUX-08). A quiet line, not a notice.
+					?>
+					<p class="ms-source-intro ms-source-intro--quiet">
+						<?php
+						printf(
+							/* translators: %s: link to the Platforms screen */
+							esc_html__( 'YouTube, Vimeo and Wistia links play here without an account. %s only to browse your library and import videos in one step.', 'mediashield' ),
+							'<a href="' . esc_url( admin_url( 'admin.php?page=mediashield#/platforms' ) ) . '">' . esc_html__( 'Connect a platform', 'mediashield' ) . '</a>'
+						);
+						?>
+					</p>
 				<?php else : ?>
 					<p class="ms-source-intro" style="color: #757575;">
 						<?php

@@ -235,3 +235,8 @@
 		max-width: none;
 	}
 }
+
+/* A hint that needs no action (MSUX-08): quiet, never a notice box. */
+.ms-source-intro--quiet {
+	color: var(--ms-admin-text-muted);
+}

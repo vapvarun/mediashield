@@ -302,7 +302,22 @@
 				// Reflect the result in the fields the operator can see, so the
 				// screen agrees with what was just stored rather than needing a
 				// reload to tell the truth.
-				if ( urlField && body.embed_url ) {
+				// A file this site holds shows by its name; its internal
+				// /stream/ address never goes in the field (MSUX-09). The field
+				// stays empty and the held-file marker keeps the file on save,
+				// as on the screen shown after a reload.
+				var heldName = 'self' === body.platform && body.file_name ? body.file_name : '';
+				if ( urlField && heldName ) {
+					urlField.value = '';
+					var postForm = urlField.form;
+					if ( postForm && ! postForm.querySelector( 'input[name="_ms_source_held"]' ) ) {
+						var held = document.createElement( 'input' );
+						held.type = 'hidden';
+						held.name = '_ms_source_held';
+						held.value = '1';
+						postForm.appendChild( held );
+					}
+				} else if ( urlField && body.embed_url ) {
 					urlField.value = body.embed_url;
 				}
 				// The driver the server chose - Pro's default upload target may
@@ -331,7 +346,9 @@
 					note.style.display = 'none';
 				}
 
-				uploadMsg.textContent = labels.uploadDone || 'Uploaded.';
+				uploadMsg.textContent = heldName
+					? ( labels.uploadedFile || 'Uploaded file:' ) + ' ' + heldName
+					: ( labels.uploadDone || 'Uploaded.' );
 				// The file is stored now; clear it so a later save does not
 				// upload it a second time.
 				fileField.value = '';
