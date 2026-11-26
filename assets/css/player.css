@@ -7,9 +7,11 @@
  * Part 7.6.1 (BLOCK gate F9, same-family rule).
  */
 
-/* Tokens. The playlist wrapper sits outside the player, so it shares them. */
+/* Tokens. The playlist wrapper sits outside the player, so it shares them,
+   and so does the unavailable state (Renderer), which is not a player. */
 .ms-protected-player,
-.ms-playlist-player {
+.ms-playlist-player,
+.ms-player-unavailable {
 	/* Spacing scale */
 	--ms-space-1: 4px;
 	--ms-space-2: 8px;
