@@ -1565,8 +1565,11 @@
 			clearInterval( el._msFirstPlayWatch );
 			if ( adapter.play === gate ) adapter.play = play;
 			// None and Basic keep playing while the viewing starts in the
-			// background: no watermark waits on it (Free review #7).
-			if ( ! el._msTrackingOnly ) {
+			// background: no watermark waits on it (Free review #7). The
+			// tracker counts from where play began (tracker.js startTracking()).
+			if ( el._msTrackingOnly ) {
+				el._msPlayFrom = adapter.getPosition ? adapter.getPosition() || 0 : 0;
+			} else {
 				el._msPlayOnStart = true;
 				blockPlayback( el, adapter );
 			}

@@ -46,6 +46,18 @@
 			earlySent: false,
 		};
 
+		// None and Basic play while the viewing starts (player-wrapper.js):
+		// the seconds played before it answered count too.
+		var from = el._msPlayFrom;
+		delete el._msPlayFrom;
+		if ( 'number' === typeof from && session.adapter && isPlaying( el, session.adapter ) ) {
+			var at = getPlayerPosition( el, session.adapter ) || 0;
+			if ( at > from && at - from <= 10 ) {
+				session.open = [ from, at ];
+				session.lastPos = at;
+			}
+		}
+
 		session.sampleId = setInterval( function () {
 			sample( session );
 		}, 1000 );
@@ -321,6 +333,11 @@
 	 * @param {Object} session Tracked session.
 	 */
 	function reportStop( session ) {
+		// Up to the moment of the pause, not the last once-a-second sample.
+		var pos = getPlayerPosition( session.el, session.adapter ) || 0;
+		if ( session.open && pos > session.open[ 1 ] && pos - session.open[ 1 ] <= 2.5 ) {
+			session.open[ 1 ] = pos;
+		}
 		closeSpan( session );
 		sendHeartbeat( session, true );
 	}

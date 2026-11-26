@@ -554,3 +554,49 @@ describe( 'Free 1.4.4 review: player (#6, #7, #13)', () => {
 		clear.mockRestore();
 	} );
 } );
+
+describe( 'Watched time is counted from the first second to the pause (LearnDash walk, 1.4.4)', () => {
+	const calls = ( kind ) => global.fetch.mock.calls.filter( ( c ) => c[ 0 ].indexOf( kind ) > -1 ).map( ( c ) => JSON.parse( c[ 1 ].body ) );
+	const player = ( level, extra = '' ) => `
+		<div class="ms-protected-player" data-video-id="9" data-platform="self" data-protection-level="${ level }" ${ extra }>
+			<div class="ms-player-target" data-source-url="https://example.org/lesson-9.mp4" data-stream-url="" data-duration="300"></div>
+		</div>`;
+	const play = async ( video, from, to ) => {
+		for ( let t = from + 1; t <= to; t++ ) {
+			video.currentTime = t;
+			jest.advanceTimersByTime( 1000 );
+			await flush();
+		}
+	};
+
+	test( 'a None lesson counts the seconds played while its viewing started', async () => {
+		boot( { markup: player( 'none', 'data-watch-required="20"' ), session: { body: { session_token: 't9', resume_position: 0 } }, tracker: true } );
+		await readyNative();
+		const video = document.querySelector( 'video' );
+
+		video.play();
+		video.currentTime = 1.5; // Playing while /session/start answers.
+		await flush();
+		await flush();
+		await play( video, 1.5, 6.5 );
+
+		const spans = calls( 'session/heartbeat' ).flatMap( ( b ) => b.spans );
+		expect( spans[ 0 ][ 0 ] ).toBe( 0 );
+	} );
+
+	test( 'a pause reports up to the moment of the pause', async () => {
+		boot( { markup: nativePlayer(), session: { body: { session_token: 't', resume_position: 0 } }, tracker: true } );
+		await readyNative();
+		const video = document.querySelector( 'video' );
+		document.querySelector( '.ms-bigplay' ).click();
+		await flush();
+		await flush();
+		await play( video, 0, 3 );
+
+		video.currentTime = 3.8; // Between two once-a-second samples.
+		video.pause();
+
+		const last = calls( 'session/heartbeat' ).pop();
+		expect( last.spans[ last.spans.length - 1 ][ 1 ] ).toBe( 3.8 );
+	} );
+} );
