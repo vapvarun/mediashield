@@ -116,7 +116,9 @@ class Migrator {
 		// MilestoneTracker before 1.4.4), mixing them into the owner's video
 		// tags. Take those links off; the member keeps the tag (MSUX-18).
 		// Background job (ms_separate_member_tags), so the update stays instant.
-		if ( $installed > 0 && $installed < 19 ) {
+		// No `< 19` check: run() already returned for $installed >= MEDIASHIELD_DB_VERSION (19).
+		// When v20 lands, add `&& $installed < 19` back here.
+		if ( $installed > 0 ) {
 			add_option( TagManager::MEMBER_TAGS_PENDING, '0', '', false );
 		}
 
