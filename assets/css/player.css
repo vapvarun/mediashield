@@ -1292,6 +1292,14 @@ iframe.ms-player-target {
 .ms-ad-timeline__marker:hover::after {
 	opacity: 1;
 }
+/* While an ad plays the bar is the ad's own progress; the lesson's ad
+   markers would mark the wrong timeline, so they step aside. */
+.ms-ad-timeline.is-ad .ms-ad-timeline__progress {
+	background: #f5c518;
+}
+.ms-ad-timeline.is-ad .ms-ad-timeline__marker {
+	visibility: hidden;
+}
 @media ( max-width: 480px ) {
 	.ms-ad-timeline__caption {
 		display: none;
