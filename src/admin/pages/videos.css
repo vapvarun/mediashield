@@ -256,8 +256,35 @@
 
 /* No Duration while a watch rule uses the video: one calm line under the
    title, linking to the edit screen's Duration field. */
+.ms-videos__needs-length {
+	display: block;
+	margin-block-start: var( --ms-space-1 );
+	font-size: var( --ms-font-size-sm );
+	line-height: 1.3;
+}
+
 .ms-videos__needs-length a {
-	color: var( --ms-color-text-secondary );
+	color: var( --ms-palette-yellow-text );
+	text-decoration: none;
+}
+
+/* The chip is the visible part; on a phone the link around it is the 40px target. */
+.ms-videos__chip {
+	display: inline-block;
+	padding: 1px var( --ms-space-2 );
+	border-radius: 999px;
+	background: var( --ms-color-warning-light );
+	white-space: nowrap;
+}
+
+.ms-videos__needs-length a:hover,
+.ms-videos__needs-length a:focus-visible {
+	text-decoration: underline;
+}
+
+.ms-videos__needs-length a:focus-visible {
+	outline: 2px solid var( --ms-color-primary );
+	outline-offset: 2px;
 }
 
 @media ( max-width: 480px ) {

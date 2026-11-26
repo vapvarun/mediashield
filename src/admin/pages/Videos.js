@@ -642,8 +642,14 @@ const Videos = () => {
 														{ 'unavailable' !== list.status && 'no_source' !== list.status && phoneMeta }
 													</span>
 													{ list.needs_length && (
-														<span className="ms-videos__hint ms-videos__needs-length">
-															<a href={ `${ editUrl }#ms-duration` }>{ __( "Add this video's length so the watch rule can't be skipped.", 'mediashield' ) }</a>
+														<span className="ms-videos__needs-length">
+															<a
+																href={ `${ editUrl }#ms-duration` }
+																aria-label={ __( "Add this video's length so the watch rule can't be skipped.", 'mediashield' ) }
+																title={ __( "Add this video's length so the watch rule can't be skipped.", 'mediashield' ) }
+															>
+																<span className="ms-videos__chip">{ __( 'Length needed', 'mediashield' ) }</span>
+															</a>
 														</span>
 													) }
 												</span>
