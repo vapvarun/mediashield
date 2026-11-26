@@ -630,6 +630,55 @@
 .mediashield-students .mediashield-table th:nth-child(4) { width: 14%; }
 .mediashield-students .mediashield-table th:nth-child(5) { width: 21%; }
 
+/* Viewers: Watching now badge, and a dash where there is nothing to stop. */
+.ms-viewers__live {
+	margin-block-start: var( --ms-space-1 );
+}
+
+.ms-viewers__idle {
+	color: var( --ms-color-text-tertiary );
+}
+
+/* Viewers on a phone (MSUX-13): one compact card per member, the same
+   pattern as the Videos list. Name and email, then videos, completion and
+   last active side by side; Stop playback only for a member watching now. */
+@media ( max-width: 782px ) {
+	.mediashield-table.ms-viewers__table tbody tr {
+		display: grid;
+		grid-template-columns: repeat( 3, minmax( 0, 1fr ) );
+		column-gap: var( --ms-space-3 );
+		padding: var( --ms-space-3 ) var( --ms-space-4 );
+	}
+
+	.mediashield-table.ms-viewers__table td:first-child,
+	.mediashield-table.ms-viewers__table td.mediashield-table__actions,
+	.mediashield-table.ms-viewers__table td.mediashield-table__empty {
+		grid-column: 1 / -1;
+	}
+
+	.mediashield-table.ms-viewers__table td:first-child::before,
+	.mediashield-table.ms-viewers__table td.mediashield-table__actions::before {
+		display: none;
+	}
+
+	.mediashield-table.ms-viewers__table td:not( :first-child ):not( .mediashield-table__actions ) {
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: flex-start;
+		gap: 2px;
+		padding: var( --ms-space-1 ) 0;
+		min-width: 0;
+	}
+
+	.mediashield-table.ms-viewers__table td.mediashield-table__actions:has( .ms-viewers__idle ) {
+		display: none;
+	}
+
+	.mediashield-table.ms-viewers__table td.mediashield-table__actions {
+		padding-top: var( --ms-space-2 );
+	}
+}
+
 .mediashield-tags .mediashield-table th:nth-child(1) { width: 30%; }
 .mediashield-tags .mediashield-table th:nth-child(2) { width: 25%; }
 .mediashield-tags .mediashield-table th:nth-child(3) { width: 20%; }

@@ -326,7 +326,21 @@ const Students = () => {
 	const [ search, setSearch ] = useState( '' );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
-	const [ selectedUser, setSelectedUser ] = useState( null );
+	// A viewer's page has its own address, #/viewers/<id>, so Back and a
+	// bookmark work (MSUX-35).
+	const fromHash = () => {
+		const m = window.location.hash.match( /^#\/viewers\/(\d+)/ );
+		return m ? parseInt( m[ 1 ], 10 ) : null;
+	};
+	const [ selectedUser, setSelected ] = useState( fromHash );
+	const setSelectedUser = ( id ) => {
+		window.location.hash = id ? `#/viewers/${ id }` : '#/viewers';
+	};
+	useEffect( () => {
+		const follow = () => setSelected( fromHash() );
+		window.addEventListener( 'hashchange', follow );
+		return () => window.removeEventListener( 'hashchange', follow );
+	}, [] );
 	// Paged: a big site has thousands of viewers.
 	const [ page, setPage ] = useState( 1 );
 	const [ totalPages, setTotalPages ] = useState( 1 );
@@ -416,7 +430,7 @@ const Students = () => {
 
 			{ ! loading && ! error && (
 				<div className="mediashield-table-card">
-					<table className="mediashield-table">
+					<table className="mediashield-table ms-viewers__table">
 						<thead>
 							<tr>
 								<th>{ __( 'Viewer', 'mediashield' ) }</th>
@@ -455,6 +469,9 @@ const Students = () => {
 												<div className="mediashield-user__email">
 													{ user.email || '' }
 												</div>
+												{ user.watching_now && (
+													<span className="mediashield-badge mediashield-badge--success ms-viewers__live">{ __( 'Watching now', 'mediashield' ) }</span>
+												) }
 											</div>
 										</div>
 									</td>
@@ -468,7 +485,8 @@ const Students = () => {
 										{ timeAgo( user.last_active ) }
 									</td>
 									<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
-										<RevokeSessions user={ user } />
+										{ /* Only a member watching now has a viewing to stop (MSUX-13). */ }
+										{ user.watching_now ? <RevokeSessions user={ user } /> : <span className="ms-viewers__idle" aria-hidden="true">—</span> }
 									</td>
 								</tr>
 							) ) }

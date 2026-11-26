@@ -600,12 +600,17 @@ class AnalyticsController extends WP_REST_Controller {
 
 		// A member's completion is the average of their best on each video,
 		// the same number My Videos shows per video (viewer_sql()).
+		// watching_now: the Dashboard's Watching now rule (a played viewing,
+		// still active, heard from in the last 5 minutes), so Stop playback is
+		// offered only to a member it would stop (MSUX-13).
 		$list_query = "SELECT v.user_id, u.display_name, u.user_email,
 					COUNT(*) AS videos_watched,
 					AVG(v.best) AS avg_completion,
-					MAX(v.last_hb) AS last_active
+					MAX(v.last_hb) AS last_active,
+					MAX(v.live) AS watching_now
 			 FROM (
-			   SELECT s.user_id, s.video_id, MAX(s.completion_pct) AS best, MAX(s.last_heartbeat) AS last_hb
+			   SELECT s.user_id, s.video_id, MAX(s.completion_pct) AS best, MAX(s.last_heartbeat) AS last_hb,
+			          MAX( s.is_active = 1 AND s.last_heartbeat >= DATE_SUB( %s, INTERVAL 5 MINUTE ) ) AS live
 			   FROM {$wpdb->prefix}ms_watch_sessions s
 			   INNER JOIN {$wpdb->users} u ON s.user_id = u.ID
 			   WHERE s.user_id > 0 AND {$played_s} {$where}
@@ -615,7 +620,7 @@ class AnalyticsController extends WP_REST_Controller {
 			 GROUP BY v.user_id, u.display_name, u.user_email
 			 ORDER BY last_active DESC
 			 LIMIT %d OFFSET %d";
-		$query_args = array_merge( $args, array( $per_page, $offset ) );
+		$query_args = array_merge( array( current_time( 'mysql', true ) ), $args, array( $per_page, $offset ) );
 		$rows       = $wpdb->get_results( $wpdb->prepare( $list_query, ...$query_args ) );
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
@@ -628,6 +633,7 @@ class AnalyticsController extends WP_REST_Controller {
 					'videos_watched' => (int) $row->videos_watched,
 					'avg_completion' => round( (float) $row->avg_completion, 1 ),
 					'last_active'    => self::utc_marked( $row->last_active ),
+					'watching_now'   => (bool) $row->watching_now,
 				);
 			},
 			! empty( $rows ) ? $rows : array()

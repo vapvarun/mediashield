@@ -60,4 +60,28 @@ class AdminUxRoundTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'PHP Template', $html );
 		$this->assertLessThan( strpos( $html, 'ms-shortcode-input' ), strpos( $html, 'MediaShield Video block' ), 'The block comes first.' );
 	}
+
+	/**
+	 * MSUX-13: every Viewers row offered Stop playback, even for a member
+	 * who watched yesterday. The list now says who is watching now.
+	 */
+	public function test_viewers_list_says_who_is_watching_now(): void {
+		global $wpdb;
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$live  = self::factory()->user->create( array( 'display_name' => 'Live Member' ) );
+		$idle  = self::factory()->user->create( array( 'display_name' => 'Idle Member' ) );
+		$now   = current_time( 'mysql', true );
+		$then  = gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS );
+		foreach ( array( array( $live, $now, 1 ), array( $idle, $then, 0 ) ) as list( $user, $at, $active ) ) {
+			$wpdb->insert( $wpdb->prefix . 'ms_watch_sessions', array( 'video_id' => $video, 'user_id' => $user, 'session_token' => 'v' . $user, 'started_at' => $at, 'last_heartbeat' => $at, 'max_position' => 20, 'total_seconds' => 20, 'completion_pct' => 30, 'is_active' => $active ) ); // phpcs:ignore WordPress.DB
+		}
+
+		$request = new WP_REST_Request( 'GET', '/mediashield/v1/analytics/users' );
+		$request->set_param( 'per_page', 20 );
+		$rows = wp_list_pluck( rest_do_request( $request )->get_data(), 'watching_now', 'user_id' );
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}ms_watch_sessions WHERE session_token IN ( 'v{$live}', 'v{$idle}' )" ); // phpcs:ignore WordPress.DB
+
+		$this->assertTrue( $rows[ $live ] ?? null );
+		$this->assertFalse( $rows[ $idle ] ?? null );
+	}
 }
