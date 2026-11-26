@@ -283,7 +283,7 @@ class AnalyticsController extends WP_REST_Controller {
 				),
 				'recent_milestones' => self::recent_milestones( $interval, $now_utc ),
 				'protection'        => self::protection_summary( $protected_counts, $interval, $now_utc ),
-				'first_run'         => self::first_run( $protected_counts ),
+				'first_run'         => self::first_run_state( $protected_counts ),
 				'site_timezone'     => wp_timezone_string(),
 			)
 		);
@@ -394,23 +394,53 @@ class AnalyticsController extends WP_REST_Controller {
 	}
 
 	/**
-	 * The three first-run steps and whether each is done.
+	 * The four first-run steps and whether each is done, for the Dashboard's
+	 * Get started card and the Analytics screens' first-run notice
+	 * (Basecamp 10478806397). No sample data: each step is the owner's own.
 	 *
-	 * A video exists; one is protected (above None); someone has opened one
-	 * (any watch session, so it is on a page). Each is one indexed query.
+	 * - has_video: a Ready video exists.
+	 * - has_protected: one plays above None.
+	 * - has_embed: a published page or post shows one (the usage index);
+	 *   watch_url is that page, for "watch it as a member".
+	 * - has_view: someone pressed play (played_sql()). Once true the site has
+	 *   real data and the first-run state is not shown anywhere.
 	 *
-	 * @param array $counts From protected_counts().
-	 * @return array{has_video: bool, has_protected: bool, has_view: bool}
+	 * Four indexed reads; the Dashboard's overview passes the counts it
+	 * already has.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param array|null $counts protected_counts(), when already read.
+	 * @return array{has_video: bool, has_protected: bool, has_embed: bool, has_view: bool, watch_url: string}
 	 */
-	private static function first_run( array $counts ): array {
+	public static function first_run_state( ?array $counts = null ): array {
 		global $wpdb;
+		$counts = $counts ?? self::protected_counts();
+
 		// A page load is not a view: played_sql() is fixed SQL written in code, no input.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Custom table; existence check.
 		$viewed = (bool) $wpdb->get_var( "SELECT 1 FROM {$wpdb->prefix}ms_watch_sessions WHERE " . SessionManager::played_sql() . ' LIMIT 1' );
+
+		// The newest published page that shows a video, from the usage index.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Existence check on the indexed meta_key.
+		$page = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->postmeta} m
+				 INNER JOIN {$wpdb->posts} p ON p.ID = CAST( m.meta_value AS UNSIGNED )
+				 WHERE m.meta_key = %s AND p.post_status = 'publish'
+				 ORDER BY p.post_modified_gmt DESC LIMIT 1",
+				\MediaShield\CPT\VideoUsage::USED_IN
+			)
+		);
+
 		return array(
 			'has_video'     => $counts['total'] > 0,
 			'has_protected' => $counts['protected'] > 0,
+			// While the index of older content is still being built, a viewing
+			// proves a page shows a video.
+			'has_embed'     => $page > 0 || $viewed,
 			'has_view'      => $viewed,
+			'watch_url'     => $page > 0 ? (string) get_permalink( $page ) : '',
 		);
 	}
 

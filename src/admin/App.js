@@ -9,7 +9,8 @@ import { applyFilters } from '@wordpress/hooks';
 import { SlotFillProvider } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-import Sidebar from './components/Sidebar';
+import Sidebar, { groupOf } from './components/Sidebar';
+import FirstRunSteps, { showFirstRun } from './components/FirstRunSteps';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import Loading from './components/Loading';
@@ -135,6 +136,15 @@ const App = () => {
 				<Sidebar routes={ routes } currentHash={ routeHash } />
 				<main className="mediashield-admin__content">
 					<Toast />
+					{ activeRoute && 'analytics' === groupOf( activeRoute ) && showFirstRun( window.mediashieldAdmin?.firstRun ) && (
+						// Every Analytics screen (Free and Pro) is empty until
+						// the first viewing: say why and what to do next.
+						<FirstRunSteps
+							status={ window.mediashieldAdmin.firstRun }
+							title={ __( 'Nothing to show yet', 'mediashield' ) }
+							intro={ __( 'Analytics fill in when members watch a protected video. Finish these steps and the first viewing appears here.', 'mediashield' ) }
+						/>
+					) }
 					<ErrorBoundary key={ routeHash }>
 						<Suspense fallback={ <Loading /> }>
 							<ActiveComponent />

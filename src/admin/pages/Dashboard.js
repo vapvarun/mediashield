@@ -27,6 +27,7 @@ import {
 // tooltips), not chart.js/auto's every chart type.
 Chart.register( LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Legend, Tooltip );
 import Icon from '../components/Icon';
+import FirstRunSteps, { showFirstRun } from '../components/FirstRunSteps';
 import { restUrl } from '../utils/rest';
 
 const config = window.mediashieldAdmin || {};
@@ -69,71 +70,6 @@ const STAT_CARDS = [
 		format: ( v ) => v ?? '0',
 	},
 ];
-
-/**
- * The three first-run steps (Basecamp 10530930901). Shown until all are done.
- */
-const FIRST_RUN_STEPS = [
-	{
-		key: 'has_video',
-		title: __( 'Add a video', 'mediashield' ),
-		body: __( 'Upload a file, paste a YouTube, Vimeo, Bunny or Wistia link, or connect a platform.', 'mediashield' ),
-		href: '#/videos',
-		cta: __( 'Add a video', 'mediashield' ),
-	},
-	{
-		key: 'has_protected',
-		title: __( 'Protect it', 'mediashield' ),
-		body: __( 'Pick a protection level above None, for one video or as the site default.', 'mediashield' ),
-		href: '#/settings',
-		cta: __( 'Choose protection', 'mediashield' ),
-	},
-	{
-		key: 'has_view',
-		title: __( 'Place it on a page', 'mediashield' ),
-		body: __( 'Add the MediaShield Video block or the [mediashield id=X] shortcode, then open the page once.', 'mediashield' ),
-		href: '#/videos',
-		cta: __( 'Copy a shortcode', 'mediashield' ),
-	},
-];
-
-const FirstRunChecklist = ( { status } ) => {
-	const done = FIRST_RUN_STEPS.filter( ( step ) => status?.[ step.key ] ).length;
-	return (
-		<section className="mediashield-first-run" aria-labelledby="mediashield-first-run-title">
-			<div className="mediashield-first-run__head">
-				<h2 id="mediashield-first-run-title">{ __( 'Get started', 'mediashield' ) }</h2>
-				<span className="mediashield-first-run__count">
-					{ sprintf( /* translators: 1: steps done, 2: total steps. */ __( '%1$d of %2$d done', 'mediashield' ), done, FIRST_RUN_STEPS.length ) }
-				</span>
-			</div>
-			<ol className="mediashield-first-run__steps">
-				{ FIRST_RUN_STEPS.map( ( step, i ) => {
-					const isDone = !! status?.[ step.key ];
-					return (
-						<li key={ step.key } className={ 'mediashield-first-run__step' + ( isDone ? ' is-done' : '' ) }>
-							<span className="mediashield-first-run__mark" aria-hidden="true">
-								{ isDone ? <Icon name="yes" /> : i + 1 }
-							</span>
-							<div className="mediashield-first-run__text">
-								<strong>
-									{ step.title }
-									{ isDone && <span className="screen-reader-text">{ ' ' + __( '(done)', 'mediashield' ) }</span> }
-								</strong>
-								<span>{ step.body }</span>
-							</div>
-							{ ! isDone && (
-								<a href={ step.href } className="components-button is-secondary mediashield-first-run__cta">
-									{ step.cta }
-								</a>
-							) }
-						</li>
-					);
-				} ) }
-			</ol>
-		</section>
-	);
-};
 
 const ProtectionCard = ( { protection } ) => {
 	if ( ! protection ) {
@@ -379,8 +315,8 @@ const Dashboard = () => {
 				</div>
 			) }
 
-			{ ! loading && ! error && data?.first_run && ! ( data.first_run.has_video && data.first_run.has_protected && data.first_run.has_view ) && (
-				<FirstRunChecklist status={ data.first_run } />
+			{ ! loading && ! error && showFirstRun( data?.first_run ) && (
+				<FirstRunSteps status={ data.first_run } title={ __( 'Get started', 'mediashield' ) } />
 			) }
 
 			{ ! loading && ! error && data?.total_videos > 0 && (

@@ -176,6 +176,10 @@ class Menu {
 				// Video Ads shows only where WB Ad Manager's video ads are
 				// installed (the class AdManagerBridge reads them from).
 				'isAdManagerActive'     => class_exists( '\\WBAM_Pro\\Modules\\AdTypes\\Video_Ad_Resolver' ),
+				// The Analytics screens' first-run notice (Basecamp 10478806397).
+				'firstRun'              => \MediaShield\REST\AnalyticsController::first_run_state(),
+				'newVideoUrl'           => admin_url( 'post-new.php?post_type=mediashield_video' ),
+				'newPageUrl'            => admin_url( 'post-new.php?post_type=page' ),
 			) + self::vocabulary()
 		);
 	}
@@ -198,6 +202,7 @@ class Menu {
 			'siteDefaultLabel'  => \MediaShield\Player\Protection::site_default_label(),
 			'unplayableMessage' => \MediaShield\Support\Platforms::unplayable_message(),
 			'wizardLinkHint'    => \MediaShield\Support\Platforms::wizard_link_hint(),
+			'linkHint'          => \MediaShield\Support\Platforms::link_hint(),
 		);
 	}
 

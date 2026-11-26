@@ -2952,8 +2952,9 @@
 	}
 }
 
-/* First-run checklist: three steps, shown on the Dashboard until all are
-   done (Basecamp 10530930901). */
+/* First-run checklist: four steps, on the Dashboard and above every
+   Analytics screen until the first viewing (Basecamp 10530930901,
+   10478806397). */
 .mediashield-first-run,
 .mediashield-protection-card {
 	background: var( --ms-color-surface );
@@ -2978,6 +2979,13 @@
 	font-size: 15px;
 	font-weight: 600;
 	color: var( --ms-color-text );
+}
+
+.mediashield-first-run__intro {
+	margin: calc( -1 * var( --ms-space-2 ) ) 0 var( --ms-space-4 );
+	font-size: 13px;
+	line-height: 1.5;
+	color: var( --ms-color-text-secondary );
 }
 
 .mediashield-first-run__count {
