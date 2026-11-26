@@ -201,7 +201,7 @@ iframe.ms-player-target {
 }
 
 /* No poster: the platform's own picture shows through the cover. */
-.ms-iframe-poster--clear {
+.ms-iframe-poster.ms-iframe-poster--clear {
 	background-color: transparent;
 }
 
@@ -547,6 +547,17 @@ iframe.ms-player-target {
 	justify-content: center;
 	padding: 0;
 	transition: background 0.2s;
+}
+
+/* Vimeo draws a fullscreen icon of its own that no embed setting removes
+   (without the permission it does nothing): MediaShield's, solid, sits
+   over it, so one shows (UX test MSUX-15). */
+.ms-protected-player[data-platform="vimeo"] .ms-fullscreen-btn {
+	bottom: 6px;
+	right: 6px;
+	width: 46px;
+	height: 46px;
+	background: var(--ms-player-bg);
 }
 
 .ms-fullscreen-btn:hover {
