@@ -257,7 +257,7 @@
 					body.append( 'post', String( data.postId ) );
 					fetch( root + 'wp/v2/media', { method: 'POST', credentials: 'same-origin', headers: { 'X-WP-Nonce': data.nonce || '' }, body: body } )
 						.then( function ( r ) {
-							return r.ok ? r.json() : null;
+							return window.mediashieldRequest.readJSON( r );
 						} )
 						.then( function ( media ) {
 							if ( ! media || ! media.id ) {
@@ -272,9 +272,14 @@
 								credentials: 'same-origin',
 								headers: { 'X-WP-Nonce': data.nonce || '', 'Content-Type': 'application/json' },
 								body: JSON.stringify( { featured_media: media.id } ),
+							} ).then( function ( r ) {
+								return window.mediashieldRequest.readJSON( r );
 							} );
 						} )
-						.catch( function () {} );
+						.catch( function ( err ) {
+							// The video is uploaded; only the poster failed. Say so and why.
+							uploadMsg.appendChild( document.createTextNode( ' ' + ( labels.posterFailed || '' ) + ' ' + window.mediashieldRequest.message( err ) ) );
+						} );
 				}, 'image/jpeg', 0.85 );
 			}, { once: true } );
 			video.src = src;

@@ -320,8 +320,8 @@ class PlaylistPostType {
 		}
 		global $wpdb;
 		$ids = array_map( 'intval', wp_list_pluck( $posts, 'ID' ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; ids are ints.
-		$rows = $wpdb->get_results( "SELECT playlist_id, COUNT(*) AS n FROM {$wpdb->prefix}ms_playlist_items WHERE playlist_id IN (" . implode( ',', $ids ) . ') GROUP BY playlist_id', OBJECT_K );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table, one query per page.
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT playlist_id, COUNT(*) AS n FROM %i WHERE playlist_id IN (' . implode( ',', array_fill( 0, count( $ids ), '%d' ) ) . ') GROUP BY playlist_id', $wpdb->prefix . 'ms_playlist_items', ...$ids ), OBJECT_K );
 		foreach ( $ids as $id ) {
 			self::$item_counts[ $id ] = isset( $rows[ $id ] ) ? (int) $rows[ $id ]->n : 0;
 		}

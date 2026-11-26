@@ -7,6 +7,8 @@
 
 namespace MediaShield\Access;
 
+use MediaShield\Upload\UploadManager;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -436,19 +438,15 @@ class WatchedSpans {
 	 * @return mixed What $change returns.
 	 */
 	private static function locked( int $user_id, callable $change ) {
-		global $wpdb;
-
 		$name = self::lock_name( $user_id );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A named lock, not a table read.
-		$held = '1' === (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, %d )', $name, self::LOCK_WAIT ) );
+		$held = UploadManager::acquire_lock( $name, self::LOCK_WAIT );
 
 		try {
 			wp_cache_delete( $user_id, 'user_meta' );
 			return $change( self::all( $user_id ) );
 		} finally {
 			if ( $held ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Releases the named lock taken above.
-				$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', $name ) );
+				UploadManager::release_lock( $name );
 			}
 		}
 	}
@@ -457,15 +455,13 @@ class WatchedSpans {
 	 * The MySQL named lock a writer of this member's record holds.
 	 *
 	 * Named locks are server-wide, so the name carries the database and the
-	 * user table prefix as well as the member; it stays under MySQL's 64
-	 * characters.
+	 * user table prefix as well as the member (UploadManager::scoped_lock_name()).
 	 *
 	 * @param int $user_id Member.
 	 * @return string
 	 */
 	public static function lock_name( int $user_id ): string {
-		global $wpdb;
-		return 'ms_spans_' . substr( md5( $wpdb->dbname . '|' . $wpdb->base_prefix ), 0, 12 ) . '_' . $user_id;
+		return UploadManager::scoped_lock_name( 'ms_spans_' . $user_id );
 	}
 
 	/**

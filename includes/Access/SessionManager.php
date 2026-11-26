@@ -179,19 +179,34 @@ class SessionManager {
 			// presses Play at once is still refused). A page left open on
 			// another device, or a player from before 1.4.4 that opened its
 			// viewing on load and never played, stops counting after 15 s.
+			// Only videos at a level the stream limit covers (Standard, Strict):
+			// a member measuring a None or Basic lesson on one device is not
+			// using up a stream on another. A video's own level is its postmeta
+			// (meta_key index); one without follows the site default, so with a
+			// low default only videos set to Standard or Strict count, and with a
+			// high default every video but those set to None or Basic. The played
+			// test is played_sql() spelled out: prepare() takes a literal query.
+			$low_default  = (int) in_array( \MediaShield\Player\Protection::default_level(), array( 'none', 'basic' ), true );
 			$active_count = (int) $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(DISTINCT ip_address, user_agent) FROM {$table}
+					"SELECT COUNT(DISTINCT ip_address, user_agent) FROM %i
 				 WHERE user_id = %d AND is_active = 1
 				 AND last_heartbeat > DATE_SUB(%s, INTERVAL 5 MINUTE)
 				 AND NOT (ip_address = %s AND user_agent = %s)
-				 AND ( " . self::played_sql() . ' OR started_at > DATE_SUB(%s, INTERVAL 15 SECOND) )
-				 AND ' . self::limited_videos_sql() . ' FOR UPDATE',
+				 AND ( (max_position > 0 OR total_seconds > 0) OR started_at > DATE_SUB(%s, INTERVAL 15 SECOND) )
+				 AND ( ( %d = 1 AND video_id IN ( SELECT post_id FROM %i WHERE meta_key = '_ms_protection_level' AND meta_value IN ( 'standard', 'strict' ) ) )
+				    OR ( %d = 0 AND video_id NOT IN ( SELECT post_id FROM %i WHERE meta_key = '_ms_protection_level' AND meta_value IN ( 'none', 'basic' ) ) ) )
+				 FOR UPDATE",
+					$table,
 					$user_id,
 					$now,
 					$ip,
 					mb_substr( $ua, 0, 500 ),
-					$now
+					$now,
+					$low_default,
+					$wpdb->postmeta,
+					$low_default,
+					$wpdb->postmeta
 				)
 			);
 			if ( $deadlocked() ) {
@@ -687,24 +702,6 @@ class SessionManager {
 	 */
 	public static function tracking_only( int $video_id ): bool {
 		return in_array( \MediaShield\Player\Protection::resolve_level( $video_id ), array( 'none', 'basic' ), true );
-	}
-
-	/**
-	 * SQL: the session's video is at a level the stream limit covers (Standard, Strict).
-	 *
-	 * A member measuring a None or Basic lesson on one device is not using
-	 * up a stream on another. Reads the video's own level from postmeta
-	 * (meta_key index); a video without one follows the site default.
-	 *
-	 * @return string Condition on video_id.
-	 */
-	private static function limited_videos_sql(): string {
-		global $wpdb;
-		$low = in_array( \MediaShield\Player\Protection::default_level(), array( 'none', 'basic' ), true );
-
-		return $low
-			? "video_id IN ( SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_ms_protection_level' AND meta_value IN ( 'standard', 'strict' ) )"
-			: "video_id NOT IN ( SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_ms_protection_level' AND meta_value IN ( 'none', 'basic' ) )";
 	}
 
 	/**

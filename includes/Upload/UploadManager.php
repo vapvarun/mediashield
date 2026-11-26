@@ -269,6 +269,22 @@ class UploadManager {
 	}
 
 	/**
+	 * A lock name that is this site's alone.
+	 *
+	 * MySQL named locks are server-wide, so two sites sharing a server (or two
+	 * tables prefixes in one database) would wait on each other's lock for the
+	 * same id. The database and table prefix go into the name, which stays
+	 * under MySQL's 64 characters.
+	 *
+	 * @param string $name Lock name, 40 characters at most.
+	 * @return string
+	 */
+	public static function scoped_lock_name( string $name ): string {
+		global $wpdb;
+		return $name . '_' . substr( md5( $wpdb->dbname . '|' . $wpdb->base_prefix ), 0, 12 );
+	}
+
+	/**
 	 * Take a named lock: can this request go ahead alone?
 	 *
 	 * A MySQL named lock belongs to the database connection, so it is released

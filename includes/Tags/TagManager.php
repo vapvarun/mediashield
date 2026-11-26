@@ -415,30 +415,42 @@ class TagManager {
 		// MilestoneTracker), so only a link stamped within seconds of the earn
 		// time is the milestone's. An owner's own tag on the same video, made
 		// before or after, keeps its own time and stays.
-		$earned = array();
-		$videos = array();
+		$earned = array(); // "video,tag,member" => earned_at.
 		foreach ( $rows as $row ) {
 			foreach ( (array) maybe_unserialize( $row->meta_value ) as $entry ) {
 				if ( is_array( $entry ) && ! empty( $entry['tag_id'] ) && ! empty( $entry['video_id'] ) && ! empty( $entry['earned_at'] ) ) {
-					$earned[ $wpdb->prepare( '(%d,%d,%d)', $entry['video_id'], $entry['tag_id'], $row->user_id ) ] = (string) $entry['earned_at'];
-					$videos[] = (int) $entry['video_id'];
+					$earned[ (int) $entry['video_id'] . ',' . (int) $entry['tag_id'] . ',' . (int) $row->user_id ] = (string) $entry['earned_at'];
 				}
 			}
 		}
 		if ( $earned ) {
+			$tuples = array_map( static fn( $key ) => array_map( 'intval', explode( ',', $key ) ), array_keys( $earned ) );
+			$videos = array_values( array_unique( array_column( $tuples, 0 ) ) );
 			// The video_id list lets MariaDB use the unique key; the tuples alone scan the table.
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Values prepared or cast above.
-			$in    = 'video_id IN (' . implode( ',', array_unique( $videos ) ) . ')';
-			$found = (array) $wpdb->get_results( "SELECT video_id, tag_id, tagged_by, tagged_at FROM {$links} WHERE {$in} AND (video_id, tag_id, tagged_by) IN (" . implode( ',', array_keys( $earned ) ) . ')' );
-			$gone  = array();
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off background job.
+			$found = (array) $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT video_id, tag_id, tagged_by, tagged_at FROM %i WHERE video_id IN (' . implode( ',', array_fill( 0, count( $videos ), '%d' ) ) . ') AND (video_id, tag_id, tagged_by) IN (' . implode( ',', array_fill( 0, count( $tuples ), '(%d,%d,%d)' ) ) . ')',
+					$links,
+					...$videos,
+					...array_merge( ...$tuples )
+				)
+			);
+			$gone = array();
 			foreach ( $found as $link ) {
-				$key = "({$link->video_id},{$link->tag_id},{$link->tagged_by})";
-				if ( self::same_request( (string) $link->tagged_at, $earned[ $key ] ?? '' ) ) {
-					$gone[] = "({$link->video_id},{$link->tag_id})";
+				if ( self::same_request( (string) $link->tagged_at, $earned[ "{$link->video_id},{$link->tag_id},{$link->tagged_by}" ] ?? '' ) ) {
+					$gone[] = array( (int) $link->video_id, (int) $link->tag_id );
 				}
 			}
 			if ( $gone ) {
-				$wpdb->query( "DELETE FROM {$links} WHERE {$in} AND (video_id, tag_id) IN (" . implode( ',', $gone ) . ')' );
+				$wpdb->query(
+					$wpdb->prepare(
+						'DELETE FROM %i WHERE video_id IN (' . implode( ',', array_fill( 0, count( $videos ), '%d' ) ) . ') AND (video_id, tag_id) IN (' . implode( ',', array_fill( 0, count( $gone ), '(%d,%d)' ) ) . ')',
+						$links,
+						...$videos,
+						...array_merge( ...$gone )
+					)
+				);
 			}
 			// phpcs:enable
 		}
@@ -454,12 +466,12 @@ class TagManager {
 		// made on the Tags screen, then earned while testing, stays. Checked
 		// in PHP, 1000 tags a query: a correlated LIKE over usermeta ran for
 		// minutes on MySQL 8.
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Ids cast to int.
-		$orphans = (array) $wpdb->get_results( "SELECT t.id, t.created_by, t.created_at FROM {$tags} t LEFT JOIN {$links} l ON l.tag_id = t.id WHERE l.tag_id IS NULL AND t.created_by > 0" );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off background job.
+		$orphans = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT t.id, t.created_by, t.created_at FROM %i t LEFT JOIN %i l ON l.tag_id = t.id WHERE l.tag_id IS NULL AND t.created_by > 0', $tags, $links ) );
 		foreach ( array_chunk( $orphans, 1000 ) as $chunk ) {
 			$times = array();
-			$users = implode( ',', array_unique( array_map( 'intval', wp_list_pluck( $chunk, 'created_by' ) ) ) );
-			foreach ( (array) $wpdb->get_results( "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags' AND user_id IN ({$users})" ) as $row ) {
+			$users = array_values( array_unique( array_map( 'intval', wp_list_pluck( $chunk, 'created_by' ) ) ) );
+			foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, meta_value FROM %i WHERE meta_key = %s AND user_id IN (' . implode( ',', array_fill( 0, count( $users ), '%d' ) ) . ')', $wpdb->usermeta, '_ms_video_tags', ...$users ) ) as $row ) {
 				foreach ( (array) maybe_unserialize( $row->meta_value ) as $entry ) {
 					if ( is_array( $entry ) && ! empty( $entry['tag_id'] ) && ! empty( $entry['earned_at'] ) ) {
 						$times[ (int) $row->user_id . ':' . (int) $entry['tag_id'] ][] = (string) $entry['earned_at'];
@@ -476,7 +488,7 @@ class TagManager {
 				}
 			}
 			if ( $gone ) {
-				$wpdb->query( "DELETE FROM {$tags} WHERE id IN (" . implode( ',', $gone ) . ')' );
+				$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE id IN (' . implode( ',', array_fill( 0, count( $gone ), '%d' ) ) . ')', $tags, ...$gone ) );
 			}
 		}
 		// phpcs:enable

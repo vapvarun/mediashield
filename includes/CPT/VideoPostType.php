@@ -215,6 +215,7 @@ class VideoPostType {
 					'unrecognised'    => \MediaShield\Support\Platforms::unplayable_message(),
 					'bunnyStreamFile' => __( 'This is a Bunny stream file from a library this site is not connected to, so it will be saved as a direct stream. That only plays if token authentication is off for the library. To use Bunny\'s player instead, paste the video\'s embed URL.', 'mediashield' ),
 					'uploading'       => __( 'Uploading…', 'mediashield' ),
+					'posterFailed'    => __( 'No poster was made from the file, so set a featured image yourself:', 'mediashield' ),
 					/* translators: %s: percentage sent so far, e.g. "42%". */
 					'uploadSending'   => __( 'Sending to your site: %s', 'mediashield' ),
 					/* translators: %s: upload target, e.g. "Bunny Stream - Course videos". */
