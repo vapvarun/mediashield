@@ -14,6 +14,7 @@ import { __, _n, sprintf } from '@wordpress/i18n';
 import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import apiFetch from '@wordpress/api-fetch';
+import { restUrl } from '../utils/rest';
 import Icon from '../components/Icon';
 
 const config = window.mediashieldAdmin || {};
@@ -40,7 +41,7 @@ const Tags = () => {
 		setError( '' );
 
 		apiFetch( {
-			url: `${ config.restUrl }tags?per_page=${ PER_PAGE }&page=${ page }`,
+			url: restUrl( 'tags', { per_page: PER_PAGE, page } ),
 			headers: { 'X-WP-Nonce': config.nonce },
 			parse: false,
 		} )

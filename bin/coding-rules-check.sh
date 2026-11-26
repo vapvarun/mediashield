@@ -102,6 +102,22 @@ check_unauthenticated_rest_allowlist() {
     fi
 }
 
+# Rule 3: never concatenate a query string onto config.restUrl. On plain
+# permalinks it is index.php?rest_route=..., so a second '?' folds the args
+# into the route and the request 404s. Use restUrl( path, args ) from
+# src/admin/utils/rest.js (the 1.4.4 Tags screen shipped this way to QA).
+check_no_query_on_rest_url() {
+    local hits
+    hits=$(grep -rEn 'restUrl \}[^`]*\?' "$PLUGIN_DIR/src/" 2>/dev/null || true)
+    if [ -n "$hits" ]; then
+        violation "Rule 3 — query string appended to config.restUrl (breaks plain permalinks):"
+        echo "$hits" | sed 's/^/    /'
+        echo "    Fix: restUrl( 'path', { arg: value } ) from src/admin/utils/rest.js."
+    else
+        ok "Rule 3 — no query string appended to config.restUrl"
+    fi
+}
+
 # ------------------------------------------------------------------------------
 
 echo "=== MediaShield coding-rules check ==="
@@ -110,6 +126,7 @@ echo ""
 
 check_no_native_cap_check_for_plugin_abilities
 check_unauthenticated_rest_allowlist
+check_no_query_on_rest_url
 
 echo ""
 COUNT=$(violations_count)

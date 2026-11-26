@@ -17,6 +17,7 @@ import { useDispatch } from '@wordpress/data';
 import { store as noticesStore } from '@wordpress/notices';
 import Icon from '../components/Icon';
 import { formatDuration } from '../utils/time';
+import { restUrl } from '../utils/rest';
 import { protectionLevels, siteDefaultLabel, protectionOptions } from '../utils/protection';
 import './videos.css';
 import '../components/upsell.css';
@@ -270,7 +271,7 @@ const Videos = () => {
 	const [ tagOptions, setTagOptions ] = useState( [] );
 	useEffect( () => {
 		// shortcut: the first 100 tags by name; a site with more filters the rest from the Tags screen.
-		apiFetch( { url: `${ config.restUrl }tags?per_page=100`, headers: { 'X-WP-Nonce': config.nonce } } )
+		apiFetch( { url: restUrl( 'tags', { per_page: 100 } ), headers: { 'X-WP-Nonce': config.nonce } } )
 			.then( ( res ) => setTagOptions( Array.isArray( res ) ? res : [] ) )
 			.catch( () => setTagOptions( [] ) );
 	}, [] );
