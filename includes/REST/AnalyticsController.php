@@ -760,7 +760,7 @@ class AnalyticsController extends WP_REST_Controller {
 
 		$items = array_map(
 			function ( $row ) {
-				$thumbnail_url = get_the_post_thumbnail_url( (int) $row->video_id, 'medium' );
+				$thumbnail_url = \MediaShield\CPT\Thumbnail::poster_url( (int) $row->video_id, 'medium' );
 
 				return array(
 					'video_id'       => (int) $row->video_id,

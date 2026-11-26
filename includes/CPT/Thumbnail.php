@@ -341,7 +341,12 @@ class Thumbnail {
 			return;
 		}
 
-		self::sideload_poster( $thumbnail_url, $post_id, $platform, $video_id, $post->post_title );
+		$result = self::sideload_poster( $thumbnail_url, $post_id, $platform, $video_id, $post->post_title );
+		// YouTube has no maxresdefault image for older or low-resolution
+		// videos; hqdefault exists for every video (MSUX-11).
+		if ( is_wp_error( $result ) && 'youtube' === $platform ) {
+			self::sideload_poster( "https://img.youtube.com/vi/{$video_id}/hqdefault.jpg", $post_id, $platform, $video_id, $post->post_title );
+		}
 	}
 
 	/**
@@ -518,6 +523,9 @@ class Thumbnail {
 	 *
 	 * A poster whose file name still carries the platform ID (saved before
 	 * 1.4.2 and not renamed yet) is left out for a viewer who may not watch.
+	 * A YouTube video with no poster yet (the background job has not run)
+	 * shows YouTube's own image to a viewer who may watch, with no request
+	 * from this site (MSUX-11); it names the video ID, so never to others.
 	 *
 	 * @param int       $video_id  Video post ID.
 	 * @param string    $size      Image size.
@@ -526,7 +534,17 @@ class Thumbnail {
 	 */
 	public static function poster_url( int $video_id, string $size = 'large', ?bool $may_watch = null ): string {
 		$url = (string) get_the_post_thumbnail_url( $video_id, $size );
-		if ( '' === $url || ! self::carries_id( wp_basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ), (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) ) ) {
+		if ( '' === $url ) {
+			$platform_id = (string) get_post_meta( $video_id, '_ms_platform_video_id', true );
+			if ( 'youtube' !== get_post_meta( $video_id, '_ms_platform', true ) || ! preg_match( '/^[A-Za-z0-9_-]{11}$/', $platform_id ) ) {
+				return '';
+			}
+			if ( null === $may_watch ) {
+				$may_watch = \MediaShield\Access\AccessControl::can_watch( $video_id, get_current_user_id() )['allowed'];
+			}
+			return $may_watch ? 'https://i.ytimg.com/vi/' . $platform_id . '/hqdefault.jpg' : '';
+		}
+		if ( ! self::carries_id( wp_basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ), (string) get_post_meta( $video_id, '_ms_platform_video_id', true ) ) ) {
 			return $url;
 		}
 		if ( null === $may_watch ) {

@@ -214,6 +214,72 @@
 			uploadBtn.disabled = ! file || tooLarge( file );
 		} );
 
+		// An uploaded file's poster: its frame at one second (or a tenth of a
+		// short clip), drawn from the file still in the browser and saved as
+		// the video's featured image, unless the owner set one (MSUX-11).
+		// Best effort: any failure leaves the video without a poster.
+		var capturePoster = function ( file, name ) {
+			var thumb = document.getElementById( '_thumbnail_id' );
+			if ( ( thumb && parseInt( thumb.value, 10 ) > 0 ) || ! window.URL || ! window.fetch || ! data.postId ) {
+				return;
+			}
+			var root = String( data.restUrl || '/wp-json/mediashield/v1/' ).replace( /mediashield\/v1\/?$/, '' );
+			var src = URL.createObjectURL( file );
+			var video = document.createElement( 'video' );
+			video.muted = true;
+			video.preload = 'auto';
+			video.playsInline = true;
+			video.addEventListener( 'error', function () {
+				URL.revokeObjectURL( src );
+			} );
+			video.addEventListener( 'loadeddata', function () {
+				video.currentTime = Math.min( 1, ( video.duration || 2 ) / 10 );
+			}, { once: true } );
+			video.addEventListener( 'seeked', function () {
+				var w = video.videoWidth;
+				var h = video.videoHeight;
+				if ( ! w || ! h ) {
+					URL.revokeObjectURL( src );
+					return;
+				}
+				var scale = Math.min( 1, 1280 / w );
+				var canvas = document.createElement( 'canvas' );
+				canvas.width = Math.round( w * scale );
+				canvas.height = Math.round( h * scale );
+				canvas.getContext( '2d' ).drawImage( video, 0, 0, canvas.width, canvas.height );
+				URL.revokeObjectURL( src );
+				canvas.toBlob( function ( blob ) {
+					if ( ! blob ) {
+						return;
+					}
+					var body = new FormData();
+					body.append( 'file', blob, String( name || 'video' ).replace( /\.[^.]+$/, '' ) + '-poster.jpg' );
+					body.append( 'post', String( data.postId ) );
+					fetch( root + 'wp/v2/media', { method: 'POST', credentials: 'same-origin', headers: { 'X-WP-Nonce': data.nonce || '' }, body: body } )
+						.then( function ( r ) {
+							return r.ok ? r.json() : null;
+						} )
+						.then( function ( media ) {
+							if ( ! media || ! media.id ) {
+								return;
+							}
+							// The edit form posts _thumbnail_id on save; keep it in step.
+							if ( thumb ) {
+								thumb.value = String( media.id );
+							}
+							return fetch( root + 'wp/v2/mediashield-videos/' + data.postId, {
+								method: 'POST',
+								credentials: 'same-origin',
+								headers: { 'X-WP-Nonce': data.nonce || '', 'Content-Type': 'application/json' },
+								body: JSON.stringify( { featured_media: media.id } ),
+							} );
+						} )
+						.catch( function () {} );
+				}, 'image/jpeg', 0.85 );
+			}, { once: true } );
+			video.src = src;
+		};
+
 		// done (optional) runs only after a successful upload.
 		var startUpload = function ( done ) {
 			if ( busy || ! fileField.files.length ) {
@@ -349,6 +415,9 @@
 				uploadMsg.textContent = heldName
 					? ( labels.uploadedFile || 'Uploaded file:' ) + ' ' + heldName
 					: ( labels.uploadDone || 'Uploaded.' );
+				if ( heldName ) {
+					capturePoster( file, heldName );
+				}
 				// The file is stored now; clear it so a later save does not
 				// upload it a second time.
 				fileField.value = '';

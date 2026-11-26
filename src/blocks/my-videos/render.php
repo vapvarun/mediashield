@@ -177,7 +177,7 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 			}
 			$completion  = round( (float) $video->completion_pct, 1 );
 			$is_complete = $completion >= 100;
-			$thumbnail   = get_the_post_thumbnail_url( $video_post->ID, 'medium' );
+			$thumbnail   = \MediaShield\CPT\Thumbnail::poster_url( $video_post->ID, 'medium' );
 
 			$watch_url = $watch_urls[ $video_post->ID ] ?? '';
 			if ( '' === $watch_url ) {

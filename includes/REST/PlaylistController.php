@@ -261,7 +261,8 @@ class PlaylistController extends WP_REST_Controller {
 		// Sanitize output.
 		$result = array();
 		foreach ( ( ! empty( $items ) ? $items : array() ) as $item ) {
-			$thumb_url = get_the_post_thumbnail_url( (int) $item->video_id, 'thumbnail' );
+			// Editors only (Manage items): the same poster as every list (MSUX-11).
+			$thumb_url = \MediaShield\CPT\Thumbnail::poster_url( (int) $item->video_id, 'thumbnail', true );
 			$result[]  = array(
 				'item_id'    => (int) $item->item_id,
 				'video_id'   => (int) $item->video_id,
