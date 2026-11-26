@@ -404,6 +404,8 @@ sits in its own `chartjs` chunk loaded only by the Dashboard (allow-listed in
 so all CSS stays in `index.css` and its RTL twin; do not import CSS only from a
 lazy screen. A new screen is added the same way: `lazy( () => import( ... ) )`.
 
+JS translations: the `.pot` is made from `src/` (`wp i18n make-pot . languages/mediashield.pot --domain=mediashield --exclude=node_modules,vendor,build,plan,dist,tests`), and `wp i18n make-json` writes one JSON per source file. `Core\Assets::script_translations()` answers core's `pre_load_script_translations` with every JSON of the domain and locale merged (plugin `languages/`, then `wp-content/languages/plugins`), so the admin entry, its lazy chunks and the block scripts all translate. Pro adds its domain through `mediashield_script_translation_dirs`. Never call `make-json --use-map` or rename JSON files to match `build/`.
+
 Release zip: `bash bin/build-release.sh` (version check, local CI, build,
 runtime-only Composer install in a staged copy, deflated zip, `REQUIRED_FILES`
 and the admin chunks asserted in the zip). It replaces `grunt dist`.
