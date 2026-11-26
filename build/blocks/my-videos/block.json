@@ -3,10 +3,10 @@
   "apiVersion": 3,
   "name": "mediashield/my-videos",
   "version": "1.4.1",
-  "title": "My Videos",
+  "title": "MediaShield My Videos",
   "category": "media",
   "icon": "playlist-video",
-  "description": "Display the current user's watched videos with progress tracking and resume links.",
+  "description": "The videos the logged-in member has watched, with their progress and a Resume link.",
   "keywords": [
     "video",
     "progress",
