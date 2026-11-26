@@ -42,8 +42,13 @@ class SettingsDeepLinkTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( "applyFilters( 'mediashield_settings_sections'", $settings );
 		$this->assertStringContainsString( '<SettingsNav groups={ navGroups } />', $settings );
 
-		// The committed bundle carries it too.
-		$this->assertStringContainsString( '#/settings/', $this->source( 'build/admin/index.js' ) );
+		// The committed bundle carries it too. Labelled change (release gate
+		// P2): screens are lazy chunks, so the entry and its chunks are read.
+		$built = $this->source( 'build/admin/index.js' );
+		foreach ( (array) glob( dirname( __DIR__, 2 ) . '/build/admin/chunks/*.js' ) as $chunk ) {
+			$built .= (string) file_get_contents( $chunk ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		}
+		$this->assertStringContainsString( '#/settings/', $built );
 	}
 
 	/**

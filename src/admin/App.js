@@ -4,7 +4,7 @@
  * @package MediaShield
  */
 
-import { useState, useEffect, useCallback } from '@wordpress/element';
+import { useState, useEffect, useCallback, lazy, Suspense } from '@wordpress/element';
 import { applyFilters } from '@wordpress/hooks';
 import { SlotFillProvider } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -12,13 +12,18 @@ import { __ } from '@wordpress/i18n';
 import Sidebar from './components/Sidebar';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
-import Dashboard from './pages/Dashboard';
-import Videos from './pages/Videos';
-import Playlists from './pages/Playlists';
-import Students from './pages/Students';
-import Tags from './pages/Tags';
-import Milestones from './pages/Milestones';
-import Settings from './pages/Settings';
+import Loading from './components/Loading';
+
+// Each screen loads when it is opened, so the admin entry stays small
+// (release gate P2). Their CSS is imported by index.js, so it stays in
+// index.css and its RTL twin.
+const Dashboard = lazy( () => import( /* webpackChunkName: "dashboard" */ './pages/Dashboard' ) );
+const Videos = lazy( () => import( /* webpackChunkName: "videos" */ './pages/Videos' ) );
+const Playlists = lazy( () => import( /* webpackChunkName: "playlists" */ './pages/Playlists' ) );
+const Students = lazy( () => import( /* webpackChunkName: "viewers" */ './pages/Students' ) );
+const Tags = lazy( () => import( /* webpackChunkName: "tags" */ './pages/Tags' ) );
+const Milestones = lazy( () => import( /* webpackChunkName: "milestones" */ './pages/Milestones' ) );
+const Settings = lazy( () => import( /* webpackChunkName: "settings" */ './pages/Settings' ) );
 
 /**
  * Default route definitions.
@@ -131,7 +136,9 @@ const App = () => {
 				<main className="mediashield-admin__content">
 					<Toast />
 					<ErrorBoundary key={ routeHash }>
-						<ActiveComponent />
+						<Suspense fallback={ <Loading /> }>
+							<ActiveComponent />
+						</Suspense>
 					</ErrorBoundary>
 				</main>
 			</div>

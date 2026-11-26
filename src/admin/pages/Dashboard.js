@@ -11,7 +11,21 @@ import { useState, useEffect, useRef } from '@wordpress/element';
 import { SelectControl, Spinner } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import Chart from 'chart.js/auto';
+import {
+	Chart,
+	LineController,
+	LineElement,
+	PointElement,
+	LinearScale,
+	CategoryScale,
+	Filler,
+	Legend,
+	Tooltip,
+} from 'chart.js';
+
+// Only what the activity chart draws (a filled line with a legend and
+// tooltips), not chart.js/auto's every chart type.
+Chart.register( LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Legend, Tooltip );
 import Icon from '../components/Icon';
 import { restUrl } from '../utils/rest';
 

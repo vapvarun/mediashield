@@ -127,14 +127,46 @@ class SettingsController extends WP_REST_Controller {
 			unset( $data['ms_hide_source'], $data['ms_detect_devtools'], $data['ms_pause_on_devtools'] );
 		}
 
+		// Check every known key first: a value the schema refuses (a decimal
+		// for a whole number, text for a number, out of range) answers 400
+		// with the reason, and nothing is saved. Unknown keys (not in the
+		// schema and not consumed by Pro) are ignored.
+		$schema   = Settings::schema();
+		$save     = array();
+		$refused  = array();
 		foreach ( $data as $key => $value ) {
-			$sanitized = Settings::sanitize( (string) $key, $value );
-
-			// Unknown keys (not in the schema and not consumed by Pro) are ignored.
-			if ( null === $sanitized ) {
+			$key = (string) $key;
+			if ( ! isset( $schema[ $key ] ) ) {
 				continue;
 			}
+			$sanitized = Settings::sanitize( $key, $value );
+			if ( null === $sanitized ) {
+				$refused[ $key ] = match ( $schema[ $key ]['type'] ) {
+					'integer' => __( 'needs a whole number in the allowed range', 'mediashield' ),
+					'float'   => __( 'needs a number in the allowed range', 'mediashield' ),
+					default   => __( 'has a value that is not allowed', 'mediashield' ),
+				};
+				continue;
+			}
+			$save[ $key ] = $sanitized;
+		}
 
+		if ( $refused ) {
+			return new WP_Error(
+				'mediashield_setting_refused',
+				sprintf(
+					/* translators: %s: setting keys with the reason, e.g. "ms_max_concurrent_streams needs a whole number in the allowed range". */
+					__( 'Nothing was saved: %s.', 'mediashield' ),
+					implode( '; ', array_map( static fn( $key, $why ) => $key . ' ' . $why, array_keys( $refused ), $refused ) )
+				),
+				array(
+					'status'  => 400,
+					'refused' => array_keys( $refused ),
+				)
+			);
+		}
+
+		foreach ( $save as $key => $sanitized ) {
 			update_option( $key, $sanitized );
 		}
 

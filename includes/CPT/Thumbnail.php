@@ -48,6 +48,7 @@ class Thumbnail {
 		// priority 10, so reading platform meta at priority 20 sees the freshly
 		// written values.
 		add_action( 'save_post_mediashield_video', array( __CLASS__, 'maybe_fetch_thumbnail' ), 20, 2 );
+		add_action( self::FETCH_JOB, array( __CLASS__, 'fetch_poster' ) );
 		// REST create path (card #9924901405): WP_REST_Posts_Controller calls
 		// wp_insert_post() WITHOUT the meta_input arg, so save_post fires while
 		// _ms_platform / _ms_platform_video_id are still empty and the thumbnail
@@ -252,7 +253,17 @@ class Thumbnail {
 	}
 
 	/**
-	 * Fetch and set thumbnail on video save if none is set.
+	 * Background job that fetches a platform video's poster (one video each).
+	 */
+	const FETCH_JOB = 'ms_fetch_poster';
+
+	/**
+	 * On video save, queue the platform poster if none is set.
+	 *
+	 * The fetch itself (the platform's oEmbed, then the image) runs in the
+	 * FETCH_JOB background job, never inside the save request: a slow or
+	 * down platform must not hold up the owner's save or another plugin
+	 * creating a video (gate P9).
 	 *
 	 * @param int      $post_id Post ID.
 	 * @param \WP_Post $post    Post object.
@@ -278,13 +289,43 @@ class Thumbnail {
 			return;
 		}
 
-		$thumbnail_url = self::get_thumbnail_url( $platform, $video_id );
+		$args = array( $post_id );
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			if ( ! as_has_scheduled_action( self::FETCH_JOB, $args, 'mediashield' ) ) {
+				as_enqueue_async_action( self::FETCH_JOB, $args, 'mediashield' );
+			}
+		} elseif ( ! wp_next_scheduled( self::FETCH_JOB, $args ) ) {
+			wp_schedule_single_event( time(), self::FETCH_JOB, $args );
+		}
+	}
 
-		if ( empty( $thumbnail_url ) ) {
+	/**
+	 * The background job: fetch the platform poster and make it the video's
+	 * featured image, unless one was set meanwhile.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $post_id Video ID.
+	 */
+	public static function fetch_poster( $post_id ): void {
+		$post_id = (int) $post_id;
+		$post    = get_post( $post_id );
+		if ( ! $post || 'mediashield_video' !== $post->post_type || has_post_thumbnail( $post_id ) ) {
 			return;
 		}
 
-		self::sideload_poster( $thumbnail_url, $post_id, (string) $platform, (string) $video_id, $post->post_title );
+		$platform = (string) get_post_meta( $post_id, '_ms_platform', true );
+		$video_id = (string) get_post_meta( $post_id, '_ms_platform_video_id', true );
+		if ( '' === $video_id || 'self' === $platform ) {
+			return;
+		}
+
+		$thumbnail_url = self::get_thumbnail_url( $platform, $video_id );
+		if ( '' === $thumbnail_url ) {
+			return;
+		}
+
+		self::sideload_poster( $thumbnail_url, $post_id, $platform, $video_id, $post->post_title );
 	}
 
 	/**

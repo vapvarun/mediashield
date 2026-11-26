@@ -404,10 +404,9 @@ class AnalyticsController extends WP_REST_Controller {
 	 */
 	private static function first_run( array $counts ): array {
 		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; existence check.
-		$played = SessionManager::played_sql(); // A page load is not a view.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table; existence check.
-		$viewed = (bool) $wpdb->get_var( "SELECT 1 FROM {$wpdb->prefix}ms_watch_sessions WHERE {$played} LIMIT 1" );
+		// A page load is not a view: played_sql() is fixed SQL written in code, no input.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Custom table; existence check.
+		$viewed = (bool) $wpdb->get_var( "SELECT 1 FROM {$wpdb->prefix}ms_watch_sessions WHERE " . SessionManager::played_sql() . ' LIMIT 1' );
 		return array(
 			'has_video'     => $counts['total'] > 0,
 			'has_protected' => $counts['protected'] > 0,

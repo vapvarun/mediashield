@@ -495,8 +495,8 @@ class LibraryFiles {
 		$args  = array( $like, $like_esc, '%' . $wpdb->esc_like( '"id":' . $id ) . '%', '%' . $wpdb->esc_like( '"mediaId":' . $id ) . '%' );
 		$posts = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT ID, post_content FROM {$wpdb->posts} WHERE ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s ) AND post_type <> 'revision' AND post_status NOT IN ('trash', 'auto-draft') AND ID NOT IN (%d, %d, %d) LIMIT {$limit}",
-				...array_merge( $args, array( $video_id, $attachment, $skip ) )
+				"SELECT ID, post_content FROM {$wpdb->posts} WHERE ( post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s OR post_content LIKE %s ) AND post_type <> 'revision' AND post_status NOT IN ('trash', 'auto-draft') AND ID NOT IN (%d, %d, %d) LIMIT %d",
+				...array_merge( $args, array( $video_id, $attachment, $skip, $limit ) )
 			)
 		);
 		if ( self::query_failed() ) {

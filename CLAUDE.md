@@ -396,6 +396,18 @@ webpack.config.js entry points:
 - `blocks/playlist/index` + `blocks/playlist/view`
 - `admin/index`
 
+The admin entry stays small (release gate P2, 40 KB gzipped): every screen in
+`src/admin/App.js`, the wizard and the playlist items panel load on demand
+with `React.lazy` into `build/admin/chunks/[name].[contenthash].js`, and Chart.js
+sits in its own `chartjs` chunk loaded only by the Dashboard (allow-listed in
+`.gate-check-allow`). Every admin stylesheet is imported by `src/admin/index.js`,
+so all CSS stays in `index.css` and its RTL twin; do not import CSS only from a
+lazy screen. A new screen is added the same way: `lazy( () => import( ... ) )`.
+
+Release zip: `bash bin/build-release.sh` (version check, local CI, build,
+runtime-only Composer install in a staged copy, deflated zip, `REQUIRED_FILES`
+and the admin chunks asserted in the zip). It replaces `grunt dist`.
+
 Dependencies: chart.js (analytics charts), lucide-react (admin icons). `shaka-player` is still listed in `package.json` but **is not imported anywhere in `src/` and is not a webpack entry** — adaptive playback ships as the pre-built `assets/vendor/hls.min.js`, loaded by handle, not by the bundler. Treat the shaka-player dependency as removable dead weight.
 
 ---

@@ -12,27 +12,27 @@ class ComposerStaticInitc4a8b40216a733de45ae7ac312f14831
     );
 
     public static $prefixLengthsPsr4 = array (
-        'S' => 
+        'S' =>
         array (
             'Symfony\\Polyfill\\Ctype\\' => 23,
             'Symfony\\Component\\Yaml\\' => 23,
         ),
-        'M' => 
+        'M' =>
         array (
             'MediaShield\\' => 12,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'Symfony\\Polyfill\\Ctype\\' => 
+        'Symfony\\Polyfill\\Ctype\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'Symfony\\Component\\Yaml\\' => 
+        'Symfony\\Component\\Yaml\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/yaml',
         ),
-        'MediaShield\\' => 
+        'MediaShield\\' =>
         array (
             0 => __DIR__ . '/../..' . '/includes',
         ),

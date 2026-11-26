@@ -11,6 +11,9 @@
 	--ms-admin-embed-border: #e2e8f0;
 	--ms-admin-embed-text: #1e1e1e;
 	--ms-admin-embed-success: #2ea44f;
+	--ms-admin-card-border: #dcdcde;
+	--ms-admin-card-bg: #f6f7f7;
+	--ms-admin-text-muted: #50575e;
 }
 
 .ms-embed-meta-box {
@@ -146,9 +149,10 @@
 	gap: 4px;
 	margin: 12px 0 4px;
 	padding: 12px 16px;
-	border: 1px solid #dcdcde;
+	min-width: 0;
+	border: 1px solid var(--ms-admin-card-border);
 	border-radius: 6px;
-	background: #f6f7f7;
+	background: var(--ms-admin-card-bg);
 }
 
 .ms-held-file__name {
@@ -159,12 +163,8 @@
 	font-size: 14px;
 }
 
-.ms-held-file {
-	min-width: 0;
-}
-
 .ms-held-file__meta {
-	color: #50575e;
+	color: var(--ms-admin-text-muted);
 }
 
 .ms-milestones-intro {
