@@ -284,6 +284,15 @@ iframe.ms-player-target {
 	text-decoration: underline;
 }
 
+/* A video that cannot play here (missing, in the trash, not published):
+   the player-sized unavailable state, printed by the server (Renderer). */
+.ms-player-unavailable {
+	position: relative;
+	aspect-ratio: 16 / 9;
+	overflow: hidden;
+	background: var(--ms-player-bg);
+}
+
 /* A video the host removed: cover the host's own error page completely. */
 .ms-error-overlay--solid {
 	background: var(--ms-player-bg);
@@ -1120,6 +1129,26 @@ iframe.ms-player-target {
 	font-size: var(--ms-font-size-sm);
 	font-variant-numeric: tabular-nums;
 	opacity: 0.7;
+}
+
+/* A video file's first frame as its row picture (view.js loads it). */
+video.ms-playlist-item-thumb {
+	background: var(--ms-player-bg);
+	pointer-events: none;
+}
+
+/* An item this viewer cannot watch yet: still opens to say why. */
+.ms-playlist-item.is-locked .ms-playlist-item-thumb,
+.ms-playlist-item.is-locked .ms-playlist-item-thumb-placeholder {
+	opacity: 0.5;
+}
+
+.ms-playlist-item-lock {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--ms-space-1);
+	font-size: var(--ms-font-size-sm);
+	opacity: 0.75;
 }
 
 @media (max-width: 480px) {

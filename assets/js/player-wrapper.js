@@ -472,7 +472,8 @@
 				lastRefreshAt = Date.now();
 				var resumeAt   = video.currentTime;
 				var wasPlaying = ! video.paused;
-				refreshing = fetch( config.restUrl + 'stream/' + refreshVideoId + '/url', {
+				var refreshCtx = playerEl && playerEl.dataset.msContext ? ( config.restUrl.indexOf( '?' ) > -1 ? '&' : '?' ) + 'ms_context=' + encodeURIComponent( playerEl.dataset.msContext ) : '';
+				refreshing = fetch( config.restUrl + 'stream/' + refreshVideoId + '/url' + refreshCtx, {
 					headers: { 'X-WP-Nonce': config.nonce },
 				} )
 					.then( function ( res ) { return window.mediashieldRequest.readJSON( res ); } )
@@ -1599,7 +1600,9 @@
 		fetch( config.restUrl + 'session/start', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': config.nonce },
-			body: JSON.stringify( { video_id: videoId } ),
+			// The page it is shown on, for a grant scoped to one page (a free
+			// preview lesson): AccessControl::context().
+			body: JSON.stringify( el.dataset.msContext ? { video_id: videoId, ms_context: el.dataset.msContext } : { video_id: videoId } ),
 		} )
 			.then( function ( res ) {
 				// Refusals (403, 429) are JSON and handled below; an answer that

@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use MediaShield\Access\AccessControl;
 use MediaShield\Core\Assets;
+use MediaShield\Core\Settings;
 
 /**
  * Class Renderer
@@ -30,28 +31,34 @@ use MediaShield\Core\Assets;
 class Renderer {
 
 	/**
-	 * Build an editor-only placeholder notice for a video that cannot render.
+	 * The player-sized "This video is unavailable." state for a video that
+	 * cannot play here (missing, in the trash, not published, private, no
+	 * source). Viewers get the calm state the player shows for a refused
+	 * platform video, never a blank area (front-end walk F25); someone who
+	 * may edit the video also gets the cause and the one fix.
 	 *
-	 * A mistyped or unpublished ID otherwise produces silent blank space with
-	 * nothing to search for. Front-end visitors still get nothing (never expose
-	 * why a video is missing); users who can edit content get an explanation.
+	 * @since 1.4.4
 	 *
-	 * Mirrors PlaylistRenderer::notice(), which has always done this.
-	 *
-	 * @since 1.2.0
-	 *
-	 * @param string $message Already-translated, human-readable explanation.
-	 * @return string Notice HTML for editors, empty string otherwise.
+	 * @param string $cause      Editor-only cause, already translated; '' for none.
+	 * @param string $fix_url    Where the fix is (Restore, Edit video); '' for none.
+	 * @param string $fix_label  Link text for $fix_url.
+	 * @param bool   $for_editor Whether the current user may see the cause.
+	 * @return string HTML.
 	 */
-	private static function notice( string $message ): string {
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			return '';
+	private static function unavailable( string $cause, string $fix_url, string $fix_label, bool $for_editor ): string {
+		wp_enqueue_style( 'mediashield-player' );
+
+		$note = '';
+		if ( $for_editor && '' !== $cause ) {
+			$note = '<p class="ms-error-admin"><span>' . esc_html( __( 'Only editors see this:', 'mediashield' ) . ' ' . $cause ) . '</span>'
+				. ( '' !== $fix_url ? '<a href="' . esc_url( $fix_url ) . '">' . esc_html( $fix_label ) . '</a>' : '' )
+				. '</p>';
 		}
 
-		// Ensure the notice picks up player.css styling.
-		Assets::enqueue();
-
-		return '<p class="ms-playlist-notice">' . esc_html( $message ) . '</p>';
+		return '<div class="ms-player-unavailable"><div class="ms-error-overlay ms-error-overlay--solid" role="status"><div class="ms-error-message">'
+			. '<p class="ms-error-title">' . esc_html( Settings::message( 'ms_unavailable_text', __( 'This video is unavailable.', 'mediashield' ) ) ) . '</p>'
+			. $note
+			. '</div></div></div>';
 	}
 
 	/**
@@ -201,22 +208,32 @@ class Renderer {
 		$video = get_post( $video_id );
 
 		if ( ! $video || 'mediashield_video' !== $video->post_type ) {
-			return self::notice(
-				sprintf(
-					/* translators: %d: video ID used in the shortcode or block. */
-					__( 'MediaShield: no video found with ID %d.', 'mediashield' ),
-					$video_id
-				)
+			return self::unavailable(
+				/* translators: %d: video ID used in the shortcode or block. */
+				sprintf( __( 'No video found with ID %d.', 'mediashield' ), $video_id ),
+				'',
+				'',
+				current_user_can( 'edit_posts' )
 			);
 		}
 
 		if ( 'publish' !== $video->post_status ) {
-			return self::notice(
-				sprintf(
-					/* translators: %s: video title. */
-					__( 'MediaShield: the video "%s" is not published yet, so it is only visible to you.', 'mediashield' ),
-					$video->post_title
-				)
+			$editor = current_user_can( 'edit_post', $video_id );
+			if ( 'trash' === $video->post_status ) {
+				return self::unavailable(
+					__( 'This video is in the trash.', 'mediashield' ),
+					current_user_can( 'delete_post', $video_id ) ? wp_nonce_url( admin_url( 'post.php?post=' . $video_id . '&action=untrash' ), 'untrash-post_' . $video_id ) : '',
+					__( 'Restore it', 'mediashield' ),
+					$editor
+				);
+			}
+			return self::unavailable(
+				'private' === $video->post_status
+					? __( 'This video is private. Publish it to show it here.', 'mediashield' )
+					: __( 'This video is not published yet.', 'mediashield' ),
+				(string) get_edit_post_link( $video_id, 'raw' ),
+				__( 'Edit video', 'mediashield' ),
+				$editor
 			);
 		}
 
@@ -234,12 +251,11 @@ class Renderer {
 		$player_type      = apply_filters( 'mediashield_player_type', 'standard', $video_id );
 
 		if ( empty( $source_url ) && empty( $stream_url ) && empty( $platform_video_id ) ) {
-			return self::notice(
-				sprintf(
-					/* translators: %s: video title. */
-					__( 'MediaShield: the video "%s" has no source file or URL yet. Edit it and add one.', 'mediashield' ),
-					$video->post_title
-				)
+			return self::unavailable(
+				__( 'This video has no source file or link yet.', 'mediashield' ),
+				(string) get_edit_post_link( $video_id, 'raw' ),
+				__( 'Edit video', 'mediashield' ),
+				current_user_can( 'edit_post', $video_id )
 			);
 		}
 
@@ -328,6 +344,9 @@ class Renderer {
 		?>
 		<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
 			data-video-id="<?php echo esc_attr( $video_id ); ?>"
+			<?php if ( '' !== AccessControl::context_string() ) : ?>
+				data-ms-context="<?php echo esc_attr( AccessControl::context_string() ); ?>"
+			<?php endif; ?>
 			data-platform="<?php echo esc_attr( $platform ); ?>"
 			data-protection-level="<?php echo esc_attr( $protection_level ); ?>"
 			data-player-type="<?php echo esc_attr( $player_type ); ?>"

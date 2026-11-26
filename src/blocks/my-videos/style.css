@@ -154,6 +154,58 @@
 	color: var( --ms-mv-muted );
 }
 
+/* Empty and logged-out states: icon, one line, one next step. */
+.ms-my-videos__state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 32px 20px;
+	border: 1px dashed var( --ms-mv-border );
+	border-radius: var( --ms-mv-radius );
+	text-align: center;
+}
+
+.ms-my-videos__state-icon {
+	color: var( --ms-mv-muted );
+}
+
+.ms-my-videos .ms-my-videos__state-title {
+	margin: 0;
+	font-weight: 600;
+}
+
+.ms-my-videos .ms-my-videos__state-line {
+	margin: 0;
+	max-width: 32rem;
+	color: var( --ms-mv-muted );
+	font-size: 0.875rem;
+}
+
+.ms-my-videos .ms-my-videos__state-action {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	margin-block-start: 8px;
+	padding: 0 20px;
+	border-radius: 6px;
+	background: var( --ms-mv-accent );
+	color: #fff;
+	font-size: 0.875rem;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.ms-my-videos .ms-my-videos__state-action:hover {
+	color: #fff;
+	text-decoration: underline;
+}
+
+.ms-my-videos .ms-my-videos__state-action:focus-visible {
+	outline: 2px solid var( --ms-mv-accent );
+	outline-offset: 2px;
+}
+
 /* Pagination. */
 .ms-my-videos__pagination {
 	display: flex;

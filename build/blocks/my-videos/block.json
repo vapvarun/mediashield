@@ -15,7 +15,12 @@
     "history"
   ],
   "textdomain": "mediashield",
-  "attributes": {},
+  "attributes": {
+    "browseUrl": {
+      "type": "string",
+      "default": ""
+    }
+  },
   "supports": {
     "align": [
       "wide",

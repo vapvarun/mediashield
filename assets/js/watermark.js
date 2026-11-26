@@ -123,6 +123,15 @@
 			}
 		}
 
+		// Dark outline for light text, light outline for dark text. The canvas
+		// gives fillStyle back as #rrggbb for any colour the owner saved.
+		function outlineFor(color) {
+			var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(color));
+			if (!m) return 'rgba(0, 0, 0, 0.75)';
+			var lum = 0.2126 * parseInt(m[1], 16) + 0.7152 * parseInt(m[2], 16) + 0.0722 * parseInt(m[3], 16);
+			return lum > 140 ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.75)';
+		}
+
 		function render() {
 			var rect = el.getBoundingClientRect();
 			canvas.width = rect.width;
@@ -206,10 +215,25 @@
 				}
 			}
 			y = Math.max(0, Math.min(y, canvas.height - blockH));
-			ctx.textBaseline = 'top';
+			// A thin outline in the opposite tone, so the name reads on bright
+			// and dark footage alike (front-end walk F27). Text and outline are
+			// drawn solid on a buffer, then laid on at the owner's opacity, so
+			// the outline never greys the letters it surrounds.
+			var buf = document.createElement('canvas');
+			buf.width = canvas.width;
+			buf.height = canvas.height;
+			var bctx = buf.getContext('2d');
+			bctx.font = block.size + 'px sans-serif';
+			bctx.textBaseline = 'top';
+			bctx.fillStyle = ctx.fillStyle;
+			bctx.strokeStyle = outlineFor(ctx.fillStyle);
+			bctx.lineWidth = Math.max(2, Math.round(block.size / 6));
+			bctx.lineJoin = 'round';
 			block.lines.forEach(function (l, i) {
-				ctx.fillText(l, Math.max(padding, x), y + i * lineH);
+				bctx.strokeText(l, Math.max(padding, x), y + i * lineH);
+				bctx.fillText(l, Math.max(padding, x), y + i * lineH);
 			});
+			ctx.drawImage(buf, 0, 0);
 			ctx.globalAlpha = 1;
 		}
 

@@ -185,14 +185,16 @@ The filter does not run for administrators: `manage_options` users are allowed b
 
 *Since 1.4.1.* Lets an integration allow a logged-out visitor to watch a video while **Require Login** is on. An LMS uses it for free-preview lessons. Return `true` to let the guest past the login check. The default is `false`, so guests stay blocked unless something opts in.
 
-**Parameters:** `$allow` (bool, default `false`), `$video_id` (int)
+**Parameters:** `$allow` (bool, default `false`), `$video_id` (int), `$context` (array, since 1.4.4: where the video is being shown, `array( 'type' => 'post', 'id' => 123 )`; `id` is 0 when unknown)
 
 ```php
-// Allow guests on videos that belong to a free-preview lesson.
-add_filter( 'mediashield_guest_can_watch', function( $allow, $video_id ) {
-    return $allow || my_lms_video_is_preview( $video_id );
-}, 10, 2 );
+// Allow guests on a video only on the free-preview lesson that shows it.
+add_filter( 'mediashield_guest_can_watch', function( $allow, $video_id, $context = array() ) {
+    return $allow || my_lms_is_preview_page( $video_id, $context );
+}, 10, 3 );
 ```
+
+Since 1.4.4 a grant can be scoped to one page: the same video embedded elsewhere (another lesson, a landing page) stays behind the login. `$context` is the page being shown during a page render, and the same page again when the player starts its viewing and streams the file, because the player carries it with those requests. A plugin whose lessons are not WordPress posts names its own with `mediashield_page_context` below. Naming another page in a request only gets what opening that page would give.
 
 It runs only for guests, and only to answer the Require Login check. It does not turn Require Login off, and it is not a way to skip other rules: the per-video role and Allowed Domains checks still apply. Learnomy 2.2.0 uses this filter for its free-preview lessons. See [Courses with Learnomy](../using-mediashield/15-courses-with-learnomy.md).
 
@@ -612,6 +614,23 @@ add_filter( 'mediashield_display_timezone', function( $timezone, $user_id ) {
     return $own ? new DateTimeZone( $own ) : $timezone;
 }, 10, 2 );
 ```
+
+---
+
+### mediashield_page_context
+
+*Since 1.4.4.* Where the current page shows its videos, as `array( 'type' => string, 'id' => int )`. The default is `array( 'type' => 'post', 'id' => <the queried post> )`. A plugin whose lessons are not WordPress posts returns its own on those pages, for example Learnomy's `array( 'type' => 'learnomy_lesson', 'id' => 42 )`, so `mediashield_guest_can_watch` sees which lesson is open. The player prints it as `data-ms-context` and sends it back as `ms_context` with its requests.
+
+**Parameters:** `$context` (array)
+
+```php
+add_filter( 'mediashield_page_context', function( $context ) {
+    $lesson = my_lms_current_lesson_id();
+    return $lesson ? array( 'type' => 'my_lms_lesson', 'id' => $lesson ) : $context;
+} );
+```
+
+`type` is lowercase letters, digits and underscores (up to 32), `id` a positive integer.
 
 ---
 

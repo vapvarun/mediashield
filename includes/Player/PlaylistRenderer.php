@@ -89,6 +89,16 @@ class PlaylistRenderer {
 			);
 		}
 
+		// Which items this viewer may watch: the playlist opens on the first of
+		// them, and the others are marked locked (front-end walk F26).
+		$user_id = get_current_user_id();
+		$allowed = array();
+		foreach ( $items as $idx => $item ) {
+			$allowed[ $idx ] = (bool) \MediaShield\Access\AccessControl::can_watch( (int) $item->video_id, $user_id )['allowed'];
+		}
+		$start = array_search( true, $allowed, true );
+		$start = false === $start ? 0 : (int) $start;
+
 		ob_start();
 		?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wrapper attrs are built from sanitized data + get_block_wrapper_attributes(). ?>>
@@ -98,7 +108,7 @@ class PlaylistRenderer {
 		// bare iframe or <video> of its own, which the player script could not
 		// attach to: playlist viewing ran no session, watermark or tracking,
 		// and only the badge suggested otherwise (BC#10370790450).
-		echo Renderer::render( (int) $items[0]->video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Renderer output is internally escaped.
+		echo Renderer::render( (int) $items[ $start ]->video_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Renderer output is internally escaped.
 		?>
 
 		<div class="ms-playlist-countdown" style="display:none;">
@@ -112,17 +122,28 @@ class PlaylistRenderer {
 		<div class="ms-playlist-items">
 			<?php
 			foreach ( $items as $idx => $item ) :
-				$thumb = \MediaShield\CPT\Thumbnail::poster_url( (int) $item->video_id, 'medium' );
+				$thumb = \MediaShield\CPT\Thumbnail::poster_url( (int) $item->video_id, 'medium', $allowed[ $idx ] );
+				// A video file with no poster shows its own first frame, read
+				// only when the row comes into view (view.js) and only for a
+				// viewer who may watch it: the address is the one the player gets.
+				$frame = '';
+				if ( ! $thumb && $allowed[ $idx ] && 'self' === ( $item->platform ? $item->platform : 'self' ) ) {
+					$addresses = Renderer::protect_addresses( (int) $item->video_id, Renderer::addresses( (int) $item->video_id ) );
+					$frame     = $addresses['access_denied'] ? '' : (string) $addresses['source_url'];
+				}
 				// A placeholder title ("youtube - <id>") would show the ID.
 				$item_title = \MediaShield\CPT\Thumbnail::display_title( (int) $item->video_id, (string) $item->video_title );
 
 				?>
-				<div class="ms-playlist-item <?php echo esc_attr( 0 === $idx ? 'is-active' : '' ); ?>"
+				<div class="ms-playlist-item<?php echo $start === $idx ? ' is-active' : ''; ?><?php echo $allowed[ $idx ] ? '' : ' is-locked'; ?>"
+					<?php echo $start === $idx ? 'aria-current="true"' : ''; ?>
 					data-video-id="<?php echo esc_attr( $item->video_id ); ?>"
 					data-index="<?php echo esc_attr( (string) $idx ); ?>">
 					<span class="ms-playlist-item-num"><?php echo esc_html( (string) ( $idx + 1 ) ); ?></span>
 					<?php if ( $thumb ) : ?>
 						<img src="<?php echo esc_url( $thumb ); ?>" alt="<?php echo esc_attr( $item_title ); ?>" class="ms-playlist-item-thumb" loading="lazy" />
+					<?php elseif ( $frame ) : ?>
+						<video class="ms-playlist-item-thumb" data-frame-src="<?php echo esc_url( $frame ); ?>" preload="none" muted playsinline disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
 					<?php else : ?>
 						<?php
 						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons::svg returns inline SVG built from a vendored Lucide path map; no user input.
@@ -137,6 +158,15 @@ class PlaylistRenderer {
 					<?php endif; ?>
 					<div class="ms-playlist-item-info">
 						<span class="ms-playlist-item-title"><?php echo esc_html( $item_title ); ?></span>
+						<?php if ( ! $allowed[ $idx ] ) : ?>
+							<span class="ms-playlist-item-lock">
+								<?php
+								// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Icons::svg returns inline SVG built from a vendored Lucide path map; no user input.
+								echo \MediaShield\Support\Icons::svg( 'lock', array( 'size' => 14 ) );
+								?>
+								<span><?php esc_html_e( 'Locked', 'mediashield' ); ?></span>
+							</span>
+						<?php endif; ?>
 						<?php
 						// Length, when known. This used to print the raw platform
 						// slug ("youtube", "self"), which tells a viewer nothing.

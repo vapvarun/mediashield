@@ -17,7 +17,7 @@ Members see their own progress without asking you. It suits course dashboards an
 ## Add it to a page
 
 1. Edit the page and click the block inserter.
-2. Search for **My Videos** and insert the block. It has no settings. Use the block toolbar for width and the sidebar for spacing.
+2. Search for **My Videos** and insert the block. Its one setting, **Browse videos link**, is where a member with no videos yet can find some (your courses page, say); leave it empty for no button. Use the block toolbar for width and the sidebar for spacing.
 3. Update the page.
 
 Or use the shortcode anywhere shortcodes work:
@@ -53,7 +53,7 @@ To link to your own pages, a developer adds the filter. See [Hooks and Filters](
 
 ## What viewers see
 
-A logged-out visitor sees "Please log in to see your video history." A member with no history sees "You have not watched any videos yet." A filter with nothing in it says so, for example "No completed videos yet." A member never sees anyone else's list.
+A logged-out visitor sees "Please log in to see your video history." with a **Log in** button. A member with no history sees "You have not watched any videos yet." and, when you set the link, a **Browse videos** button. A filter with nothing in it says so, for example "No completed videos yet." A member never sees anyone else's list.
 
 ## Check it worked
 

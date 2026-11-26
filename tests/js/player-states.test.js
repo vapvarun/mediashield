@@ -600,3 +600,15 @@ describe( 'Watched time is counted from the first second to the pause (LearnDash
 		expect( last.spans[ last.spans.length - 1 ][ 1 ] ).toBe( 3.8 );
 	} );
 } );
+
+describe( 'The page a video is shown on travels with its viewing (front-end walk F29)', () => {
+	test( 'session/start names the page the server printed on the player', async () => {
+		boot( { markup: nativePlayer( 'data-ms-context="learnomy_lesson:42"' ), session: { body: { session_token: 't', resume_position: 0 } } } );
+		await readyNative();
+		document.querySelector( '.ms-bigplay' ).click();
+		await flush();
+
+		const start = global.fetch.mock.calls.find( ( c ) => c[ 0 ].indexOf( 'session/start' ) > -1 );
+		expect( JSON.parse( start[ 1 ].body ) ).toEqual( { video_id: 7, ms_context: 'learnomy_lesson:42' } );
+	} );
+} );

@@ -1,16 +1,16 @@
 /**
  * MediaShield My Videos Block — Editor preview.
  *
- * The block has no attributes (it shows the current viewer's watched
- * videos), so the editor renders a static placeholder card explaining
- * what will appear on the frontend for a logged-in viewer.
+ * The list itself is the current viewer's, so the editor shows a static
+ * placeholder card. One setting: the empty list's "Browse videos" link.
  *
  * @package MediaShield
  */
 import { __ } from '@wordpress/i18n';
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, TextControl } from '@wordpress/components';
 
-export default function Edit() {
+export default function Edit( { attributes, setAttributes } ) {
 	const blockProps = useBlockProps( {
 		className: 'ms-block-placeholder ms-block-placeholder--my-videos',
 		style: {
@@ -24,6 +24,19 @@ export default function Edit() {
 	} );
 
 	return (
+		<>
+		<InspectorControls>
+			<PanelBody title={ __( 'When the list is empty', 'mediashield' ) }>
+				<TextControl
+					label={ __( 'Browse videos link', 'mediashield' ) }
+					help={ __( 'Where a member with no videos yet can find some, such as your courses page. Leave empty for no button.', 'mediashield' ) }
+					type="url"
+					value={ attributes.browseUrl || '' }
+					onChange={ ( browseUrl ) => setAttributes( { browseUrl } ) }
+					__nextHasNoMarginBottom
+				/>
+			</PanelBody>
+		</InspectorControls>
 		<div { ...blockProps }>
 			<div
 				style={ {
@@ -48,8 +61,9 @@ export default function Edit() {
 				{ __( 'My Videos', 'mediashield' ) }
 			</div>
 			<div style={ { fontSize: 13, lineHeight: 1.5, maxWidth: 420, margin: '0 auto' } }>
-				{ __( 'On the frontend, this shows the signed-in viewer their watched videos with progress + resume links. Logged-out visitors see nothing.', 'mediashield' ) }
+				{ __( 'On the frontend, this shows the signed-in viewer their watched videos with progress + resume links. Logged-out visitors are asked to log in.', 'mediashield' ) }
 			</div>
 		</div>
+		</>
 	);
 }

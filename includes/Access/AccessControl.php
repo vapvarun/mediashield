@@ -25,6 +25,112 @@ use MediaShield\Core\Settings;
 class AccessControl {
 
 	/**
+	 * Where the video is being shown, when a request named it (REST), else
+	 * null and context() works it out for the page.
+	 *
+	 * @var array{type: string, id: int}|null
+	 */
+	private static $context = null;
+
+	/**
+	 * Read the page context a player sends with its REST requests.
+	 */
+	public static function register(): void {
+		add_filter( 'rest_request_before_callbacks', array( __CLASS__, 'context_from_request' ), 10, 3 );
+	}
+
+	/**
+	 * A MediaShield REST request (session start, stream, stream URL, playlist
+	 * player) carries `ms_context` from the player it serves: the page the
+	 * video is shown on, so a grant scoped to one page (a free preview
+	 * lesson) holds there and nowhere else. Runs before permission checks.
+	 *
+	 * Not proof of anything: naming another page only gets what opening
+	 * that page gives.
+	 *
+	 * @param mixed            $response Response so far.
+	 * @param array            $handler  Route handler.
+	 * @param \WP_REST_Request $request  Request.
+	 * @return mixed $response unchanged.
+	 */
+	public static function context_from_request( $response, $handler, $request ) {
+		if ( $request instanceof \WP_REST_Request && 0 === strpos( (string) $request->get_route(), '/mediashield/v1/' ) ) {
+			self::$context = self::parse_context( (string) $request->get_param( 'ms_context' ) );
+		}
+		return $response;
+	}
+
+	/**
+	 * Where the video is being shown: { type, id }.
+	 *
+	 * A REST request's `ms_context`, else the page being rendered, which an
+	 * LMS whose lessons are not posts names through `mediashield_page_context`
+	 * (Learnomy: { type: 'learnomy_lesson', id }). id 0 when unknown.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return array{type: string, id: int}
+	 */
+	public static function context(): array {
+		if ( null !== self::$context ) {
+			return self::$context;
+		}
+
+		/**
+		 * Filter where the current page shows its videos.
+		 *
+		 * Default { type: 'post', id: the queried post }. An LMS whose lessons
+		 * are not WordPress posts returns its own, such as
+		 * { type: 'learnomy_lesson', id: 42 }, so `mediashield_guest_can_watch`
+		 * can scope a free preview to that lesson. The player carries it to
+		 * its REST requests (data-ms-context).
+		 *
+		 * @since 1.4.4
+		 *
+		 * @param array{type: string, id: int} $context Context.
+		 */
+		$context = apply_filters(
+			'mediashield_page_context',
+			array(
+				'type' => 'post',
+				'id'   => (int) get_queried_object_id(),
+			)
+		);
+		return self::parse_context( is_array( $context ) ? ( $context['type'] ?? '' ) . ':' . ( $context['id'] ?? 0 ) : '' ) ?? array(
+			'type' => 'post',
+			'id'   => 0,
+		);
+	}
+
+	/**
+	 * The context as the player carries it, "type:id", '' when unknown.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @return string
+	 */
+	public static function context_string(): string {
+		$context = self::context();
+		return $context['id'] > 0 ? $context['type'] . ':' . $context['id'] : '';
+	}
+
+	/**
+	 * Read "type:id" (as context_string() writes it).
+	 *
+	 * @param string $raw Raw value.
+	 * @return array{type: string, id: int}|null Null when it is not one.
+	 */
+	public static function parse_context( string $raw ): ?array {
+		if ( ! preg_match( '/^([a-z0-9_]{1,32}):([0-9]{1,20})$/', $raw, $m ) || (int) $m[2] <= 0 ) {
+			return null;
+		}
+		return array(
+			'type' => $m[1],
+			'id'   => (int) $m[2],
+		);
+	}
+
+	/**
 	 * Check if a user can watch a video.
 	 *
 	 * @param int $video_id Video CPT post ID.
@@ -224,11 +330,14 @@ class AccessControl {
 		 * allowed-domain and mediashield_can_watch checks still apply.
 		 *
 		 * @since 1.4.1
+		 * @since 1.4.4 $context: where the video is shown, so a grant can be
+		 *              scoped to one page or lesson (a free preview).
 		 *
-		 * @param bool $allowed  Default false.
-		 * @param int  $video_id Video CPT post ID.
+		 * @param bool  $allowed  Default false.
+		 * @param int   $video_id Video CPT post ID.
+		 * @param array $context  { type: 'post'|'learnomy_lesson'|…, id: int } (AccessControl::context(); id 0 when unknown).
 		 */
-		return ! (bool) apply_filters( 'mediashield_guest_can_watch', false, $video_id );
+		return ! (bool) apply_filters( 'mediashield_guest_can_watch', false, $video_id, self::context() );
 	}
 
 	/**

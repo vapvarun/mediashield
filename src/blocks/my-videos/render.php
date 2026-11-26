@@ -15,12 +15,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $current_user_id = get_current_user_id();
 
+/*
+ * The empty and logged-out states: an icon, one line, one next step
+ * (front-end walk F28). $ms_state_action is [ url, label ] or null.
+ */
+$ms_state = static function ( string $icon, string $title, string $line, ?array $action ): void {
+	?>
+	<div <?php echo get_block_wrapper_attributes( array( 'class' => 'ms-my-videos ms-my-videos--state' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core escapes the wrapper attributes. ?>>
+		<div class="ms-my-videos__state">
+			<?php
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Inline SVG from a vendored path map.
+			echo \MediaShield\Support\Icons::svg(
+				$icon,
+				array(
+					'size'  => 28,
+					'class' => 'ms-my-videos__state-icon',
+				)
+			);
+			?>
+			<p class="ms-my-videos__state-title"><?php echo esc_html( $title ); ?></p>
+			<p class="ms-my-videos__state-line"><?php echo esc_html( $line ); ?></p>
+			<?php if ( $action ) : ?>
+				<a class="ms-my-videos__state-action" href="<?php echo esc_url( $action[0] ); ?>"><?php echo esc_html( $action[1] ); ?></a>
+			<?php endif; ?>
+		</div>
+	</div>
+	<?php
+};
+
 if ( ! $current_user_id ) {
-	printf(
-		'<p class="ms-my-videos__login-required">%s <a href="%s">%s</a></p>',
-		esc_html__( 'Please log in to see your video history.', 'mediashield' ),
-		esc_url( wp_login_url( get_permalink() ?: home_url( '/' ) ) ),
-		esc_html__( 'Log in', 'mediashield' )
+	$ms_state(
+		'lock',
+		__( 'Please log in to see your video history.', 'mediashield' ),
+		__( 'Your videos and where you stopped are kept with your account.', 'mediashield' ),
+		array( wp_login_url( get_permalink() ?: home_url( '/' ) ), __( 'Log in', 'mediashield' ) )
 	);
 	return;
 }
@@ -77,9 +105,15 @@ $videos = $total ? $wpdb->get_results(
 // phpcs:enable
 
 if ( ! $total && 'all' === $filter ) {
-	echo '<p class="ms-my-videos__empty">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
-	echo esc_html( $filters['all'][2] );
-	echo '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static HTML.
+	// The owner's "Browse videos" link (block setting, or the shortcode's
+	// browse_url); no link, no button.
+	$ms_browse = isset( $attributes['browseUrl'] ) ? esc_url_raw( (string) $attributes['browseUrl'] ) : '';
+	$ms_state(
+		'video',
+		$filters['all'][2],
+		__( 'Videos you start appear here, with where you stopped.', 'mediashield' ),
+		'' !== $ms_browse ? array( $ms_browse, __( 'Browse videos', 'mediashield' ) ) : null
+	);
 	return;
 }
 

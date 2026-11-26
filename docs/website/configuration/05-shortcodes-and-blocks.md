@@ -46,7 +46,11 @@ Renders a grid of every video the current logged-in user has watched, with compl
 [mediashield_my_videos]
 ```
 
-No attributes. Visitors who are not logged in see "Please log in to see your video history." Use this on a member dashboard or course completion page.
+One optional attribute, `browse_url`: where a member with no videos yet can find some, shown as a **Browse videos** button (the block has the same setting, **Browse videos link**). Without it the empty list has no button. Visitors who are not logged in see "Please log in to see your video history." with a **Log in** button. Use this on a member dashboard or course completion page.
+
+```
+[mediashield_my_videos browse_url="https://example.com/courses/"]
+```
 
 Only videos at Standard or Strict protection appear here, because those are the levels that record watch sessions.
 

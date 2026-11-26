@@ -9,7 +9,12 @@
 	"description": "Display the current user's watched videos with progress tracking and resume links.",
 	"keywords": [ "video", "progress", "mediashield", "watch", "history" ],
 	"textdomain": "mediashield",
-	"attributes": {},
+	"attributes": {
+		"browseUrl": {
+			"type": "string",
+			"default": ""
+		}
+	},
 	"supports": {
 		"align": [ "wide", "full" ],
 		"spacing": {

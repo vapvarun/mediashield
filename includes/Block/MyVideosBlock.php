@@ -53,14 +53,15 @@ class MyVideosBlock {
 	 * release zip, which is why reading the file directly printed nothing),
 	 * its wrapper class and its view script.
 	 *
-	 * @param array|string $atts Shortcode attributes (unused).
+	 * @param array|string $atts Shortcode attributes: browse_url, the empty list's "Browse videos" link.
 	 * @return string Rendered HTML.
 	 */
 	public static function shortcode_render( $atts = array() ): string {
+		$atts = shortcode_atts( array( 'browse_url' => '' ), (array) $atts, 'mediashield_my_videos' );
 		return render_block(
 			array(
 				'blockName'    => 'mediashield/my-videos',
-				'attrs'        => array(),
+				'attrs'        => array( 'browseUrl' => esc_url_raw( (string) $atts['browse_url'] ) ),
 				'innerBlocks'  => array(),
 				'innerHTML'    => '',
 				'innerContent' => array(),

@@ -75,6 +75,8 @@ class Plugin {
 		Thumbnail::register();
 		// A video the platform no longer plays (Basecamp 10545260568).
 		\MediaShield\CPT\SourceStatus::register();
+		// The page a player is shown on, for its REST requests.
+		\MediaShield\Access\AccessControl::register();
 		// Another plugin adds a video through one door (mediashield_create_video).
 		\MediaShield\CPT\VideoCreator::register();
 		// Each video's library status, stored when it can change (Basecamp 10545260458).
