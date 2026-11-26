@@ -49,6 +49,7 @@ class Learnomy {
 		add_filter( 'learnomy_lesson_completion_rules', array( __CLASS__, 'require_watch' ), 10, 3 );
 		add_filter( 'mediashield_video_access_link', array( __CLASS__, 'course_link' ), 10, 2 );
 		add_filter( 'mediashield_watch_rule_applies', array( __CLASS__, 'watch_rule_applies' ), 10, 2 );
+		add_filter( 'mediashield_video_used_in', array( __CLASS__, 'used_in' ), 10, 2 );
 		// Learnomy 2.4.1 owns "watch the video to complete" on each lesson;
 		// MediaShield reports how much was watched and the starting %.
 		// Hooking the first filter is what tells Learnomy a provider measures
@@ -117,6 +118,71 @@ class Learnomy {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Add the Learnomy lessons that play each listed video to "Used in"
+	 * (the Videos list, the Video block's sidebar): a video used only in a
+	 * lesson said "Not used yet", so an owner tidying up could trash a
+	 * lesson's video (Basecamp 10545260458).
+	 *
+	 * Lessons are rows in Learnomy's table, not posts: each entry's id is
+	 * "learnomy_lesson:N", so it never matches a post id, and the link is
+	 * Learnomy's lesson editor for someone who may edit lessons, else the
+	 * lesson page.
+	 * ponytail: one cached Learnomy lookup per listed video (a page of 20);
+	 * batch it in Learnomy if lists grow.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param array $usage     Places by video ID.
+	 * @param int[] $video_ids Videos being listed.
+	 * @return array
+	 */
+	public static function used_in( $usage, $video_ids ): array {
+		$usage = (array) $usage;
+		$label = function_exists( '\\Learnomy\\lesson_label' ) ? (string) \Learnomy\lesson_label() : __( 'Lesson', 'mediashield' );
+		$edits = current_user_can( 'learnomy_manage_own_courses' ) || current_user_can( 'manage_options' );
+		foreach ( (array) $video_ids as $video_id ) {
+			$lessons = self::lessons_playing( (int) $video_id );
+			if ( ! $lessons ) {
+				continue;
+			}
+			$places = isset( $usage[ $video_id ] ) ? (array) $usage[ $video_id ] : array();
+			foreach ( $lessons as $lesson ) {
+				$places[] = array(
+					'id'    => 'learnomy_lesson:' . (int) $lesson->id,
+					'title' => '' !== (string) ( $lesson->title ?? '' ) ? wp_strip_all_tags( (string) $lesson->title ) : __( '(no title)', 'mediashield' ),
+					'url'   => $edits ? admin_url( 'admin.php?page=learnomy-lesson-editor&lesson_id=' . (int) $lesson->id ) : self::lesson_url( $lesson ),
+					'type'  => $label,
+				);
+			}
+			$usage[ $video_id ] = $places;
+		}
+		return $usage;
+	}
+
+	/**
+	 * A lesson's page, '' when Learnomy cannot say.
+	 *
+	 * @param object $lesson Lesson row.
+	 * @return string
+	 */
+	private static function lesson_url( $lesson ): string {
+		if ( ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
+			return '';
+		}
+		$course = \Learnomy\Models\Course::find( (int) ( $lesson->course_id ?? 0 ) );
+		if ( ! $course || empty( $course->slug ) || empty( $lesson->slug ) ) {
+			return '';
+		}
+		return \Learnomy\route_url(
+			'lesson',
+			array(
+				'slug'        => (string) $course->slug,
+				'lesson_slug' => (string) $lesson->slug,
+			)
+		);
 	}
 
 	/**

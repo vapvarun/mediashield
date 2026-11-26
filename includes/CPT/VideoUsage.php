@@ -627,7 +627,14 @@ class VideoUsage {
 	 */
 	private static function first_readable( array $places, int $user_id ): string {
 		foreach ( $places as $place ) {
-			$post = get_post( (int) ( $place['id'] ?? 0 ) );
+			// Only a post: an integration's place (a Learnomy lesson,
+			// "learnomy_lesson:3") would cast to 0, and get_post( 0 ) is the
+			// global post.
+			$id = $place['id'] ?? 0;
+			if ( ! is_int( $id ) && ! ctype_digit( (string) $id ) ) {
+				continue;
+			}
+			$post = (int) $id > 0 ? get_post( (int) $id ) : null;
 			if ( ! $post || 'publish' !== $post->post_status || post_password_required( $post ) ) {
 				continue;
 			}

@@ -62,4 +62,27 @@ class LearnomyNamingLookupTest extends WP_UnitTestCase {
 		$GLOBALS['ms_test_lessons'][ $video ][] = self::lesson( 3, $video, 'mediashield', 'published' );
 		$this->assertTrue( VideoStatus::needs_length( $video ) );
 	}
+
+	/**
+	 * Basecamp 10545260458: "Used in" names the published lesson that plays
+	 * the video; such a place is never taken for a post (get_post( 0 )).
+	 * Fails before 1.4.4's Learnomy provider ("Not used yet").
+	 */
+	public function test_used_in_names_the_learnomy_lesson(): void {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$video = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$row   = self::lesson( 3, $video, 'mediashield', 'published' );
+		$row->title = 'Week 1: Lighting';
+		$GLOBALS['ms_test_lessons'][ $video ] = array( $row, self::lesson( 4, $video, 'mediashield', 'draft' ) );
+
+		$places = \MediaShield\CPT\VideoUsage::for_video( $video );
+
+		$this->assertCount( 1, $places );
+		$this->assertSame( 'learnomy_lesson:3', $places[0]['id'] );
+		$this->assertSame( 'Week 1: Lighting', $places[0]['title'] );
+		$this->assertStringContainsString( 'page=learnomy-lesson-editor&lesson_id=3', $places[0]['url'] );
+
+		$GLOBALS['post'] = get_post( self::factory()->post->create() );
+		$this->assertSame( '', \MediaShield\CPT\VideoUsage::page_for_viewer( $video, get_current_user_id() ), 'A lesson place is not a post.' );
+	}
 }
