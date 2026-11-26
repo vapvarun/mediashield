@@ -8,7 +8,7 @@
  */
 import { __, sprintf } from '@wordpress/i18n';
 import { TextControl, Button, Spinner } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useState, useRef, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import { decodeEntities } from '@wordpress/html-entities';
 import { detectPlatform, extractVideoId, isPlayableLink } from '../../utils/platform';
@@ -26,22 +26,22 @@ const PLATFORM_NAMES = {
 	self: __( 'Video file', 'mediashield' ),
 };
 
-export default function FirstVideoStep( { hosts = [] } ) {
+export default function FirstVideoStep( { hosts = [], created = null, setCreated = () => {}, setBeforeContinue = () => {} } ) {
 	const [ url, setUrl ] = useState( '' );
 	const [ creating, setCreating ] = useState( false );
-	const [ created, setCreated ] = useState( null );
 	const [ failed, setFailed ] = useState( '' );
 
 	const refusal = config.unplayableMessage || __( 'This link is not a video MediaShield can play. Use a YouTube, Vimeo or Wistia link, a link to an .mp4 file, or upload a file.', 'mediashield' );
 
+	// Adds the pasted link; true once the video exists.
 	const handleCreate = async () => {
 		const link = url.trim();
-		if ( ! link ) return;
+		if ( ! link ) return false;
 
 		setFailed( '' );
 		if ( ! isPlayableLink( link ) ) {
 			setFailed( refusal );
-			return;
+			return false;
 		}
 
 		setCreating( true );
@@ -72,12 +72,33 @@ export default function FirstVideoStep( { hosts = [] } ) {
 				platform: video.meta?._ms_platform || platform,
 				duration: video.meta?._ms_duration || 0,
 			} );
+			setCreating( false );
+			return true;
 		} catch ( err ) {
 			setFailed( window.mediashieldRequest.message( err, __( 'The video could not be added. Try again.', 'mediashield' ) ) );
 		}
 
 		setCreating( false );
+		return false;
 	};
+
+	// Save & Continue adds a pasted link first (Basecamp MSUX-01): with a
+	// link the step is done only when the video exists; a refused link keeps
+	// the step open with the reason. An empty field moves on, not done.
+	const latest = useRef( handleCreate );
+	latest.current = handleCreate;
+	useEffect( () => {
+		setBeforeContinue( async () => {
+			if ( created ) {
+				return { proceed: true, done: true };
+			}
+			if ( ! url.trim() ) {
+				return { proceed: true, done: false };
+			}
+			const ok = await latest.current();
+			return { proceed: ok, done: ok };
+		} );
+	}, [ url, created ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const level = protectionLevels()[ defaultLevel() ];
 	const named = hosts.filter( ( h ) => PLATFORM_NAMES[ h ] && 'self' !== h ).map( ( h ) => PLATFORM_NAMES[ h ] );
@@ -119,7 +140,7 @@ export default function FirstVideoStep( { hosts = [] } ) {
 							__next40pxDefaultSize
 						/>
 						<Button
-							variant="primary"
+							variant="secondary"
 							onClick={ handleCreate }
 							disabled={ creating || ! url.trim() }
 							className="ms-wizard__btn--protect"
