@@ -287,12 +287,8 @@ class WatchedSpans {
 		if ( $duration <= 0 ) {
 			return 0;
 		}
-		$seconds = self::seconds( $user_id, $video_id );
-		// Watched to the last frame of a length stored in whole seconds is all of it.
-		if ( $duration > 2 * SessionManager::END_SLACK && $seconds >= $duration - SessionManager::END_SLACK ) {
-			return 100;
-		}
-		return (int) min( 100, floor( $seconds / $duration * 100 ) );
+		// The one end rule (the last frame of a whole-second length is 100%).
+		return (int) floor( SessionManager::completion( self::seconds( $user_id, $video_id ), $duration ) );
 	}
 
 	/**
