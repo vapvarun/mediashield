@@ -262,6 +262,18 @@ const Videos = () => {
 	const [ debouncedSearch, setDebouncedSearch ] = useState( '' );
 	const [ platform, setPlatform ] = useState( '' );
 	const [ protection, setProtection ] = useState( '' );
+	// Video tag filter; the Tags screen's counts open #/videos/tag/<id>.
+	const [ tag, setTag ] = useState( () => {
+		const m = window.location.hash.match( /^#\/videos\/tag\/(\d+)/ );
+		return m ? m[ 1 ] : '';
+	} );
+	const [ tagOptions, setTagOptions ] = useState( [] );
+	useEffect( () => {
+		// shortcut: the first 100 tags by name; a site with more filters the rest from the Tags screen.
+		apiFetch( { url: `${ config.restUrl }tags?per_page=100`, headers: { 'X-WP-Nonce': config.nonce } } )
+			.then( ( res ) => setTagOptions( Array.isArray( res ) ? res : [] ) )
+			.catch( () => setTagOptions( [] ) );
+	}, [] );
 	const [ view, setView ] = useState( 'all' );
 	// Status chip: '' (all), ready, attention or draft. #/videos/attention
 	// (the Dashboard's link) opens on that chip.
@@ -350,6 +362,9 @@ const Videos = () => {
 		if ( protection ) {
 			params.set( 'ms_protection', protection );
 		}
+		if ( tag ) {
+			params.set( 'ms_tag', tag );
+		}
 		if ( state && 'trash' !== view ) {
 			params.set( 'ms_state', state );
 		}
@@ -381,7 +396,7 @@ const Videos = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [ page, debouncedSearch, platform, protection, view, state, attempt ] );
+	}, [ page, debouncedSearch, platform, protection, tag, view, state, attempt ] );
 
 	// Chip counts: one COUNT(*) on the server (Basecamp 10545260458). Fetched
 	// again after a bulk action or a retry, not per page.
@@ -450,7 +465,7 @@ const Videos = () => {
 			.finally( () => setApplying( false ) );
 	};
 
-	const filtered = !! ( debouncedSearch || platform || protection || state );
+	const filtered = !! ( debouncedSearch || platform || protection || tag || state );
 
 	return (
 		<div className="mediashield-page mediashield-videos">
@@ -500,6 +515,24 @@ const Videos = () => {
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
+				{ ( tagOptions.length > 0 || tag ) && (
+					<SelectControl
+						label={ __( 'Tag', 'mediashield' ) }
+						hideLabelFromVision
+						value={ tag }
+						options={ [
+							{ value: '', label: __( 'All tags', 'mediashield' ) },
+							...tagOptions.map( ( t ) => ( { value: String( t.id ), label: t.name } ) ),
+							...( tag && ! tagOptions.some( ( t ) => String( t.id ) === tag ) ? [ { value: tag, label: __( 'The tag from the Tags screen', 'mediashield' ) } ] : [] ),
+						] }
+						onChange={ ( v ) => {
+							setTag( v );
+							setPage( 1 );
+						} }
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+					/>
+				) }
 				<SelectControl
 					label={ __( 'Protection', 'mediashield' ) }
 					hideLabelFromVision

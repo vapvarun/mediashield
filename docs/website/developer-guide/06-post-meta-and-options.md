@@ -55,7 +55,7 @@ Registered with `show_in_rest`; edited through `/wp/v2/mediashield-playlists/{id
 
 | Meta key | Purpose |
 |----------|---------|
-| `_ms_video_tags` | Map of `{video_id}_{pct}` to `{ video_id, pct, tag, tag_id, earned_at }`: the milestone tags a user has earned. Included in the GDPR export and removed by the eraser. |
+| `_ms_video_tags` | Map of `{video_id}_{pct}` to `{ video_id, pct, tag, earned_at }`: the milestone tags a user has earned (records from before 1.4.4 also carry `tag_id`). Not video tags. Included in the GDPR export and removed by the eraser. |
 
 ## Options in the settings schema
 

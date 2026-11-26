@@ -125,7 +125,7 @@ class VideoListController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Document the two filters on the collection.
+	 * Document the filters on the collection (platform, state, tag, protection).
 	 *
 	 * @param array $params Collection params.
 	 * @return array
@@ -141,6 +141,11 @@ class VideoListController extends WP_REST_Controller {
 			'type'        => 'string',
 			'enum'        => array( 'ready', 'attention', 'draft' ),
 		);
+		$params['ms_tag']        = array(
+			'description' => 'Only videos carrying this video tag (an id from /mediashield/v1/tags).',
+			'type'        => 'integer',
+			'minimum'     => 1,
+		);
 		$params['ms_protection'] = array(
 			'description' => 'Only videos at this protection level; "default" means the video follows the site setting.',
 			'type'        => 'string',
@@ -151,7 +156,7 @@ class VideoListController extends WP_REST_Controller {
 	}
 
 	/**
-	 * Turn the two filters into a meta query.
+	 * Turn the filters into query args.
 	 *
 	 * @param array           $args    WP_Query args.
 	 * @param WP_REST_Request $request Request.
@@ -212,6 +217,14 @@ class VideoListController extends WP_REST_Controller {
 					'key'   => '_ms_protection_level',
 					'value' => $level,
 				);
+		}
+
+		$tag = (int) $request->get_param( 'ms_tag' );
+		if ( $tag > 0 ) {
+			// shortcut: one IN list of the tag's videos; fine into the tens of thousands per tag.
+			$ids              = \MediaShield\Tags\TagManager::get_videos_for_tag( $tag );
+			$args['post__in'] = isset( $args['post__in'] ) && $args['post__in'] ? array_values( array_intersect( (array) $args['post__in'], $ids ) ) : $ids;
+			$args['post__in'] = $args['post__in'] ? $args['post__in'] : array( 0 );
 		}
 
 		$state = (string) $request->get_param( 'ms_state' );

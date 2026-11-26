@@ -633,6 +633,20 @@
 .mediashield-students .mediashield-table th:nth-child(5) { width: 21%; }
 
 /* Viewers: Watching now badge, and a dash where there is nothing to stop. */
+.mediashield-tags__rename {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-2 );
+}
+
+.mediashield-student-detail__tags {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --ms-space-1 );
+}
+
 .ms-viewers__live {
 	margin-block-start: var( --ms-space-1 );
 }

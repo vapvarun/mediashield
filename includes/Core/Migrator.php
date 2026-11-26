@@ -40,14 +40,6 @@ class Migrator {
 		Schema::create_tables();
 		Settings::seed_defaults( $installed > 0 );
 
-		// v3 — promote legacy free-form milestone tags into the unified
-		// `ms_tags` dictionary and record the canonical `tag_id` alongside
-		// the display string in each user's `_ms_video_tags` meta entry.
-		// The per-version gate lives inside the helper itself so each
-		// migration step is independently idempotent and PHPStan can't
-		// narrow the comparison via the outer version-bump branch.
-		self::backfill_milestone_tags();
-
 		// v5 — give back the analytics history that unconditional archiving
 		// moved out of reach. Scheduled rather than run inline: a long-lived
 		// site can hold a lot of archived rows, and an upgrade is the worst
@@ -118,6 +110,13 @@ class Migrator {
 		// it is done.
 		if ( $installed < 18 ) {
 			add_option( \MediaShield\CPT\VideoUsage::INDEX_PENDING, '0', '', false );
+		}
+
+		// v19 - member milestone tags were also linked to the video (v3 and
+		// MilestoneTracker before 1.4.4), mixing them into the owner's video
+		// tags. Take those links off; the member keeps the tag (MSUX-18).
+		if ( $installed > 0 && $installed < 19 ) {
+			TagManager::separate_member_tags();
 		}
 
 		update_option( 'ms_db_version', MEDIASHIELD_DB_VERSION );
@@ -254,58 +253,5 @@ class Migrator {
 			},
 			20
 		);
-	}
-
-	/**
-	 * Walk every `_ms_video_tags` user meta record and ensure each `tag`
-	 * string exists in `ms_tags`. Stores the resolved `tag_id` back into the
-	 * meta entry and links the originating video to the tag via `ms_video_tags`.
-	 *
-	 * Idempotent: a re-run only touches entries that don't already carry a
-	 * non-zero `tag_id`. Self-gates by reading `ms_db_version` so installs
-	 * already at v3+ short-circuit before any usermeta scan.
-	 */
-	private static function backfill_milestone_tags(): void {
-		if ( (int) get_option( 'ms_db_version', 0 ) >= 3 ) {
-			return;
-		}
-
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-shot migration of legacy user meta records.
-		$rows = $wpdb->get_results(
-			"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags'"
-		);
-		if ( empty( $rows ) ) {
-			return;
-		}
-
-		foreach ( $rows as $row ) {
-			$user_id   = (int) $row->user_id;
-			$user_tags = maybe_unserialize( $row->meta_value );
-			if ( ! is_array( $user_tags ) ) {
-				continue;
-			}
-			$changed = false;
-			foreach ( $user_tags as $key => $entry ) {
-				if ( ! is_array( $entry ) || empty( $entry['tag'] ) ) {
-					continue;
-				}
-				if ( ! empty( $entry['tag_id'] ) ) {
-					continue; // Already migrated.
-				}
-				$tag_id = TagManager::ensure( (string) $entry['tag'], $user_id );
-				if ( $tag_id > 0 ) {
-					$user_tags[ $key ]['tag_id'] = $tag_id;
-					if ( ! empty( $entry['video_id'] ) ) {
-						TagManager::assign_to_video( (int) $entry['video_id'], $tag_id, $user_id );
-					}
-					$changed = true;
-				}
-			}
-			if ( $changed ) {
-				update_user_meta( $user_id, '_ms_video_tags', $user_tags );
-			}
-		}
 	}
 }

@@ -75,11 +75,12 @@ For the full action signatures, see the [Developer Guide - Hooks and Filters](..
 
 ## Tags
 
-Go to **MediaShield > Tags** to manage the tag dictionary. The table lists each tag's name, slug, and how many videos carry it.
+MediaShield has two kinds of tags, kept apart:
 
-You can add a tag by name and delete tags you no longer want. Deleting a tag also removes it from every video. Renaming is not available in the admin in this release; the REST API supports it (`PUT /wp-json/mediashield/v1/tags/{id}`).
+- **Video tags** organise your videos. Add them on this screen or in the **Tags** box on a video. **MediaShield > Tags** lists each one with its slug and how many videos carry it. Click the count to open the Videos list filtered to that tag, or pick a tag in the Videos list's **Tag** filter. **Rename** changes a tag everywhere it is used; **Delete** also removes it from every video. Deleting a video removes its tag links, and any tag left attached to no videos is removed with it.
+- **Milestone tags** go on a member when they reach a milestone you set on a video (see above), for your CRM, LMS or automation rules. They show on the member's page under **MediaShield > Viewers** and are not video tags.
 
-Tags arrive here two ways: created by hand on this page, or created automatically the first time a viewer earns a milestone tag. Deleting a video removes its tag links, and any tag left attached to no videos is removed with it.
+Before 1.4.4 a milestone tag was also put on the video and listed here. Updating to 1.4.4 takes those links off; the member keeps every tag they earned, and tags you created or put on videos yourself stay.
 
 ## What to expect on a fresh install
 

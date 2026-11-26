@@ -14,7 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use MediaShield\Tags\TagManager;
 
 /**
  * Class MilestoneTracker
@@ -108,18 +107,12 @@ class MilestoneTracker {
 				 * @param int $pct        Milestone percentage reached.
 				 * @param int $session_id Session row ID.
 				 */
-				// Assign per-video milestone tag to user. The tag is promoted into
-				// the unified `ms_tags` dictionary so admin Tags listings, REST,
-				// and Pro automations see it; the video↔tag link is recorded in
-				// `ms_video_tags`. The per-user earn record stays in user meta
-				// (no user↔tag table exists) but now carries the canonical
-				// tag_id alongside the display string for traceability.
+				// The milestone's tag goes on the member (user meta), for the
+				// CRM, LMS or automation that reads it. Never on the video:
+				// video tags (ms_tags, ms_video_tags) are the owner's own
+				// labels for organising videos (MSUX-18).
 				if ( is_array( $video_milestones ) && ! empty( $video_milestones[ $pct ]['enabled'] ) && ! empty( $video_milestones[ $pct ]['tag'] ) ) {
 					$tag_name = sanitize_text_field( $video_milestones[ $pct ]['tag'] );
-					$tag_id   = TagManager::ensure( $tag_name, $user_id );
-					if ( $tag_id > 0 ) {
-						TagManager::assign_to_video( $video_id, $tag_id, $user_id );
-					}
 
 					$user_tags = get_user_meta( $user_id, '_ms_video_tags', true );
 					if ( ! is_array( $user_tags ) ) {
@@ -129,7 +122,6 @@ class MilestoneTracker {
 						'video_id'  => $video_id,
 						'pct'       => $pct,
 						'tag'       => $tag_name,
-						'tag_id'    => $tag_id,
 						'earned_at' => current_time( 'mysql', true ),
 					);
 					update_user_meta( $user_id, '_ms_video_tags', $user_tags );

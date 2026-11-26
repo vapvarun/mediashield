@@ -701,6 +701,9 @@ class AnalyticsController extends WP_REST_Controller {
 					'display_name' => $user ? sanitize_text_field( \MediaShield\Support\Text::plain( $user->display_name ) ) : '',
 					'email'        => $user ? sanitize_email( $user->user_email ) : '',
 				),
+				// Tags this member got at milestones (MilestoneTracker), once
+				// each. Member tags, kept apart from video tags (MSUX-18).
+				'milestone_tags' => array_values( array_unique( array_map( 'sanitize_text_field', array_filter( wp_list_pluck( array_filter( (array) get_user_meta( $user_id, '_ms_video_tags', true ), 'is_array' ), 'tag' ) ) ) ) ),
 				'sessions' => array_map(
 					function ( $row ) {
 						return array(

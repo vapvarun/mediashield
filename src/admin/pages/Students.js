@@ -118,6 +118,7 @@ const StudentDetail = ( { userId, onBack } ) => {
 					sessions,
 					videoCount: res.videos_watched ?? new Set( sessions.map( ( s ) => s.video_id ) ).size,
 					totalPages: res.total_pages || 1,
+					milestoneTags: res.milestone_tags || [],
 				} );
 			} )
 			.catch( ( err ) => {
@@ -167,6 +168,14 @@ const StudentDetail = ( { userId, onBack } ) => {
 						<div className="mediashield-student-detail__info">
 							<h2>{ detail.name || __( 'Unknown User', 'mediashield' ) }</h2>
 							<p>{ detail.email }</p>
+							{ detail.milestoneTags.length > 0 && (
+								<p className="mediashield-student-detail__tags">
+									{ __( 'Milestone tags:', 'mediashield' ) }{ ' ' }
+									{ detail.milestoneTags.map( ( tag ) => (
+										<span key={ tag } className="mediashield-badge mediashield-badge--standard">{ tag }</span>
+									) ) }
+								</p>
+							) }
 						</div>
 					</div>
 

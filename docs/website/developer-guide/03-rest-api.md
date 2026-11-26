@@ -140,7 +140,7 @@ Videos and playlists are custom post types with `show_in_rest` enabled, so the s
 
 - `/wp/v2/mediashield-videos` and `/wp/v2/mediashield-videos/{id}`
 
-  The collection takes `ms_state` (`ready`, `attention` = no source or unavailable at the platform, `draft`) next to `ms_platform` and `ms_protection`; `ms_list.status` is `ready`, `no_source`, `unavailable`, `draft` (or Pro's `encoding` / `failed`), and `ms_list.source` is an uploaded file's name. Since 1.4.4 `ms_list.needs_length` is true while a watch rule completes a lesson by the video and it has no stored Duration.
+  The collection takes `ms_state` (`ready`, `attention` = no source or unavailable at the platform, `draft`) next to `ms_platform`, `ms_protection` and (1.4.4) `ms_tag` (a video tag id from `/mediashield/v1/tags`); `ms_list.status` is `ready`, `no_source`, `unavailable`, `draft` (or Pro's `encoding` / `failed`), and `ms_list.source` is an uploaded file's name. Since 1.4.4 `ms_list.needs_length` is true while a watch rule completes a lesson by the video and it has no stored Duration.
 
 - `GET /mediashield/v1/videos/counts` (edit_posts) - `{all, ready, attention, draft, no_source, unavailable}` for the Videos list chips, one `COUNT(*)`.
 

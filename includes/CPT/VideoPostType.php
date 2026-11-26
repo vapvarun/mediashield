@@ -781,7 +781,7 @@ class VideoPostType {
 			</tbody>
 		</table>
 		<p class="description">
-			<?php esc_html_e( 'The tag goes on the member\'s profile, for your CRM, LMS or automation rules. Tags are listed under MediaShield > Tags.', 'mediashield' ); ?>
+			<?php esc_html_e( 'The tag goes on the member, for your CRM, LMS or automation rules, and shows on their page under MediaShield > Viewers. It is not a video tag: the Tags box above and MediaShield > Tags are for organising your videos.', 'mediashield' ); ?>
 		</p>
 		<?php
 	}

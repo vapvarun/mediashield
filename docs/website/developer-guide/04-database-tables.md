@@ -8,7 +8,7 @@ MediaShield creates 6 tables in the free plugin. All table names use the `{$wpdb
 
 ## ms_tags
 
-Tag dictionary for milestone tags and manual video tags.
+Video tags: the owner's labels for organising videos. Member milestone tags are not stored here (user meta `_ms_video_tags`).
 
 | Column | Type | Notes |
 |--------|------|-------|

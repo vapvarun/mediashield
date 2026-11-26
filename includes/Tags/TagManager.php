@@ -361,4 +361,50 @@ class TagManager {
 
 		return array_map( 'intval', ! empty( $results ) ? $results : array() );
 	}
+
+	/**
+	 * Take member milestone tags off the videos they were linked to.
+	 *
+	 * Before 1.4.4 reaching a milestone also linked its tag to the video, as
+	 * if the owner had tagged it, and created the tag in the owner's list.
+	 * Removed: a link the member's own milestone made (tagged by that member,
+	 * the same video and tag as their earn record), then a tag that member
+	 * created which no video carries any more. A tag the owner created or put
+	 * on a video stays. The earn records in user meta are not changed.
+	 *
+	 * Reads the earn records 500 at a time, one delete per page.
+	 *
+	 * @since 1.4.4
+	 */
+	public static function separate_member_tags(): void {
+		global $wpdb;
+		$links = "{$wpdb->prefix}ms_video_tags";
+		$tags  = "{$wpdb->prefix}ms_tags";
+		$after = 0;
+
+		do {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time upgrade over user meta.
+			$rows  = (array) $wpdb->get_results( $wpdb->prepare( "SELECT umeta_id, user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = '_ms_video_tags' AND umeta_id > %d ORDER BY umeta_id LIMIT 500", $after ) );
+			$made  = array();
+			$owned = array();
+			$read  = count( $rows );
+			foreach ( $rows as $row ) {
+				$after = (int) $row->umeta_id;
+				foreach ( (array) maybe_unserialize( $row->meta_value ) as $entry ) {
+					if ( is_array( $entry ) && ! empty( $entry['tag_id'] ) && ! empty( $entry['video_id'] ) ) {
+						$made[]  = $wpdb->prepare( '(%d,%d,%d)', $entry['video_id'], $entry['tag_id'], $row->user_id );
+						$owned[] = $wpdb->prepare( '(%d,%d)', $entry['tag_id'], $row->user_id );
+					}
+				}
+			}
+			if ( $made ) {
+				$made  = implode( ',', array_unique( $made ) );
+				$owned = implode( ',', array_unique( $owned ) );
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Tuples prepared above.
+				$wpdb->query( "DELETE FROM {$links} WHERE (video_id, tag_id, tagged_by) IN ({$made})" );
+				$wpdb->query( "DELETE t FROM {$tags} t LEFT JOIN {$links} l ON l.tag_id = t.id WHERE l.tag_id IS NULL AND (t.id, t.created_by) IN ({$owned})" );
+				// phpcs:enable
+			}
+		} while ( 500 === $read );
+	}
 }
