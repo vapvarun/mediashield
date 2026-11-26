@@ -257,7 +257,7 @@
 /* No Duration while a watch rule uses the video: one calm line under the
    title, linking to the edit screen's Duration field. */
 .ms-videos__needs-length a {
-	color: var( --ms-palette-yellow-text );
+	color: var( --ms-color-text-secondary );
 }
 
 @media ( max-width: 480px ) {
