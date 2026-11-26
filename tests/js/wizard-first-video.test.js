@@ -53,12 +53,17 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 let root;
 let host;
 let created;
+let saved;
 
 beforeEach( async () => {
 	created = [];
+	saved = [];
 	window.mediashieldRequest = { message: ( err, fallback ) => fallback };
 	apiFetch.mockReset();
 	apiFetch.mockImplementation( ( opts ) => {
+		if ( 'PUT' === opts.method ) {
+			saved.push( opts.data );
+		}
 		if ( '/wp/v2/mediashield-videos' === opts.path && 'POST' === opts.method ) {
 			created.push( opts.data );
 			return Promise.resolve( { id: 42, title: { raw: 'Me at the zoo' }, meta: { _ms_platform: 'youtube' } } );
@@ -69,10 +74,13 @@ beforeEach( async () => {
 	document.body.appendChild( host );
 	root = createRoot( host );
 	await act( async () => root.render( <Wizard /> ) );
-	// Steps 1 and 2 to the First Video step.
-	await next();
-	await next();
 } );
+
+// Steps 1 and 2 to the First Video step.
+async function toFirstVideo() {
+	await next();
+	await next();
+}
 
 afterEach( () => {
 	act( () => root.unmount() );
@@ -98,6 +106,7 @@ const stepTicked = ( n ) => host.querySelectorAll( '.ms-wizard__stepper-item' )[
 const heading = () => host.querySelector( '.ms-wizard__step h2' ).textContent;
 
 test( 'Save & Continue adds a pasted link, then ticks the step', async () => {
+	await toFirstVideo();
 	expect( heading() ).toBe( 'Protect your first video' );
 	await type( 'https://www.youtube.com/watch?v=jNQXAC9IVRw' );
 	await next();
@@ -109,6 +118,7 @@ test( 'Save & Continue adds a pasted link, then ticks the step', async () => {
 } );
 
 test( 'a refused link keeps the step open with the reason', async () => {
+	await toFirstVideo();
 	await type( 'https://example.com/about-us' );
 	await next();
 
@@ -118,6 +128,7 @@ test( 'a refused link keeps the step open with the reason', async () => {
 } );
 
 test( 'moving on with an empty field adds nothing and ticks nothing', async () => {
+	await toFirstVideo();
 	await next();
 
 	expect( created ).toHaveLength( 0 );
@@ -125,7 +136,24 @@ test( 'moving on with an empty field adds nothing and ticks nothing', async () =
 	expect( stepTicked( 2 ) ).toBe( false );
 } );
 
-test( 'one primary button on the step', () => {
+test( 'one primary button on the step', async () => {
+	await toFirstVideo();
 	expect( host.querySelectorAll( '.ms-wizard__card .is-primary' ) ).toHaveLength( 0 );
 	expect( host.querySelectorAll( '.ms-wizard__actions .is-primary' ) ).toHaveLength( 1 );
+} );
+
+/**
+ * MSUX-06: step 1 asks who can watch in two plain choices, so a public
+ * trailer is not walled by surprise; the site's setting is preselected.
+ */
+test( 'step 1 asks who can watch and saves the answer', async () => {
+	const legend = [ ...host.querySelectorAll( 'legend' ) ].map( ( l ) => l.textContent );
+	expect( legend ).toContain( 'Who can watch?' );
+	const anyone = host.querySelector( 'input[value="anyone"]' );
+	const members = host.querySelector( 'input[value="members"]' );
+	expect( anyone ).not.toBeNull();
+	expect( members.checked ).toBe( true ); // The schema default until the owner picks.
+
+	await act( async () => anyone.click() );
+	expect( saved ).toContainEqual( { ms_require_login: false } );
 } );
