@@ -109,20 +109,55 @@ class Learnomy {
 		if ( $applies ) {
 			return true;
 		}
-		if ( ! class_exists( '\\Learnomy\\Models\\Lesson' ) || ! is_callable( '\\Learnomy\\Models\\Lesson::for_mediashield_video' ) ) {
-			return false;
-		}
 		$owns = self::owns_watch_rule();
 		$site = (int) Settings::get( 'ms_lms_require_watch_pct' );
-		foreach ( \Learnomy\Models\Lesson::for_mediashield_video( (int) $video_id ) as $lesson ) {
-			if ( self::lesson_video( $lesson ) !== (int) $video_id ) {
-				continue;
-			}
+		foreach ( self::lessons_playing( (int) $video_id ) as $lesson ) {
 			if ( $owns ? (int) ( $lesson->min_video_watch_pct ?? 0 ) > 0 : $site > 0 ) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * The published protected video lessons that play this video, free
+	 * previews first, through Learnomy's own cached lookup:
+	 * Lesson::naming_mediashield_video() (2.4.1, every lesson naming it in
+	 * any status, so the published protected ones are kept here), else
+	 * Lesson::for_mediashield_video() (2.4.0, published ones only). MediaShield
+	 * 1.4.4 called only the second, which 2.4.1 does not have, so neither the
+	 * "Length needed" prompt nor the course link on a refusal ever showed for
+	 * a Learnomy lesson (Learnomy card 10536470184).
+	 *
+	 * @param int $video_id Video ID.
+	 * @return object[] Lesson rows.
+	 */
+	private static function lessons_playing( int $video_id ): array {
+		if ( $video_id <= 0 || ! class_exists( '\\Learnomy\\Models\\Lesson' ) ) {
+			return array();
+		}
+		if ( is_callable( '\\Learnomy\\Models\\Lesson::naming_mediashield_video' ) ) {
+			$rows = \Learnomy\Models\Lesson::naming_mediashield_video( $video_id );
+		} elseif ( is_callable( '\\Learnomy\\Models\\Lesson::for_mediashield_video' ) ) {
+			$rows = \Learnomy\Models\Lesson::for_mediashield_video( $video_id );
+		} else {
+			return array();
+		}
+		$rows = array_values(
+			array_filter(
+				(array) $rows,
+				static function ( $lesson ) use ( $video_id ) {
+					return self::lesson_video( $lesson ) === $video_id && 'published' === (string) ( $lesson->status ?? 'published' );
+				}
+			)
+		);
+		usort(
+			$rows,
+			static function ( $a, $b ) {
+				return (int) ( $b->is_preview ?? 0 ) <=> (int) ( $a->is_preview ?? 0 );
+			}
+		);
+		return $rows;
 	}
 
 	/**
@@ -215,12 +250,12 @@ class Learnomy {
 	 * @return array|null { title, url }.
 	 */
 	public static function course_link( $link, $video_id ) {
-		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Lesson' ) || ! is_callable( '\\Learnomy\\Models\\Lesson::for_mediashield_video' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
+		if ( ! empty( $link ) || ! function_exists( '\\Learnomy\\route_url' ) || ! class_exists( '\\Learnomy\\Models\\Course' ) ) {
 			return $link;
 		}
 		// Learnomy's own lookup (published lessons playing the video, cached).
 		$course = null;
-		foreach ( \Learnomy\Models\Lesson::for_mediashield_video( (int) $video_id ) as $lesson ) {
+		foreach ( self::lessons_playing( (int) $video_id ) as $lesson ) {
 			$candidate = \Learnomy\Models\Course::find( (int) ( $lesson->course_id ?? 0 ) );
 			if ( $candidate && 'published' === (string) ( $candidate->status ?? '' ) && ! empty( $candidate->slug ) ) {
 				$course = $candidate;
