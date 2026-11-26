@@ -70,7 +70,9 @@ class Protection {
 			),
 			'strict'   => array(
 				'label'   => __( 'Strict', 'mediashield' ),
-				'summary' => __( 'Everything in Standard, plus the file address hidden from the page and developer tools detected.', 'mediashield' ),
+				// YouTube, Vimeo and Wistia serve their own videos: there is no
+				// file address to hide, only their links to cover (UX test MSUX-04).
+				'summary' => __( 'Everything in Standard, plus the file address hidden from the page and developer tools detected. On YouTube, Vimeo and Wistia videos MediaShield covers the platform\'s own links, but the platform still serves the video.', 'mediashield' ),
 				'adds'    => __( 'Plus file address hidden and developer tools detected.', 'mediashield' ),
 			),
 		);

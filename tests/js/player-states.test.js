@@ -541,7 +541,7 @@ describe( 'Free 1.4.4 review: player (#6, #7, #13)', () => {
 		boot( { markup: youtube( 'standard' ), session: { body: { session_token: 't', resume_position: 0 } } } );
 		jest.advanceTimersByTime( 1 );
 		const el = document.querySelector( '.ms-protected-player' );
-		const watches = every.mock.calls.map( ( c, i ) => [ c[ 1 ], every.mock.results[ i ].value ] ).filter( ( c ) => 500 !== c[ 0 ] );
+		const watches = every.mock.calls.map( ( c, i ) => [ c[ 1 ], every.mock.results[ i ].value ] ).filter( ( c ) => 500 !== c[ 0 ] && 300 !== c[ 0 ] ); // Not the YouTube poll or the shield watch.
 
 		expect( watches.map( ( c ) => c[ 0 ] ) ).toEqual( [ 1000 ] );
 		expect( el._msFirstPlayWatch ).toBe( watches[ 0 ][ 1 ] );
@@ -610,5 +610,113 @@ describe( 'The page a video is shown on travels with its viewing (front-end walk
 
 		const start = global.fetch.mock.calls.find( ( c ) => c[ 0 ].indexOf( 'session/start' ) > -1 );
 		expect( JSON.parse( start[ 1 ].body ) ).toEqual( { video_id: 7, ms_context: 'learnomy_lesson:42' } );
+	} );
+} );
+
+describe( 'Independent UX test (MSUX-03, 04, 07, 15)', () => {
+	test( 'MSUX-03 an 18 s upload stopped at 8.9 s offers Resume', async () => {
+		boot( {
+			markup: `<div class="ms-protected-player" data-video-id="7" data-platform="self" data-protection-level="standard">
+				<div class="ms-player-target" data-source-url="https://example.org/clip.mp4" data-stream-url="" data-duration="18" data-resume-position="8.9"></div></div>`,
+			session: { body: { session_token: 't', resume_position: 8.9 } },
+		} );
+		await readyNative();
+
+		expect( document.querySelector( '.ms-resume-chip' ) ).not.toBeNull();
+	} );
+
+	test( 'MSUX-07 the login wall shows a lock and the video title', () => {
+		boot( { markup: nativePlayer( 'data-title="Beach walk"' ), session: { body: {} }, loggedIn: false } );
+
+		const wall = document.querySelector( '.ms-login-overlay' );
+		expect( wall.querySelector( '.ms-login-lock svg' ) ).not.toBeNull();
+		expect( wall.querySelector( '.ms-login-title' ).textContent ).toBe( 'Beach walk' );
+		expect( wall.querySelector( '.ms-login-button' ).textContent ).toBe( 'Log in' );
+	} );
+
+	function fakeYouTube() {
+		const handle = {};
+		window.YT = {
+			PlayerState: { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3, CUED: 5 },
+			Player: function ( target, opts ) {
+				handle.opts = opts;
+				this.destroy = () => {};
+				this.getDuration = () => 300;
+				this.getCurrentTime = () => 0;
+				this.playVideo = () => opts.events.onStateChange( { data: 1 } );
+				this.pauseVideo = () => opts.events.onStateChange( { data: 2 } );
+				setTimeout( () => opts.events.onReady(), 0 );
+			},
+		};
+		return handle;
+	}
+	const youtube = ( level ) => `<div class="ms-protected-player" data-video-id="9" data-platform="youtube" data-protection-level="${ level }">
+		<div class="ms-player-target" data-platform-video-id="aaaaaaaaaaa"></div></div>`;
+
+	test( 'MSUX-04 Standard YouTube: privacy domain, no annotations, a cover and shields over its links', () => {
+		const yt = fakeYouTube();
+		boot( { markup: youtube( 'standard' ), session: { body: { session_token: 't', resume_position: 0 } } } );
+		jest.advanceTimersByTime( 1 );
+		const el = document.querySelector( '.ms-protected-player' );
+
+		expect( yt.opts.host ).toBe( 'https://www.youtube-nocookie.com' );
+		expect( yt.opts.playerVars ).toMatchObject( { rel: 0, iv_load_policy: 3, fs: 0 } );
+		expect( el.querySelector( '.ms-iframe-poster' ).style.backgroundImage ).toContain( 'i.ytimg.com/vi/aaaaaaaaaaa/' );
+		expect( el.querySelectorAll( '.ms-shield--top, .ms-shield--corner, .ms-shield--rest' ) ).toHaveLength( 3 );
+
+		yt.opts.events.onStateChange( { data: 1 } );
+		jest.advanceTimersByTime( 300 );
+		yt.opts.events.onStateChange( { data: 2 } );
+		jest.advanceTimersByTime( 300 );
+		expect( el.classList.contains( 'ms-shield-paused' ) ).toBe( true );
+	} );
+
+	test( 'MSUX-04 None YouTube is left as the platform shows it', () => {
+		fakeYouTube();
+		boot( { markup: youtube( 'none' ), session: { body: {} } } );
+		jest.advanceTimersByTime( 1 );
+
+		expect( document.querySelector( '.ms-shield' ) ).toBeNull();
+		expect( document.querySelector( '.ms-iframe-poster' ) ).toBeNull();
+	} );
+
+	test( 'MSUX-15 Wistia: one fullscreen and one play button', () => {
+		window.Wistia = {};
+		boot( {
+			markup: `<div class="ms-protected-player" data-video-id="9" data-platform="wistia" data-protection-level="standard">
+				<div class="ms-player-target" data-platform-video-id="e4a27b971d"></div></div>`,
+			session: { body: {} },
+		} );
+		const embed = document.querySelector( '.wistia_embed' );
+		expect( embed.className ).toContain( 'fullscreenButton=false' );
+		expect( embed.className ).toContain( 'playButton=false' );
+
+		// Wistia's API handle is not a <video>: no second play button on it.
+		window._wq[ window._wq.length - 1 ].onReady( { duration: () => 60, bind() {}, play() {}, pause() {}, time() {} } );
+		expect( document.querySelector( '.ms-bigplay' ) ).toBeNull();
+		expect( document.querySelectorAll( '.ms-iframe-poster' ) ).toHaveLength( 1 );
+		expect( document.querySelector( '.ms-shield--top' ) ).not.toBeNull();
+		delete window.Wistia;
+	} );
+
+	test( 'MSUX-15 Vimeo: its frame has no fullscreen permission and no title links', async () => {
+		window.Vimeo = {
+			Player: function () {
+				this.on = () => {};
+				this.ready = () => new Promise( () => {} );
+			},
+		};
+		boot( {
+			markup: `<div class="ms-protected-player" data-video-id="9" data-platform="vimeo" data-protection-level="strict">
+				<div class="ms-player-target" data-platform-video-id="76979871"></div></div>`,
+			session: { body: {} },
+		} );
+		await flush();
+		const frame = document.querySelector( '.ms-player-target iframe' );
+		expect( frame.getAttribute( 'allow' ) ).not.toContain( 'fullscreen' );
+		expect( frame.hasAttribute( 'allowfullscreen' ) ).toBe( false );
+		expect( frame.src ).toContain( 'title=0' );
+		expect( frame.src ).toContain( 'byline=0' );
+		delete window.Vimeo;
 	} );
 } );

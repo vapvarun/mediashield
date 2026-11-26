@@ -344,6 +344,7 @@ class Renderer {
 		?>
 		<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
 			data-video-id="<?php echo esc_attr( $video_id ); ?>"
+			data-title="<?php echo esc_attr( \MediaShield\CPT\Thumbnail::display_title( (int) $video_id, (string) $video->post_title ) ); ?>"
 			<?php if ( '' !== AccessControl::context_string() ) : ?>
 				data-ms-context="<?php echo esc_attr( AccessControl::context_string() ); ?>"
 			<?php endif; ?>

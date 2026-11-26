@@ -771,7 +771,7 @@ const Settings = () => {
 						className="mediashield-settings__preview-button"
 						style={ settings?.ms_player_accent_color ? { background: settings.ms_player_accent_color } : undefined }
 					>
-						{ settings?.ms_login_button_text || __( 'Log In', 'mediashield' ) }
+						{ settings?.ms_login_button_text || __( 'Log in', 'mediashield' ) }
 					</span>
 				</div>
 				<p className="mediashield-settings__preview-caption">
@@ -953,7 +953,7 @@ const Settings = () => {
 					help={ __( 'Label for the login button on the video overlay.', 'mediashield' ) }
 					value={ settings?.ms_login_button_text || '' }
 					onChange={ ( val ) => updateSetting( 'ms_login_button_text', val ) }
-					placeholder={ __( 'Log In', 'mediashield' ) }
+					placeholder={ __( 'Log in', 'mediashield' ) }
 					__nextHasNoMarginBottom
 				/>
 				<TextControl

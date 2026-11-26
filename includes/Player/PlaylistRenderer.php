@@ -170,7 +170,12 @@ class PlaylistRenderer {
 						<?php
 						// Length, when known. This used to print the raw platform
 						// slug ("youtube", "self"), which tells a viewer nothing.
+						// The Duration field, else the length players measured
+						// (a YouTube video has none of its own; UX test MSUX-25).
 						$seconds = (int) $item->duration;
+						if ( $seconds <= 0 ) {
+							$seconds = (int) floor( \MediaShield\Access\WatchedSpans::measured( (int) $item->video_id ) );
+						}
 						if ( $seconds > 0 ) :
 							?>
 							<span class="ms-playlist-item-duration"><?php echo esc_html( self::duration_label( $seconds ) ); ?></span>

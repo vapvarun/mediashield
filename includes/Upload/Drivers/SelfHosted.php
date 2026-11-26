@@ -447,8 +447,23 @@ class SelfHosted implements DriverInterface {
 		if ( ! function_exists( 'wp_read_video_metadata' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/media.php';
 		}
-		$meta   = wp_read_video_metadata( $path );
-		$length = is_array( $meta ) ? (int) round( (float) ( $meta['length'] ?? 0 ) ) : 0;
+		// The exact length, from the getID3 data WordPress passes to its own
+		// filter: the 'length' it returns is rounded (17.808 s became 18),
+		// which made the playlist say 0:18 where the player says 0:17 and kept
+		// a finished upload short of 100% (UX test MSUX-02, MSUX-25). Whole
+		// seconds down, as every player's clock shows it.
+		$exact = null;
+		$catch = static function ( $metadata, $file, $format, $data ) use ( &$exact ) {
+			$exact = isset( $data['playtime_seconds'] ) ? (float) $data['playtime_seconds'] : null;
+			return $metadata;
+		};
+		add_filter( 'wp_read_video_metadata', $catch, 1, 4 );
+		try {
+			$meta = wp_read_video_metadata( $path );
+		} finally {
+			remove_filter( 'wp_read_video_metadata', $catch, 1 );
+		}
+		$length = (int) floor( null !== $exact ? $exact : (float) ( is_array( $meta ) ? ( $meta['length'] ?? 0 ) : 0 ) );
 		if ( $length > 0 ) {
 			update_post_meta( $video_id, '_ms_duration', $length );
 		}

@@ -45,6 +45,10 @@
 	--ms-accent: var(--wp--preset--color--primary, #2271b1);
 	--ms-accent-hover: #135e96; /* hex fallback before color-mix() */
 	--ms-accent-hover: color-mix(in srgb, var(--ms-accent) 82%, #000);
+	/* Text on the accent. A theme whose dark mode lightens the accent says
+	 * which text reads on it (Reign: --reign-on-accent-color); white
+	 * otherwise. White on Reign's dark accent was 1.9:1 (UX test MSUX-16). */
+	--ms-on-accent: var(--reign-on-accent-color, #ffffff);
 
 	/* Fixed control colours — player chrome sits on dark video, so white text
 	 * and the letterbox black are intentional constants, not theme-driven. */
@@ -132,6 +136,75 @@ iframe.ms-player-target {
 	display: block;
 }
 
+/* Standard and Strict on YouTube, Vimeo and Wistia: shields over the
+   platform's own links (title, share, logo, side buttons, related videos,
+   end screen). A click plays or pauses (UX test MSUX-04). Geometry follows
+   each platform's 2026 player; re-measure if one is redesigned. */
+.ms-shield {
+	position: absolute;
+	z-index: 7;
+	display: none;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+.ms-shield--top {
+	display: block;
+	inset-block-start: 0;
+	inset-inline: 0;
+	height: 64px;
+}
+
+/* Vimeo's like, watch later, share and embed column. */
+.ms-protected-player[data-platform="vimeo"] .ms-shield--side {
+	display: block;
+	inset-block-start: 0;
+	inset-inline-end: 0;
+	width: 64px;
+	height: 200px;
+}
+
+/* The platform's logo at the end of its control bar ("Watch on YouTube", vimeo). */
+.ms-protected-player[data-platform="youtube"] .ms-shield--corner,
+.ms-protected-player[data-platform="vimeo"] .ms-shield--corner {
+	display: block;
+	inset-block-end: 0;
+	inset-inline-end: 0;
+	width: 96px;
+	height: 52px;
+}
+
+/* Paused: everything above the control bar (related videos). Ended: all of it. */
+.ms-shield-paused .ms-shield--rest {
+	display: block;
+	inset-block: 0 52px;
+	inset-inline: 0;
+}
+
+.ms-shield--rest .ms-icon {
+	display: none;
+}
+
+.ms-shield-ended .ms-shield--rest {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	inset: 0;
+	background: var(--ms-overlay-surface-strong);
+	color: var(--ms-on-overlay);
+}
+
+.ms-shield-ended .ms-shield--rest .ms-icon {
+	display: block;
+}
+
+/* No poster: the platform's own picture shows through the cover. */
+.ms-iframe-poster--clear {
+	background-color: transparent;
+}
+
 /* Featured Image over a platform iframe until the viewer clicks play. */
 .ms-iframe-poster {
 	position: absolute;
@@ -167,7 +240,7 @@ iframe.ms-player-target {
 	margin-left: 6px;
 	border-top: 14px solid transparent;
 	border-bottom: 14px solid transparent;
-	border-left: 22px solid var(--ms-on-overlay);
+	border-left: 22px solid var(--ms-on-accent);
 }
 
 .ms-iframe-poster:focus-visible {
@@ -247,7 +320,7 @@ iframe.ms-player-target {
 	border: 0;
 	border-radius: var(--ms-radius-sm);
 	background: var(--ms-accent);
-	color: var(--ms-on-overlay);
+	color: var(--ms-on-accent);
 	font-size: 1rem;
 	font-weight: 600;
 	cursor: pointer;
@@ -309,7 +382,7 @@ iframe.ms-player-target {
 	padding: 0 var(--ms-space-5);
 	border-radius: var(--ms-radius-sm);
 	background: var(--ms-accent);
-	color: var(--ms-on-overlay) !important;
+	color: var(--ms-on-accent) !important;
 	font-size: 1rem;
 	font-weight: 600;
 	text-decoration: none;
@@ -356,12 +429,26 @@ iframe.ms-player-target {
 	margin: 0;
 }
 
+/* The lock and the title of what is behind the wall (UX test MSUX-07). */
+.ms-login-lock {
+	display: inline-flex;
+	margin-block-end: var(--ms-space-2);
+	opacity: 0.85;
+}
+
+.ms-login-message .ms-login-title {
+	margin-block-end: var(--ms-space-2);
+	font-size: var(--ms-font-size-md);
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
 .ms-login-button {
 	display: inline-block;
 	margin-block-start: var(--ms-space-4);
 	padding: 0.75rem 2rem;
 	background: var(--ms-accent);
-	color: #fff !important;
+	color: var(--ms-on-accent) !important;
 	text-decoration: none;
 	border-radius: 4px;
 	font-size: 1rem;
@@ -705,7 +792,7 @@ iframe.ms-player-target {
 	border: 0;
 	border-radius: 50%;
 	background: var(--ms-accent);
-	color: var(--ms-on-overlay);
+	color: var(--ms-on-accent);
 	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 	cursor: pointer;
 }
@@ -828,7 +915,7 @@ iframe.ms-player-target {
 	display: inline-block;
 	padding: 0.75rem 2rem;
 	background: var(--ms-accent);
-	color: var(--ms-on-overlay);
+	color: var(--ms-on-accent);
 	text-decoration: none;
 	border-radius: 6px;
 	font-weight: 600;

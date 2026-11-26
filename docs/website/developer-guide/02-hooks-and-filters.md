@@ -202,7 +202,7 @@ It runs only for guests, and only to answer the Require Login check. It does not
 
 ### mediashield_video_watch_url
 
-*Since 1.4.1.* Supplies the page where a member can watch a video. The My Videos block and shortcode use it to link each title and to show the **Resume** link. The default is an empty string. With no URL the title shows as plain text and there is no Resume link. Videos have no public page of their own (their permalink lands on the home page), so MediaShield cannot guess one.
+*Since 1.4.1.* Supplies the page where a member can watch a video. The My Videos block and shortcode use it to link each title and to show the **Resume** link. The default is an empty string. With no URL MediaShield links the first published page or post that shows the video and the member may read; since 1.4.4, when there is none, the video's own player page, a signed link minted for that member (the same page the embed links for apps open). Videos have no public page of their own (their permalink lands on the home page).
 
 **Parameters:** `$url` (string, default empty), `$video_id` (int), `$user_id` (int, the member the list is for)
 

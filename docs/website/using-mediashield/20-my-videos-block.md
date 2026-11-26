@@ -34,7 +34,7 @@ The shortcode prints exactly what the block prints. Before 1.4.1 the shortcode c
 - The title.
 - A progress bar and "N% complete".
 - **Completed** once the member reaches 100 percent.
-- **Resume**, for videos not yet finished, when a watch page is known.
+- **Resume**, for every video not yet finished.
 
 Filter links above the grid switch between All, In Progress and Completed. Newest watched comes first. The list shows 12 videos at a time, with **Previous** and **Next** links below it when there are more. The filter and page are part of the address (for example `?ms_videos=completed&ms_videos_page=2`), so they work without JavaScript and can be bookmarked.
 
@@ -47,7 +47,7 @@ Videos have no public page of their own, so MediaShield cannot link to one. In 1
 | Your setup | What members get |
 |------------|------------------|
 | An integration supplies the page, such as the Learnomy lesson that holds the video, or (with Pro) the LearnDash, Tutor LMS or LifterLMS lesson picked in the video's LMS box | The title and Resume link to that page. The player there offers to resume by itself |
-| Nothing supplies a page | The title is plain text and there is no Resume link. Progress still shows |
+| Nothing supplies a page, and no page shows the video | Since 1.4.4 the title and Resume open the video on a page of its own, made for that member (the same page the embed links for apps open). The link lasts 12 hours; reloading My Videos makes a fresh one |
 
 To link to your own pages, a developer adds the filter. See [Hooks and Filters](../developer-guide/02-hooks-and-filters.md).
 

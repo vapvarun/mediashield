@@ -462,6 +462,36 @@ class SessionManager {
 	}
 
 	/**
+	 * Seconds short of the length that still count as the end (the stored
+	 * length is whole seconds: a 17.808 s upload is stored as 18).
+	 */
+	public const END_SLACK = 1.0;
+
+	/**
+	 * How far through the video a position is, as a percent (0-100).
+	 *
+	 * Within END_SLACK of the length is the end, 100%: a stored length is
+	 * whole seconds, so an upload played to its last frame (17.808 s of a
+	 * stored 18) stopped at 98.9%, never fired the 100% milestone and never
+	 * showed as Completed (UX test MSUX-02).
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param float $position Position in seconds.
+	 * @param float $duration Length in seconds (effective_duration()).
+	 * @return float
+	 */
+	public static function completion( float $position, float $duration ): float {
+		if ( $duration <= 0 ) {
+			return 0.0;
+		}
+		if ( $duration > 2 * self::END_SLACK && $position >= $duration - self::END_SLACK ) {
+			return 100.0;
+		}
+		return min( 100.0, ( $position / $duration ) * 100 );
+	}
+
+	/**
 	 * The duration to measure progress against.
 	 *
 	 * The stored `_ms_duration` is an anti-spoof floor, not a prerequisite:
@@ -515,7 +545,7 @@ class SessionManager {
 		// for videos whose length is unknown.)
 		$effective_duration = self::effective_duration( (int) $parsed['video_id'], $duration );
 
-		$completion_pct = $effective_duration > 0 ? min( 100, ( $position / $effective_duration ) * 100 ) : 0;
+		$completion_pct = self::completion( $position, $effective_duration );
 
 		// Seconds really watched (Basecamp 10530930729): the stretches the
 		// player reports, checked against the time since its last report.

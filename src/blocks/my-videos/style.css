@@ -10,6 +10,9 @@
 
 .ms-my-videos {
 	--ms-mv-accent: var( --wp--preset--color--primary, #2271b1 );
+	/* Text on the accent: the theme's own when it lightens the accent in
+	   dark mode (Reign), white otherwise (UX test MSUX-16). */
+	--ms-mv-on-accent: var( --reign-on-accent-color, #fff );
 	--ms-mv-text: var( --wp--preset--color--contrast, currentColor );
 	--ms-mv-muted: #646970;
 	--ms-mv-muted: color-mix( in srgb, currentColor 60%, transparent );
@@ -45,7 +48,7 @@
 .ms-my-videos .ms-my-videos-filter-btn.is-active {
 	border-color: var( --ms-mv-accent );
 	background: var( --ms-mv-accent );
-	color: #fff;
+	color: var( --ms-mv-on-accent );
 }
 
 .ms-my-videos .ms-my-videos-filter-btn:focus-visible,
@@ -130,7 +133,7 @@
 	padding: 0 16px;
 	border-radius: 6px;
 	background: var( --ms-mv-accent );
-	color: #fff;
+	color: var( --ms-mv-on-accent );
 	font-size: 0.875rem;
 	font-weight: 600;
 	text-decoration: none;
@@ -190,14 +193,14 @@
 	padding: 0 20px;
 	border-radius: 6px;
 	background: var( --ms-mv-accent );
-	color: #fff;
+	color: var( --ms-mv-on-accent );
 	font-size: 0.875rem;
 	font-weight: 600;
 	text-decoration: none;
 }
 
 .ms-my-videos .ms-my-videos__state-action:hover {
-	color: #fff;
+	color: var( --ms-mv-on-accent );
 	text-decoration: underline;
 }
 

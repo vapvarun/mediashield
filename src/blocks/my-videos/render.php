@@ -155,8 +155,8 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 			 * Left empty, MediaShield links the first published page or post
 			 * that shows the video and that this member may read (the Videos
 			 * list's "Used in"), so a site with no LMS still leads back to the
-			 * video. With none, the title shows as plain text and no Resume
-			 * link is printed. The player on that page offers to resume by
+			 * video. With none, the video's own signed player page (1.4.4;
+			 * before, no Resume link). The player there offers to resume by
 			 * itself.
 			 *
 			 * @since 1.4.1
@@ -182,6 +182,12 @@ $view_url = static fn( string $f, int $p = 1 ): string => add_query_arg(
 			$watch_url = $watch_urls[ $video_post->ID ] ?? '';
 			if ( '' === $watch_url ) {
 				$watch_url = \MediaShield\CPT\VideoUsage::page_for_viewer( $video_post->ID, $current_user_id );
+			}
+			// On no page this member can open: the video on a page of its own
+			// (the signed player page apps use), so every card in progress
+			// still has Resume (UX test MSUX-19). Minted for this member only.
+			if ( '' === $watch_url ) {
+				$watch_url = \MediaShield\Embed\EmbedLink::url( $video_post->ID, $current_user_id, 12 * HOUR_IN_SECONDS );
 			}
 			?>
 			<div class="ms-my-videos-item ms-my-videos__card" data-completion-pct="<?php echo esc_attr( $completion ); ?>">

@@ -203,8 +203,12 @@ class Settings {
 				'default' => 'Please log in to watch this video',
 			),
 			'ms_login_button_text'       => array(
-				'type'    => 'string',
-				'default' => 'Log In',
+				'type'            => 'string',
+				'default'         => 'Log in',
+				// "Log in", as WordPress and My Videos write it (UX test
+				// MSUX-33). A site still storing the old default is not
+				// a custom text (message()).
+				'former_defaults' => array( 'Log In' ),
 			),
 			'ms_access_denied_text'      => array(
 				'type'    => 'string',
@@ -517,8 +521,11 @@ class Settings {
 	 */
 	public static function message( string $key, string $translated ): string {
 		$value = (string) self::get( $key );
+		$entry = self::schema()[ $key ] ?? array();
 
-		return ( self::schema()[ $key ]['default'] ?? null ) === $value ? $translated : $value;
+		// The default (or a default an earlier version stored) shows translated.
+		$defaults = array_merge( array( $entry['default'] ?? null ), $entry['former_defaults'] ?? array() );
+		return in_array( $value, $defaults, true ) ? $translated : $value;
 	}
 
 	/**
@@ -564,7 +571,7 @@ class Settings {
 			// for a page cached before the key existed.
 			'messages'   => array(
 				'loginOverlay'    => self::message( 'ms_login_overlay_text', __( 'Please log in to watch this video', 'mediashield' ) ),
-				'loginButton'     => self::message( 'ms_login_button_text', __( 'Log In', 'mediashield' ) ),
+				'loginButton'     => self::message( 'ms_login_button_text', __( 'Log in', 'mediashield' ) ),
 				'accessDenied'    => self::message( 'ms_access_denied_text', __( 'You do not have access to this video', 'mediashield' ) ),
 				'unavailable'     => self::message( 'ms_unavailable_text', __( 'This video is unavailable.', 'mediashield' ) ),
 				'viewCourse'      => self::message( 'ms_view_course_text', __( 'View course', 'mediashield' ) ),

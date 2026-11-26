@@ -142,7 +142,7 @@
 		// the first miss — we poll briefly for the adapter to become
 		// controllable, and only give up if it never does.
 		var isControllable = function () {
-			return !! ( adapter._video || adapter._player || adapter._pjs );
+			return !! ( adapter._video || adapter._player || adapter._pjs || adapter._wistia );
 		};
 
 		if ( isControllable() ) {

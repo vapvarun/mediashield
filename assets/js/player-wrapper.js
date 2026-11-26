@@ -64,12 +64,16 @@
 			var playerEl = target.closest( '.ms-protected-player' );
 
 			function initPlayer() {
-				var pv = { modestbranding: 1, rel: 0, fs: 0 };
+				// No annotations, related videos from the same channel only, no
+				// platform fullscreen (MediaShield's keeps the watermark).
+				var pv = { modestbranding: 1, rel: 0, fs: 0, iv_load_policy: 3, playsinline: 1 };
 				if ( options.autoplay === true ) pv.autoplay = 1;
 				if ( options.loop === true ) { pv.loop = 1; pv.playlist = videoId; }
 				if ( options.muted === true ) pv.mute = 1;
 				if ( options.controls === false ) pv.controls = 0;
 				adapter._player = new YT.Player( target, {
+					// The privacy-enhanced domain: no YouTube cookies until play.
+					host: 'https://www.youtube-nocookie.com',
 					videoId: videoId,
 					playerVars: pv,
 					events: {
@@ -126,14 +130,6 @@
 
 	// ─── Vimeo Adapter ───────────────────────────────────────────
 
-	// Vimeo's own full screen button takes only its iframe full screen and
-	// leaves the watermark behind, and next to ours it is a second control for
-	// one job. Withdrawing the iframe's permission removes it.
-	function withdrawFullscreen( iframe ) {
-		iframe.removeAttribute( 'allowfullscreen' );
-		iframe.setAttribute( 'allow', ( iframe.getAttribute( 'allow' ) || '' ).replace( /\bfullscreen\s*;?\s*/, '' ) );
-	}
-
 	var VimeoAdapter = {
 		create: function ( target, videoId, options ) {
 			options = options || {};
@@ -153,20 +149,23 @@
 
 			loadSDK( 'https://player.vimeo.com/api/player.js', function () { return window.Vimeo; } )
 				.then( function () {
-					var vimeoOpts = { id: videoId, responsive: true, fullscreen: false };
-					if ( options.autoplay === true ) vimeoOpts.autoplay = true;
-					if ( options.loop === true ) vimeoOpts.loop = true;
-					if ( options.muted === true ) vimeoOpts.muted = true;
-					if ( options.controls === false ) vimeoOpts.controls = false;
-					// The SDK adds its iframe asynchronously; take the permission
-					// away the moment it appears, before the frame navigates.
-					new MutationObserver( function ( records, observer ) {
-						var frame = target.querySelector( 'iframe' );
-						if ( ! frame ) return;
-						withdrawFullscreen( frame );
-						observer.disconnect();
-					} ).observe( target, { childList: true } );
-					adapter._player = new Vimeo.Player( target, vimeoOpts );
+					// Our own iframe, so it never has the fullscreen or
+					// picture-in-picture permission: Vimeo then draws no
+					// fullscreen button next to MediaShield's (UX test MSUX-15,
+					// the SDK's own frame got them before it could be changed),
+					// and no title, byline, portrait or badge links out.
+					var params = { title: 0, byline: 0, portrait: 0, badge: 0, dnt: 1, pip: 0, vimeo_logo: 0 };
+					if ( options.autoplay === true ) params.autoplay = 1;
+					if ( options.loop === true ) params.loop = 1;
+					if ( options.muted === true ) params.muted = 1;
+					if ( options.controls === false ) params.controls = 0;
+					var frame = document.createElement( 'iframe' );
+					frame.src = 'https://player.vimeo.com/video/' + encodeURIComponent( videoId ) + '?' + Object.keys( params ).map( function ( k ) { return k + '=' + params[ k ]; } ).join( '&' );
+					frame.setAttribute( 'allow', 'autoplay; encrypted-media' );
+					frame.setAttribute( 'title', 'Vimeo' );
+					frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;';
+					target.appendChild( frame );
+					adapter._player = new Vimeo.Player( frame );
 
 					adapter._player.on( 'timeupdate', function ( data ) {
 						adapter._position = data.seconds;
@@ -218,18 +217,21 @@
 	var WistiaAdapter = {
 		create: function ( target, hashedId, options ) {
 			options = options || {};
+			// The Wistia API handle is _wistia, not _video: everything that
+			// reads _video treats it as a <video> element, and Wistia's
+			// handle is not one (it got a second play button, UX test MSUX-15).
 			var adapter = {
-				_video: null, _position: 0, _duration: 0, _playing: false,
+				_wistia: null, _position: 0, _duration: 0, _playing: false,
 				_readyCb: null, _endedCb: null,
 				getPosition: function () { return adapter._position; },
 				getDuration: function () { return adapter._duration; },
 				isPlaying: function () { return adapter._playing; },
-				seekTo: function ( s ) { if ( adapter._video ) adapter._video.time( s ); },
-				play: function () { if ( adapter._video ) adapter._video.play(); },
-				pause: function () { if ( adapter._video ) adapter._video.pause(); },
+				seekTo: function ( s ) { if ( adapter._wistia ) adapter._wistia.time( s ); },
+				play: function () { if ( adapter._wistia ) adapter._wistia.play(); },
+				pause: function () { if ( adapter._wistia ) adapter._wistia.pause(); },
 				onReady: function ( cb ) { adapter._readyCb = cb; },
 				onEnded: function ( cb ) { adapter._endedCb = cb; },
-				destroy: function () { if ( adapter._video ) adapter._video.remove(); },
+				destroy: function () { if ( adapter._wistia ) adapter._wistia.remove(); },
 			};
 
 			// Create Wistia embed div inside target. Per-video options become
@@ -239,6 +241,11 @@
 			if ( options.autoplay === true ) embedClasses.push( 'autoPlay=true' );
 			if ( options.loop === true ) embedClasses.push( 'endVideoBehavior=loop' );
 			if ( options.muted === true ) embedClasses.push( 'volume=0' );
+			// One fullscreen button, MediaShield's (it keeps the watermark),
+			// and one play button, the cover's, where the player is shielded
+			// (UX test MSUX-15).
+			embedClasses.push( 'fullscreenButton=false' );
+			if ( options.shield ) embedClasses.push( 'playButton=false' );
 			if ( options.controls === false ) embedClasses.push( 'playbar=false', 'fullscreenButton=false', 'volumeControl=false', 'settingsControl=false', 'playbackRateControl=false', 'controlsVisibleOnLoad=false' );
 			var embedDiv = document.createElement( 'div' );
 			embedDiv.className = embedClasses.join( ' ' );
@@ -250,7 +257,7 @@
 			window._wq.push( {
 				id: hashedId,
 				onReady: function ( video ) {
-					adapter._video = video;
+					adapter._wistia = video;
 					adapter._duration = video.duration();
 					video.bind( 'secondchange', function ( s ) {
 						adapter._position = s;
@@ -735,11 +742,84 @@
 			// platform's thumbnail, so the owner's Featured Image goes on top
 			// until the viewer clicks play (Basecamp 10526098472).
 			var isNative = adapter._video instanceof HTMLVideoElement;
-			if ( poster && ! isNative && ! ( target && target.dataset.autoplay === '1' ) ) {
+			var shield = ! isNative && shielded( el );
+			// Shielded, the cover always goes on, so the platform's title,
+			// share and "Watch on" links are never the first thing offered:
+			// the owner's poster, YouTube's own thumbnail, or the platform's
+			// picture seen through it (UX test MSUX-04).
+			if ( shield && ! poster && 'youtube' === el.dataset.platform && target && target.dataset.platformVideoId ) {
+				poster = 'https://i.ytimg.com/vi/' + encodeURIComponent( target.dataset.platformVideoId ) + '/hqdefault.jpg';
+			}
+			if ( ( poster || shield ) && ! isNative && ! ( target && target.dataset.autoplay === '1' ) ) {
 				addIframePoster( el, adapter, poster );
 			}
 		}
 		return adapter;
+	}
+
+	/**
+	 * Does this player cover a platform's own links? Standard and Strict, on
+	 * YouTube, Vimeo and Wistia (UX test MSUX-04). The platform still serves
+	 * the video; the covers keep its title, share, "Watch on" and related
+	 * videos from handing the address out with one click.
+	 *
+	 * @param {HTMLElement} el Player container.
+	 * @return {boolean}
+	 */
+	function shielded( el ) {
+		return [ 'youtube', 'vimeo', 'wistia' ].indexOf( el.dataset.platform ) > -1
+			&& [ 'standard', 'strict' ].indexOf( el.dataset.protectionLevel ) > -1;
+	}
+
+	/**
+	 * Lay click shields over a platform player's own links: its title bar,
+	 * its logo corner (and Vimeo's side buttons), and, while paused or ended,
+	 * everything above its control bar (related videos, end screen). A click
+	 * on a shield plays or pauses, as a click on the picture does.
+	 *
+	 * @param {HTMLElement} el      Player container.
+	 * @param {Object}      adapter Platform adapter.
+	 */
+	function addPlatformShields( el, adapter ) {
+		var toggle = function () {
+			if ( adapter.isPlaying() ) {
+				adapter.pause();
+				return;
+			}
+			if ( el.classList.contains( 'ms-shield-ended' ) ) {
+				el.classList.remove( 'ms-shield-ended' );
+				if ( adapter.seekTo ) adapter.seekTo( 0 );
+			}
+			adapter.play();
+		};
+		[ 'top', 'side', 'corner' ].forEach( function ( part ) {
+			var s = document.createElement( 'div' );
+			s.className = 'ms-shield ms-shield--' + part;
+			s.setAttribute( 'aria-hidden', 'true' );
+			s.addEventListener( 'click', toggle );
+			el.appendChild( s );
+		} );
+		var rest = document.createElement( 'button' );
+		rest.type = 'button';
+		rest.className = 'ms-shield ms-shield--rest';
+		rest.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
+		setIcon( rest, 'play', 32 );
+		rest.addEventListener( 'click', toggle );
+		el.appendChild( rest );
+
+		var started = false;
+		clearInterval( el._msShieldWatch );
+		el._msShieldWatch = setInterval( function () {
+			var playing = adapter.isPlaying();
+			if ( playing ) {
+				started = true;
+				el.classList.remove( 'ms-shield-ended' );
+			}
+			el.classList.toggle( 'ms-shield-paused', started && ! playing );
+		}, 300 );
+		el.addEventListener( 'mediashield:ended', function () {
+			el.classList.add( 'ms-shield-ended' );
+		} );
 	}
 
 	/**
@@ -759,7 +839,11 @@
 		cover.type = 'button';
 		cover.className = 'ms-iframe-poster';
 		cover.setAttribute( 'aria-label', t( 'playVideo', 'Play video' ) );
-		cover.style.backgroundImage = 'url("' + poster.replace( /"/g, '%22' ) + '")';
+		if ( poster ) {
+			cover.style.backgroundImage = 'url("' + poster.replace( /"/g, '%22' ) + '")';
+		} else {
+			cover.classList.add( 'ms-iframe-poster--clear' );
+		}
 		cover.addEventListener( 'click', function () {
 			cover.remove();
 			var tries = 0;
@@ -793,6 +877,8 @@
 			muted:    tri( target.dataset.muted ),
 			controls: tri( target.dataset.controls ),
 			poster:   target.dataset.poster || '',
+			// Standard and Strict cover a platform's own links (shielded()).
+			shield:   shielded( el ),
 		};
 
 		switch ( platform ) {
@@ -950,6 +1036,7 @@
 		volume: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>',
 		muted: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
 		captions: '<rect width="18" height="14" x="3" y="5" rx="2" ry="2"/><path d="M7 15h4M15 15h2M7 11h2M13 11h4"/>',
+		lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
 	};
 
 	function setIcon( btn, name, size ) {
@@ -1503,6 +1590,9 @@
 		// each counted as watching and sending a heartbeat every 30 s.
 		playerAdapter.onReady( function () {
 			applyPlayerFeatures( el, playerAdapter );
+			if ( ! ( playerAdapter._video instanceof HTMLVideoElement ) && shielded( el ) ) {
+				addPlatformShields( el, playerAdapter );
+			}
 			// Where this member stopped, printed by the server so the offer
 			// needs no viewing (Renderer, data-resume-position).
 			var target = el.querySelector( '.ms-player-target' );
@@ -2145,6 +2235,9 @@
 	 */
 	function rebuildPlayer( el ) {
 		clearInterval( el._msFirstPlayWatch );
+		clearInterval( el._msShieldWatch );
+		el.classList.remove( 'ms-shield-paused', 'ms-shield-ended' );
+		Array.prototype.forEach.call( el.querySelectorAll( '.ms-shield' ), function ( node ) { node.remove(); } );
 		if ( el._msAdapter && el._msAdapter.destroy ) {
 			try { el._msAdapter.destroy(); } catch ( e ) {}
 		}
@@ -2190,13 +2283,26 @@
 		var message = document.createElement( 'div' );
 		message.className = 'ms-login-message';
 
+		// A lock and the video's title, so the wall says what is behind it
+		// (UX test MSUX-07). The title is printed by the server (data-title).
+		var lock = document.createElement( 'span' );
+		lock.className = 'ms-login-lock';
+		setIcon( lock, 'lock', 28 );
+		message.appendChild( lock );
+		if ( el.dataset.title ) {
+			var heading = document.createElement( 'p' );
+			heading.className = 'ms-login-title';
+			heading.textContent = el.dataset.title;
+			message.appendChild( heading );
+		}
+
 		var text = document.createElement( 'p' );
 		text.textContent = t( 'loginOverlay', 'Please log in to watch this video.' );
 
 		var link = document.createElement( 'a' );
 		link.href = config.loginUrl || '/wp-login.php';
 		link.className = 'ms-login-button';
-		link.textContent = t( 'loginButton', 'Log In' );
+		link.textContent = t( 'loginButton', 'Log in' );
 
 		// Who it is for, so the viewer knows logging in is the way in.
 		var sub = document.createElement( 'p' );
@@ -2217,15 +2323,19 @@
 	 *
 	 * Only between 10 seconds in and 95% of the length: a viewer who stopped
 	 * 3 seconds in, or who finished, starts from the top (Basecamp
-	 * 10530930523). With no known length only the 10 second floor applies.
+	 * 10530930523). On a short video the floor is a tenth of it, at least
+	 * 3 seconds: half of an 18 s clip was never offered (UX test MSUX-03).
+	 * With no known length only the 10 second floor applies.
 	 *
 	 * @param {number} position Seconds where the viewer stopped.
 	 * @param {number} duration Video length in seconds, 0 when unknown.
 	 * @return {boolean}
 	 */
 	function resumeWorthOffering( position, duration ) {
-		if ( ! ( position >= 10 ) ) return false;
-		return ! ( duration > 0 ) || position < duration * 0.95;
+		var known = duration > 0;
+		var floor = known ? Math.min( 10, Math.max( 3, duration * 0.1 ) ) : 10;
+		if ( ! ( position >= floor ) ) return false;
+		return ! known || position < duration * 0.95;
 	}
 
 	/**
