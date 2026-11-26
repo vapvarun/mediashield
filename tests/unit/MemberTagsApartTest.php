@@ -56,7 +56,8 @@ class MemberTagsApartTest extends WP_UnitTestCase {
 		$later  = self::factory()->user->create();
 		$video  = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
 		$video2 = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
-		$record = static fn( $v, $t ) => array( $v . '_50' => array( 'video_id' => $v, 'pct' => 50, 'tag' => 'finished-intro', 'tag_id' => $t, 'earned_at' => '2026-11-01 10:00:00' ) );
+		// Earned in the request that wrote the link, as 1.4.3 did.
+		$record = static fn( $v, $t ) => array( $v . '_50' => array( 'video_id' => $v, 'pct' => 50, 'tag' => 'finished-intro', 'tag_id' => $t, 'earned_at' => current_time( 'mysql', true ) ) );
 
 		// What 1.4.3 did: the first member to reach 50% created the tag.
 		$earned = TagManager::ensure( 'finished-intro', $first );
@@ -79,7 +80,9 @@ class MemberTagsApartTest extends WP_UnitTestCase {
 		for ( $runs = 1; false !== get_option( TagManager::MEMBER_TAGS_PENDING ) && $runs < 10; $runs++ ) {
 			do_action( 'ms_separate_member_tags' );
 		}
+		// Migrator::run()'s CREATE TABLE committed the test's rows, so remove them for good.
 		$wpdb->delete( $wpdb->usermeta, array( 'user_id' => 999999 ) ); // phpcs:ignore WordPress.DB
+		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB
 
 		$this->assertSame( 2, $runs - 1, 'Two batches.' );
 		$this->assertSame( array( 'beginner' ), wp_list_pluck( TagManager::get_for_video( $video ), 'name' ) );
@@ -87,6 +90,45 @@ class MemberTagsApartTest extends WP_UnitTestCase {
 		$this->assertNull( TagManager::get( $earned ), 'The member-made tag, now on no video, is gone.' );
 		$this->assertNotNull( TagManager::get( $spare ), 'An owner tag stays even on no video.' );
 		$this->assertSame( 'finished-intro', get_user_meta( $first, '_ms_video_tags', true )[ $video . '_50' ]['tag'], 'The member keeps it.' );
+	}
+
+	/**
+	 * The owner testing their own milestone keeps their own tags: a tag they
+	 * put on the video by hand, and a tag they made before earning it.
+	 */
+	public function test_owner_who_earns_their_own_tags_keeps_them(): void {
+		global $wpdb;
+		$owner = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$hand  = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$other = self::factory()->post->create( array( 'post_type' => 'mediashield_video', 'post_status' => 'publish' ) );
+		$week  = gmdate( 'Y-m-d H:i:s', time() - WEEK_IN_SECONDS );
+		$now   = current_time( 'mysql', true );
+
+		// Case A: "intro" put on the video by hand last week, then earned on it today (1.4.3 kept the older link).
+		$intro = TagManager::ensure( 'intro', $owner );
+		TagManager::assign_to_video( $hand, $intro, $owner );
+		$wpdb->update( $wpdb->prefix . 'ms_video_tags', array( 'tagged_at' => $week ), array( 'video_id' => $hand ) ); // phpcs:ignore WordPress.DB
+		// Case B: "Gold" made on the Tags screen last week, on no video, then earned on another video today.
+		$gold = TagManager::ensure( 'Gold', $owner );
+		$wpdb->update( $wpdb->prefix . 'ms_tags', array( 'created_at' => $week ), array( 'id' => $gold ) ); // phpcs:ignore WordPress.DB
+		TagManager::assign_to_video( $other, $gold, $owner ); // The milestone's own link, today.
+		update_user_meta(
+			$owner,
+			'_ms_video_tags',
+			array(
+				$hand . '_50'  => array( 'video_id' => $hand, 'pct' => 50, 'tag' => 'intro', 'tag_id' => $intro, 'earned_at' => $now ),
+				$other . '_50' => array( 'video_id' => $other, 'pct' => 50, 'tag' => 'Gold', 'tag_id' => $gold, 'earned_at' => $now ),
+			)
+		);
+
+		update_option( TagManager::MEMBER_TAGS_PENDING, '0' );
+		for ( $runs = 0; false !== get_option( TagManager::MEMBER_TAGS_PENDING ) && $runs < 20; $runs++ ) {
+			TagManager::separate_member_tags();
+		}
+
+		$this->assertSame( array( 'intro' ), wp_list_pluck( TagManager::get_for_video( $hand ), 'name' ), 'The hand-made link stays.' );
+		$this->assertSame( array(), TagManager::get_for_video( $other ), 'The milestone\'s own link comes off.' );
+		$this->assertNotNull( TagManager::get( $gold ), 'A tag the owner made before earning it stays.' );
 	}
 
 	/**
