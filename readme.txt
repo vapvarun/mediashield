@@ -4,7 +4,7 @@ Tags: video protection, watermark, video analytics, video player, video security
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -150,6 +150,33 @@ Yes. MediaShield is multisite-aware with per-site tables using `$wpdb->prefix`. 
 6. Session tracking with concurrent stream management
 
 == Changelog ==
+
+= 1.4.4 - November 2026 =
+
+A guided first run, a calmer player, clearer video and tag lists, and a safer update for member tags. Released with MediaShield Pro 1.4.4.
+
+* New      - First run is four steps built from your own content, on the Dashboard and every Analytics screen.
+* New      - The setup wizard asks who can watch in two plain choices, and Save & Continue adds the video link you pasted once.
+* New      - The Videos list shows a thumbnail for platform videos and uploads, and a "Length needed" chip when a watch-rule video has no known length.
+* New      - Used in lists every post, page and Learnomy lesson (drafts included) that plays a video, with no cap on how many are found.
+* New      - Video tags and member milestone tags are kept apart. Tags can be renamed, and the Videos list can be filtered by tag.
+* New      - Viewers shows Stop playback only for members who are watching now.
+* Improve  - Adding or editing a video from a link needs no account, an upload shows its file name, and a removed video is easy to find.
+* Improve  - The end of a video counts as 100 percent, short clips resume, and watched time counts from the first second to the pause.
+* Improve  - Vimeo shows one fullscreen button, and a platform video's own picture sits under a clear cover.
+* Improve  - Unavailable videos, playlist start, My Videos and the watermark read clearly in every state.
+* Improve  - A lesson's watch rule is measured at None and Basic protection without turning on anything else from Standard.
+* Improve  - Used in, My Videos and old playlist links read a stored index instead of scanning post content on every view.
+* Improve  - A video's length is read when you save a Vimeo link, and existing lengths are read in the background after the update.
+* Improve  - The playlist editor counts exactly what the page plays.
+* Improve  - Admin and block strings translate, and small admin wording, colour and count fixes are applied across the screens.
+* Fix      - Links that 1.4.3 saved with a platform keep playing after the update.
+* Fix      - The ad timeline shows an ad's own progress while the ad plays.
+* Fix      - A double press on Save & Continue no longer adds the first video twice.
+* Fix      - The member tag clean-up runs in the background and removes only tags a milestone created, never your own.
+* Security - Hardened playback checks for members who may not watch and for guest access grants.
+* Dev      - New filter mediashield_create_video adds a video the way Add New does, for other plugins to call.
+* Compat   - Aligned with MediaShield Pro 1.4.4. Install both updates together.
 
 = 1.4.3 - November 2026 =
 
@@ -447,6 +474,9 @@ Bug fixes, accessibility and UX polish, a complete documentation set, and new de
 * 8 actions and 8 filters for developer integrations.
 
 == Upgrade Notice ==
+
+= 1.4.4 =
+A guided first run, a calmer player, clearer video and tag lists, and a safer update for member tags. Update Pro to 1.4.4 at the same time.
 
 = 1.4.3 =
 A new player, admin menu, dashboard and watched-percentage rule for lessons, plus fixes so uploaded videos play with Hide Video Source URL off and other plugins' video files are no longer moved. Updated sites are offered the new watermark and badge defaults once. Update Pro to 1.4.3 at the same time.

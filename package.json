@@ -1,6 +1,6 @@
 {
     "name": "mediashield",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "description": "Video protection for WordPress",
     "scripts": {
         "build": "wp-scripts build",

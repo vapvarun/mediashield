@@ -3,7 +3,7 @@
  * Plugin Name: MediaShield
  * Plugin URI:  https://wbcomdesigns.com/mediashield
  * Description: Video protection for WordPress — dynamic watermarking, multi-platform support, engagement analytics, and milestone automation.
- * Version:     1.4.3
+ * Version:     1.4.4
  * Requires at least: 6.5
  * Requires PHP: 8.1
  * Author:      Wbcom Designs
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'MEDIASHIELD_VERSION', '1.4.3' );
+define( 'MEDIASHIELD_VERSION', '1.4.4' );
 define( 'MEDIASHIELD_DB_VERSION', 19 ); // v19: member milestone tags no longer linked to videos.
 define( 'MEDIASHIELD_FILE', __FILE__ );
 define( 'MEDIASHIELD_PATH', plugin_dir_path( __FILE__ ) );

@@ -10,7 +10,7 @@ Every control saves as soon as you change it, so nothing is lost if you close th
 
 **Protection level for your videos** - The four levels, in the same words as Settings and the video edit screen; each includes the one above it. Standard is picked to start with. A video can set its own level. See [Protection Settings](../configuration/02-protection-settings.md).
 
-**Require login** - When on, visitors must be logged in before a protected video plays; they see a login overlay instead. It applies at every level. When off, guests can watch and their sessions are still recorded. Per-video role restrictions and any custom access rules still apply either way.
+**Who can watch?** - Two plain choices: **Anyone who opens the page** (visitors and members, good for trailers and public videos) or **Logged-in members only** (visitors see a login prompt instead of the video). Your site's current setting is preselected, so an existing site keeps its choice until you pick another. It applies at every protection level. Change it later under **Settings > Who can watch**; a video can also be limited to one role.
 
 ## Step 2 - Where are your videos?
 
@@ -18,7 +18,7 @@ Tick every place you host videos: YouTube, Vimeo, Wistia (paste a link, no accou
 
 ## Step 3 - Protect your first video (optional)
 
-Paste a link and click **Check and add**. The link is checked before anything is saved. A link MediaShield cannot play is refused with "This link is not a video MediaShield can play" and what to use instead, and no video is created. A good link shows the video as it now is in your library: its title, platform, protection level and Ready, with the shortcode to paste.
+Paste a link and click **Check and add**, or paste it and press **Save & Continue**, which adds the link first. If the link is refused the step stays open with the reason, and the step is ticked only once the video exists. The link is checked before anything is saved. A link MediaShield cannot play is refused with "This link is not a video MediaShield can play" and what to use instead, and no video is created. A good link shows the video as it now is in your library: its title, platform, protection level and Ready, with the shortcode to paste.
 
 Supported links:
 - YouTube: `https://www.youtube.com/watch?v=...`, `https://youtu.be/...`, Shorts
