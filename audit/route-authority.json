@@ -1,0 +1,282 @@
+{
+    "_doc": [
+        "Declared authority for every registered REST route. RouteAuthorityTest walks the live registry",
+        "(rest_get_server()->get_routes()) and fails when a route is missing here, when an entry here is no longer",
+        "registered, or when the live permission_callback differs from the one declared.",
+        "audience: public = anyone including signed out | member = any logged-in user |",
+        "owner = may edit that object (edit_post) | admin = a capability holder (see capability) |",
+        "guarded = a custom callback that resolves authority itself (tokens, nonces, published-only lookups).",
+        "A public route MUST carry a reason written from an observed signed-out dispatch, and a probe the test",
+        "dispatches signed out against a private fixture. Seeded from the live registry (route-authority-scan.php)."
+    ],
+    "routes": {
+        "DELETE /mediashield/v1/playlists/(?P<playlist_id>\\d+)/items/(?P<item_id>\\d+)": {
+            "audience": "owner",
+            "note": "edit_post on the playlist.",
+            "permission_callback": "MediaShield\\REST\\PlaylistController::change_permissions_check",
+            "object_id": true,
+            "writes": true
+        },
+        "DELETE /mediashield/v1/tags/(?P<id>\\d+)": {
+            "audience": "admin",
+            "capability": "manage_categories",
+            "permission_callback": "MediaShield\\REST\\TagController::create_item_permissions_check",
+            "object_id": true,
+            "writes": true
+        },
+        "DELETE /mediashield/v1/videos/(?P<video_id>\\d+)/tags/(?P<tag_id>\\d+)": {
+            "audience": "owner",
+            "note": "edit_post on the video; 404 for anyone else and for ids that are not videos.",
+            "permission_callback": "MediaShield\\REST\\TagController::video_permissions_check",
+            "object_id": true,
+            "writes": true
+        },
+        "GET /mediashield/v1/analytics/milestones": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "MediaShield\\REST\\AnalyticsController::admin_check",
+            "object_id": false,
+            "writes": false
+        },
+        "GET /mediashield/v1/analytics/my-videos": {
+            "audience": "member",
+            "note": "The signed-in viewer's own watch history only.",
+            "permission_callback": "MediaShield\\REST\\AnalyticsController::logged_in_check",
+            "object_id": false,
+            "writes": false
+        },
+        "GET /mediashield/v1/analytics/overview": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "MediaShield\\REST\\AnalyticsController::admin_check",
+            "object_id": false,
+            "writes": false
+        },
+        "GET /mediashield/v1/analytics/users": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "MediaShield\\REST\\AnalyticsController::admin_check",
+            "object_id": false,
+            "writes": false
+        },
+        "GET /mediashield/v1/analytics/users/(?P<user_id>\\d+)": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "MediaShield\\REST\\AnalyticsController::admin_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/playlists/(?P<playlist_id>\\d+)/items": {
+            "audience": "admin",
+            "capability": "edit_posts",
+            "permission_callback": "MediaShield\\REST\\PlaylistController::edit_permissions_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/playlists/(?P<playlist_id>\\d+)/player/(?P<video_id>\\d+)": {
+            "audience": "guarded",
+            "note": "Guests on purpose: only a published video inside a published, unprotected playlist; 404 otherwise.",
+            "probe": {
+                "method": "GET"
+            },
+            "permission_callback": "MediaShield\\REST\\PlaylistController::player_permissions_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/settings": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "MediaShield\\REST\\SettingsController::admin_permissions_check",
+            "object_id": false,
+            "writes": false
+        },
+        "GET /mediashield/v1/stream/(?P<video_id>\\d+)": {
+            "audience": "guarded",
+            "note": "can_watch() for the viewer (or the viewer named by a signed ms_token) on every range request.",
+            "probe": {
+                "method": "GET"
+            },
+            "permission_callback": "MediaShield\\REST\\StreamController::stream_permissions_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/stream/(?P<video_id>\\d+)/url": {
+            "audience": "guarded",
+            "note": "Published video only (404 otherwise), then can_watch().",
+            "probe": {
+                "method": "GET"
+            },
+            "permission_callback": "MediaShield\\REST\\StreamController::stream_url_permissions_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/tags": {
+            "audience": "admin",
+            "capability": "edit_posts",
+            "permission_callback": "MediaShield\\REST\\TagController::get_items_permissions_check",
+            "object_id": false,
+            "writes": false
+        },
+        "GET /mediashield/v1/tags/(?P<id>\\d+)": {
+            "audience": "admin",
+            "capability": "edit_posts",
+            "permission_callback": "MediaShield\\REST\\TagController::get_items_permissions_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/upload/status/(?P<upload_id>[a-zA-Z0-9._-]+)": {
+            "audience": "admin",
+            "capability": "upload_mediashield",
+            "permission_callback": "MediaShield\\REST\\UploadController::upload_permissions_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/videos/(?P<id>\\d+)/stats": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "MediaShield\\REST\\AnalyticsController::admin_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/videos/(?P<id>\\d+)/summary": {
+            "audience": "guarded",
+            "note": "edit_posts AND read_post on the video.",
+            "permission_callback": "Closure",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/videos/(?P<video_id>\\d+)/tags": {
+            "audience": "owner",
+            "note": "edit_post on the video; 404 for anyone else and for ids that are not videos.",
+            "permission_callback": "MediaShield\\REST\\TagController::video_permissions_check",
+            "object_id": true,
+            "writes": false
+        },
+        "GET /mediashield/v1/videos/counts": {
+            "audience": "admin",
+            "capability": "edit_posts",
+            "permission_callback": "Closure",
+            "object_id": false,
+            "writes": false
+        },
+        "GET /mediashield/v1/videos/match": {
+            "audience": "admin",
+            "capability": "edit_posts",
+            "permission_callback": "Closure",
+            "object_id": false,
+            "writes": false
+        },
+        "PATCH /mediashield/v1/tags/(?P<id>\\d+)": {
+            "audience": "admin",
+            "capability": "manage_categories",
+            "permission_callback": "MediaShield\\REST\\TagController::create_item_permissions_check",
+            "object_id": true,
+            "writes": true
+        },
+        "POST /mediashield/v1/playlists/(?P<playlist_id>\\d+)/items": {
+            "audience": "owner",
+            "note": "edit_post on the playlist.",
+            "permission_callback": "MediaShield\\REST\\PlaylistController::change_permissions_check",
+            "object_id": true,
+            "writes": true
+        },
+        "POST /mediashield/v1/protection/devtools-event": {
+            "audience": "guarded",
+            "note": "Valid wp_rest nonce (guests included); rate-limited per user/IP.",
+            "permission_callback": "MediaShield\\REST\\ProtectionController::beacon_permission",
+            "object_id": false,
+            "writes": true
+        },
+        "POST /mediashield/v1/session/end": {
+            "audience": "guarded",
+            "note": "Signed in, or a guest whose heartbeat/end carries the HMAC session token, or a guest /session/start when the login gate is off for that video; can_watch() still decides.",
+            "permission_callback": "MediaShield\\REST\\SessionController::session_permissions_check",
+            "object_id": false,
+            "writes": true
+        },
+        "POST /mediashield/v1/session/heartbeat": {
+            "audience": "guarded",
+            "note": "Signed in, or a guest whose heartbeat/end carries the HMAC session token, or a guest /session/start when the login gate is off for that video; can_watch() still decides.",
+            "permission_callback": "MediaShield\\REST\\SessionController::session_permissions_check",
+            "object_id": false,
+            "writes": true
+        },
+        "POST /mediashield/v1/session/revoke-user": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "MediaShield\\REST\\SessionController::admin_permissions_check",
+            "object_id": false,
+            "writes": true
+        },
+        "POST /mediashield/v1/session/start": {
+            "audience": "guarded",
+            "note": "Signed in, or a guest whose heartbeat/end carries the HMAC session token, or a guest /session/start when the login gate is off for that video; can_watch() still decides.",
+            "permission_callback": "MediaShield\\REST\\SessionController::session_permissions_check",
+            "object_id": false,
+            "writes": true
+        },
+        "POST /mediashield/v1/tags": {
+            "audience": "admin",
+            "capability": "manage_categories",
+            "permission_callback": "MediaShield\\REST\\TagController::create_item_permissions_check",
+            "object_id": false,
+            "writes": true
+        },
+        "POST /mediashield/v1/upload/init": {
+            "audience": "admin",
+            "capability": "upload_mediashield",
+            "permission_callback": "MediaShield\\REST\\UploadController::upload_permissions_check",
+            "object_id": false,
+            "writes": true
+        },
+        "POST /mediashield/v1/videos/(?P<id>\\d+)/unavailable": {
+            "audience": "public",
+            "reason": "Dispatched signed out with code=removed: a published video answers 200 {\"recorded\":false} and nothing is stored, because the platform is asked (once per 10 minutes) and a guest's word alone records nothing; a private video and an unknown id both answer 404 Video not found.",
+            "probe": {
+                "method": "POST",
+                "params": {
+                    "code": "removed"
+                }
+            },
+            "permission_callback": "MediaShield\\REST\\SourceReportController::report_permissions_check",
+            "object_id": true,
+            "writes": true
+        },
+        "POST /mediashield/v1/videos/(?P<video_id>\\d+)/tags": {
+            "audience": "owner",
+            "note": "edit_post on the video; 404 for anyone else and for ids that are not videos.",
+            "permission_callback": "MediaShield\\REST\\TagController::video_permissions_check",
+            "object_id": true,
+            "writes": true
+        },
+        "POST /mediashield/v1/videos/bulk": {
+            "audience": "admin",
+            "capability": "edit_posts",
+            "note": "Each id is checked again in the handler: edit_post for protection, delete_post for trash/restore.",
+            "permission_callback": "Closure",
+            "object_id": false,
+            "writes": true
+        },
+        "POST /mediashield/v1/wizard/complete": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "Closure",
+            "object_id": false,
+            "writes": true
+        },
+        "POST,PUT,PATCH /mediashield/v1/playlists/(?P<playlist_id>\\d+)/items/reorder": {
+            "audience": "owner",
+            "note": "edit_post on the playlist.",
+            "permission_callback": "MediaShield\\REST\\PlaylistController::change_permissions_check",
+            "object_id": true,
+            "writes": true
+        },
+        "PUT /mediashield/v1/settings": {
+            "audience": "admin",
+            "capability": "manage_options",
+            "permission_callback": "MediaShield\\REST\\SettingsController::admin_permissions_check",
+            "object_id": false,
+            "writes": true
+        }
+    }
+}
