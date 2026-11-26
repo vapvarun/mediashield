@@ -122,6 +122,32 @@ class VideoListController extends WP_REST_Controller {
 		add_filter( 'rest_mediashield_video_collection_params', array( __CLASS__, 'collection_params' ) );
 		add_filter( 'rest_mediashield_video_query', array( __CLASS__, 'filter_query' ), 10, 2 );
 		add_filter( 'the_posts', array( __CLASS__, 'prime_usage' ), 10, 2 );
+		add_filter( 'rest_request_before_callbacks', array( __CLASS__, 'editors_only' ), 10, 3 );
+	}
+
+	/**
+	 * Reading the video and playlist library routes needs edit_posts.
+	 *
+	 * The library post types are not public (no page of their own), but core's
+	 * posts controller lists published posts of any REST-enabled type to anyone,
+	 * so /wp/v2/mediashield-videos and /wp/v2/mediashield-playlists answered a
+	 * logged-out visitor with every title, slug and playback setting. Every
+	 * reader of them is an editing screen (blocks, admin screens, wizard);
+	 * viewers get a video or playlist only where it is placed, through the
+	 * player routes, which check access per video (Basecamp 10545260546).
+	 * Writing already needs edit_posts in core. 401 for a visitor, 403 for a
+	 * member, as core answers.
+	 *
+	 * @param mixed           $response Response so far (a WP_Error stops the request).
+	 * @param array           $handler  Route handler.
+	 * @param WP_REST_Request $request  Request.
+	 * @return mixed
+	 */
+	public static function editors_only( $response, $handler, $request ) {
+		if ( is_wp_error( $response ) || ! $request instanceof WP_REST_Request || ! preg_match( '#^/wp/v2/mediashield-(videos|playlists)(/|$)#', $request->get_route() ) || current_user_can( 'edit_posts' ) ) {
+			return $response;
+		}
+		return new \WP_Error( 'rest_forbidden', __( 'Sorry, you are not allowed to do that.', 'mediashield' ), array( 'status' => rest_authorization_required_code() ) );
 	}
 
 	/**

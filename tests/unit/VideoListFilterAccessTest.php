@@ -66,7 +66,7 @@ class VideoListFilterAccessTest extends WP_UnitTestCase {
 		update_post_meta( $open, '_ms_protection_level', 'basic' );
 
 		// Test change (1.4.4): a visitor no longer reads the library at all
-		// (REST\LibraryPostsController), so no filter can tell them a level.
+		// (VideoListController::editors_only()), so no filter can tell them a level.
 		wp_set_current_user( 0 );
 		foreach ( array( array(), array( 'ms_protection' => 'strict' ) ) as $params ) {
 			$request = new WP_REST_Request( 'GET', '/wp/v2/mediashield-videos' );
