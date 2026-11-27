@@ -100,13 +100,35 @@ class VideoListController extends WP_REST_Controller {
 			)
 		);
 
+		// Every place one video is used, for the list's Show all (card 10551900031).
+		register_rest_route(
+			$this->namespace,
+			'/videos/(?P<id>\d+)/used-in',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => static function ( WP_REST_Request $request ) {
+					return rest_ensure_response( array( 'places' => VideoUsage::all_for_video( (int) $request['id'] ) ) );
+				},
+				'permission_callback' => static function ( WP_REST_Request $request ) {
+					$id = (int) $request['id'];
+					return 'mediashield_video' === get_post_type( $id ) && current_user_can( 'edit_post', $id );
+				},
+				'args'                => array(
+					'id' => array(
+						'type'     => 'integer',
+						'required' => true,
+					),
+				),
+			)
+		);
+
 		register_rest_field(
 			'mediashield_video',
 			'ms_list',
 			array(
 				'get_callback' => array( $this, 'list_field' ),
 				'schema'       => array(
-					'description' => 'Videos list columns: thumbnail, duration, status (ready, encoding, failed, unavailable, no_source, draft), source (uploaded file name), used_in. Null for users who cannot edit the video.',
+					'description' => 'Videos list columns: thumbnail, duration, status (ready, encoding, failed, unavailable, no_source, draft), source (uploaded file name), used_in (first places) and used_in_more. Null for users who cannot edit the video.',
 					'type'        => array( 'object', 'null' ),
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -317,6 +339,8 @@ class VideoListController extends WP_REST_Controller {
 			'status'       => in_array( $status, array( 'ready', 'encoding', 'failed', 'unavailable', 'no_source', 'draft' ), true ) ? $status : 'ready',
 			'source'       => self::source_label( $id, $platform ),
 			'used_in'      => VideoUsage::for_video( $id ),
+			// More places than the row shows: the list offers Show all (/videos/<id>/used-in).
+			'used_in_more' => VideoUsage::has_more( $id ),
 			// No Duration while a watch rule uses it (1.4.4): the list asks for one.
 			'needs_length' => \MediaShield\CPT\VideoStatus::needs_length( $id ),
 		);

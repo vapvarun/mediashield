@@ -296,4 +296,65 @@ class UsageIndexTest extends WP_UnitTestCase {
 		\MediaShield\Core\Migrator::run();
 		$this->assertSame( '0', get_option( VideoUsage::INDEX_PENDING ) );
 	}
+
+	/**
+	 * MediaShield card 10551900031: a video used in more places than a list
+	 * row shows lists every place on request (drafts and Learnomy lessons
+	 * too), and the row says there are more. Fails before: no way to read
+	 * past 5, the 6th and 7th page (and any lesson after them) were dropped.
+	 */
+	public function test_every_place_is_listed_beyond_the_row_preview(): void {
+		$video = $this->video();
+		$pages = array( $this->page( '[mediashield id="' . $video . '"]', 'draft' ) );
+		for ( $i = 0; $i < 6; $i++ ) {
+			$pages[] = $this->page( '<!-- wp:mediashield/video {"videoId":' . $video . '} /-->' );
+		}
+		$lesson = static function ( $usage ) use ( $video ) {
+			$usage[ $video ][] = array( 'id' => 'learnomy_lesson:9', 'title' => 'Week 1', 'url' => '', 'type' => 'Lesson' );
+			return $usage;
+		};
+		add_filter( 'mediashield_video_used_in', $lesson );
+		$this->scans = 0;
+
+		$this->assertCount( VideoUsage::MAX_PER_VIDEO, VideoUsage::for_video( $video ), 'A list row keeps its short preview.' );
+		$this->assertTrue( VideoUsage::has_more( $video ), 'The row says there are more.' );
+
+		$all = wp_list_pluck( VideoUsage::all_for_video( $video ), 'id' );
+		remove_filter( 'mediashield_video_used_in', $lesson );
+		$this->assertCount( 8, $all, 'Seven pages and the lesson.' );
+		$this->assertEqualsCanonicalizing( array_merge( $pages, array( 'learnomy_lesson:9' ) ), $all );
+		$this->assertSame( 0, $this->scans, 'Read from the index.' );
+
+		$single = $this->video();
+		$this->page( '[mediashield id="' . $single . '"]' );
+		$this->assertFalse( VideoUsage::has_more( $single ), 'One place: nothing more to show.' );
+	}
+
+	/**
+	 * Card 10551900031: Show all reads /videos/<id>/used-in, for people who
+	 * may edit the video only; the list row carries used_in_more.
+	 */
+	public function test_show_all_route_lists_every_place_for_editors_only(): void {
+		do_action( 'rest_api_init' );
+		$video = $this->video();
+		for ( $i = 0; $i < 7; $i++ ) {
+			$this->page( '[mediashield id="' . $video . '"]', 0 === $i ? 'draft' : 'publish' );
+		}
+		$request = new \WP_REST_Request( 'GET', '/mediashield/v1/videos/' . $video . '/used-in' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->assertSame( 403, rest_get_server()->dispatch( $request )->get_status(), 'A member cannot list places.' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 7, $response->get_data()['places'], 'Every place, the draft too.' );
+
+		$page = new \WP_REST_Request( 'GET', '/mediashield/v1/videos/' . self::factory()->post->create() . '/used-in' );
+		$this->assertSame( 403, rest_get_server()->dispatch( $page )->get_status(), 'Only a video.' );
+
+		$list = rest_get_server()->dispatch( new \WP_REST_Request( 'GET', '/wp/v2/mediashield-videos/' . $video ) )->get_data();
+		$this->assertTrue( $list['ms_list']['used_in_more'] ?? false, 'The list row says there are more.' );
+		$this->assertCount( VideoUsage::MAX_PER_VIDEO, $list['ms_list']['used_in'] );
+	}
 }

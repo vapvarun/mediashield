@@ -158,7 +158,7 @@ A guided first run, a calmer player, clearer video and tag lists, and a safer up
 * New      - First run is four steps built from your own content, on the Dashboard and every Analytics screen.
 * New      - The setup wizard asks who can watch in two plain choices, and Save & Continue adds the video link you pasted once.
 * New      - The Videos list shows a thumbnail for platform videos and uploads, and a "Length needed" chip when a watch-rule video has no known length.
-* New      - Used in lists every post, page and Learnomy lesson (drafts included) that plays a video, with no cap on how many are found.
+* New      - Used in lists every post, page and Learnomy lesson (drafts included) that plays a video: the Videos list shows the first five and Show all places lists the rest.
 * New      - Video tags and member milestone tags are kept apart. Tags can be renamed, and the Videos list can be filtered by tag.
 * New      - Viewers shows Stop playback only for members who are watching now.
 * Improve  - Adding or editing a video from a link needs no account, an upload shows its file name, and a removed video is easy to find.
