@@ -38,9 +38,23 @@ class VideoUsage {
 	private static $via_playlist = array();
 
 	/**
-	 * Most places listed per video.
+	 * Videos with more places than their list row shows, by video ID.
+	 *
+	 * @var array<int, bool>
+	 */
+	private static $more = array();
+
+	/**
+	 * Places a list row shows per video; has_more() says when there are more
+	 * and all_for_video() reads them all.
 	 */
 	const MAX_PER_VIDEO = 5;
+
+	/**
+	 * Most places all_for_video() returns for one video.
+	 * shortcut: one read, no paging; page it if a video is ever placed in more than 500 posts and lessons.
+	 */
+	const ALL_LIMIT = 500;
 
 	/**
 	 * Look up several videos with one query and remember the answers.
@@ -59,15 +73,34 @@ class VideoUsage {
 			return;
 		}
 
-		$wanted = array_flip( $video_ids );
-		foreach ( self::found( $video_ids ) as $id => $found ) {
-			self::$cache[ $id ]        = array();
-			self::$via_playlist[ $id ] = array();
+		// One more than a row shows, so the row knows there are more.
+		foreach ( self::collect( $video_ids, self::MAX_PER_VIDEO + 1, true ) as $id => $places ) {
+			self::$more[ $id ]  = count( $places ) > self::MAX_PER_VIDEO;
+			self::$cache[ $id ] = array_slice( $places, 0, self::MAX_PER_VIDEO );
+		}
+	}
+
+	/**
+	 * Places for these videos, at most $per raw places each before the
+	 * integrations (Pro, Learnomy) add theirs through the filter.
+	 *
+	 * @param int[] $video_ids Video IDs.
+	 * @param int   $per       Most places read per video from posts and playlists.
+	 * @param bool  $via       Also remember the pages that show a playlist holding each video.
+	 * @return array<int, array<int, array{id:int|string,title:string,url:string,type:string}>>
+	 */
+	private static function collect( array $video_ids, int $per, bool $via ): array {
+		$out = array();
+		foreach ( self::found( $video_ids, $per ) as $id => $found ) {
+			$out[ $id ] = array();
 			foreach ( $found['places'] as $place ) {
-				self::$cache[ $id ][] = self::entry( $place[0], $place[1], $place[2] );
+				$out[ $id ][] = self::entry( $place[0], $place[1], $place[2] );
 			}
-			foreach ( $found['via'] as $page ) {
-				self::$via_playlist[ $id ][] = self::entry( $page[0], $page[1], $page[2] );
+			if ( $via ) {
+				self::$via_playlist[ $id ] = array();
+				foreach ( $found['via'] as $page ) {
+					self::$via_playlist[ $id ][] = self::entry( $page[0], $page[1], $page[2] );
+				}
 			}
 		}
 
@@ -75,20 +108,23 @@ class VideoUsage {
 		 * Filter where the listed videos are used.
 		 *
 		 * Pro adds the LMS lesson a video is linked to. Each entry is
-		 * { id, title, url, type }; keep each list short.
+		 * { id, title, url, type }. A list row shows the first
+		 * VideoUsage::MAX_PER_VIDEO; Show all reads every one.
 		 *
 		 * @since 1.4.3
 		 *
 		 * @param array<int, array> $usage     Places by video ID.
 		 * @param int[]             $video_ids Videos being listed.
 		 */
-		$filtered = apply_filters( 'mediashield_video_used_in', array_intersect_key( self::$cache, $wanted ), $video_ids );
+		$filtered = (array) apply_filters( 'mediashield_video_used_in', $out, $video_ids );
 
-		foreach ( (array) $filtered as $id => $places ) {
+		$wanted = array_flip( $video_ids );
+		foreach ( $filtered as $id => $places ) {
 			if ( isset( $wanted[ (int) $id ] ) ) {
-				self::$cache[ (int) $id ] = array_slice( (array) $places, 0, self::MAX_PER_VIDEO );
+				$out[ (int) $id ] = array_values( (array) $places );
 			}
 		}
+		return $out;
 	}
 
 	/**
@@ -114,10 +150,10 @@ class VideoUsage {
 	const INDEX_BATCH = 100;
 
 	/**
-	 * Most index rows read per video or playlist: the MAX_PER_VIDEO places
-	 * every screen keeps (found() cuts to that, and page_for_viewer() reads
-	 * the cut list), plus room for stale rows a read drops and deletes, so
-	 * the list is still full on that read.
+	 * Most index rows read per video or playlist for a list row: the
+	 * MAX_PER_VIDEO places it shows plus one (has_more()), plus room for
+	 * stale rows a read drops and deletes, so the row is still full on that
+	 * read. all_for_video() reads ALL_LIMIT plus the same room.
 	 */
 	const PER_TARGET = 10;
 
@@ -142,7 +178,7 @@ class VideoUsage {
 	 * @param int[] $video_ids Video IDs.
 	 * @return array<int, array{places: array<int, array{0:int,1:string,2:string}>, via: array<int, array{0:int,1:string,2:string}>}>
 	 */
-	private static function found( array $video_ids ): array {
+	private static function found( array $video_ids, int $per = self::MAX_PER_VIDEO ): array {
 		$out = array();
 		foreach ( $video_ids as $id ) {
 			$out[ $id ] = array(
@@ -175,7 +211,8 @@ class VideoUsage {
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$playlist_ids = array_values( array_unique( array_map( static fn( $row ) => (int) $row->ID, (array) $playlists ) ) );
 
-		$hits = self::places( $video_ids, $playlist_ids, self::PLACE_STATUSES );
+		// Stale rows a read drops need room too, so a full list stays full.
+		$hits = self::places( $video_ids, $playlist_ids, self::PLACE_STATUSES, max( self::PER_TARGET, $per + self::PER_TARGET - self::MAX_PER_VIDEO - 1 ) );
 
 		$pages_by_playlist = array();
 		foreach ( $hits as $hit ) {
@@ -183,7 +220,7 @@ class VideoUsage {
 				$pages_by_playlist[ $playlist_id ][] = $hit;
 			}
 			foreach ( $hit['videos'] as $id ) {
-				if ( isset( $out[ $id ] ) && count( $out[ $id ]['places'] ) < self::MAX_PER_VIDEO ) {
+				if ( isset( $out[ $id ] ) && count( $out[ $id ]['places'] ) < $per ) {
 					$out[ $id ]['places'][] = array( $hit['id'], $hit['title'], $hit['type'] );
 				}
 			}
@@ -194,7 +231,7 @@ class VideoUsage {
 			if ( ! isset( $out[ $id ] ) ) {
 				continue;
 			}
-			if ( count( $out[ $id ]['places'] ) < self::MAX_PER_VIDEO ) {
+			if ( count( $out[ $id ]['places'] ) < $per ) {
 				$out[ $id ]['places'][] = array( (int) $row->ID, (string) $row->post_title, (string) $row->post_type );
 			}
 			foreach ( $pages_by_playlist[ (int) $row->ID ] ?? array() as $page ) {
@@ -214,9 +251,10 @@ class VideoUsage {
 	 * @param int[]    $video_ids    Video IDs.
 	 * @param int[]    $playlist_ids Playlist IDs.
 	 * @param string[] $statuses     Post statuses that count.
+	 * @param int      $limit        Most index rows read per video or playlist.
 	 * @return array<int, array{id:int, title:string, type:string, videos:int[], playlists:int[]}>
 	 */
-	private static function places( array $video_ids, array $playlist_ids, array $statuses ): array {
+	private static function places( array $video_ids, array $playlist_ids, array $statuses, int $limit = self::PER_TARGET ): array {
 		if ( false !== get_option( self::INDEX_PENDING ) ) {
 			return self::scan( $video_ids, $playlist_ids, $statuses );
 		}
@@ -248,7 +286,7 @@ class VideoUsage {
 		$args  = array();
 		foreach ( $targets as $target ) {
 			$parts[] = $part;
-			$args    = array_merge( $args, array( self::EMBEDS, self::USED_IN, $target ), $statuses, self::NOT_PLACES, array( self::PER_TARGET ) );
+			$args    = array_merge( $args, array( self::EMBEDS, self::USED_IN, $target ), $statuses, self::NOT_PLACES, array( $limit ) );
 		}
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Index read on postmeta.post_id and the posts primary key; every value is a placeholder.
 		$rows = $wpdb->get_results( $wpdb->prepare( implode( ' UNION ALL ', $parts ) . ' ORDER BY post_modified_gmt DESC', $args ) );
@@ -499,6 +537,34 @@ class VideoUsage {
 	}
 
 	/**
+	 * Whether a video is used in more places than its list row shows.
+	 *
+	 * @param int $video_id Video ID.
+	 * @return bool
+	 */
+	public static function has_more( int $video_id ): bool {
+		if ( ! isset( self::$cache[ $video_id ] ) ) {
+			self::prime( array( $video_id ) );
+		}
+
+		return ! empty( self::$more[ $video_id ] );
+	}
+
+	/**
+	 * Every place one video is used, for Show all: posts and playlists in
+	 * any listed status, then what integrations add (Learnomy lessons, Pro's
+	 * LMS lessons). At most ALL_LIMIT.
+	 *
+	 * @param int $video_id Video ID.
+	 * @return array<int, array{id:int|string,title:string,url:string,type:string}>
+	 */
+	public static function all_for_video( int $video_id ): array {
+		$all = self::collect( array( $video_id ), self::ALL_LIMIT, false );
+
+		return array_slice( $all[ $video_id ] ?? array(), 0, self::ALL_LIMIT );
+	}
+
+	/**
 	 * The page where this member can watch the video again, for My Videos on
 	 * a site where no LMS supplies one: the first place that shows it which
 	 * is published, has no password and the member may read. '' when none.
@@ -717,5 +783,6 @@ class VideoUsage {
 	public static function flush(): void {
 		self::$cache        = array();
 		self::$via_playlist = array();
+		self::$more         = array();
 	}
 }

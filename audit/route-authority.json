@@ -145,6 +145,13 @@
             "object_id": true,
             "writes": false
         },
+        "GET /mediashield/v1/videos/(?P<id>\\d+)/used-in": {
+            "audience": "guarded",
+            "note": "A MediaShield video only, and edit_post on it: every post and lesson the video is placed in (Videos list Show all).",
+            "permission_callback": "Closure",
+            "object_id": true,
+            "writes": false
+        },
         "GET /mediashield/v1/videos/(?P<video_id>\\d+)/tags": {
             "audience": "owner",
             "note": "edit_post on the video; 404 for anyone else and for ids that are not videos.",

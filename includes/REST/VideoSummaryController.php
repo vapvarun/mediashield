@@ -163,7 +163,7 @@ class VideoSummaryController extends WP_REST_Controller {
 			'status'       => (string) get_post_status( $video_id ),
 			'edit_url'     => current_user_can( 'edit_post', $video_id ) ? (string) get_edit_post_link( $video_id, 'raw' ) : '',
 			'used_in'      => $places,
-			'used_in_more' => count( VideoUsage::for_video( $video_id ) ) >= VideoUsage::MAX_PER_VIDEO,
+			'used_in_more' => VideoUsage::has_more( $video_id ),
 		) + self::card( $video_id );
 	}
 

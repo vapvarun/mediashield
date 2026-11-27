@@ -216,19 +216,57 @@ const StatusBadge = ( { status, platform, editUrl } ) => {
 	);
 };
 
-const UsedIn = ( { places } ) => {
+/**
+ * Where a video is used: the first places, and Show all when there are more
+ * (card 10551900031), read on demand so a page of 20 rows stays light.
+ *
+ * @param {Object}  props         Props.
+ * @param {Array}   props.places  First places, from the list row.
+ * @param {boolean} props.more    More places than the row shows.
+ * @param {number}  props.videoId Video ID.
+ * @return {JSX.Element} Places.
+ */
+const UsedIn = ( { places, more, videoId } ) => {
+	const [ all, setAll ] = useState( null );
+	const [ state, setState ] = useState( 'idle' );
+
 	if ( ! places || ! places.length ) {
 		return <span className="ms-videos__muted">{ __( 'Not used yet', 'mediashield' ) }</span>;
 	}
+
+	const showAll = () => {
+		setState( 'loading' );
+		apiFetch( { path: `/mediashield/v1/videos/${ videoId }/used-in` } )
+			.then( ( res ) => {
+				setAll( Array.isArray( res?.places ) ? res.places : places );
+				setState( 'done' );
+			} )
+			.catch( () => setState( 'error' ) );
+	};
+
+	const shown = all || places;
 	return (
-		<ul className="ms-videos__used">
-			{ places.map( ( place ) => (
-				<li key={ place.id } title={ `${ decodeEntities( place.title ) } (${ place.type })` }>
-					<a href={ place.url }>{ decodeEntities( place.title ) }</a>
-					<span className="ms-videos__muted"> { place.type }</span>
-				</li>
-			) ) }
-		</ul>
+		<>
+			<ul className="ms-videos__used">
+				{ shown.map( ( place ) => (
+					<li key={ place.id } title={ `${ decodeEntities( place.title ) } (${ place.type })` }>
+						{ place.url ? <a href={ place.url }>{ decodeEntities( place.title ) }</a> : decodeEntities( place.title ) }
+						<span className="ms-videos__muted"> { place.type }</span>
+					</li>
+				) ) }
+			</ul>
+			{ more && ! all && (
+				<span className="ms-videos__used-more" aria-live="polite">
+					{ 'loading' === state ? (
+						<Spinner />
+					) : (
+						<Button variant="link" onClick={ showAll }>
+							{ 'error' === state ? __( 'Could not load every place. Try again', 'mediashield' ) : __( 'Show all places', 'mediashield' ) }
+						</Button>
+					) }
+				</span>
+			) }
+		</>
 	);
 };
 
@@ -714,7 +752,7 @@ const Videos = () => {
 											<ProtectionBadge level={ video.meta?._ms_protection_level } />
 										</td>
 										<td data-label={ __( 'Used in', 'mediashield' ) } className="ms-videos__col-used">
-											<UsedIn places={ list.used_in } />
+											<UsedIn places={ list.used_in } more={ !! list.used_in_more } videoId={ video.id } />
 										</td>
 										<td data-label={ __( 'Status', 'mediashield' ) } className="ms-videos__col-status">
 											<StatusBadge status={ list.status } platform={ video.meta?._ms_platform } editUrl={ editUrl } />
