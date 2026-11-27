@@ -4,6 +4,8 @@
 
 All MediaShield settings live under **MediaShield > Settings**. The cards sit in one column with a section list on the left, one item per card, named as the card is: Protection, Who can watch, Watermark (with Pro it also holds the Watermark fields card), Player, Messages, Viewing history, and only where they can work Video ads (WB Ad Manager's video ads installed), Uploads (a platform connected with Pro) and Lesson completion (Learnomy, or with Pro an LMS). Click a section to jump to it; the item lit follows the card at the top of the screen as you scroll. Type in **Search settings** above the list to show only the cards that mention what you typed, for example "IP" or "resume". On a phone the section list is a **Go to section** menu. Every change saves by itself a moment after you make it, and a "Saved" message confirms it at the bottom of the screen. There is no Save button. If a change cannot be saved (the site cannot be reached, or the value is not allowed), the control switches back to the saved value and the message says "Not saved", with **Try again**.
 
+![MediaShield Settings with the section list on the left and the Protection section open](../images/settings.webp)
+
 ## Before you start
 
 - You need an administrator account. Settings are limited to users who can manage options.

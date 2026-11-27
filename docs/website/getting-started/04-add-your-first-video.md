@@ -2,6 +2,8 @@
 
 After completing the setup wizard, you're ready to register and embed your first protected video.
 
+![The MediaShield Videos list with six protected videos, their source, length, protection level and the lessons that use them](../images/videos-list.webp)
+
 ## Step 1 - Create a video in the library
 
 Go to **MediaShield > Videos** and click **Add New Video**. That opens the standard WordPress edit screen for a MediaShield video.

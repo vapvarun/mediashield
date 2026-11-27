@@ -2,6 +2,8 @@
 
 Playlists are groups of videos played in sequence. Use them for course modules, tutorial series, chapter sequences, or any content that has a natural order.
 
+![The Playlists screen with the React Fundamentals lessons playlist set to autoplay](../images/playlists.webp)
+
 ## Why use it
 
 A series plays in order in the protected player, with the same access rules, watermark and tracking on every video. Viewers do not have to pick the next lesson.
