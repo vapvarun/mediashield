@@ -2,6 +2,8 @@
 
 Analytics only exist for videos at **Standard** or **Strict** protection level. Those are the levels that start a watch session. Videos set to None or Basic play without recording anything, and never appear in any of the screens below.
 
+![The Milestones screen listing which viewer reached 25, 50, 75 or 100 percent of which video, and when](../images/milestones.webp)
+
 ## Why use it
 
 You see which videos people start, how far they get and who finished, without a separate analytics tool. Milestones record progress points you can act on, for example by tagging members who finished.

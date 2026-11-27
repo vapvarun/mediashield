@@ -4,6 +4,10 @@
 
 This guide covers the three places where you, and your members, see who watched what.
 
+![The Viewers screen: each member, how many videos they watched, average completion and when they were last active](../images/viewers.webp)
+
+![The Tags screen: Engaged, Finisher, Halfway and Started tags with how many videos use each](../images/tags.webp)
+
 ## Why use it
 
 You can see how an individual member is doing, group members by what they have completed, and let members see their own progress, which supports questions such as who has finished the training.

@@ -2,6 +2,8 @@
 
 The watermark is the core forensic tool in MediaShield. It renders the viewer's identity as a text overlay on top of the video while it plays.
 
+![A protected video playing inside a Learnomy lesson, marked Protected by MediaShield](../images/protected-lesson-player.webp)
+
 ## Why use it
 
 If a recording of your video turns up online, the name on screen points to the account it came from. Knowing viewers can be identified also discourages casual sharing. It identifies a leaker. It does not stop a determined copier.

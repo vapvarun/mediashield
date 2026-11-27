@@ -4,6 +4,8 @@
 
 Everything lives under one **MediaShield** menu in the WordPress sidebar. It opens a single app with its own left-hand menu. The address changes after a `#`, so you can bookmark any screen, for example `wp-admin/admin.php?page=mediashield#/settings`.
 
+![The MediaShield Dashboard over the last 90 days: 89 viewings, 78.1% average completion, protection status, activity chart and top videos](../images/dashboard.webp)
+
 ## The menu: six groups
 
 The app's left-hand menu has six items. Click one to open its first screen; the group's other screens are listed under it while you are in that group.

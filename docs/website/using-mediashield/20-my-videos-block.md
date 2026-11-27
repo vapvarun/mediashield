@@ -4,6 +4,8 @@
 
 The MediaShield My Videos block shows a signed-in member the videos they have watched, how far they got and, where your site supplies a watch page, a link to carry on.
 
+![The My videos block on the front end: each video the member started, with progress and a Resume button](../images/my-videos-block.webp)
+
 ## Why use it
 
 Members see their own progress without asking you. It suits course dashboards and member areas.

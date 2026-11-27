@@ -4,6 +4,8 @@
 
 Every video in your library is a WordPress post of type "video". Open one from **MediaShield > Videos > Edit**, or choose **Add New Video**. This page explains every box on that screen. The main column is in the order you work: 1. The video, 2. Who can watch, and how it is protected, 3. Milestones.
 
+![The video edit screen for Course Creation Walkthrough: the file, who can watch, milestones and the embed shortcode](../images/video-edit.webp)
+
 ## Why use it
 
 Everything about one video is on one screen: where it comes from, who may watch, how it behaves and what milestones it rewards.

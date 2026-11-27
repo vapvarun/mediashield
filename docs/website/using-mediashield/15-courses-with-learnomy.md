@@ -4,6 +4,8 @@
 
 Learnomy can place a MediaShield video inside a lesson, so the lesson plays in the protected player.
 
+![A Learnomy lesson set to the Protected video (MediaShield) content type, with the video picked from the MediaShield library](../images/learnomy-lesson-protected-video.webp)
+
 ## Why use it
 
 Lessons in Learnomy play in the protected player, so the same rules, watermark and watch data apply to course content without extra setup per lesson.

@@ -4,6 +4,8 @@ On first activation, MediaShield redirects you to a four-step setup wizard. The 
 
 Every control saves as soon as you change it, so nothing is lost if you close the tab. There is no link back to the wizard from the admin menu, though: if you leave part way through and want to return, open `wp-admin/admin.php?page=mediashield-wizard` directly. Everything the wizard sets is also available under **MediaShield > Settings**, so skipping it costs you nothing.
 
+![The MediaShield setup wizard, first step: General Settings with the protection level choices](../images/setup-wizard.webp)
+
 ## Step 1 - General Settings
 
 **Protect videos** - The master on/off switch for all MediaShield features. Leave this on. With it off, videos still play, but with no watermark, no protection layer, and no session tracking.

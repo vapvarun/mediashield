@@ -2,6 +2,8 @@
 
 The Protection section of **MediaShield > Settings** governs the technical layer that runs in the browser while a video is playing.
 
+![The Protection section of MediaShield Settings with the four protection levels and the right-click and save-shortcut switches](../images/settings-protection.webp)
+
 ## Protection levels
 
 Settings, the video edit screen, the setup wizard, the Videos list and the block use the same four levels in the same words. Each level includes the one above it:
