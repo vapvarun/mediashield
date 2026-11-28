@@ -70,6 +70,12 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ busy, setBusy ] = useState( false );
 	const [ summary, setSummary ] = useState( null );
 	const [ loadFailed, setLoadFailed ] = useState( false );
+	// Thumbnails that failed to load (a 403 from an image rule, a 404): the
+	// placeholder takes their place, so the preview keeps its 16:9 area
+	// instead of collapsing to the caption (Basecamp 10552183284).
+	const [ brokenThumbs, setBrokenThumbs ] = useState( [] );
+	const showsThumb = ( url ) => !! url && ! brokenThumbs.includes( url );
+	const thumbFailed = ( url ) => () => setBrokenThumbs( ( list ) => ( list.includes( url ) ? list : [ ...list, url ] ) );
 	const [ pasteUrl, setPasteUrl ] = useState( '' );
 	const [ found, setFound ] = useState( null );
 	const [ error, setError ] = useState( '' );
@@ -212,8 +218,8 @@ export default function Edit( { attributes, setAttributes } ) {
 
 						{ found && (
 							<div className="ms-block-found" role="status">
-								{ found.thumbnail ? (
-									<img className="ms-block-found__thumb" src={ found.thumbnail } alt="" onError={ ( e ) => { e.currentTarget.hidden = true; } } />
+								{ showsThumb( found.thumbnail ) ? (
+									<img className="ms-block-found__thumb" src={ found.thumbnail } alt="" onError={ thumbFailed( found.thumbnail ) } />
 								) : (
 									<span className="ms-block-found__thumb" aria-hidden="true" />
 								) }
@@ -327,8 +333,8 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div className="ms-block-preview">
-				{ summary && summary.thumbnail ? (
-					<img className="ms-block-preview__poster" src={ summary.thumbnail } alt="" onError={ ( e ) => { e.currentTarget.hidden = true; } } />
+				{ summary && showsThumb( summary.thumbnail ) ? (
+					<img className="ms-block-preview__poster" src={ summary.thumbnail } alt="" onError={ thumbFailed( summary.thumbnail ) } />
 				) : (
 					<div className="ms-block-placeholder-preview">
 						<Video size={ 48 } strokeWidth={ 1.75 } className="ms-icon" aria-hidden="true" />
