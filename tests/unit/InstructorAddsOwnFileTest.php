@@ -74,7 +74,7 @@ class InstructorAddsOwnFileTest extends WP_UnitTestCase {
 		$id = apply_filters( 'mediashield_create_video', null, array( 'attachment_id' => $attachment ) );
 
 		$this->assertIsInt( $id, is_wp_error( $id ) ? $id->get_error_message() : '' );
-		$this->assertSame( 'pending', get_post_status( $id ), 'Cannot publish: added for review, as the door already does.' );
+		$this->assertSame( 'publish', get_post_status( $id ), 'Their own upload goes live, so the lesson it was added from plays (owner, 2026-11-28).' );
 		$this->assertStringContainsString( 'mediashield/v1/stream/' . $id, (string) get_post_meta( $id, '_ms_source_url', true ), 'The file moved into the protected folder.' );
 		$this->assertSame( 'private', get_post_status( $attachment ) );
 	}
@@ -89,6 +89,7 @@ class InstructorAddsOwnFileTest extends WP_UnitTestCase {
 		$id = apply_filters( 'mediashield_create_video', null, array( 'source_url' => wp_get_attachment_url( $attachment ) ) );
 
 		$this->assertIsInt( $id, is_wp_error( $id ) ? $id->get_error_message() : '' );
+		$this->assertSame( 'publish', get_post_status( $id ) );
 		$this->assertSame( 'private', get_post_status( $attachment ) );
 	}
 

@@ -177,7 +177,7 @@ A guided first run, a calmer player, clearer video and tag lists, and a safer up
 * Fix      - Dashboard Views count each member once per video in the period, however often they replay it, and Top Videos and the chart use the same count.
 * Fix      - The admin says Views for the count, playback sessions for single plays and watch history for what is kept, instead of "viewings".
 * Fix      - The Video block's editor preview shows its placeholder when the video's thumbnail cannot load, instead of a broken image.
-* Fix      - An instructor who may upload files but not edit posts can add their own uploaded video to MediaShield, never someone else's file.
+* Fix      - An instructor who may upload files but not edit posts can add their own uploaded video to MediaShield and it plays straight away, never someone else's file.
 * Security - Hardened playback checks for members who may not watch and for guest access grants.
 * Security - Tag routes now check that you can edit the video, and renaming or deleting a tag needs the Manage categories capability.
 * Dev      - New filter mediashield_create_video adds a video the way Add New does, for other plugins to call.

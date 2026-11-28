@@ -704,7 +704,7 @@ if ( is_wp_error( $video_id ) ) {
 | `mediashield_not_a_video_file` | 404 | `attachment_id` is not a video in the Media Library. |
 | (WordPress's code) | 500 | The video could not be saved. |
 
-A video added by someone who may publish posts is published at once; anyone else's (a Contributor, say) is saved as **Pending Review** for an editor to publish, as WordPress does for posts. Check `get_post_status( $video_id )` if your screen needs to say so.
+A video added by someone who may publish posts, or made from the person's own uploaded file, is published at once; anyone else's (a Contributor adding a link, say) is saved as **Pending Review** for an editor to publish, as WordPress does for posts. Check `get_post_status( $video_id )` if your screen needs to say so.
 
 It takes the same path as **Videos > Add New**: the same link check, the same save (platform and id stored in one shape, the platform's title fetched when none is given, the Videos list status), no protection level stamped (the video follows the site default), and a Media Library file is moved into the protected folder with its Media Library item made private, as when an owner pastes that file's link. A file keeps the name it was uploaded with and its length is read from it. A link already in the library, however it is written (`youtu.be/…` or `watch?v=…`), returns that video instead of adding a copy, as the Video block does; so does the same Media Library file twice.
 

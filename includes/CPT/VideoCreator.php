@@ -110,6 +110,16 @@ class VideoCreator {
 	}
 
 	/**
+	 * Is this Media Library file the current user's own upload?
+	 *
+	 * @param int $attachment Attachment id, or 0.
+	 */
+	private static function own_upload( int $attachment ): bool {
+		$user = get_current_user_id();
+		return $attachment > 0 && $user > 0 && (int) get_post_field( 'post_author', $attachment ) === $user;
+	}
+
+	/**
 	 * Create (or find) the video (create(), inside the replacing context).
 	 *
 	 * @param array $args See create().
@@ -168,8 +178,10 @@ class VideoCreator {
 			array(
 				'post_type'   => 'mediashield_video',
 				// As core's REST route allows: someone who cannot publish adds
-				// a video for review (Free review #10).
-				'post_status' => current_user_can( $type->cap->publish_posts ) ? 'publish' : 'pending',
+				// a video for review (Free review #10). A video made from the
+				// person's own uploaded file is theirs to show, so it goes live
+				// and the lesson it was added from plays (owner, 2026-11-28).
+				'post_status' => ( current_user_can( $type->cap->publish_posts ) || self::own_upload( $attachment ) ) ? 'publish' : 'pending',
 				'post_title'  => $title,
 				'meta_input'  => array_filter(
 					array(
