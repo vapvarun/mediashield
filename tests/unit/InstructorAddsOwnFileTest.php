@@ -106,6 +106,7 @@ class InstructorAddsOwnFileTest extends WP_UnitTestCase {
 
 		$this->assertWPError( $by_id );
 		$this->assertSame( 403, $by_id->get_error_data()['status'] );
+		$this->assertSame( 'You can add only videos made from your own uploads.', $by_id->get_error_message(), 'Someone who may add their own uploads is told that, not that they cannot add videos.' );
 		$this->assertWPError( $by_url );
 		$this->assertSame( 403, $by_url->get_error_data()['status'] );
 		$this->assertNotSame( 'private', get_post_status( $attachment ), 'The other file is untouched.' );

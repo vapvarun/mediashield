@@ -139,7 +139,12 @@ class VideoCreator {
 			$attachment = attachment_url_to_postid( $url );
 		}
 		if ( ! $type || ! ( $creator || ( $attachment && LibraryFiles::may_use( $attachment ) ) ) ) {
-			return new WP_Error( 'mediashield_cannot_create_video', __( 'You are not allowed to add videos.', 'mediashield' ), array( 'status' => 403 ) );
+			// Someone who may add only their own uploads is told that, not that
+			// they cannot add videos at all.
+			$message = $type && current_user_can( 'upload_files' )
+				? __( 'You can add only videos made from your own uploads.', 'mediashield' )
+				: __( 'You are not allowed to add videos.', 'mediashield' );
+			return new WP_Error( 'mediashield_cannot_create_video', $message, array( 'status' => 403 ) );
 		}
 
 		if ( $attachment ) {
