@@ -719,4 +719,32 @@ describe( 'Independent UX test (MSUX-03, 04, 07, 15)', () => {
 		expect( frame.src ).toContain( 'byline=0' );
 		delete window.Vimeo;
 	} );
+
+	const bunnyEmbed = `<div class="ms-protected-player" data-video-id="9694" data-platform="bunny" data-protection-level="standard">
+		<div class="ms-player-target" data-source-url="https://iframe.mediadelivery.net/embed/806115/0a1b2c3d-0000-4000-8000-000000000001" data-stream-url=""></div>
+		<button class="ms-fullscreen-btn" aria-label="Fullscreen"></button></div>`;
+
+	test( 'Basecamp 10552105205 Bunny embed: its frame has no fullscreen permission, so one fullscreen button', async () => {
+		boot( { markup: bunnyEmbed, session: { body: {} } } );
+		await flush();
+		const frame = document.querySelector( '.ms-player-target iframe' );
+		expect( frame.src ).toContain( 'iframe.mediadelivery.net/embed/' );
+		expect( frame.getAttribute( 'allow' ) ).not.toContain( 'fullscreen' );
+		expect( frame.hasAttribute( 'allowfullscreen' ) ).toBe( false );
+	} );
+
+	test( 'Basecamp 10552105205 a refused fullscreen is reported and the player fills the window', async () => {
+		boot( { markup: bunnyEmbed, session: { body: {} } } );
+		await flush();
+		const el = document.querySelector( '.ms-protected-player' );
+		el.requestFullscreen = () => Promise.reject( new Error( 'Permissions check failed' ) );
+		el.querySelector( '.ms-fullscreen-btn' ).click();
+		await flush();
+		expect( console ).toHaveWarned();
+		expect( el.classList.contains( 'ms-is-fullscreen' ) ).toBe( true );
+
+		// A second press leaves the window-filling mode.
+		el.querySelector( '.ms-fullscreen-btn' ).click();
+		expect( el.classList.contains( 'ms-is-fullscreen' ) ).toBe( false );
+	} );
 } );

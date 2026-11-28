@@ -176,6 +176,7 @@ A guided first run, a calmer player, clearer video and tag lists, and a safer up
 * Fix      - The member tag clean-up runs in the background and removes only tags a milestone created, never your own.
 * Fix      - Dashboard Views count each member once per video in the period, however often they replay it, and Top Videos and the chart use the same count.
 * Fix      - The admin says Views for the count, playback sessions for single plays and watch history for what is kept, instead of "viewings".
+* Fix      - A Bunny Stream embed shows one fullscreen button, MediaShield's, and when the browser refuses fullscreen the player fills the window instead of doing nothing.
 * Fix      - The Video block's editor preview shows its placeholder when the video's thumbnail cannot load, instead of a broken image.
 * Fix      - An instructor who may upload files but not edit posts can add their own uploaded video to MediaShield and it plays straight away, never someone else's file.
 * Security - Hardened playback checks for members who may not watch and for guest access grants.

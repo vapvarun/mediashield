@@ -670,8 +670,10 @@
 			var iframe = document.createElement( 'iframe' );
 			iframe.src = bunnyEmbedUrl( sourceUrl, options );
 			iframe.setAttribute( 'frameborder', '0' );
-			iframe.setAttribute( 'allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media' );
-			iframe.setAttribute( 'allowfullscreen', '' );
+			// No fullscreen permission, as for Vimeo (MSUX-15): Bunny's player
+			// then draws no fullscreen button under MediaShield's, which is the
+			// one that keeps the watermark (Basecamp 10552105205).
+			iframe.setAttribute( 'allow', 'autoplay; picture-in-picture; encrypted-media' );
 			iframe.style.width = '100%';
 			iframe.style.height = '100%';
 			iframe.style.border = '0';
@@ -923,11 +925,18 @@
 	function toggleFullscreen( container ) {
 		if ( document.fullscreenElement ) {
 			document.exitFullscreen();
-		} else if ( container.requestFullscreen ) {
-			container.requestFullscreen().catch( function () {} );
+		} else if ( container.requestFullscreen && ! container.classList.contains( 'ms-is-fullscreen' ) ) {
+			container.requestFullscreen().catch( function ( err ) {
+				// Refused (a permissions policy, no user gesture): say why
+				// and fill the window with the player instead of doing nothing.
+				// eslint-disable-next-line no-console
+				console.warn( 'MediaShield: fullscreen was refused; filling the window instead.', err );
+				container.classList.add( 'ms-is-fullscreen' );
+			} );
 		} else {
 			// iPhone Safari can fullscreen only a <video>, which drops the
-			// watermark; fill the window with the player instead.
+			// watermark; fill the window with the player instead. A second
+			// press leaves that window-filling mode.
 			container.classList.toggle( 'ms-is-fullscreen' );
 		}
 	}
