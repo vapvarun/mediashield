@@ -64,7 +64,9 @@ class DashboardOverviewTest extends WP_UnitTestCase {
 		$chart = $data['sessions_chart'];
 
 		$this->assertGreaterThanOrEqual( 7, count( $chart ), 'Every day of the week, quiet days at 0.' );
-		$this->assertSame( 4, array_sum( array_column( $chart, 'count' ) ) );
+		// Test change (Basecamp 10551679560): the chart counts views, one per
+		// member per video, so Aisha's four plays are one.
+		$this->assertSame( 1, array_sum( array_column( $chart, 'count' ) ) );
 		$this->assertSame( ( new \DateTimeImmutable( 'now', wp_timezone() ) )->format( 'Y-m-d' ), end( $chart )['date'] );
 
 		$this->assertCount( 1, $data['recent_milestones'] );

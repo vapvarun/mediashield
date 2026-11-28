@@ -204,9 +204,11 @@ class AnalyticsController extends WP_REST_Controller {
 			)
 		);
 
-		$avg_completion = (float) $wpdb->get_var(
+		// Views: one per viewer per video in the period, however often they
+		// play it (Basecamp 10551679560); total_sessions above stays the plays.
+		$per_viewer     = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT AVG(best) FROM (
+				"SELECT COUNT(*) AS views, AVG(best) AS avg_completion FROM (
 				   SELECT MAX(completion_pct) AS best FROM {$sessions}
 				   WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}
 				   GROUP BY video_id, {$viewer}
@@ -214,6 +216,8 @@ class AnalyticsController extends WP_REST_Controller {
 				$now_utc
 			)
 		);
+		$total_views    = $per_viewer ? (int) $per_viewer->views : 0;
+		$avg_completion = $per_viewer ? (float) $per_viewer->avg_completion : 0.0;
 
 		$active_viewers = (int) $wpdb->get_var(
 			$wpdb->prepare(
@@ -222,17 +226,21 @@ class AnalyticsController extends WP_REST_Controller {
 			)
 		);
 
-		// Sessions per day for chart — group by site-timezone date, not the UTC
-		// `DATE(started_at)` which can place late-evening sessions on the wrong
-		// calendar day for non-UTC sites.
+		// Views per day for the chart: each view on the day of its first play
+		// in the period, so the days add up to the Views card. Grouped by
+		// site-timezone date, not the UTC `DATE(started_at)` which can place
+		// late-evening sessions on the wrong calendar day for non-UTC sites.
 		$offset = self::tz_offset();
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $offset is a regex-validated tz string built from wp_timezone().
 		$sessions_per_day = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT DATE(CONVERT_TZ(started_at, '+00:00', %s)) AS date, COUNT(*) AS count
-				 FROM {$sessions}
-				 WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}
-				 GROUP BY DATE(CONVERT_TZ(started_at, '+00:00', %s))
+				"SELECT DATE(CONVERT_TZ(first_play, '+00:00', %s)) AS date, COUNT(*) AS count
+				 FROM (
+				   SELECT MIN(started_at) AS first_play FROM {$sessions}
+				   WHERE started_at >= DATE_SUB(%s, INTERVAL {$interval}) AND {$played}
+				   GROUP BY video_id, {$viewer}
+				 ) per_viewer
+				 GROUP BY DATE(CONVERT_TZ(first_play, '+00:00', %s))
 				 ORDER BY date ASC",
 				$offset,
 				$now_utc,
@@ -240,10 +248,10 @@ class AnalyticsController extends WP_REST_Controller {
 			)
 		);
 
-		// Top 5 videos by sessions.
+		// Top 5 videos by views (viewers), then plays.
 		$top_videos = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT v.video_id, SUM(v.sessions) AS session_count, AVG(v.best) AS avg_completion, p.post_title
+				"SELECT v.video_id, COUNT(*) AS view_count, SUM(v.sessions) AS session_count, AVG(v.best) AS avg_completion, p.post_title
 				 FROM (
 				   SELECT s.video_id, COUNT(*) AS sessions, MAX(s.completion_pct) AS best
 				   FROM {$sessions} s
@@ -252,7 +260,7 @@ class AnalyticsController extends WP_REST_Controller {
 				 ) v
 				 INNER JOIN {$wpdb->posts} p ON v.video_id = p.ID AND p.post_status = 'publish'
 				 GROUP BY v.video_id, p.post_title
-				 ORDER BY session_count DESC
+				 ORDER BY view_count DESC, session_count DESC
 				 LIMIT 5",
 				$now_utc
 			)
@@ -266,6 +274,7 @@ class AnalyticsController extends WP_REST_Controller {
 			array(
 				// Ready videos only: published with something that plays.
 				'total_videos'      => $protected_counts['total'],
+				'total_views'       => $total_views,
 				'total_sessions'    => $total_sessions,
 				'avg_completion'    => round( $avg_completion, 1 ),
 				'active_viewers'    => $active_viewers,
@@ -275,6 +284,7 @@ class AnalyticsController extends WP_REST_Controller {
 						return array(
 							'video_id'       => (int) $row->video_id,
 							'title'          => sanitize_text_field( \MediaShield\Support\Text::plain( (string) $row->post_title ) ),
+							'view_count'     => (int) $row->view_count,
 							'session_count'  => (int) $row->session_count,
 							'avg_completion' => round( (float) $row->avg_completion, 1 ),
 						);

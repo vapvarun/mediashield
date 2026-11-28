@@ -174,9 +174,15 @@ A guided first run, a calmer player, clearer video and tag lists, and a safer up
 * Fix      - The ad timeline shows an ad's own progress while the ad plays.
 * Fix      - A double press on Save & Continue no longer adds the first video twice.
 * Fix      - The member tag clean-up runs in the background and removes only tags a milestone created, never your own.
+* Fix      - Dashboard Views count each member once per video in the period, however often they replay it, and Top Videos and the chart use the same count.
+* Fix      - The admin says Views for the count, playback sessions for single plays and watch history for what is kept, instead of "viewings".
+* Fix      - A Bunny Stream embed shows one fullscreen button, MediaShield's, and when the browser refuses fullscreen the player fills the window instead of doing nothing.
+* Fix      - The Video block's editor preview shows its placeholder when the video's thumbnail cannot load, instead of a broken image.
+* Fix      - An instructor who may upload files but not edit posts can add their own uploaded video to MediaShield and it plays straight away, never someone else's file.
 * Security - Hardened playback checks for members who may not watch and for guest access grants.
 * Security - Tag routes now check that you can edit the video, and renaming or deleting a tag needs the Manage categories capability.
 * Dev      - New filter mediashield_create_video adds a video the way Add New does, for other plugins to call.
+* Dev      - New action mediashield_watched_share fires when a member's watched share of a video grows, with the share before and after.
 * Compat   - Aligned with MediaShield Pro 1.4.4. Install both updates together.
 
 = 1.4.3 - November 2026 =

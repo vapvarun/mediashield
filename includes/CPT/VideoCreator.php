@@ -110,26 +110,48 @@ class VideoCreator {
 	}
 
 	/**
+	 * Is this Media Library file the current user's own upload?
+	 *
+	 * @param int $attachment Attachment id, or 0.
+	 */
+	private static function own_upload( int $attachment ): bool {
+		$user = get_current_user_id();
+		return $attachment > 0 && $user > 0 && (int) get_post_field( 'post_author', $attachment ) === $user;
+	}
+
+	/**
 	 * Create (or find) the video (create(), inside the replacing context).
 	 *
 	 * @param array $args See create().
 	 * @return int|WP_Error Video ID, or why not.
 	 */
 	private static function create_video( array $args ) {
-		$type = get_post_type_object( 'mediashield_video' );
-		if ( ! $type || ! current_user_can( $type->cap->create_posts ) ) {
-			return new WP_Error( 'mediashield_cannot_create_video', __( 'You are not allowed to add videos.', 'mediashield' ), array( 'status' => 403 ) );
-		}
-
+		$type       = get_post_type_object( 'mediashield_video' );
 		$title      = sanitize_text_field( (string) ( $args['title'] ?? '' ) );
 		$attachment = absint( $args['attachment_id'] ?? 0 );
 		$url        = trim( (string) ( $args['source_url'] ?? '' ) );
+		$creator    = $type && current_user_can( $type->cap->create_posts );
+
+		// Someone who cannot add videos (an Instructor: upload_files, no
+		// edit_posts) may still protect a Media Library file of their own,
+		// sent as the file or as its address (LibraryFiles::may_use()).
+		if ( ! $creator && ! $attachment && '' !== $url ) {
+			$attachment = attachment_url_to_postid( $url );
+		}
+		if ( ! $type || ! ( $creator || ( $attachment && LibraryFiles::may_use( $attachment ) ) ) ) {
+			// Someone who may add only their own uploads is told that, not that
+			// they cannot add videos at all.
+			$message = $type && current_user_can( 'upload_files' )
+				? __( 'You can add only videos made from your own uploads.', 'mediashield' )
+				: __( 'You are not allowed to add videos.', 'mediashield' );
+			return new WP_Error( 'mediashield_cannot_create_video', $message, array( 'status' => 403 ) );
+		}
 
 		if ( $attachment ) {
 			if ( 'attachment' !== get_post_type( $attachment ) || ! wp_attachment_is( 'video', $attachment ) ) {
 				return new WP_Error( 'mediashield_not_a_video_file', __( 'That file is not a video in the Media Library.', 'mediashield' ), array( 'status' => 404 ) );
 			}
-			if ( ! current_user_can( 'edit_post', $attachment ) ) {
+			if ( ! LibraryFiles::may_use( $attachment ) ) {
 				return new WP_Error( 'mediashield_cannot_create_video', __( 'You are not allowed to use that file.', 'mediashield' ), array( 'status' => 403 ) );
 			}
 			$existing = self::find_by_attachment( $attachment );
@@ -161,8 +183,10 @@ class VideoCreator {
 			array(
 				'post_type'   => 'mediashield_video',
 				// As core's REST route allows: someone who cannot publish adds
-				// a video for review (Free review #10).
-				'post_status' => current_user_can( $type->cap->publish_posts ) ? 'publish' : 'pending',
+				// a video for review (Free review #10). A video made from the
+				// person's own uploaded file is theirs to show, so it goes live
+				// and the lesson it was added from plays (owner, 2026-11-28).
+				'post_status' => ( current_user_can( $type->cap->publish_posts ) || self::own_upload( $attachment ) ) ? 'publish' : 'pending',
 				'post_title'  => $title,
 				'meta_input'  => array_filter(
 					array(

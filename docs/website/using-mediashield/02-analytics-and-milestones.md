@@ -17,17 +17,17 @@ The date range selector at the top offers Today, Last 7 days (the default), Last
 ### Stat cards
 
 - **Total Videos** - published videos in your library. Not affected by the date range.
-- **Viewings** - times a video was played in the selected period (a page load that never played is not counted).
+- **Views** - one per member per video in the selected period, however many times they play it (a guest counts once per playback session; a page load that never played is not counted).
 - **Avg Completion** - the average, over viewers and videos, of each viewer's furthest completion of each video in the period. A viewer who watched a video twice, to 40% and then to the end, counts once at 100%. A page load that never played is not counted.
 - **Watching now** - distinct viewers playing a video in the last 5 minutes. A page left open that never played is not a viewer. This is live, and ignores the date range.
 
 ### Activity chart
 
-A daily bar chart of session counts over the selected period.
+A daily chart of views over the selected period. Each view sits on the day of its first play, so the days add up to the Views card.
 
 ### Top Videos
 
-The five best-performing videos by session count for the active date range, with each one's average completion (each viewer's furthest point, averaged).
+The five most-viewed videos for the active date range (views, one per member), with each one's average completion (each viewer's furthest point, averaged).
 
 ### Recent Milestones
 
@@ -90,4 +90,4 @@ The dashboard shows real data only. There are no demo numbers. After installing,
 
 ## One way to count, on every screen
 
-Every count uses the same two rules, in Free and Pro (Dashboard, Viewers, a video's stats, My Videos, and Pro's funnel, device breakdown and weekly digest): a view is a session that played (a page load alone is not), and a viewer's completion of a video is the furthest point of any of their viewings. So the same member shows the same numbers wherever you look.
+Every count uses the same two rules, in Free and Pro (Dashboard, Viewers, a video's stats, My Videos, and Pro's funnel, device breakdown and weekly digest): a view is a session that played (a page load alone is not), and a viewer's completion of a video is the furthest point of any of their playback sessions. So the same member shows the same numbers wherever you look.

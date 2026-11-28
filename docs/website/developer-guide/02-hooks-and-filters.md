@@ -40,6 +40,14 @@ Fires when a watch session is finalized.
 
 ---
 
+### mediashield_watched_share
+
+*Since 1.4.4.* Fires when a member's watched share of a video grows: the time actually watched, as "Require X% watched" measures it, not the furthest point (milestones follow that). Fires only on a heartbeat (or the final report at session end) that added watched time, so a paused player costs nothing. Use it for a rule gated on watched time: act when `$share_before < $your_pct && $share_after >= $your_pct`.
+
+**Parameters:** `$user_id` (int), `$video_id` (int), `$share_after` (int, percent), `$share_before` (int, percent), `$session_id` (int)
+
+---
+
 ### mediashield_concurrent_limit_reached
 
 Fires when a logged-in user tries to start a stream beyond their allowed concurrent limit (`ms_max_concurrent_streams`). Never fires for guests, who are not subject to the limit.
@@ -194,7 +202,7 @@ add_filter( 'mediashield_guest_can_watch', function( $allow, $video_id, $context
 }, 10, 3 );
 ```
 
-Since 1.4.4 a grant can be scoped to one page: the same video embedded elsewhere (another lesson, a landing page) stays behind the login. `$context` is the page being shown during a page render, and the same page again when the player starts its viewing and streams the file, because the player carries it with those requests. A plugin whose lessons are not WordPress posts names its own with `mediashield_page_context` below. Naming another page in a request only gets what opening that page would give.
+Since 1.4.4 a grant can be scoped to one page: the same video embedded elsewhere (another lesson, a landing page) stays behind the login. `$context` is the page being shown during a page render, and the same page again when the player starts its playback session and streams the file, because the player carries it with those requests. A plugin whose lessons are not WordPress posts names its own with `mediashield_page_context` below. Naming another page in a request only gets what opening that page would give.
 
 It runs only for guests, and only to answer the Require Login check. It does not turn Require Login off, and it is not a way to skip other rules: the per-video role and Allowed Domains checks still apply. Learnomy 2.2.0 uses this filter for its free-preview lessons. See [Courses with Learnomy](../using-mediashield/15-courses-with-learnomy.md).
 
@@ -699,12 +707,12 @@ if ( is_wp_error( $video_id ) ) {
 
 | Code | Status | When |
 |------|--------|------|
-| `mediashield_cannot_create_video` | 403 | The current user may not add videos (needs `edit_posts`), or may not edit that Media Library file. |
+| `mediashield_cannot_create_video` | 403 | The current user may not add videos (needs `edit_posts`) and the file is not their own upload, or the Media Library file is not theirs to use. Someone with `upload_files` but no `edit_posts` (a Learnomy Instructor) may add a video file they uploaded, given as `attachment_id` or as its address, but not a platform link. |
 | `mediashield_unplayable_source` | 400 | The link is not a video MediaShield can play. The message says what to use instead, in the same words as the Add video screen. |
 | `mediashield_not_a_video_file` | 404 | `attachment_id` is not a video in the Media Library. |
 | (WordPress's code) | 500 | The video could not be saved. |
 
-A video added by someone who may publish posts is published at once; anyone else's (a Contributor, say) is saved as **Pending Review** for an editor to publish, as WordPress does for posts. Check `get_post_status( $video_id )` if your screen needs to say so.
+A video added by someone who may publish posts, or made from the person's own uploaded file, is published at once; anyone else's (a Contributor adding a link, say) is saved as **Pending Review** for an editor to publish, as WordPress does for posts. Check `get_post_status( $video_id )` if your screen needs to say so.
 
 It takes the same path as **Videos > Add New**: the same link check, the same save (platform and id stored in one shape, the platform's title fetched when none is given, the Videos list status), no protection level stamped (the video follows the site default), and a Media Library file is moved into the protected folder with its Media Library item made private, as when an owner pastes that file's link. A file keeps the name it was uploaded with and its length is read from it. A link already in the library, however it is written (`youtu.be/…` or `watch?v=…`), returns that video instead of adding a copy, as the Video block does; so does the same Media Library file twice.
 

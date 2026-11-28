@@ -65,8 +65,8 @@ class Protection {
 			),
 			'standard' => array(
 				'label'   => __( 'Standard', 'mediashield' ),
-				'summary' => __( 'Right-click and download blocked, a watermark with the viewer\'s name, and each viewing tracked.', 'mediashield' ),
-				'adds'    => __( 'Plus a watermark and tracked viewing.', 'mediashield' ),
+				'summary' => __( 'Right-click and download blocked, a watermark with the viewer\'s name, and each playback tracked.', 'mediashield' ),
+				'adds'    => __( 'Plus a watermark and tracked playback.', 'mediashield' ),
 			),
 			'strict'   => array(
 				'label'   => __( 'Strict', 'mediashield' ),

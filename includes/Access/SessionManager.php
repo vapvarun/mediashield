@@ -570,6 +570,8 @@ class SessionManager {
 		// The same write keeps where a member stopped, for the resume offer,
 		// from every report: heartbeat, pause-time beats and the end beacon.
 		$user_id  = (int) $parsed['user_id'];
+		// The member's watched share before this report, for mediashield_watched_share below.
+		$share_before = ( $user_id > 0 && $spans ) ? WatchedSpans::percent( $user_id, (int) $parsed['video_id'] ) : 0;
 		$accepted = $user_id > 0 ? WatchedSpans::record( $user_id, (int) $parsed['video_id'], $spans ?? array(), $effective_duration, $position ) : 0.0;
 		// A guest or a player without span reports: the time since the last
 		// report, at most one 30 s beat, while playing. A flat 30 per beat
@@ -616,6 +618,32 @@ class SessionManager {
 				$completion_pct,
 				$parsed['session_id']
 			);
+		}
+
+		// The watched share grew: tell listeners, with the share before, so
+		// a rule gated on time watched (not on the furthest point, which
+		// milestones follow) can act the moment it is met (Basecamp
+		// 10552055677). Only on a report that added watched time, so a
+		// paused player or a finished lesson costs nothing.
+		if ( $rows > 0 && $accepted > 0 ) {
+			$share_after = WatchedSpans::percent( $user_id, (int) $parsed['video_id'] );
+			if ( $share_after > $share_before ) {
+				/**
+				 * Fires when a member's watched share of a video grows.
+				 *
+				 * The share is time actually watched (WatchedSpans::percent()),
+				 * the measure of "Require X% watched", not the furthest point.
+				 *
+				 * @since 1.4.4
+				 *
+				 * @param int $user_id      Member.
+				 * @param int $video_id     Video CPT post ID.
+				 * @param int $share_after  Watched percent now.
+				 * @param int $share_before Watched percent before this report.
+				 * @param int $session_id   Session row ID.
+				 */
+				do_action( 'mediashield_watched_share', $user_id, (int) $parsed['video_id'], $share_after, $share_before, (int) $parsed['session_id'] );
+			}
 		}
 
 		return $rows > 0;

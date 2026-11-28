@@ -549,10 +549,13 @@ iframe.ms-player-target {
 	transition: background 0.2s;
 }
 
-/* Vimeo draws a fullscreen icon of its own that no embed setting removes
-   (without the permission it does nothing): MediaShield's, solid, sits
-   over it, so one shows (UX test MSUX-15). */
-.ms-protected-player[data-platform="vimeo"] .ms-fullscreen-btn {
+/* Vimeo and Bunny's embed player draw a fullscreen icon of their own that no
+   embed setting removes (without the permission it does nothing, or only
+   fills the frame): MediaShield's, solid, sits over it, so one shows
+   (UX test MSUX-15; Bunny: Basecamp 10552105205). Bunny's direct stream uses
+   MediaShield's own player, so only its embed (an iframe) needs this. */
+.ms-protected-player[data-platform="vimeo"] .ms-fullscreen-btn,
+.ms-protected-player[data-platform="bunny"]:has(iframe) .ms-fullscreen-btn {
 	bottom: 6px;
 	right: 6px;
 	width: 46px;
@@ -562,6 +565,12 @@ iframe.ms-player-target {
 
 .ms-fullscreen-btn:hover {
 	background: rgba(0, 0, 0, 0.8);
+}
+
+/* A covering button stays solid on hover, or the icon under it shows through. */
+.ms-protected-player[data-platform="vimeo"] .ms-fullscreen-btn:hover,
+.ms-protected-player[data-platform="bunny"]:has(iframe) .ms-fullscreen-btn:hover {
+	background: var(--ms-player-bg);
 }
 
 /* Base Lucide icon — sizing comes from the SVG width/height attributes. */

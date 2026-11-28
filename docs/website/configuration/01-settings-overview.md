@@ -2,7 +2,7 @@
 
 **Included in Free.** Two cards on this screen only appear with MediaShield Pro (see the end of this page).
 
-All MediaShield settings live under **MediaShield > Settings**. The cards sit in one column with a section list on the left, one item per card, named as the card is: Protection, Who can watch, Watermark (with Pro it also holds the Watermark fields card), Player, Messages, Viewing history, and only where they can work Video ads (WB Ad Manager's video ads installed), Uploads (a platform connected with Pro) and Lesson completion (Learnomy, or with Pro an LMS). Click a section to jump to it; the item lit follows the card at the top of the screen as you scroll. Type in **Search settings** above the list to show only the cards that mention what you typed, for example "IP" or "resume". On a phone the section list is a **Go to section** menu. Every change saves by itself a moment after you make it, and a "Saved" message confirms it at the bottom of the screen. There is no Save button. If a change cannot be saved (the site cannot be reached, or the value is not allowed), the control switches back to the saved value and the message says "Not saved", with **Try again**.
+All MediaShield settings live under **MediaShield > Settings**. The cards sit in one column with a section list on the left, one item per card, named as the card is: Protection, Who can watch, Watermark (with Pro it also holds the Watermark fields card), Player, Messages, Watch history, and only where they can work Video ads (WB Ad Manager's video ads installed), Uploads (a platform connected with Pro) and Lesson completion (Learnomy, or with Pro an LMS). Click a section to jump to it; the item lit follows the card at the top of the screen as you scroll. Type in **Search settings** above the list to show only the cards that mention what you typed, for example "IP" or "resume". On a phone the section list is a **Go to section** menu. Every change saves by itself a moment after you make it, and a "Saved" message confirms it at the bottom of the screen. There is no Save button. If a change cannot be saved (the site cannot be reached, or the value is not allowed), the control switches back to the saved value and the message says "Not saved", with **Try again**.
 
 ![MediaShield Settings with the section list on the left and the Protection section open](../images/settings.webp)
 
@@ -23,7 +23,7 @@ All MediaShield settings live under **MediaShield > Settings**. The cards sit in
 | Messages | Login, denied, membership, course, unavailable and Strict's developer tools messages | This page |
 | Video ads | Break placement for in-video ads | [Video Ads](../using-mediashield/13-video-ads.md) |
 | Uploads (Pro) | Where an uploaded file goes | Pro documentation |
-| Viewing history | How long watch history is kept | This page |
+| Watch history | How long watch history is kept | This page |
 | Lesson completion | Learnomy: set on each lesson. LearnDash (Pro): the one "require this % watched" setting. Tutor LMS, LifterLMS (Pro): auto-complete at a %. Auto-complete and enrollment switches with Pro | This page |
 
 ## Every setting and its default
@@ -48,7 +48,7 @@ All MediaShield settings live under **MediaShield > Settings**. The cards sit in
 | Show MediaShield Badge | Off | Small "Protected by MediaShield" label on the player, a pill in your Brand Color. Off on new installs. A site updated from an earlier version keeps its setting and sees one notice on the MediaShield screens offering the new defaults (badge off; watermark name and email, IP opt-in): **Apply new defaults** or **Keep my settings**, and the notice is gone for good. **Not now** hides it for a week. |
 | Allowed Domains | Empty | Sites allowed to embed your videos. Separate entries with commas, spaces or new lines, in any mix. A pasted web address is reduced to its domain. Empty allows any. See [Access Control](04-access-control.md). |
 | Streams at once per member | 2 | Videos one account may watch at the same time. Minimum 1. |
-| Keep every viewing forever | On | Off shows **Keep viewings for (months)** (1 to 120, starts at 12); older viewings move out of reports. See below. |
+| Keep watch history forever | On | Off shows **Keep watch history for (months)** (1 to 120, starts at 12); older watch history moves out of reports. See below. |
 | Login Overlay Text | Please log in to watch this video | Message on the video for visitors who are not logged in. |
 | Login Button Text | Log In | Label of the login button. |
 | Access Denied Text | You do not have access to this video | Message for signed-in viewers who lack the role, or whose domain is not allowed. |
@@ -85,16 +85,16 @@ Setting names such as `ms_watermark_opacity` are listed for developers in the [S
 
 - None - The video plays as the platform shows it. Right-click stays blocked while Block right-click on every video is on.
 - Basic - Right-click and download blocked.
-- Standard - Plus a watermark and tracked viewing.
+- Standard - Plus a watermark and tracked playback.
 - Strict - Plus file address hidden and developer tools detected.
 
 **Require login** (under Who can watch) is on by default and applies at every level. Per-video roles, the domain list and any custom rules still apply when it is off.
 
-## Viewing history
+## Watch history
 
-**Keep every viewing forever** is on by default, and that is the recommended setting (stored as `ms_session_retention_months` = 0).
+**Keep watch history forever** is on by default, and that is the recommended setting (stored as `ms_session_retention_months` = 0).
 
-Turn it off and set **Keep viewings for (months)**, and every month MediaShield moves older sessions into an archive table. Reports do not read that archive, so views, completion rates and top videos stop including anything older. This cannot be undone from the screen. The privacy export and erase tools do read the archive. The months field explains this while it is shown.
+Turn it off and set **Keep watch history for (months)**, and every month MediaShield moves older sessions into an archive table. Reports do not read that archive, so views, completion rates and top videos stop including anything older. This cannot be undone from the screen. The privacy export and erase tools do read the archive. The months field explains this while it is shown.
 
 ## Messages
 

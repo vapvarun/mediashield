@@ -98,7 +98,7 @@ Status values depend on the driver. `self_hosted` uploads are synchronous, so it
 
 | Method | Route | Permission | Description |
 |--------|-------|-----------|-------------|
-| GET | `/analytics/overview` | `manage_options` | Dashboard summary: total videos, sessions, avg completion, active viewers, activity chart, top videos, recent milestones. Date filter: `?period=7d|30d|90d`. Daily counts use `CONVERT_TZ()` to honour WP site timezone. |
+| GET | `/analytics/overview` | `manage_options` | Dashboard summary: total videos, `total_views` (one per viewer per video in the period; guests per session), `total_sessions` (plays), avg completion, active viewers, views chart (each view on the day of its first play), top videos (`view_count` and `session_count`), recent milestones. Date filter: `?period=7d|30d|90d`. Daily counts use `CONVERT_TZ()` to honour WP site timezone. |
 | GET | `/videos/{id}/stats` | `manage_options` | Per-video statistics. |
 | GET | `/analytics/milestones` | `manage_options` | Milestone completion data across all videos. Params: `per_page` (default 20), `page` (default 1), `video_id` (default 0 = all). |
 | GET | `/analytics/users` | `manage_options` | User engagement list. Params: `per_page` (default 20), `page` (default 1), `search` (default `''`). |

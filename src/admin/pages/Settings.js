@@ -169,7 +169,7 @@ const SETTINGS_GROUPS = [
 	{ key: 'messages', label: __( 'Messages', 'mediashield' ) },
 	{ key: 'ads', label: __( 'Video ads', 'mediashield' ) },
 	{ key: 'uploads', label: __( 'Uploads', 'mediashield' ) },
-	{ key: 'history', label: __( 'Viewing history', 'mediashield' ) },
+	{ key: 'history', label: __( 'Watch history', 'mediashield' ) },
 	{ key: 'integrations', label: __( 'Lesson completion', 'mediashield' ) },
 ];
 
@@ -1115,20 +1115,20 @@ const Settings = () => {
 				icon="backup"
 				group="history"
 				title={ groupLabel( 'history' ) }
-				description={ __( 'How long viewings stay in your reports.', 'mediashield' ) }
+				description={ __( 'How long watch history stays in your reports.', 'mediashield' ) }
 			>
 				{ /* 0 months means forever: a choice, not a number to know (MSUX-28). */ }
 				<ToggleControl
-					label={ __( 'Keep every viewing forever', 'mediashield' ) }
-					help={ __( 'Recommended. Turn off only if a data-retention policy requires older viewings to leave your reports.', 'mediashield' ) }
+					label={ __( 'Keep watch history forever', 'mediashield' ) }
+					help={ __( 'Recommended. Turn off only if a data-retention policy requires older watch history to leave your reports.', 'mediashield' ) }
 					checked={ Number( settings?.ms_session_retention_months ?? 0 ) === 0 }
 					onChange={ ( forever ) => updateSetting( 'ms_session_retention_months', forever ? 0 : 12 ) }
 					__nextHasNoMarginBottom
 				/>
 				{ Number( settings?.ms_session_retention_months ?? 0 ) > 0 && (
 					<NumberField
-						label={ __( 'Keep viewings for (months)', 'mediashield' ) }
-						help={ __( 'Viewings older than this are moved out of your reports every month. Views, completion rates and top videos stop counting them, and this cannot be undone from here.', 'mediashield' ) }
+						label={ __( 'Keep watch history for (months)', 'mediashield' ) }
+						help={ __( 'Watch history older than this is moved out of your reports every month. Views, completion rates and top videos stop counting it, and this cannot be undone from here.', 'mediashield' ) }
 						min={ 1 }
 						max={ 120 }
 						value={ settings?.ms_session_retention_months }
@@ -1219,7 +1219,7 @@ const Settings = () => {
 			{ /* One line, not a sales box (Basecamp 10545260681). */ }
 			{ ! config.isProActive && (
 				<p className="ms-upsell-line">
-					{ __( 'MediaShield Pro adds watermark fields, Bunny Stream, LMS lesson completion and viewing heatmaps.', 'mediashield' ) }{ ' ' }
+					{ __( 'MediaShield Pro adds watermark fields, Bunny Stream, LMS lesson completion and watch heatmaps.', 'mediashield' ) }{ ' ' }
 					<a href="https://wbcomdesigns.com/downloads/mediashield-pro/" target="_blank" rel="noopener noreferrer">{ __( 'See MediaShield Pro', 'mediashield' ) }</a>
 				</p>
 			) }

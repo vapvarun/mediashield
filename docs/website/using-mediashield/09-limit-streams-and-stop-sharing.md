@@ -22,7 +22,7 @@ A viewer who starts one more stream than allowed sees "You are playing too many 
 
 ## How a stream stops counting
 
-- A viewing counts toward the limit once it has played, or if it started in the last 15 seconds.
+- A playback session counts toward the limit once it has played, or if it started in the last 15 seconds.
 - A page opened but never played stops counting after 15 seconds, so an open tab that never plays does not use up a stream.
 - The player reports every 30 seconds.
 - A session with no report for 5 minutes stops counting toward the limit.

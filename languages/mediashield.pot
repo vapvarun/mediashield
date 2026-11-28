@@ -3,13 +3,13 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: MediaShield 1.4.4\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/mediashield\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/p\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-26T06:51:54+00:00\n"
+"POT-Creation-Date: 2026-11-28T06:12:06+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: mediashield\n"
@@ -44,23 +44,23 @@ msgstr ""
 
 #. translators: %s: course title.
 #: includes/Access/AccessControl.php:287
-#: src/admin/pages/Settings.js:981
+#: src/adminages/Settings.js:981
 #, php-format,js-format
 msgid "This video is part of %s. Enroll to watch it."
 msgstr ""
 
 #: includes/Access/AccessControl.php:291
 #: includes/Core/Settings.php:577
-#: src/admin/pages/Settings.js:988
+#: src/adminages/Settings.js:988
 msgid "View course"
 msgstr ""
 
 #: includes/Access/AccessControl.php:300
-#: src/admin/pages/Settings.js:969
+#: src/adminages/Settings.js:969
 msgid "See membership options"
 msgstr ""
 
-#: includes/Access/SessionManager.php:354
+#: includes/Access/SessionManager.php:369
 msgid "The video could not start. Please try again."
 msgstr ""
 
@@ -116,11 +116,11 @@ msgstr ""
 #: includes/Admin/Menu.php:59
 #: src/admin/App.js:44
 #: src/admin/components/Sidebar.js:22
-#: src/admin/pages/Playlists.js:100
-#: src/admin/pages/Playlists.js:129
-#: src/admin/pages/Tags.js:196
-#: src/admin/pages/Tags.js:249
-#: src/admin/pages/Videos.js:474
+#: src/adminages/Playlists.js:100
+#: src/adminages/Playlists.js:129
+#: src/adminages/Tags.js:197
+#: src/adminages/Tags.js:250
+#: src/adminages/Videos.js:513
 msgid "Videos"
 msgstr ""
 
@@ -131,7 +131,7 @@ msgstr ""
 #: includes/Admin/Menu.php:67
 #: includes/CPT/VideoPostType.php:72
 #: includes/CPT/VideoPostType.php:73
-#: src/admin/pages/Videos.js:489
+#: src/adminages/Videos.js:528
 msgid "Add New Video"
 msgstr ""
 
@@ -201,24 +201,24 @@ msgid "JavaScript is required for the setup wizard."
 msgstr ""
 
 #: includes/Core/Settings.php:573
-#: src/admin/pages/Settings.js:936
+#: src/adminages/Settings.js:936
 msgid "Please log in to watch this video"
 msgstr ""
 
 #: includes/Core/Settings.php:574
 #: src/blocks/my-videos/render.php:51
-#: src/admin/pages/Settings.js:944
+#: src/adminages/Settings.js:944
 msgid "Log in"
 msgstr ""
 
 #: includes/Core/Settings.php:575
-#: src/admin/pages/Settings.js:952
+#: src/adminages/Settings.js:952
 msgid "You do not have access to this video"
 msgstr ""
 
 #: includes/Core/Settings.php:576
 #: includes/Player/Renderer.php:59
-#: src/admin/pages/Settings.js:998
+#: src/adminages/Settings.js:998
 msgid "This video is unavailable."
 msgstr ""
 
@@ -262,10 +262,10 @@ msgid "The video platform"
 msgstr ""
 
 #: includes/Core/Settings.php:594
-#: src/admin/pages/Settings.js:536
-#: src/admin/pages/Students.js:157
-#: src/admin/pages/Students.js:435
-#: src/admin/pages/Videos.js:602
+#: src/adminages/Settings.js:536
+#: src/adminages/Students.js:157
+#: src/adminages/Students.js:435
+#: src/adminages/Videos.js:641
 msgid "Try again"
 msgstr ""
 
@@ -287,7 +287,7 @@ msgid "This video could not be loaded. Please try again."
 msgstr ""
 
 #: includes/Core/Settings.php:600
-#: src/admin/pages/Settings.js:758
+#: src/adminages/Settings.js:758
 msgid "Protected by MediaShield"
 msgstr ""
 
@@ -374,7 +374,7 @@ msgid "Advertisement"
 msgstr ""
 
 #: includes/Core/Settings.php:623
-#: src/admin/pages/Settings.js:1036
+#: src/adminages/Settings.js:1036
 msgid "Pre-roll"
 msgstr ""
 
@@ -423,7 +423,7 @@ msgstr ""
 
 #: includes/CPT/PlaylistPostType.php:155
 #: includes/CPT/PlaylistPostType.php:156
-#: src/admin/pages/Playlists.js:75
+#: src/adminages/Playlists.js:75
 msgid "Add New Playlist"
 msgstr ""
 
@@ -483,15 +483,15 @@ msgstr ""
 msgid "Video poster"
 msgstr ""
 
-#: includes/CPT/VideoCreator.php:121
+#: includes/CPT/VideoCreator.php:132
 msgid "You are not allowed to add videos."
 msgstr ""
 
-#: includes/CPT/VideoCreator.php:130
+#: includes/CPT/VideoCreator.php:137
 msgid "That file is not a video in the Media Library."
 msgstr ""
 
-#: includes/CPT/VideoCreator.php:133
+#: includes/CPT/VideoCreator.php:140
 msgid "You are not allowed to use that file."
 msgstr ""
 
@@ -619,377 +619,381 @@ msgstr ""
 msgid "Uploading…"
 msgstr ""
 
+#: includes/CPT/VideoPostType.php:218
+msgid "No poster was made from the file, so set a featured image yourself:"
+msgstr ""
+
 #. translators: %s: percentage sent so far, e.g. "42%".
-#: includes/CPT/VideoPostType.php:219
+#: includes/CPT/VideoPostType.php:220
 #, php-format
 msgid "Sending to your site: %s"
 msgstr ""
 
 #. translators: %s: upload target, e.g. "Bunny Stream - Course videos".
-#: includes/CPT/VideoPostType.php:221
+#: includes/CPT/VideoPostType.php:222
 #, php-format
 msgid "Sending to %s. A large file can take a few minutes; keep this page open."
 msgstr ""
 
 #. translators: 1: size of the chosen file, e.g. "27 MB"; 2: largest upload this server accepts, e.g. "2 MB".
 #. translators: 1: size of the file sent, e.g. "27 MB"; 2: largest upload this server accepts, e.g. "2 MB".
-#: includes/CPT/VideoPostType.php:223
+#: includes/CPT/VideoPostType.php:224
 #: includes/REST/UploadController.php:262
 #, php-format
 msgid "This file is %1$s; your server allows %2$s."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:224
+#: includes/CPT/VideoPostType.php:225
 msgid "Upload it in Bunny, then use Browse & Import."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:225
+#: includes/CPT/VideoPostType.php:226
 msgid "Ask your host to raise the upload limit, or upload the file to your video platform and paste its URL above."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:226
+#: includes/CPT/VideoPostType.php:227
 msgid "Uploaded. Save the video to keep this file."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:227
+#: includes/CPT/VideoPostType.php:228
 msgid "Uploaded file (save the video to keep it):"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:228
+#: includes/CPT/VideoPostType.php:229
 msgid "Upload failed:"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:229
+#: includes/CPT/VideoPostType.php:230
 msgid "Upload failed: the connection dropped or the file is larger than this server accepts."
 msgstr ""
 
 #. translators: %s: platform name, e.g. YouTube.
-#: includes/CPT/VideoPostType.php:290
-#: src/admin/pages/Videos.js:201
+#: includes/CPT/VideoPostType.php:291
+#: src/adminages/Videos.js:202
 #, php-format,js-format
 msgid "Unavailable at %s"
 msgstr ""
 
 #. translators: %s: platform name, e.g. YouTube.
-#: includes/CPT/VideoPostType.php:291
+#: includes/CPT/VideoPostType.php:292
 #, php-format
 msgid "%s no longer plays this video (it was removed or made private), so members cannot watch it. Paste a new link below, or make the video public again there."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:299
+#: includes/CPT/VideoPostType.php:300
 msgid "Paste a link or upload a file. The platform is read from the link."
 msgstr ""
 
 #. translators: %s: comma-separated platform names
-#: includes/CPT/VideoPostType.php:318
+#: includes/CPT/VideoPostType.php:319
 #, php-format
 msgid "Connected platforms: %s. Use Browse & Import for bulk actions."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:322
+#: includes/CPT/VideoPostType.php:323
 msgid "Manage Platforms →"
 msgstr ""
 
 #. translators: %s: link to the Platforms screen
-#: includes/CPT/VideoPostType.php:333
+#: includes/CPT/VideoPostType.php:334
 #, php-format
 msgid "YouTube, Vimeo and Wistia links play here without an account. %s only to browse your library and import videos in one step."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:334
+#: includes/CPT/VideoPostType.php:335
 msgid "Connect a platform"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:350
+#: includes/CPT/VideoPostType.php:351
 msgid "YouTube, Vimeo and Wistia links play here as they are. MediaShield Pro adds Bunny Stream: browse your Bunny library and import videos in one step."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:373
+#: includes/CPT/VideoPostType.php:374
 #: includes/Support/Platforms.php:278
-#: src/admin/pages/Videos.js:169
+#: src/adminages/Videos.js:170
 msgid "Uploaded file"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:376
+#: includes/CPT/VideoPostType.php:377
 msgid "kept private, played through a signed link"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:388
+#: includes/CPT/VideoPostType.php:389
 msgid "Replace with a link"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:388
+#: includes/CPT/VideoPostType.php:389
 #: src/admin/wizard/steps/FirstVideoStep.js:140
 #: src/blocks/video/edit.js:187
 msgid "Video link"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:394
+#: includes/CPT/VideoPostType.php:395
 msgid "https://www.youtube.com/watch?v=... or https://vimeo.com/..."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:395
+#: includes/CPT/VideoPostType.php:396
 msgid "Leave empty to keep the uploaded file."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:409
+#: includes/CPT/VideoPostType.php:410
 msgid "Or upload a file"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:413
+#: includes/CPT/VideoPostType.php:414
 msgid "Upload"
 msgstr ""
 
 #. translators: 1: upload target, e.g. "Bunny Stream - Course videos"; 2: largest upload this server accepts, e.g. "64 MB".
-#: includes/CPT/VideoPostType.php:424
+#: includes/CPT/VideoPostType.php:425
 #, php-format
 msgid "Uploads to: %1$s. Largest file this server accepts: %2$s."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:434
+#: includes/CPT/VideoPostType.php:435
 msgid "Detected Platform"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:452
+#: includes/CPT/VideoPostType.php:453
 msgid "Duration"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:458
+#: includes/CPT/VideoPostType.php:459
 msgid "Length in seconds. Used to validate watch progress; leave 0 if unknown."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:460
-#: src/admin/pages/Videos.js:694
-#: src/admin/pages/Videos.js:695
+#: includes/CPT/VideoPostType.php:461
+#: src/adminages/Videos.js:733
+#: src/adminages/Videos.js:734
 msgid "Add this video's length so the watch rule can't be skipped."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:529
+#: includes/CPT/VideoPostType.php:530
 msgid "Protection Level"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:548
+#: includes/CPT/VideoPostType.php:549
 msgid "This file is on another site, so MediaShield cannot hide its address, even on Strict. The watermark, session tracking and developer-tools detection still work. To hide the address, upload the file to this site."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:553
-#: src/admin/pages/Settings.js:166
+#: includes/CPT/VideoPostType.php:554
+#: src/adminages/Settings.js:166
 msgid "Who can watch"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:561
+#: includes/CPT/VideoPostType.php:562
 msgid "Everyone the site allows (Require login is on: logged-in members)"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:562
+#: includes/CPT/VideoPostType.php:563
 msgid "Everyone the site allows (Require login is off: anyone)"
 msgstr ""
 
 #. translators: %s: a user role, e.g. Subscriber.
-#: includes/CPT/VideoPostType.php:570
+#: includes/CPT/VideoPostType.php:571
 #, php-format
 msgid "Only %s"
 msgstr ""
 
 #. translators: %s: link to the Who can watch settings.
-#: includes/CPT/VideoPostType.php:579
+#: includes/CPT/VideoPostType.php:580
 #, php-format
 msgid "Require login is set once for the whole site, under %s."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:580
+#: includes/CPT/VideoPostType.php:581
 msgid "Settings > Who can watch"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:607
+#: includes/CPT/VideoPostType.php:608
 #: src/admin/App.js:62
-#: src/admin/pages/Tags.js:147
+#: src/adminages/Tags.js:148
 msgid "Tags"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:612
+#: includes/CPT/VideoPostType.php:613
 msgid "Tags on this video. Untick to remove."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:627
+#: includes/CPT/VideoPostType.php:628
 msgid "Add tags, separated by commas. Untick a tag to remove it. Saved with the video."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:679
+#: includes/CPT/VideoPostType.php:680
 msgid "Save the video first to get the embed codes."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:688
+#: includes/CPT/VideoPostType.php:689
 msgid "On a page or post"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:690
+#: includes/CPT/VideoPostType.php:691
 msgid "Add the MediaShield Video block and pick this video, or paste this video's link into the block."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:693
-#: src/admin/pages/Videos.js:743
+#: includes/CPT/VideoPostType.php:694
+#: src/adminages/Videos.js:782
 msgid "Shortcode"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:696
+#: includes/CPT/VideoPostType.php:697
 msgid "Copy"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:716
+#: includes/CPT/VideoPostType.php:717
 msgid "For the Classic editor, widgets and page builders."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:747
+#: includes/CPT/VideoPostType.php:748
 msgid "When a member reaches 25%, 50%, 75% or 100% of this video, MediaShield records it. To add a tag to the member at a milestone, type the tag and tick the box."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:752
+#: includes/CPT/VideoPostType.php:753
 #: includes/Privacy/PrivacyExporter.php:333
-#: src/admin/pages/Milestones.js:148
-#: src/admin/pages/Milestones.js:176
+#: src/adminages/Milestones.js:148
+#: src/adminages/Milestones.js:176
 msgid "Milestone"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:753
+#: includes/CPT/VideoPostType.php:754
 msgid "Tag to add to the member"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:754
-#: includes/CPT/VideoPostType.php:854
-#: src/blocks/playlist/edit.js:86
+#: includes/CPT/VideoPostType.php:755
+#: includes/CPT/VideoPostType.php:855
+#: src/blockslaylist/edit.js:86
 msgid "On"
-msgstr ""
-
-#. translators: %d: milestone percentage
-#: includes/CPT/VideoPostType.php:770
-#, php-format
-msgid "Tag at %d%%"
 msgstr ""
 
 #. translators: %d: milestone percentage
 #: includes/CPT/VideoPostType.php:771
 #, php-format
+msgid "Tag at %d%%"
+msgstr ""
+
+#. translators: %d: milestone percentage
+#: includes/CPT/VideoPostType.php:772
+#, php-format
 msgid "e.g. watched-%d"
 msgstr ""
 
 #. translators: %d: milestone percentage
-#: includes/CPT/VideoPostType.php:776
+#: includes/CPT/VideoPostType.php:777
 #, php-format
 msgid "Add the tag at %d%%"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:784
+#: includes/CPT/VideoPostType.php:785
 msgid "The tag goes on the member, for your CRM, LMS or automation rules, and shows on their page under MediaShield > Viewers. It is not a video tag: the Tags box above and MediaShield > Tags are for organising your videos."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:805
+#: includes/CPT/VideoPostType.php:806
 msgid "These options apply to every video source. Two exceptions for Show player controls: a Bunny embed always shows Bunny's own controls, and Vimeo hides its controls only on a paid Vimeo plan. Most browsers start a video automatically only when it is muted."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:810
-#: src/admin/pages/Playlists.js:118
+#: includes/CPT/VideoPostType.php:811
+#: src/adminages/Playlists.js:118
 msgid "Autoplay"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:812
+#: includes/CPT/VideoPostType.php:813
 msgid "Start playing automatically (muted in most browsers)."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:817
-#: src/admin/pages/Playlists.js:119
-#: src/blocks/playlist/edit.js:123
+#: includes/CPT/VideoPostType.php:818
+#: src/adminages/Playlists.js:119
+#: src/blockslaylist/edit.js:123
 msgid "Loop"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:823
+#: includes/CPT/VideoPostType.php:824
 msgid "Start muted"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:829
+#: includes/CPT/VideoPostType.php:830
 msgid "Show player controls"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:834
+#: includes/CPT/VideoPostType.php:835
 msgid "Feature Overrides"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:836
+#: includes/CPT/VideoPostType.php:837
 msgid "Override global settings for this video. \"Default\" uses the value from Settings → Player Controls."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:853
+#: includes/CPT/VideoPostType.php:854
 msgid "Default (global)"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:855
-#: src/blocks/playlist/edit.js:86
+#: includes/CPT/VideoPostType.php:856
+#: src/blockslaylist/edit.js:86
 msgid "Off"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:867
+#: includes/CPT/VideoPostType.php:868
 msgid "End Screen Text:"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:868
-#: includes/CPT/VideoPostType.php:873
+#: includes/CPT/VideoPostType.php:869
+#: includes/CPT/VideoPostType.php:874
 msgid "Leave blank to use global default"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:872
+#: includes/CPT/VideoPostType.php:873
 msgid "End Screen URL:"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:893
+#: includes/CPT/VideoPostType.php:894
 msgid "Link this video to a LearnDash, Tutor LMS, or LifterLMS lesson."
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:895
+#: includes/CPT/VideoPostType.php:896
 msgid "Auto-mark lesson complete on video finish"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:896
+#: includes/CPT/VideoPostType.php:897
 msgid "Require course enrollment to watch"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:897
+#: includes/CPT/VideoPostType.php:898
 msgid "Configurable completion threshold"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:899
+#: includes/CPT/VideoPostType.php:900
 msgid "Get Pro"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:913
+#: includes/CPT/VideoPostType.php:914
 msgid "Advanced Watermark"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:913
+#: includes/CPT/VideoPostType.php:914
 msgid "7 fields (email, IP, timestamp...)"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:914
+#: includes/CPT/VideoPostType.php:915
 #: src/admin/components/Sidebar.js:34
 msgid "Heatmaps"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:914
+#: includes/CPT/VideoPostType.php:915
 msgid "See where viewers watch"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:916
+#: includes/CPT/VideoPostType.php:917
 msgid "Upgrade"
 msgstr ""
 
-#: includes/CPT/VideoPostType.php:995
+#: includes/CPT/VideoPostType.php:996
 msgid "The video link was not saved."
 msgstr ""
 
-#: includes/CPT/VideoUsage.php:668
+#: includes/CPT/VideoUsage.php:734
 #: includes/Integrations/Learnomy.php:157
 #: includes/REST/VideoSummaryController.php:162
 #: src/admin/components/VideoPickerModal.js:124
-#: src/admin/pages/Videos.js:661
+#: src/adminages/Videos.js:700
 #: src/admin/wizard/steps/FirstVideoStep.js:175
 msgid "(no title)"
 msgstr ""
@@ -1037,32 +1041,32 @@ msgid "a Learnomy course"
 msgstr ""
 
 #: includes/Player/FeatureOverrides.php:69
-#: src/admin/pages/Settings.js:843
+#: src/adminages/Settings.js:843
 msgid "Speed Control"
 msgstr ""
 
 #: includes/Player/FeatureOverrides.php:70
-#: src/admin/pages/Settings.js:850
+#: src/adminages/Settings.js:850
 msgid "Keyboard Shortcuts"
 msgstr ""
 
 #: includes/Player/FeatureOverrides.php:71
-#: src/admin/pages/Settings.js:857
+#: src/adminages/Settings.js:857
 msgid "Resume Playback"
 msgstr ""
 
 #: includes/Player/FeatureOverrides.php:72
-#: src/admin/pages/Settings.js:873
+#: src/adminages/Settings.js:873
 msgid "Sticky Player"
 msgstr ""
 
 #: includes/Player/FeatureOverrides.php:73
-#: src/admin/pages/Settings.js:880
+#: src/adminages/Settings.js:880
 msgid "End Screen"
 msgstr ""
 
 #: includes/Player/FeatureOverrides.php:74
-#: src/admin/pages/Settings.js:864
+#: src/adminages/Settings.js:864
 msgid "Prevent Skipping Ahead"
 msgstr ""
 
@@ -1117,11 +1121,11 @@ msgid "Standard"
 msgstr ""
 
 #: includes/Player/Protection.php:68
-msgid "Right-click and download blocked, a watermark with the viewer's name, and each viewing tracked."
+msgid "Right-click and download blocked, a watermark with the viewer's name, and each playback tracked."
 msgstr ""
 
 #: includes/Player/Protection.php:69
-msgid "Plus a watermark and tracked viewing."
+msgid "Plus a watermark and tracked playback."
 msgstr ""
 
 #: includes/Player/Protection.php:72
@@ -1138,18 +1142,18 @@ msgstr ""
 
 #. translators: %s: the site-wide protection level, e.g. Standard.
 #: includes/Player/Protection.php:94
-#: src/admin/utils/protection.js:48
+#: src/admin/utilsrotection.js:48
 #, php-format,js-format
 msgid "Site default (%s)"
 msgstr ""
 
 #: includes/Player/Protection.php:235
-#: src/admin/pages/Settings.js:1005
+#: src/adminages/Settings.js:1005
 msgid "Developer Tools Detected"
 msgstr ""
 
 #: includes/Player/Protection.php:236
-#: src/admin/pages/Settings.js:1012
+#: src/adminages/Settings.js:1012
 msgid "Please close developer tools to continue watching this video."
 msgstr ""
 
@@ -1180,7 +1184,7 @@ msgid "This video has no source file or link yet."
 msgstr ""
 
 #: includes/Player/Watermark.php:65
-#: includes/REST/AnalyticsController.php:908
+#: includes/REST/AnalyticsController.php:918
 msgid "Guest"
 msgstr ""
 
@@ -1198,12 +1202,12 @@ msgstr ""
 #: includes/Privacy/PrivacyExporter.php:261
 #: includes/Privacy/PrivacyExporter.php:329
 #: includes/Privacy/PrivacyExporter.php:371
-#: src/admin/pages/Milestones.js:147
-#: src/admin/pages/Milestones.js:175
-#: src/admin/pages/Students.js:198
-#: src/admin/pages/Students.js:214
-#: src/admin/pages/Videos.js:637
-#: src/admin/pages/Videos.js:680
+#: src/adminages/Milestones.js:147
+#: src/adminages/Milestones.js:175
+#: src/adminages/Students.js:198
+#: src/adminages/Students.js:214
+#: src/adminages/Videos.js:676
+#: src/adminages/Videos.js:719
 #: src/blocks/video/edit.js:272
 msgid "Video"
 msgstr ""
@@ -1233,7 +1237,7 @@ msgid "Raised At"
 msgstr ""
 
 #: includes/Privacy/PrivacyExporter.php:257
-msgid "MediaShield Viewings"
+msgid "MediaShield Watch History"
 msgstr ""
 
 #: includes/Privacy/PrivacyExporter.php:265
@@ -1273,7 +1277,7 @@ msgid "Milestone %"
 msgstr ""
 
 #: includes/Privacy/PrivacyExporter.php:379
-#: src/admin/pages/Videos.js:520
+#: src/adminages/Videos.js:559
 msgid "Tag"
 msgstr ""
 
@@ -1298,8 +1302,7 @@ msgstr ""
 #: includes/REST/SourceReportController.php:77
 #: includes/REST/StreamController.php:146
 #: includes/REST/StreamController.php:242
-#: includes/REST/TagController.php:320
-#: includes/REST/TagController.php:337
+#: includes/REST/TagController.php:208
 #: includes/REST/VideoSummaryController.php:136
 msgid "Video not found."
 msgstr ""
@@ -1367,22 +1370,22 @@ msgstr ""
 msgid "Video file not found on disk."
 msgstr ""
 
-#: includes/REST/TagController.php:230
+#: includes/REST/TagController.php:249
 msgid "A tag with this name already exists."
 msgstr ""
 
-#: includes/REST/TagController.php:250
-#: includes/REST/TagController.php:267
-#: includes/REST/TagController.php:302
-#: includes/REST/TagController.php:341
+#: includes/REST/TagController.php:269
+#: includes/REST/TagController.php:286
+#: includes/REST/TagController.php:321
+#: includes/REST/TagController.php:352
 msgid "Tag not found."
 msgstr ""
 
-#: includes/REST/TagController.php:283
+#: includes/REST/TagController.php:302
 msgid "Could not update tag. The slug may already be in use."
 msgstr ""
 
-#: includes/REST/TagController.php:349
+#: includes/REST/TagController.php:360
 msgid "This tag is already assigned to this video."
 msgstr ""
 
@@ -1436,7 +1439,7 @@ msgstr ""
 msgid "Unknown upload error."
 msgstr ""
 
-#: includes/REST/VideoListController.php:360
+#: includes/REST/VideoListController.php:384
 msgid "Choose a protection level."
 msgstr ""
 
@@ -1468,12 +1471,12 @@ msgid "Paste a YouTube, Vimeo or Wistia link, or a link to an .mp4 file. You can
 msgstr ""
 
 #: includes/Support/Platforms.php:278
-#: src/admin/pages/Videos.js:33
+#: src/adminages/Videos.js:34
 msgid "Uploaded file or file link"
 msgstr ""
 
 #: includes/Support/Platforms.php:278
-#: src/admin/pages/Videos.js:169
+#: src/adminages/Videos.js:170
 #: src/admin/wizard/steps/FirstVideoStep.js:26
 msgid "Video file link"
 msgstr ""
@@ -1493,62 +1496,62 @@ msgstr ""
 msgid "Invalid file type. Allowed formats: %s."
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:490
+#: includes/Upload/LibraryFiles.php:512
 msgid "a part of your site MediaShield could not check"
 msgstr ""
 
 #. translators: %s: post title
-#: includes/Upload/LibraryFiles.php:514
+#: includes/Upload/LibraryFiles.php:536
 #, php-format
 msgid "the content of \"%s\""
 msgstr ""
 
 #. translators: %s: video title
-#: includes/Upload/LibraryFiles.php:547
+#: includes/Upload/LibraryFiles.php:569
 #, php-format
 msgid "the video \"%s\""
 msgstr ""
 
 #. translators: %s: post title
-#: includes/Upload/LibraryFiles.php:549
+#: includes/Upload/LibraryFiles.php:571
 #, php-format
 msgid "the settings of \"%s\""
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:566
+#: includes/Upload/LibraryFiles.php:588
 msgid "a widget or site setting"
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:775
+#: includes/Upload/LibraryFiles.php:797
 msgid "(the file could not be moved; check that wp-content/uploads is writable, then save the video again)"
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:777
+#: includes/Upload/LibraryFiles.php:799
 msgid "(its file is not in your Media Library, so it may belong to another plugin and was left where it is)"
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:779
+#: includes/Upload/LibraryFiles.php:801
 msgid "(it was saved by someone who cannot edit its Media Library file; save the video yourself to protect it)"
 msgstr ""
 
 #. translators: %s: where else the file is used, for example: the content of "Welcome"
-#: includes/Upload/LibraryFiles.php:782
+#: includes/Upload/LibraryFiles.php:804
 #, php-format
 msgid "(also used in %s)"
 msgstr ""
 
 #. translators: %d: number of further videos not listed
-#: includes/Upload/LibraryFiles.php:789
+#: includes/Upload/LibraryFiles.php:811
 #, php-format
 msgid "And %d more."
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:794
+#: includes/Upload/LibraryFiles.php:816
 msgid "MediaShield now keeps uploaded video files in its protected folder."
 msgstr ""
 
 #. translators: %d: number of videos
-#: includes/Upload/LibraryFiles.php:801
+#: includes/Upload/LibraryFiles.php:823
 #, php-format
 msgid "%d video played from a public Media Library file. The file now sits in MediaShield's protected folder and plays only through the protected player. Its Media Library entry is kept and is visible to editors only."
 msgid_plural "%d videos played from public Media Library files. The files now sit in MediaShield's protected folder and play only through the protected player. Their Media Library entries are kept and are visible to editors only."
@@ -1556,7 +1559,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of videos
-#: includes/Upload/LibraryFiles.php:820
+#: includes/Upload/LibraryFiles.php:842
 #, php-format
 msgid "%d video still plays from a public file, because the file is used elsewhere on your site or is not in your Media Library. It was left where it is so nothing else breaks. To protect the video, open it and upload the file under \"Or upload a file\"; MediaShield then plays a private copy."
 msgid_plural "%d videos still play from public files, because the files are used elsewhere on your site or are not in your Media Library. They were left where they are so nothing else breaks. To protect a video, open it and upload the file under \"Or upload a file\"; MediaShield then plays a private copy."
@@ -1564,12 +1567,12 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: WP-CLI command
-#: includes/Upload/LibraryFiles.php:838
+#: includes/Upload/LibraryFiles.php:860
 #, php-format
 msgid "To put moved files back where they were, run %s."
 msgstr ""
 
-#: includes/Upload/LibraryFiles.php:844
+#: includes/Upload/LibraryFiles.php:866
 msgid "Got it"
 msgstr ""
 
@@ -1604,7 +1607,7 @@ msgid "Your videos and where you stopped are kept with your account."
 msgstr ""
 
 #: src/blocks/my-videos/render.php:62
-#: src/admin/pages/Videos.js:416
+#: src/adminages/Videos.js:455
 msgid "All"
 msgstr ""
 
@@ -1656,33 +1659,33 @@ msgid "My videos pages"
 msgstr ""
 
 #: src/blocks/my-videos/render.php:239
-#: src/admin/pages/Milestones.js:199
-#: src/admin/pages/Playlists.js:200
-#: src/admin/pages/Students.js:238
-#: src/admin/pages/Students.js:517
-#: src/admin/pages/Tags.js:292
-#: src/admin/pages/Videos.js:769
+#: src/adminages/Milestones.js:199
+#: src/adminages/Playlists.js:200
+#: src/adminages/Students.js:238
+#: src/adminages/Students.js:517
+#: src/adminages/Tags.js:293
+#: src/adminages/Videos.js:808
 msgid "Previous"
 msgstr ""
 
 #. translators: 1: current page, 2: total pages.
 #. translators: 1: current page, 2: number of pages.
 #: src/blocks/my-videos/render.php:244
-#: src/admin/pages/Students.js:231
-#: src/admin/pages/Students.js:510
-#: src/admin/pages/Tags.js:288
-#: src/admin/pages/Videos.js:757
+#: src/adminages/Students.js:231
+#: src/adminages/Students.js:510
+#: src/adminages/Tags.js:289
+#: src/adminages/Videos.js:796
 #, php-format,js-format
 msgid "Page %1$d of %2$d"
 msgstr ""
 
 #: src/blocks/my-videos/render.php:248
-#: src/admin/pages/Milestones.js:207
-#: src/admin/pages/Playlists.js:208
-#: src/admin/pages/Students.js:241
-#: src/admin/pages/Students.js:520
-#: src/admin/pages/Tags.js:295
-#: src/admin/pages/Videos.js:777
+#: src/adminages/Milestones.js:207
+#: src/adminages/Playlists.js:208
+#: src/adminages/Students.js:241
+#: src/adminages/Students.js:520
+#: src/adminages/Tags.js:296
+#: src/adminages/Videos.js:816
 msgid "Next"
 msgstr ""
 
@@ -1692,30 +1695,30 @@ msgstr ""
 
 #: src/admin/App.js:38
 #: src/admin/components/Sidebar.js:21
-#: src/admin/pages/Dashboard.js:293
+#: src/adminages/Dashboard.js:294
 msgid "Dashboard"
 msgstr ""
 
 #: src/admin/App.js:50
-#: src/admin/pages/Playlists.js:64
+#: src/adminages/Playlists.js:64
 msgid "Playlists"
 msgstr ""
 
 #: src/admin/App.js:56
-#: src/admin/pages/Students.js:410
+#: src/adminages/Students.js:410
 msgid "Viewers"
 msgstr ""
 
 #: src/admin/App.js:68
-#: src/admin/pages/Milestones.js:117
+#: src/adminages/Milestones.js:117
 msgid "Milestones"
 msgstr ""
 
 #: src/admin/App.js:74
 #: src/admin/components/Sidebar.js:26
-#: src/admin/pages/Playlists.js:101
-#: src/admin/pages/Playlists.js:139
-#: src/admin/pages/Settings.js:646
+#: src/adminages/Playlists.js:101
+#: src/adminages/Playlists.js:139
+#: src/adminages/Settings.js:646
 msgid "Settings"
 msgstr ""
 
@@ -1724,7 +1727,7 @@ msgid "Nothing to show yet"
 msgstr ""
 
 #: src/admin/App.js:145
-msgid "Analytics fill in when members watch a protected video. Finish these steps and the first viewing appears here."
+msgid "Analytics fill in when members watch a protected video. Finish these steps and the first view appears here."
 msgstr ""
 
 #: src/admin/components/ErrorBoundary.js:29
@@ -1776,7 +1779,7 @@ msgid "Watch it as a member"
 msgstr ""
 
 #: src/admin/components/FirstRunSteps.js:49
-msgid "Open the page in a private window, log in as a member and press play. Viewings, completion and milestones start from here."
+msgid "Open the page in a private window, log in as a member and press play. Views, completion and milestones start from here."
 msgstr ""
 
 #: src/admin/components/FirstRunSteps.js:51
@@ -1798,7 +1801,7 @@ msgid "(opens in a new tab)"
 msgstr ""
 
 #: src/admin/components/LevelPicker.js:26
-#: src/admin/pages/Settings.js:689
+#: src/adminages/Settings.js:689
 msgid "Protection level"
 msgstr ""
 
@@ -1864,7 +1867,7 @@ msgstr ""
 
 #: src/admin/components/PlaylistItemsModal.js:170
 #: src/admin/components/PlaylistItemsPanel.js:157
-#: src/blocks/playlist/edit.js:156
+#: src/blockslaylist/edit.js:156
 msgid "Not published, not shown on the page"
 msgstr ""
 
@@ -1911,7 +1914,7 @@ msgid "Could not save playback options."
 msgstr ""
 
 #: src/admin/components/PlaylistPlaybackOptions.js:77
-#: src/blocks/playlist/edit.js:109
+#: src/blockslaylist/edit.js:109
 msgid "Playback"
 msgstr ""
 
@@ -1949,7 +1952,7 @@ msgid "Export"
 msgstr ""
 
 #: src/admin/components/Sidebar.js:37
-#: src/admin/pages/Dashboard.js:89
+#: src/adminages/Dashboard.js:90
 msgid "Alerts"
 msgstr ""
 
@@ -1974,7 +1977,7 @@ msgid "Choose a Video"
 msgstr ""
 
 #: src/admin/components/VideoPickerModal.js:103
-#: src/admin/pages/Videos.js:497
+#: src/adminages/Videos.js:536
 msgid "Search videos"
 msgstr ""
 
@@ -1996,1371 +1999,1379 @@ msgstr ""
 msgid "Show more (%1$d of %2$d)"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:36
+#: src/adminages/Dashboard.js:36
 msgid "Today"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:37
+#: src/adminages/Dashboard.js:37
 msgid "Last 7 days"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:38
+#: src/adminages/Dashboard.js:38
 msgid "Last 30 days"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:39
+#: src/adminages/Dashboard.js:39
 msgid "Last 90 days"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:46
+#: src/adminages/Dashboard.js:46
 msgid "Ready videos"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:53
-#: src/admin/pages/Dashboard.js:203
-msgid "Viewings"
+#: src/adminages/Dashboard.js:54
+#: src/adminages/Dashboard.js:204
+msgid "Views"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:60
-#: src/admin/pages/Students.js:447
-#: src/admin/pages/Students.js:490
+#: src/adminages/Dashboard.js:61
+#: src/adminages/Students.js:447
+#: src/adminages/Students.js:490
 msgid "Avg Completion"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:67
-#: src/admin/pages/Students.js:482
+#: src/adminages/Dashboard.js:68
+#: src/adminages/Students.js:482
 msgid "Watching now"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:80
+#: src/adminages/Dashboard.js:81
 msgid "Videos protected"
 msgstr ""
 
 #. translators: 1: protected videos, 2: Ready videos (published, with something that plays).
-#: src/admin/pages/Dashboard.js:82
+#: src/adminages/Dashboard.js:83
 #, js-format
 msgid "%1$d of %2$d"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:85
+#: src/adminages/Dashboard.js:86
 msgid "Blocked attempts"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:98
-#: src/admin/pages/Settings.js:165
-#: src/admin/pages/Videos.js:537
-#: src/admin/pages/Videos.js:640
-#: src/admin/pages/Videos.js:712
+#: src/adminages/Dashboard.js:99
+#: src/adminages/Settings.js:165
+#: src/adminages/Videos.js:576
+#: src/adminages/Videos.js:679
+#: src/adminages/Videos.js:751
 msgid "Protection"
 msgstr ""
 
 #. translators: %d: number of videos with no source or unavailable at their platform.
-#: src/admin/pages/Dashboard.js:105
+#: src/adminages/Dashboard.js:106
 #, js-format
 msgid "%d video needs attention and is not counted."
 msgid_plural "%d videos need attention and are not counted."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Dashboard.js:117
+#: src/adminages/Dashboard.js:118
 msgid "Recorded with Pro"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:153
+#: src/adminages/Dashboard.js:154
 msgid "Failed to load analytics."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:307
+#: src/adminages/Dashboard.js:308
 msgid "Loading analytics..."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:319
+#: src/adminages/Dashboard.js:320
 msgid "Get started"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:347
+#: src/adminages/Dashboard.js:348
 msgid "Activity Overview"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:355
+#: src/adminages/Dashboard.js:356
 msgid "No analytics data yet."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:356
+#: src/adminages/Dashboard.js:357
 msgid "Data will appear here once viewers start watching your videos."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:367
+#: src/adminages/Dashboard.js:368
 msgid "Top Videos"
 msgstr ""
 
-#. translators: %d: number of viewings.
-#: src/admin/pages/Dashboard.js:376
+#. translators: %d: number of views (one per member).
+#: src/adminages/Dashboard.js:377
 #, js-format
-msgid "%d viewing"
-msgid_plural "%d viewings"
+msgid "%d view"
+msgid_plural "%d views"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Dashboard.js:389
+#: src/adminages/Dashboard.js:390
 msgid "Recent Milestones"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:396
+#: src/adminages/Dashboard.js:397
 msgid "User"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:397
+#: src/adminages/Dashboard.js:398
 msgid "finished"
 msgstr ""
 
 #. translators: %d: percent of the video reached.
-#: src/admin/pages/Dashboard.js:398
+#: src/adminages/Dashboard.js:399
 #, js-format
 msgid "reached %d%%"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:420
+#: src/adminages/Dashboard.js:421
 msgid "Playback Heatmaps"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:421
+#: src/adminages/Dashboard.js:422
 msgid "See exactly where viewers watch, rewatch, and drop off with 10-second precision heatmaps."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:425
+#: src/adminages/Dashboard.js:426
 msgid "Realtime Viewers"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:426
+#: src/adminages/Dashboard.js:427
 msgid "Live dashboard showing who's watching right now with 15-second auto-refresh."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:430
+#: src/adminages/Dashboard.js:431
 msgid "Suspicious Activity"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:431
+#: src/adminages/Dashboard.js:432
 msgid "Detect multi-IP usage, VPN, devtools, and rapid seeking with automatic alerts."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:435
+#: src/adminages/Dashboard.js:436
 msgid "CSV & PDF Export"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:436
-msgid "Export viewings, milestones and member data as CSV or PDF reports."
+#: src/adminages/Dashboard.js:437
+msgid "Export playback sessions, milestones and member data as CSV or PDF reports."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:441
+#: src/adminages/Dashboard.js:442
 msgid "Unlock Advanced Analytics with MediaShield Pro"
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:442
+#: src/adminages/Dashboard.js:443
 msgid "Heatmaps, realtime viewers, suspicious activity alerts, data export, and more."
 msgstr ""
 
-#: src/admin/pages/Dashboard.js:445
+#: src/adminages/Dashboard.js:446
 msgid "Upgrade to Pro"
 msgstr ""
 
-#: src/admin/pages/Milestones.js:54
-#: src/admin/pages/Students.js:82
+#: src/adminages/Milestones.js:54
+#: src/adminages/Students.js:82
 msgid "Just now"
 msgstr ""
 
-#: src/admin/pages/Milestones.js:101
+#: src/adminages/Milestones.js:101
 msgid "Failed to load milestones."
 msgstr ""
 
 #. translators: %d: number of milestones members reached.
-#: src/admin/pages/Milestones.js:120
+#: src/adminages/Milestones.js:120
 #, js-format
 msgid "%d milestone"
 msgid_plural "%d milestones"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Milestones.js:130
+#: src/adminages/Milestones.js:130
 msgid "Loading milestones..."
 msgstr ""
 
-#: src/admin/pages/Milestones.js:146
-#: src/admin/pages/Milestones.js:163
-#: src/admin/pages/Students.js:445
-#: src/admin/pages/Students.js:465
+#: src/adminages/Milestones.js:146
+#: src/adminages/Milestones.js:163
+#: src/adminages/Students.js:445
+#: src/adminages/Students.js:465
 msgid "Viewer"
 msgstr ""
 
-#: src/admin/pages/Milestones.js:149
-#: src/admin/pages/Milestones.js:179
+#: src/adminages/Milestones.js:149
+#: src/adminages/Milestones.js:179
 msgid "Reached"
 msgstr ""
 
-#: src/admin/pages/Milestones.js:157
+#: src/adminages/Milestones.js:157
 msgid "No milestones recorded yet. They appear as viewers watch videos."
 msgstr ""
 
-#: src/admin/pages/Milestones.js:190
-#: src/admin/pages/Playlists.js:191
+#: src/adminages/Milestones.js:190
+#: src/adminages/Playlists.js:191
 msgid "Page"
 msgstr ""
 
-#: src/admin/pages/Milestones.js:190
-#: src/admin/pages/Playlists.js:191
+#: src/adminages/Milestones.js:190
+#: src/adminages/Playlists.js:191
 #: src/admin/wizard/Wizard.js:260
 msgid "of"
 msgstr ""
 
-#: src/admin/pages/Milestones.js:219
+#: src/adminages/Milestones.js:219
 msgid "With"
 msgstr ""
 
-#: src/admin/pages/Milestones.js:219
+#: src/adminages/Milestones.js:219
 #: src/admin/wizard/steps/PlatformStep.js:62
 msgid "Pro"
 msgstr ""
 
-#: src/admin/pages/Milestones.js:219
+#: src/adminages/Milestones.js:219
 msgid ", trigger actions on milestones: tag users, send emails, fire webhooks to CRMs."
 msgstr ""
 
-#: src/admin/pages/Milestones.js:221
+#: src/adminages/Milestones.js:221
 msgid "Learn more"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:49
+#: src/adminages/Playlists.js:49
 msgid "Failed to load playlists."
 msgstr ""
 
-#: src/admin/pages/Playlists.js:67
+#: src/adminages/Playlists.js:67
 msgid "playlist"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:67
+#: src/adminages/Playlists.js:67
 msgid "playlists"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:83
+#: src/adminages/Playlists.js:83
 msgid "Loading playlists..."
 msgstr ""
 
-#: src/admin/pages/Playlists.js:99
-#: src/admin/pages/Playlists.js:124
+#: src/adminages/Playlists.js:99
+#: src/adminages/Playlists.js:124
 msgid "Title"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:102
-#: src/admin/pages/Playlists.js:155
+#: src/adminages/Playlists.js:102
+#: src/adminages/Playlists.js:155
 msgid "Date"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:103
-#: src/admin/pages/Playlists.js:164
-#: src/admin/pages/Students.js:449
-#: src/admin/pages/Students.js:496
-#: src/admin/pages/Tags.js:197
-#: src/admin/pages/Tags.js:262
-#: src/admin/pages/Videos.js:643
-#: src/admin/pages/Videos.js:721
+#: src/adminages/Playlists.js:103
+#: src/adminages/Playlists.js:164
+#: src/adminages/Students.js:449
+#: src/adminages/Students.js:496
+#: src/adminages/Tags.js:198
+#: src/adminages/Tags.js:263
+#: src/adminages/Videos.js:682
+#: src/adminages/Videos.js:760
 msgid "Actions"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:111
+#: src/adminages/Playlists.js:111
 msgid "No playlists yet. Create one to group your videos."
 msgstr ""
 
-#: src/admin/pages/Playlists.js:120
-#: src/blocks/playlist/edit.js:125
+#: src/adminages/Playlists.js:120
+#: src/blockslaylist/edit.js:125
 msgid "Shuffle"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:133
+#: src/adminages/Playlists.js:133
 msgid "Shows nothing on the page yet. Add videos with Manage items."
 msgstr ""
 
-#: src/admin/pages/Playlists.js:151
+#: src/adminages/Playlists.js:151
 msgid "Default"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:173
+#: src/adminages/Playlists.js:173
 msgid "Manage items"
 msgstr ""
 
-#: src/admin/pages/Playlists.js:179
-#: src/admin/pages/Videos.js:726
+#: src/adminages/Playlists.js:179
+#: src/adminages/Videos.js:765
 msgid "Edit"
 msgstr ""
 
 #. translators: %d: smallest allowed number.
-#: src/admin/pages/Settings.js:74
+#: src/adminages/Settings.js:74
 #, js-format
 msgid "Enter a whole number, %d or more."
 msgstr ""
 
 #. translators: 1: smallest allowed number, 2: largest allowed number.
-#: src/admin/pages/Settings.js:75
+#: src/adminages/Settings.js:75
 #, js-format
 msgid "Enter a whole number from %1$d to %2$d."
 msgstr ""
 
 #. translators: 1: the value that was typed, 2: the rule it broke.
-#: src/admin/pages/Settings.js:88
+#: src/adminages/Settings.js:88
 #, js-format
 msgid "%1$s was not saved. %2$s"
 msgstr ""
 
-#: src/admin/pages/Settings.js:167
+#: src/adminages/Settings.js:167
 #: src/admin/wizard/Wizard.js:26
 msgid "Watermark"
 msgstr ""
 
-#: src/admin/pages/Settings.js:168
+#: src/adminages/Settings.js:168
 msgid "Player"
 msgstr ""
 
-#: src/admin/pages/Settings.js:169
+#: src/adminages/Settings.js:169
 msgid "Messages"
 msgstr ""
 
-#: src/admin/pages/Settings.js:170
+#: src/adminages/Settings.js:170
 msgid "Video ads"
 msgstr ""
 
-#: src/admin/pages/Settings.js:171
+#: src/adminages/Settings.js:171
 msgid "Uploads"
 msgstr ""
 
-#: src/admin/pages/Settings.js:172
-msgid "Viewing history"
+#: src/adminages/Settings.js:172
+msgid "Watch history"
 msgstr ""
 
-#: src/admin/pages/Settings.js:173
+#: src/adminages/Settings.js:173
 msgid "Lesson completion"
 msgstr ""
 
-#: src/admin/pages/Settings.js:354
-#: src/admin/pages/Settings.js:360
+#: src/adminages/Settings.js:354
+#: src/adminages/Settings.js:360
 msgid "Search settings"
 msgstr ""
 
-#: src/admin/pages/Settings.js:365
+#: src/adminages/Settings.js:365
 msgid "No settings match."
 msgstr ""
 
 #. translators: %d: number of matching sections.
-#: src/admin/pages/Settings.js:366
+#: src/adminages/Settings.js:366
 #, js-format
 msgid "%d section matches."
 msgid_plural "%d sections match."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Settings.js:369
+#: src/adminages/Settings.js:369
 msgid "Settings sections"
 msgstr ""
 
-#: src/admin/pages/Settings.js:389
+#: src/adminages/Settings.js:389
 msgid "Go to section"
 msgstr ""
 
-#: src/admin/pages/Settings.js:454
+#: src/adminages/Settings.js:454
 msgid "Failed to load settings."
 msgstr ""
 
-#: src/admin/pages/Settings.js:479
+#: src/adminages/Settings.js:479
 msgid "Saving…"
 msgstr ""
 
-#: src/admin/pages/Settings.js:512
+#: src/adminages/Settings.js:512
 msgid "Not saved: that value is not allowed, so the setting is back to what it was."
 msgstr ""
 
-#: src/admin/pages/Settings.js:514
+#: src/adminages/Settings.js:514
 msgid "Saved"
 msgstr ""
 
 #. translators: %s: why the save failed.
-#: src/admin/pages/Settings.js:530
+#: src/adminages/Settings.js:530
 #, js-format
 msgid "Not saved, so the setting is switched back. %s"
 msgstr ""
 
-#: src/admin/pages/Settings.js:531
+#: src/adminages/Settings.js:531
 msgid "The site could not be reached."
 msgstr ""
 
-#: src/admin/pages/Settings.js:583
+#: src/adminages/Settings.js:583
 msgid "Loading settings..."
 msgstr ""
 
-#: src/admin/pages/Settings.js:632
+#: src/adminages/Settings.js:632
 msgid "Hide the file address"
 msgstr ""
 
-#: src/admin/pages/Settings.js:633
+#: src/adminages/Settings.js:633
 msgid "Detect developer tools"
 msgstr ""
 
-#: src/admin/pages/Settings.js:634
+#: src/adminages/Settings.js:634
 msgid "Pause when developer tools open"
 msgstr ""
 
-#: src/admin/pages/Settings.js:648
+#: src/adminages/Settings.js:648
 msgid "Changes save automatically"
 msgstr ""
 
-#: src/admin/pages/Settings.js:660
+#: src/adminages/Settings.js:660
 msgid "The level a video uses unless it sets its own. Each level includes the one above it."
 msgstr ""
 
-#: src/admin/pages/Settings.js:663
+#: src/adminages/Settings.js:663
 #: src/admin/wizard/steps/GeneralStep.js:52
 msgid "Protect videos"
 msgstr ""
 
-#: src/admin/pages/Settings.js:664
+#: src/adminages/Settings.js:664
 msgid "Off: every video plays with no MediaShield protection."
 msgstr ""
 
-#: src/admin/pages/Settings.js:671
+#: src/adminages/Settings.js:671
 msgid "Your site keeps its earlier protection switches."
 msgstr ""
 
 #. translators: %s: the switches still on, e.g. "Hide the file address, Detect developer tools".
-#: src/admin/pages/Settings.js:674
+#: src/adminages/Settings.js:674
 #, js-format
 msgid "Before this version these were site-wide switches. On your site these are on, and keep working for every protected video, so nothing changed for your members: %s. Pick a level below to use the levels instead: then hiding the file address and detecting developer tools belong to Strict."
 msgstr ""
 
 #. translators: %s: the current protection level, e.g. Standard.
-#: src/admin/pages/Settings.js:681
+#: src/adminages/Settings.js:681
 #, js-format
 msgid "Use the levels (keep %s)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:692
+#: src/adminages/Settings.js:692
 msgid "Login is set once, under Who can watch, and applies at every level."
 msgstr ""
 
-#: src/admin/pages/Settings.js:695
+#: src/adminages/Settings.js:695
 msgid "Block right-click on every video"
 msgstr ""
 
-#: src/admin/pages/Settings.js:696
+#: src/adminages/Settings.js:696
 msgid "Basic, Standard and Strict always block it. On: videos set to None block it too."
 msgstr ""
 
-#: src/admin/pages/Settings.js:702
+#: src/adminages/Settings.js:702
 msgid "Block the save shortcut (Ctrl+S / Cmd+S)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:703
+#: src/adminages/Settings.js:703
 msgid "While the player has focus. Only the save shortcut: View Source and developer tools shortcuts are not blocked."
 msgstr ""
 
-#: src/admin/pages/Settings.js:714
+#: src/adminages/Settings.js:714
 msgid "Who may play protected videos, wherever they are shown."
 msgstr ""
 
-#: src/admin/pages/Settings.js:717
+#: src/adminages/Settings.js:717
 msgid "Require login"
 msgstr ""
 
-#: src/admin/pages/Settings.js:718
+#: src/adminages/Settings.js:718
 msgid "Only logged-in members can watch. Applies at every protection level. A video can also allow only one role."
 msgstr ""
 
-#: src/admin/pages/Settings.js:724
+#: src/adminages/Settings.js:724
 msgid "Streams at once per member"
 msgstr ""
 
-#: src/admin/pages/Settings.js:725
+#: src/adminages/Settings.js:725
 msgid "How many videos one member can play at the same time, on any devices."
 msgstr ""
 
-#: src/admin/pages/Settings.js:735
+#: src/adminages/Settings.js:735
 msgid "Allowed domains"
 msgstr ""
 
-#: src/admin/pages/Settings.js:736
+#: src/adminages/Settings.js:736
 msgid "Sites allowed to show your videos. One domain per line, or separated by commas. A full URL is fine too; only the domain is used. Leave empty to allow all."
 msgstr ""
 
-#: src/admin/pages/Settings.js:748
+#: src/adminages/Settings.js:748
 msgid "Text over the video that names the viewer, so a recording points to the account it came from."
 msgstr ""
 
-#: src/admin/pages/Settings.js:768
+#: src/adminages/Settings.js:768
 msgid "Viewer Name"
 msgstr ""
 
-#: src/admin/pages/Settings.js:772
+#: src/adminages/Settings.js:772
 msgid "Preview. Each viewer sees their own name, and moves around the video."
 msgstr ""
 
-#: src/admin/pages/Settings.js:776
+#: src/adminages/Settings.js:776
 msgid "Show on the video"
 msgstr ""
 
-#: src/admin/pages/Settings.js:777
+#: src/adminages/Settings.js:777
 msgid "The member's name is always shown."
 msgstr ""
 
-#: src/admin/pages/Settings.js:779
+#: src/adminages/Settings.js:779
 msgid "Email address"
 msgstr ""
 
-#: src/admin/pages/Settings.js:785
+#: src/adminages/Settings.js:785
 msgid "IP address"
 msgstr ""
 
-#: src/admin/pages/Settings.js:791
+#: src/adminages/Settings.js:791
 msgid "Email and IP address are personal data, so both start off. Turn one on only if your privacy policy says you show it. A site that set them keeps its choice."
 msgstr ""
 
-#: src/admin/pages/Settings.js:796
+#: src/adminages/Settings.js:796
 #: src/admin/wizard/steps/WatermarkStep.js:36
 msgid "Opacity"
 msgstr ""
 
-#: src/admin/pages/Settings.js:806
+#: src/adminages/Settings.js:806
 #: src/admin/wizard/steps/WatermarkStep.js:48
 msgid "Watermark color"
 msgstr ""
 
-#: src/admin/pages/Settings.js:812
+#: src/adminages/Settings.js:812
 msgid "Position Swap Interval"
 msgstr ""
 
-#: src/admin/pages/Settings.js:813
+#: src/adminages/Settings.js:813
 msgid "Seconds between watermark position changes. Moving the watermark stops a viewer cropping it out, so lower is safer and higher is less distracting."
 msgstr ""
 
-#: src/admin/pages/Settings.js:819
+#: src/adminages/Settings.js:819
 msgid "Keep the watermark at the edges"
 msgstr ""
 
-#: src/admin/pages/Settings.js:820
+#: src/adminages/Settings.js:820
 msgid "Keeps the watermark in the corners, off the centre of the video."
 msgstr ""
 
-#: src/admin/pages/Settings.js:826
+#: src/adminages/Settings.js:826
 msgid "Show MediaShield Badge"
 msgstr ""
 
-#: src/admin/pages/Settings.js:827
+#: src/adminages/Settings.js:827
 msgid "Off by default. Shows a small \"Protected by MediaShield\" label on the player, in your Brand Color, so viewers know the video is protected."
 msgstr ""
 
-#: src/admin/pages/Settings.js:840
+#: src/adminages/Settings.js:840
 msgid "How the player behaves for every video."
 msgstr ""
 
-#: src/admin/pages/Settings.js:844
+#: src/adminages/Settings.js:844
 msgid "Show playback speed selector (0.5x to 2x) on self-hosted and Bunny videos. Platform players (YouTube, Vimeo, Wistia) use their own speed controls."
 msgstr ""
 
-#: src/admin/pages/Settings.js:851
+#: src/adminages/Settings.js:851
 msgid "Space = play/pause, ← → = seek 5s, ↑ ↓ = volume, M = mute, F = fullscreen. Only active when player is focused."
 msgstr ""
 
-#: src/admin/pages/Settings.js:858
+#: src/adminages/Settings.js:858
 msgid "Remember where the viewer left off and offer to resume on return."
 msgstr ""
 
-#: src/admin/pages/Settings.js:865
+#: src/adminages/Settings.js:865
 msgid "Stop viewers seeking past the furthest point they have watched. Rewinding stays allowed. Useful for course and compliance videos."
 msgstr ""
 
-#: src/admin/pages/Settings.js:874
+#: src/adminages/Settings.js:874
 msgid "Float the player in a corner when the viewer scrolls past it."
 msgstr ""
 
-#: src/admin/pages/Settings.js:881
+#: src/adminages/Settings.js:881
 msgid "Show a call-to-action overlay when the video finishes."
 msgstr ""
 
-#: src/admin/pages/Settings.js:889
+#: src/adminages/Settings.js:889
 msgid "End Screen Message"
 msgstr ""
 
-#: src/admin/pages/Settings.js:892
+#: src/adminages/Settings.js:892
 msgid "Enjoyed this video? Explore more content."
 msgstr ""
 
-#: src/admin/pages/Settings.js:896
+#: src/adminages/Settings.js:896
 msgid "End Screen Button URL"
 msgstr ""
 
-#: src/admin/pages/Settings.js:908
+#: src/adminages/Settings.js:908
 msgid "Brand color"
 msgstr ""
 
-#: src/admin/pages/Settings.js:911
+#: src/adminages/Settings.js:911
 msgid "Your theme's color"
 msgstr ""
 
-#: src/admin/pages/Settings.js:916
+#: src/adminages/Settings.js:916
 msgid "Use the theme color"
 msgstr ""
 
-#: src/admin/pages/Settings.js:921
+#: src/adminages/Settings.js:921
 msgid "Used for the player's buttons, focus outlines and the current playlist item. Pick a color to use your own instead of your theme's."
 msgstr ""
 
-#: src/admin/pages/Settings.js:929
+#: src/adminages/Settings.js:929
 msgid "What viewers read on the player when they cannot watch yet."
 msgstr ""
 
-#: src/admin/pages/Settings.js:932
+#: src/adminages/Settings.js:932
 msgid "Login Overlay Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:933
+#: src/adminages/Settings.js:933
 msgid "Message shown on the video overlay when login is required."
 msgstr ""
 
-#: src/admin/pages/Settings.js:940
+#: src/adminages/Settings.js:940
 msgid "Login Button Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:941
+#: src/adminages/Settings.js:941
 msgid "Label for the login button on the video overlay."
 msgstr ""
 
-#: src/admin/pages/Settings.js:948
+#: src/adminages/Settings.js:948
 msgid "Access Denied Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:949
+#: src/adminages/Settings.js:949
 msgid "Message shown when a logged-in user does not have permission to view a video."
 msgstr ""
 
-#: src/admin/pages/Settings.js:956
+#: src/adminages/Settings.js:956
 msgid "Membership Page"
 msgstr ""
 
-#: src/admin/pages/Settings.js:957
+#: src/adminages/Settings.js:957
 msgid "Where a logged-in member who may not watch a video can get access, such as your membership or pricing page. Leave empty to show no button. A course link from your LMS is used instead when there is one."
 msgstr ""
 
-#: src/admin/pages/Settings.js:966
+#: src/adminages/Settings.js:966
 msgid "Membership Button Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:977
+#: src/adminages/Settings.js:977
 msgid "Course Access Text"
 msgstr ""
 
 #. translators: %s is typed as written; the site replaces it with the course name.
-#: src/admin/pages/Settings.js:978
+#: src/adminages/Settings.js:978
 #, js-format
 msgid "Shown to a member who is not enrolled in the course a video belongs to, above a button to the course. %s is replaced by the course name."
 msgstr ""
 
-#: src/admin/pages/Settings.js:985
+#: src/adminages/Settings.js:985
 msgid "Course Button Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:994
+#: src/adminages/Settings.js:994
 msgid "Unavailable Video Text"
 msgstr ""
 
-#: src/admin/pages/Settings.js:995
+#: src/adminages/Settings.js:995
 msgid "Shown when the video host says the video was removed or made private."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1002
+#: src/adminages/Settings.js:1002
 msgid "Developer Tools Title (Strict)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1003
+#: src/adminages/Settings.js:1003
 msgid "Shown on a Strict video that pauses because developer tools are open."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1010
+#: src/adminages/Settings.js:1010
 msgid "Developer Tools Message (Strict)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1024
+#: src/adminages/Settings.js:1024
 msgid "Site-wide placement for in-video ad breaks sourced from WB Ad Manager. Individual videos can override this under the video’s \"Video Ads\" box."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1027
+#: src/adminages/Settings.js:1027
 msgid "Enable In-Video Ads"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1028
+#: src/adminages/Settings.js:1028
 msgid "Master switch for ad breaks inside the player. Off means no ads play anywhere, no matter what is set below. Default: on."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1037
+#: src/adminages/Settings.js:1037
 msgid "Play one ad before the video starts. Default: on."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1043
+#: src/adminages/Settings.js:1043
 msgid "Mid-roll Count"
 msgstr ""
 
 #. translators: 1: number of mid-roll breaks, 2: example timecodes on a 46-minute video
-#: src/admin/pages/Settings.js:1048
+#: src/adminages/Settings.js:1048
 #, js-format
 msgid "Ad breaks spaced evenly across the middle 10%%–90%% of the video (0–10, default: 3). On a 46-minute video, %1$d mid-roll(s) would land at roughly %2$s."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1052
+#: src/adminages/Settings.js:1052
 msgid "No mid-roll breaks will play. When enabled, breaks are spaced evenly across the middle of the video, between the 10th and 90th percent mark (0-10, default: 3)."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1060
+#: src/adminages/Settings.js:1060
 msgid "Require Full View"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1061
+#: src/adminages/Settings.js:1061
 msgid "Viewer must watch each ad in full — the Skip button never appears. Overrides the skip delay below. Default: off."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1068
+#: src/adminages/Settings.js:1068
 msgid "Skip Delay (seconds)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1069
+#: src/adminages/Settings.js:1069
 msgid "Seconds before the Skip button unlocks on each ad. 0 = skippable immediately. An ad that sets its own skip delay in WB Ad Manager keeps it; an ad whose own delay is blank or 0 uses this value. Clamped 0–60. Default: 5."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1077
+#: src/adminages/Settings.js:1077
 msgid "Show Break Markers"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1078
+#: src/adminages/Settings.js:1078
 msgid "Display a marker on the seek bar for each upcoming ad break. Default: on."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1093
+#: src/adminages/Settings.js:1093
 msgid "Where a file uploaded on Add video goes."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1096
+#: src/adminages/Settings.js:1096
 msgid "Default Upload Target"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1097
+#: src/adminages/Settings.js:1097
 msgid "Where new uploads go when you do not pick a platform yourself. \"Auto\" uses the first connected cloud platform."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1100
+#: src/adminages/Settings.js:1100
 msgid "Auto (use connected platform)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1101
+#: src/adminages/Settings.js:1101
 msgid "This site (uploaded file)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1118
-msgid "How long viewings stay in your reports."
+#: src/adminages/Settings.js:1118
+msgid "How long watch history stays in your reports."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1122
-msgid "Keep every viewing forever"
+#: src/adminages/Settings.js:1122
+msgid "Keep watch history forever"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1123
-msgid "Recommended. Turn off only if a data-retention policy requires older viewings to leave your reports."
+#: src/adminages/Settings.js:1123
+msgid "Recommended. Turn off only if a data-retention policy requires older watch history to leave your reports."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1130
-msgid "Keep viewings for (months)"
+#: src/adminages/Settings.js:1130
+msgid "Keep watch history for (months)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1131
-msgid "Viewings older than this are moved out of your reports every month. Views, completion rates and top videos stop counting them, and this cannot be undone from here."
+#: src/adminages/Settings.js:1131
+msgid "Watch history older than this is moved out of your reports every month. Views, completion rates and top videos stop counting it, and this cannot be undone from here."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1148
+#: src/adminages/Settings.js:1148
 msgid "When a lesson that plays a protected video counts as complete."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1153
+#: src/adminages/Settings.js:1153
 msgid "Learnomy: set this on each lesson (Completion: Auto: video watched)."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1156
+#: src/adminages/Settings.js:1156
 msgid "Default for new protected video lessons (%)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1157
+#: src/adminages/Settings.js:1157
 msgid "The share a new Learnomy lesson that plays a protected video starts with. It changes only lessons created from now on; each existing lesson keeps its own % in Learnomy. 0: MediaShield sets no starting %, and Learnomy uses its own."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1168
+#: src/adminages/Settings.js:1168
 msgid "LearnDash lessons: require this % of the video watched"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1169
+#: src/adminages/Settings.js:1169
 msgid "Require this % of the video watched before Complete"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1171
+#: src/adminages/Settings.js:1171
 msgid "0 turns this off. With 80, the Mark Complete button of a LearnDash lesson linked to a video stays disabled until the member has watched 80% of it, and the lesson completes by itself at that point when Auto-complete is on. Time spent watching counts; skipping ahead does not, and a part watched twice counts once. Site administrators are not held back."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1172
+#: src/adminages/Settings.js:1172
 msgid "0 turns this off. With 80, the lesson's Complete button stays disabled with \"Watch 80% to complete\" until the member has watched 80% of the lesson video (time spent watching; skipping ahead does not count, and a part watched twice counts once). Site administrators are not held back."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1182
+#: src/adminages/Settings.js:1182
 msgid "Auto-complete lessons"
 msgstr ""
 
 #. translators: %s: LMS name, e.g. Tutor LMS.
-#: src/admin/pages/Settings.js:1184
+#: src/adminages/Settings.js:1184
 #, js-format
 msgid "Mark the linked %s lesson complete when the member reaches the % below."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1185
+#: src/adminages/Settings.js:1185
 msgid "Mark the linked lesson complete when the member reaches the % below."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1191
+#: src/adminages/Settings.js:1191
 msgid "Require enrollment"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1192
+#: src/adminages/Settings.js:1192
 msgid "On: a video linked to a lesson plays only for members enrolled in its course, where the video's own box asks for it. Off: enrollment is never checked."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1202
+#: src/adminages/Settings.js:1202
 msgid "LearnDash lessons complete at (while the required % above is 0)"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1203
+#: src/adminages/Settings.js:1203
 msgid "Complete lessons at"
 msgstr ""
 
-#: src/admin/pages/Settings.js:1205
+#: src/adminages/Settings.js:1205
 msgid "Set a required % above and the lesson completes there instead; this choice then no longer applies and is hidden."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1206
+#: src/adminages/Settings.js:1206
 msgid "The share of the video watched that completes the lesson. A video can set its own."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1222
-msgid "MediaShield Pro adds watermark fields, Bunny Stream, LMS lesson completion and viewing heatmaps."
+#: src/adminages/Settings.js:1222
+msgid "MediaShield Pro adds watermark fields, Bunny Stream, LMS lesson completion and watch heatmaps."
 msgstr ""
 
-#: src/admin/pages/Settings.js:1223
-#: src/admin/pages/Videos.js:789
+#: src/adminages/Settings.js:1223
+#: src/adminages/Videos.js:828
 #: src/admin/wizard/steps/PlatformStep.js:67
 msgid "See MediaShield Pro"
 msgstr ""
 
-#: src/admin/pages/Students.js:125
+#: src/adminages/Students.js:125
 msgid "Failed to load details."
 msgstr ""
 
-#: src/admin/pages/Students.js:144
+#: src/adminages/Students.js:144
 msgid "Back to Viewers"
 msgstr ""
 
-#: src/admin/pages/Students.js:169
+#: src/adminages/Students.js:169
 msgid "Unknown User"
 msgstr ""
 
-#: src/admin/pages/Students.js:173
+#: src/adminages/Students.js:173
 msgid "Milestone tags:"
 msgstr ""
 
-#: src/admin/pages/Students.js:185
+#: src/adminages/Students.js:185
 msgid "Watch History"
 msgstr ""
 
 #. translators: %d: number of distinct videos watched.
 #. translators: %d: number of videos in the playlist.
-#: src/admin/pages/Students.js:190
-#: src/blocks/playlist/edit.js:91
+#: src/adminages/Students.js:190
+#: src/blockslaylist/edit.js:91
 #, js-format
 msgid "%d video"
 msgid_plural "%d videos"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Students.js:199
-#: src/admin/pages/Students.js:215
+#: src/adminages/Students.js:199
+#: src/adminages/Students.js:215
 msgid "Progress"
 msgstr ""
 
-#: src/admin/pages/Students.js:200
-#: src/admin/pages/Students.js:216
+#: src/adminages/Students.js:200
+#: src/adminages/Students.js:216
 msgid "Last Watched"
 msgstr ""
 
-#: src/admin/pages/Students.js:208
+#: src/adminages/Students.js:208
 msgid "No watch history recorded."
 msgstr ""
 
-#: src/admin/pages/Students.js:214
+#: src/adminages/Students.js:214
 msgid "(deleted video)"
 msgstr ""
 
-#: src/admin/pages/Students.js:227
+#: src/adminages/Students.js:227
 msgid "Watch history pages"
 msgstr ""
 
-#: src/admin/pages/Students.js:263
+#: src/adminages/Students.js:263
 msgid "this viewer"
 msgstr ""
 
-#. translators: 1: number of viewings stopped, 2: viewer name.
-#: src/admin/pages/Students.js:279
+#. translators: 1: number of playback sessions stopped, 2: viewer name.
+#: src/adminages/Students.js:279
 #, js-format
-msgid "Stopped %1$d viewing for %2$s."
-msgid_plural "Stopped %1$d viewings for %2$s."
+msgid "Stopped %1$d playback session for %2$s."
+msgid_plural "Stopped %1$d playback sessions for %2$s."
 msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: viewer name.
-#: src/admin/pages/Students.js:283
+#: src/adminages/Students.js:283
 #, js-format
 msgid "%s was not watching anything."
 msgstr ""
 
-#: src/admin/pages/Students.js:289
+#: src/adminages/Students.js:289
 msgid "Playback could not be stopped."
 msgstr ""
 
-#: src/admin/pages/Students.js:303
+#: src/adminages/Students.js:303
 msgid "Stop playback"
 msgstr ""
 
-#: src/admin/pages/Students.js:309
+#: src/adminages/Students.js:309
 msgid "Confirm stop playback"
 msgstr ""
 
 #. translators: %s: viewer name.
-#: src/admin/pages/Students.js:311
+#: src/adminages/Students.js:311
 #, js-format
 msgid "Stop every video %s is watching now?"
 msgstr ""
 
-#: src/admin/pages/Students.js:319
+#: src/adminages/Students.js:319
 msgid "Stopping..."
 msgstr ""
 
-#: src/admin/pages/Students.js:319
+#: src/adminages/Students.js:319
 msgid "Stop"
 msgstr ""
 
-#: src/admin/pages/Students.js:327
-#: src/admin/pages/Tags.js:231
+#: src/adminages/Students.js:327
+#: src/adminages/Tags.js:232
 msgid "Cancel"
 msgstr ""
 
-#: src/admin/pages/Students.js:385
+#: src/adminages/Students.js:385
 msgid "Failed to load viewers."
 msgstr ""
 
-#: src/admin/pages/Students.js:415
+#: src/adminages/Students.js:415
 msgid "Search by name or email..."
 msgstr ""
 
-#: src/admin/pages/Students.js:426
+#: src/adminages/Students.js:426
 msgid "Loading viewers..."
 msgstr ""
 
-#: src/admin/pages/Students.js:446
-#: src/admin/pages/Students.js:487
+#: src/adminages/Students.js:446
+#: src/adminages/Students.js:487
 msgid "Videos Watched"
 msgstr ""
 
-#: src/admin/pages/Students.js:448
-#: src/admin/pages/Students.js:493
+#: src/adminages/Students.js:448
+#: src/adminages/Students.js:493
 msgid "Last Active"
 msgstr ""
 
-#: src/admin/pages/Students.js:458
+#: src/adminages/Students.js:458
 msgid "No viewers match your search."
 msgstr ""
 
-#: src/admin/pages/Students.js:459
+#: src/adminages/Students.js:459
 msgid "No viewer activity recorded yet."
 msgstr ""
 
-#: src/admin/pages/Students.js:476
+#: src/adminages/Students.js:476
 msgid "Unknown"
 msgstr ""
 
-#: src/admin/pages/Students.js:506
+#: src/adminages/Students.js:506
 msgid "Viewer pages"
 msgstr ""
 
-#: src/admin/pages/Tags.js:53
+#: src/adminages/Tags.js:54
 msgid "Failed to load tags."
 msgstr ""
 
-#: src/admin/pages/Tags.js:77
+#: src/adminages/Tags.js:78
 msgid "Tag created."
 msgstr ""
 
-#: src/admin/pages/Tags.js:82
+#: src/adminages/Tags.js:83
 msgid "Could not create tag."
 msgstr ""
 
-#: src/admin/pages/Tags.js:99
+#: src/adminages/Tags.js:100
 msgid "Tag deleted."
 msgstr ""
 
-#: src/admin/pages/Tags.js:104
+#: src/adminages/Tags.js:105
 msgid "Could not delete tag."
 msgstr ""
 
-#: src/admin/pages/Tags.js:125
+#: src/adminages/Tags.js:126
 msgid "Tag renamed."
 msgstr ""
 
-#: src/admin/pages/Tags.js:130
+#: src/adminages/Tags.js:131
 msgid "Could not rename the tag."
 msgstr ""
 
 #. translators: %d: number of video tags.
-#: src/admin/pages/Tags.js:150
+#: src/adminages/Tags.js:151
 #, js-format
 msgid "%d tag"
 msgid_plural "%d tags"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Tags.js:158
+#: src/adminages/Tags.js:159
 msgid "Enter tag name..."
 msgstr ""
 
-#: src/admin/pages/Tags.js:170
+#: src/adminages/Tags.js:171
 msgid "Add Tag"
 msgstr ""
 
-#: src/admin/pages/Tags.js:178
+#: src/adminages/Tags.js:179
 msgid "Loading tags..."
 msgstr ""
 
-#: src/admin/pages/Tags.js:194
-#: src/admin/pages/Tags.js:211
+#: src/adminages/Tags.js:195
+#: src/adminages/Tags.js:212
 msgid "Name"
 msgstr ""
 
-#: src/admin/pages/Tags.js:195
-#: src/admin/pages/Tags.js:238
+#: src/adminages/Tags.js:196
+#: src/adminages/Tags.js:239
 msgid "Slug"
 msgstr ""
 
-#: src/admin/pages/Tags.js:205
+#: src/adminages/Tags.js:206
 msgid "No video tags yet. Add one above, or in the Tags box on a video, to organise your videos."
 msgstr ""
 
-#: src/admin/pages/Tags.js:215
+#: src/adminages/Tags.js:216
 msgid "Tag name"
 msgstr ""
 
-#: src/admin/pages/Tags.js:228
+#: src/adminages/Tags.js:229
 msgid "Save"
 msgstr ""
 
 #. translators: 1: number of videos, 2: tag name.
-#: src/admin/pages/Tags.js:254
+#: src/adminages/Tags.js:255
 #, js-format
 msgid "Show the %1$d video tagged %2$s"
 msgid_plural "Show the %1$d videos tagged %2$s"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Tags.js:269
+#: src/adminages/Tags.js:270
 msgid "Rename"
 msgstr ""
 
-#: src/admin/pages/Tags.js:277
+#: src/adminages/Tags.js:278
 msgid "Deleting..."
 msgstr ""
 
-#: src/admin/pages/Tags.js:278
+#: src/adminages/Tags.js:279
 msgid "Delete"
 msgstr ""
 
-#: src/admin/pages/Tags.js:286
+#: src/adminages/Tags.js:287
 msgid "Tag pages"
 msgstr ""
 
-#: src/admin/pages/Videos.js:34
+#: src/adminages/Videos.js:35
 msgid "Not a video link"
 msgstr ""
 
-#: src/admin/pages/Videos.js:82
-#: src/admin/pages/Videos.js:733
+#: src/adminages/Videos.js:83
+#: src/adminages/Videos.js:772
 #: src/admin/wizard/steps/WatermarkStep.js:68
 msgid "Preview"
 msgstr ""
 
-#: src/admin/pages/Videos.js:89
+#: src/adminages/Videos.js:90
 msgid "No preview available for this video."
 msgstr ""
 
-#: src/admin/pages/Videos.js:114
+#: src/adminages/Videos.js:115
 msgid "Platform:"
 msgstr ""
 
-#: src/admin/pages/Videos.js:116
+#: src/adminages/Videos.js:117
 msgid "Duration:"
 msgstr ""
 
-#: src/admin/pages/Videos.js:175
-#: src/admin/pages/Videos.js:417
+#: src/adminages/Videos.js:176
+#: src/adminages/Videos.js:456
 #: src/admin/wizard/steps/FirstVideoStep.js:181
 msgid "Ready"
 msgstr ""
 
-#: src/admin/pages/Videos.js:176
+#: src/adminages/Videos.js:177
 msgid "Encoding"
 msgstr ""
 
-#: src/admin/pages/Videos.js:177
+#: src/adminages/Videos.js:178
 msgid "Failed"
 msgstr ""
 
-#: src/admin/pages/Videos.js:179
+#: src/adminages/Videos.js:180
 msgid "Unavailable at platform"
 msgstr ""
 
-#: src/admin/pages/Videos.js:180
-#: src/admin/pages/Videos.js:706
+#: src/adminages/Videos.js:181
+#: src/adminages/Videos.js:745
 msgid "No source"
 msgstr ""
 
-#: src/admin/pages/Videos.js:181
-#: src/admin/pages/Videos.js:419
+#: src/adminages/Videos.js:182
+#: src/adminages/Videos.js:458
 msgid "Draft"
 msgstr ""
 
-#: src/admin/pages/Videos.js:208
-#: src/admin/pages/Videos.js:686
+#: src/adminages/Videos.js:209
+#: src/adminages/Videos.js:725
 msgid "Removed or made private there."
 msgstr ""
 
-#: src/admin/pages/Videos.js:208
-#: src/admin/pages/Videos.js:686
+#: src/adminages/Videos.js:209
+#: src/adminages/Videos.js:725
 msgid "Replace link"
 msgstr ""
 
-#: src/admin/pages/Videos.js:212
-#: src/admin/pages/Videos.js:687
+#: src/adminages/Videos.js:213
+#: src/adminages/Videos.js:726
 msgid "Add a link or upload"
 msgstr ""
 
-#: src/admin/pages/Videos.js:220
+#: src/adminages/Videos.js:234
 msgid "Not used yet"
 msgstr ""
 
+#: src/adminages/Videos.js:264
+msgid "Could not load every place. Try again"
+msgstr ""
+
+#: src/adminages/Videos.js:264
+msgid "Show all places"
+msgstr ""
+
 #. translators: %s: shortcode that was copied to clipboard
-#: src/admin/pages/Videos.js:321
+#: src/adminages/Videos.js:360
 #, js-format
 msgid "Copied %s to clipboard"
 msgstr ""
 
-#: src/admin/pages/Videos.js:327
+#: src/adminages/Videos.js:366
 msgid "Could not copy shortcode — please copy manually."
 msgstr ""
 
-#: src/admin/pages/Videos.js:387
+#: src/adminages/Videos.js:426
 msgid "Failed to load videos."
 msgstr ""
 
-#: src/admin/pages/Videos.js:418
+#: src/adminages/Videos.js:457
 msgid "Needs attention"
 msgstr ""
 
-#: src/admin/pages/Videos.js:426
-#: src/admin/pages/Videos.js:428
+#: src/adminages/Videos.js:465
+#: src/adminages/Videos.js:467
 msgid "Bulk actions"
 msgstr ""
 
-#: src/admin/pages/Videos.js:426
+#: src/adminages/Videos.js:465
 msgid "Restore"
 msgstr ""
 
 #. translators: %s: protection level, e.g. Standard.
-#: src/admin/pages/Videos.js:431
+#: src/adminages/Videos.js:470
 #, js-format
 msgid "Set protection: %s"
 msgstr ""
 
-#: src/admin/pages/Videos.js:433
+#: src/adminages/Videos.js:472
 msgid "Move to Trash"
 msgstr ""
 
 #. translators: 1: videos changed, 2: videos left as they were.
-#: src/admin/pages/Videos.js:454
+#: src/adminages/Videos.js:493
 #, js-format
 msgid "%1$d updated. %2$d skipped: already changed, removed or not yours to edit."
 msgstr ""
 
 #. translators: %d: number of videos changed.
-#: src/admin/pages/Videos.js:458
+#: src/adminages/Videos.js:497
 #, js-format
 msgid "%d updated."
 msgstr ""
 
-#: src/admin/pages/Videos.js:464
+#: src/adminages/Videos.js:503
 msgid "The bulk action could not be applied."
 msgstr ""
 
-#: src/admin/pages/Videos.js:474
+#: src/adminages/Videos.js:513
 msgid "Videos in Trash"
 msgstr ""
 
-#: src/admin/pages/Videos.js:477
+#: src/adminages/Videos.js:516
 msgid "video"
 msgstr ""
 
-#: src/admin/pages/Videos.js:477
+#: src/adminages/Videos.js:516
 msgid "videos"
 msgstr ""
 
-#: src/admin/pages/Videos.js:499
+#: src/adminages/Videos.js:538
 msgid "Search videos by title…"
 msgstr ""
 
-#: src/admin/pages/Videos.js:507
+#: src/adminages/Videos.js:546
 #: src/admin/wizard/Wizard.js:24
 msgid "Platform"
 msgstr ""
 
-#: src/admin/pages/Videos.js:510
+#: src/adminages/Videos.js:549
 msgid "All platforms"
 msgstr ""
 
-#: src/admin/pages/Videos.js:524
+#: src/adminages/Videos.js:563
 msgid "All tags"
 msgstr ""
 
-#: src/admin/pages/Videos.js:526
+#: src/adminages/Videos.js:565
 msgid "The tag from the Tags screen"
 msgstr ""
 
-#: src/admin/pages/Videos.js:540
+#: src/adminages/Videos.js:579
 msgid "All protection levels"
 msgstr ""
 
 #. translators: %d: number of videos that cannot play.
-#: src/admin/pages/Videos.js:555
+#: src/adminages/Videos.js:594
 #, js-format
 msgid "%d video needs attention."
 msgid_plural "%d videos need attention."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Videos.js:559
+#: src/adminages/Videos.js:598
 msgid "Members cannot play it until it is fixed."
 msgid_plural "Members cannot play them until they are fixed."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/pages/Videos.js:560
+#: src/adminages/Videos.js:599
 msgid "Show only these"
 msgstr ""
 
-#: src/admin/pages/Videos.js:564
+#: src/adminages/Videos.js:603
 msgid "Show videos by status"
 msgstr ""
 
-#: src/admin/pages/Videos.js:585
+#: src/adminages/Videos.js:624
 msgid "Trash"
 msgstr ""
 
-#: src/admin/pages/Videos.js:593
+#: src/adminages/Videos.js:632
 msgid "Loading videos..."
 msgstr ""
 
-#: src/admin/pages/Videos.js:612
+#: src/adminages/Videos.js:651
 msgid "Clear selection"
 msgstr ""
 
-#: src/admin/pages/Videos.js:612
+#: src/adminages/Videos.js:651
 msgid "Select all on this page"
 msgstr ""
 
-#: src/admin/pages/Videos.js:618
+#: src/adminages/Videos.js:657
 msgid "Bulk action"
 msgstr ""
 
 #. translators: %d: number of selected videos.
-#: src/admin/pages/Videos.js:628
+#: src/adminages/Videos.js:667
 #, js-format
 msgid "Apply to %d"
 msgstr ""
 
-#: src/admin/pages/Videos.js:629
+#: src/adminages/Videos.js:668
 msgid "Apply"
 msgstr ""
 
-#: src/admin/pages/Videos.js:636
-#: src/admin/pages/Videos.js:672
+#: src/adminages/Videos.js:675
+#: src/adminages/Videos.js:711
 msgid "Select"
 msgstr ""
 
-#: src/admin/pages/Videos.js:638
-#: src/admin/pages/Videos.js:704
+#: src/adminages/Videos.js:677
+#: src/adminages/Videos.js:743
 msgid "Source"
 msgstr ""
 
-#: src/admin/pages/Videos.js:639
-#: src/admin/pages/Videos.js:709
+#: src/adminages/Videos.js:678
+#: src/adminages/Videos.js:748
 msgid "Length"
 msgstr ""
 
-#: src/admin/pages/Videos.js:641
-#: src/admin/pages/Videos.js:715
+#: src/adminages/Videos.js:680
+#: src/adminages/Videos.js:754
 msgid "Used in"
 msgstr ""
 
-#: src/admin/pages/Videos.js:642
-#: src/admin/pages/Videos.js:718
+#: src/adminages/Videos.js:681
+#: src/adminages/Videos.js:757
 msgid "Status"
 msgstr ""
 
-#: src/admin/pages/Videos.js:652
+#: src/adminages/Videos.js:691
 msgid "The trash is empty."
 msgstr ""
 
-#: src/admin/pages/Videos.js:654
+#: src/adminages/Videos.js:693
 msgid "No videos match these filters."
 msgstr ""
 
-#: src/admin/pages/Videos.js:655
+#: src/adminages/Videos.js:694
 msgid "No videos yet. Create your first protected video."
 msgstr ""
 
 #. translators: %s: video title.
-#: src/admin/pages/Videos.js:674
+#: src/adminages/Videos.js:713
 #, js-format
 msgid "Select %s"
 msgstr ""
 
-#: src/admin/pages/Videos.js:697
+#: src/adminages/Videos.js:736
 msgid "Length needed"
 msgstr ""
 
-#: src/admin/pages/Videos.js:739
+#: src/adminages/Videos.js:778
 msgid "Copy [mediashield id=…] shortcode"
 msgstr ""
 
-#: src/admin/pages/Videos.js:740
+#: src/adminages/Videos.js:779
 msgid "Copy shortcode to clipboard"
 msgstr ""
 
-#: src/admin/pages/Videos.js:753
+#: src/adminages/Videos.js:792
 msgid "Videos pages"
 msgstr ""
 
-#: src/admin/pages/Videos.js:788
+#: src/adminages/Videos.js:827
 msgid "Bunny Stream import is in Pro."
 msgstr ""
 
@@ -3576,47 +3587,47 @@ msgstr ""
 msgid "On the frontend, this shows the signed-in viewer their watched videos with progress + resume links. Logged-out visitors are asked to log in."
 msgstr ""
 
-#: src/blocks/playlist/edit.js:53
+#: src/blockslaylist/edit.js:53
 msgid "-- Select a Playlist --"
 msgstr ""
 
-#: src/blocks/playlist/edit.js:67
+#: src/blockslaylist/edit.js:67
 msgid "MediaShield Playlist"
 msgstr ""
 
-#: src/blocks/playlist/edit.js:68
+#: src/blockslaylist/edit.js:68
 msgid "Select a playlist to embed."
 msgstr ""
 
-#: src/blocks/playlist/edit.js:71
-#: src/blocks/playlist/edit.js:84
-#: src/blocks/playlist/edit.js:98
-#: src/blocks/playlist/edit.js:100
+#: src/blockslaylist/edit.js:71
+#: src/blockslaylist/edit.js:84
+#: src/blockslaylist/edit.js:98
+#: src/blockslaylist/edit.js:100
 msgid "Playlist"
 msgstr ""
 
-#: src/blocks/playlist/edit.js:113
+#: src/blockslaylist/edit.js:113
 msgid "Autoplay next video"
 msgstr ""
 
-#: src/blocks/playlist/edit.js:115
+#: src/blockslaylist/edit.js:115
 msgid "Countdown"
 msgstr ""
 
 #. translators: %d: seconds before the next video starts.
-#: src/blocks/playlist/edit.js:119
+#: src/blockslaylist/edit.js:119
 #, js-format
 msgid "%d second"
 msgid_plural "%d seconds"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/blocks/playlist/edit.js:129
+#: src/blockslaylist/edit.js:129
 msgid "Change these in the playlist settings"
 msgstr ""
 
 #. translators: %d: number of further videos not shown in the preview.
-#: src/blocks/playlist/edit.js:167
+#: src/blockslaylist/edit.js:167
 #, js-format
 msgid "+%d more video"
 msgid_plural "+%d more videos"
@@ -3722,7 +3733,7 @@ msgid "The videos the logged-in member has watched, with their progress and a Re
 msgstr ""
 
 #: src/blocks/my-videos/block.json
-#: src/blocks/playlist/block.json
+#: src/blockslaylist/block.json
 #: src/blocks/video/block.json
 msgctxt "block keyword"
 msgid "video"
@@ -3734,7 +3745,7 @@ msgid "progress"
 msgstr ""
 
 #: src/blocks/my-videos/block.json
-#: src/blocks/playlist/block.json
+#: src/blockslaylist/block.json
 #: src/blocks/video/block.json
 msgctxt "block keyword"
 msgid "mediashield"
@@ -3750,22 +3761,22 @@ msgctxt "block keyword"
 msgid "history"
 msgstr ""
 
-#: src/blocks/playlist/block.json
+#: src/blockslaylist/block.json
 msgctxt "block title"
 msgid "MediaShield Playlist"
 msgstr ""
 
-#: src/blocks/playlist/block.json
+#: src/blockslaylist/block.json
 msgctxt "block description"
 msgid "A playlist of videos that play one after another, with countdown, loop and shuffle options."
 msgstr ""
 
-#: src/blocks/playlist/block.json
+#: src/blockslaylist/block.json
 msgctxt "block keyword"
 msgid "playlist"
 msgstr ""
 
-#: src/blocks/playlist/block.json
+#: src/blockslaylist/block.json
 msgctxt "block keyword"
 msgid "course"
 msgstr ""
@@ -3777,7 +3788,7 @@ msgstr ""
 
 #: src/blocks/video/block.json
 msgctxt "block description"
-msgid "A protected video: watermark, viewing tracking and who can watch."
+msgid "A protected video: watermark, playback tracking and who can watch."
 msgstr ""
 
 #: src/blocks/video/block.json
@@ -3788,4 +3799,8 @@ msgstr ""
 #: src/blocks/video/block.json
 msgctxt "block keyword"
 msgid "watermark"
+msgstr ""
+
+#: includes/CPT/VideoCreator.php:145
+msgid "You can add only videos made from your own uploads."
 msgstr ""

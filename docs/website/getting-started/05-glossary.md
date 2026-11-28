@@ -29,22 +29,23 @@ MediaShield uses one word for one thing on every screen: Settings, the video edi
 | Protection level | None, Basic, Standard or Strict. Each includes the one before. |
 | None | The video plays as the platform shows it. Right-click stays blocked while Block right-click on every video is on. |
 | Basic | Right-click and download blocked. |
-| Standard | Plus a watermark and tracked viewing. |
+| Standard | Plus a watermark and tracked playback. |
 | Strict | Plus file address hidden and developer tools detected. |
 | Site default (Standard) | A video that follows the level set in Settings > Protection; the level is named in brackets. |
 | Who can watch | Who may play a video: everyone the site allows, or only one role. |
 | Require login | The one site setting that asks guests to log in, at every level. Not "Members only". |
 | Watermark | The text over the video that names the viewer. |
 
-## People and viewing
+## People and watching
 
 | Word | Means | Not |
 |------|-------|-----|
 | Member | Someone logged in to your site. | User, student |
 | Viewer | Anyone watching a video, member or guest. Analytics > Viewers lists members. | Student, user |
-| Viewing | One time someone plays a video. A page that loads a player without playing is not a viewing. (Developers: a session that played.) | Session, view, play |
+| View | One member watching one video in the period, however many times they play it. A guest counts once per playback session. The Dashboard's Views card, chart and Top Videos. | Viewing |
+| Playback session | One time someone plays a video. A page that loads a player without playing is not one. Exports, the Viewers screen's Stop playback and Watch history keep these. (Developers: a session that played.) | Viewing |
 | Watching now | Viewers playing a video in the last 5 minutes: the Dashboard card and the count on Realtime (Pro). | Active viewers, live viewers |
-| Completion | How far a viewer got through a video: the furthest point of any of their viewings. | Progress |
+| Completion | How far a viewer got through a video: the furthest point of any of their playback sessions. | Progress |
 | Milestone | 25%, 50%, 75% or 100% of a video, recorded once per viewer. | Checkpoint |
 | Streams at once | How many videos one member can play at the same time. The only place "stream" is used. | Concurrent sessions |
 | Lesson completion | When a lesson that plays a protected video counts as complete (Settings > Lesson completion). | LMS integration, completion threshold |
