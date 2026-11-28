@@ -142,7 +142,7 @@ const App = () => {
 						<FirstRunSteps
 							status={ window.mediashieldAdmin.firstRun }
 							title={ __( 'Nothing to show yet', 'mediashield' ) }
-							intro={ __( 'Analytics fill in when members watch a protected video. Finish these steps and the first viewing appears here.', 'mediashield' ) }
+							intro={ __( 'Analytics fill in when members watch a protected video. Finish these steps and the first view appears here.', 'mediashield' ) }
 						/>
 					) }
 					<ErrorBoundary key={ routeHash }>

@@ -19,7 +19,7 @@ You can see how an individual member is doing, group members by what they have c
 2. Type a name or email in the search box.
 3. Click the member. You see each video they started, their progress, and when they last watched, 20 sessions per page.
 
-A member who is watching right now (heard from in the last 5 minutes, the same rule as Watching now on the Dashboard) carries a **Watching now** badge and a **Stop playback** button. Stop playback ends every viewing they have in progress after you confirm, for example when an account is shared. Members who are not watching show no button. Click a name to open that member's page; it has its own address (`#/viewers/<user id>`), so you can bookmark it and Back returns to the list. See [Limit Streams and Stop Sharing](09-limit-streams-and-stop-sharing.md).
+A member who is watching right now (heard from in the last 5 minutes, the same rule as Watching now on the Dashboard) carries a **Watching now** badge and a **Stop playback** button. Stop playback ends every playback session they have in progress after you confirm, for example when an account is shared. Members who are not watching show no button. Click a name to open that member's page; it has its own address (`#/viewers/<user id>`), so you can bookmark it and Back returns to the list. See [Limit Streams and Stop Sharing](09-limit-streams-and-stop-sharing.md).
 
 If a member says their progress is missing, check the video's protection level first.
 

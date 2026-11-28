@@ -207,7 +207,7 @@ const Dashboard = () => {
 						backgroundColor: gradient1,
 						borderWidth: 2.5,
 						fill: true,
-						tension: 0, // Straight lines: a curve draws viewings between days that had none (MSUX-34).
+						tension: 0, // Straight lines: a curve draws views between days that had none (MSUX-34).
 						// A day with sessions is a dot, so one busy day in a
 						// quiet week is still visible.
 						pointRadius: sessions.map( ( n ) => ( n > 0 ? 3 : 0 ) ),
@@ -434,7 +434,7 @@ const Dashboard = () => {
 								<div className="ms-upsell-card">
 									<Icon name="download" className="ms-upsell-card__icon" />
 									<h3>{ __( 'CSV & PDF Export', 'mediashield' ) }</h3>
-									<p>{ __( 'Export viewings, milestones and member data as CSV or PDF reports.', 'mediashield' ) }</p>
+									<p>{ __( 'Export playback sessions, milestones and member data as CSV or PDF reports.', 'mediashield' ) }</p>
 								</div>
 							</div>
 							<div className="ms-upsell-banner">

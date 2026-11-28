@@ -275,8 +275,8 @@ const RevokeSessions = ( { user } ) => {
 				createSuccessNotice(
 					count
 						? sprintf(
-							/* translators: 1: number of viewings stopped, 2: viewer name. */
-							_n( 'Stopped %1$d viewing for %2$s.', 'Stopped %1$d viewings for %2$s.', count, 'mediashield' ),
+							/* translators: 1: number of playback sessions stopped, 2: viewer name. */
+							_n( 'Stopped %1$d playback session for %2$s.', 'Stopped %1$d playback sessions for %2$s.', count, 'mediashield' ),
 							count,
 							name
 						)
@@ -494,7 +494,7 @@ const Students = () => {
 										{ timeAgo( user.last_active ) }
 									</td>
 									<td data-label={ __( 'Actions', 'mediashield' ) } className="mediashield-table__actions">
-										{ /* Only a member watching now has a viewing to stop (MSUX-13). */ }
+										{ /* Only a member watching now has a playback session to stop (MSUX-13). */ }
 										{ user.watching_now ? <RevokeSessions user={ user } /> : <span className="ms-viewers__idle" aria-hidden="true">—</span> }
 									</td>
 								</tr>

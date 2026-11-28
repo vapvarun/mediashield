@@ -51,7 +51,7 @@ Guests are never counted. With no account there is nothing to share, and countin
 
 ### Revoking a user's sessions
 
-Go to **MediaShield > Viewers**, click **Stop playback** on the member's row, then **Stop** to confirm. It ends every viewing in progress for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop them watching, change what they are allowed to watch or deactivate the account.
+Go to **MediaShield > Viewers**, click **Stop playback** on the member's row, then **Stop** to confirm. It ends every playback session in progress for that account: they stop counting toward the stream limit, the player stops recording their progress, and `mediashield_user_access_revoked` fires. A video already playing on their screen is not stopped, and they can start watching again. To stop them watching, change what they are allowed to watch or deactivate the account.
 
 The same action is an authenticated REST call for administrators:
 

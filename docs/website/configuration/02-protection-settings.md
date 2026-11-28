@@ -9,8 +9,8 @@ Settings, the video edit screen, the setup wizard, the Videos list and the block
 | Level | What the viewer gets |
 |-------|-------------|
 | None | The video plays as the platform shows it. Right-click stays blocked while **Block right-click on every video** is on (the default). Player features (speed, resume, sticky, end screen) still work. |
-| Basic | Right-click and download blocked. No watermark, and no tracked viewing or milestones, because no watch session is started (except to measure a lesson's "Watch X% to complete", below). |
-| Standard | Basic, plus a watermark with the viewer's name and tracked viewing (milestones, resume, analytics, the stream limit). |
+| Basic | Right-click and download blocked. No watermark, and no tracked playback or milestones, because no watch session is started (except to measure a lesson's "Watch X% to complete", below). |
+| Standard | Basic, plus a watermark with the viewer's name and tracked playback (milestones, resume, analytics, the stream limit). |
 | Strict | Standard, plus the file address hidden from the page and developer tools detected (the video pauses while they are open). |
 
 Login is not part of a level. **Require login** is one site setting, under **Settings > Who can watch**, and applies at every level, None included.

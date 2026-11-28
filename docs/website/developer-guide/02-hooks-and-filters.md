@@ -194,7 +194,7 @@ add_filter( 'mediashield_guest_can_watch', function( $allow, $video_id, $context
 }, 10, 3 );
 ```
 
-Since 1.4.4 a grant can be scoped to one page: the same video embedded elsewhere (another lesson, a landing page) stays behind the login. `$context` is the page being shown during a page render, and the same page again when the player starts its viewing and streams the file, because the player carries it with those requests. A plugin whose lessons are not WordPress posts names its own with `mediashield_page_context` below. Naming another page in a request only gets what opening that page would give.
+Since 1.4.4 a grant can be scoped to one page: the same video embedded elsewhere (another lesson, a landing page) stays behind the login. `$context` is the page being shown during a page render, and the same page again when the player starts its playback session and streams the file, because the player carries it with those requests. A plugin whose lessons are not WordPress posts names its own with `mediashield_page_context` below. Naming another page in a request only gets what opening that page would give.
 
 It runs only for guests, and only to answer the Require Login check. It does not turn Require Login off, and it is not a way to skip other rules: the per-video role and Allowed Domains checks still apply. Learnomy 2.2.0 uses this filter for its free-preview lessons. See [Courses with Learnomy](../using-mediashield/15-courses-with-learnomy.md).
 

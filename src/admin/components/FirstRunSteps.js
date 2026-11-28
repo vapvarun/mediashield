@@ -46,7 +46,7 @@ const steps = ( status ) => [
 	{
 		key: 'has_view',
 		title: __( 'Watch it as a member', 'mediashield' ),
-		body: __( 'Open the page in a private window, log in as a member and press play. Viewings, completion and milestones start from here.', 'mediashield' ),
+		body: __( 'Open the page in a private window, log in as a member and press play. Views, completion and milestones start from here.', 'mediashield' ),
 		href: status?.watch_url || '',
 		cta: __( 'Open the page', 'mediashield' ),
 		external: true,

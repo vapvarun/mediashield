@@ -12,7 +12,7 @@ import { __, sprintf } from '@wordpress/i18n';
 const FALLBACK = {
 	none: { label: 'None', summary: 'The video plays as the platform shows it.', adds: 'The video plays as the platform shows it.' },
 	basic: { label: 'Basic', summary: 'Right-click and download blocked.', adds: 'Right-click and download blocked.' },
-	standard: { label: 'Standard', summary: 'Right-click and download blocked, a watermark with the viewer\'s name, and each viewing tracked.', adds: 'Plus a watermark and tracked viewing.' },
+	standard: { label: 'Standard', summary: 'Right-click and download blocked, a watermark with the viewer\'s name, and each playback tracked.', adds: 'Plus a watermark and tracked playback.' },
 	strict: { label: 'Strict', summary: 'Everything in Standard, plus the file address hidden from the page and developer tools detected.', adds: 'Plus file address hidden and developer tools detected.' },
 };
 
