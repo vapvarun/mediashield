@@ -40,6 +40,14 @@ Fires when a watch session is finalized.
 
 ---
 
+### mediashield_watched_share
+
+*Since 1.4.4.* Fires when a member's watched share of a video grows: the time actually watched, as "Require X% watched" measures it, not the furthest point (milestones follow that). Fires only on a heartbeat (or the final report at session end) that added watched time, so a paused player costs nothing. Use it for a rule gated on watched time: act when `$share_before < $your_pct && $share_after >= $your_pct`.
+
+**Parameters:** `$user_id` (int), `$video_id` (int), `$share_after` (int, percent), `$share_before` (int, percent), `$session_id` (int)
+
+---
+
 ### mediashield_concurrent_limit_reached
 
 Fires when a logged-in user tries to start a stream beyond their allowed concurrent limit (`ms_max_concurrent_streams`). Never fires for guests, who are not subject to the limit.

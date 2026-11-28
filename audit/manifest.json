@@ -997,6 +997,10 @@
         "listeners": []
       },
       {
+        "hook": "mediashield_watched_share",
+        "listeners": ["mediashield-pro: LMS\\LearnDashAdapter::on_watched_share"]
+      },
+      {
         "hook": "mediashield_user_access_revoked",
         "listeners": []
       },
@@ -1342,6 +1346,12 @@
           "hookName": "mediashield_session_ended",
           "file": "includes/Access/SessionManager.php",
           "line": 410
+        },
+        {
+          "type": "action",
+          "hookName": "mediashield_watched_share",
+          "file": "includes/Access/SessionManager.php",
+          "line": 645
         },
         {
           "type": "action",
@@ -2709,6 +2719,11 @@
       "hook": "mediashield_session_ended",
       "type": "action",
       "file": "includes/Access/SessionManager.php:410"
+    },
+    {
+      "hook": "mediashield_watched_share",
+      "type": "action",
+      "file": "includes/Access/SessionManager.php:645"
     },
     {
       "hook": "mediashield_session_started",
