@@ -116,20 +116,27 @@ class VideoCreator {
 	 * @return int|WP_Error Video ID, or why not.
 	 */
 	private static function create_video( array $args ) {
-		$type = get_post_type_object( 'mediashield_video' );
-		if ( ! $type || ! current_user_can( $type->cap->create_posts ) ) {
-			return new WP_Error( 'mediashield_cannot_create_video', __( 'You are not allowed to add videos.', 'mediashield' ), array( 'status' => 403 ) );
-		}
-
+		$type       = get_post_type_object( 'mediashield_video' );
 		$title      = sanitize_text_field( (string) ( $args['title'] ?? '' ) );
 		$attachment = absint( $args['attachment_id'] ?? 0 );
 		$url        = trim( (string) ( $args['source_url'] ?? '' ) );
+		$creator    = $type && current_user_can( $type->cap->create_posts );
+
+		// Someone who cannot add videos (an Instructor: upload_files, no
+		// edit_posts) may still protect a Media Library file of their own,
+		// sent as the file or as its address (LibraryFiles::may_use()).
+		if ( ! $creator && ! $attachment && '' !== $url ) {
+			$attachment = attachment_url_to_postid( $url );
+		}
+		if ( ! $type || ! ( $creator || ( $attachment && LibraryFiles::may_use( $attachment ) ) ) ) {
+			return new WP_Error( 'mediashield_cannot_create_video', __( 'You are not allowed to add videos.', 'mediashield' ), array( 'status' => 403 ) );
+		}
 
 		if ( $attachment ) {
 			if ( 'attachment' !== get_post_type( $attachment ) || ! wp_attachment_is( 'video', $attachment ) ) {
 				return new WP_Error( 'mediashield_not_a_video_file', __( 'That file is not a video in the Media Library.', 'mediashield' ), array( 'status' => 404 ) );
 			}
-			if ( ! current_user_can( 'edit_post', $attachment ) ) {
+			if ( ! LibraryFiles::may_use( $attachment ) ) {
 				return new WP_Error( 'mediashield_cannot_create_video', __( 'You are not allowed to use that file.', 'mediashield' ), array( 'status' => 403 ) );
 			}
 			$existing = self::find_by_attachment( $attachment );

@@ -141,6 +141,28 @@ class LibraryFiles {
 	}
 
 	/**
+	 * May the current user hand this Media Library file to MediaShield?
+	 *
+	 * Yes when they may edit it, or when it is their own upload and they may
+	 * upload files: a role with upload_files but no edit_posts (a Learnomy
+	 * Instructor) cannot edit even its own media in core, yet the file is
+	 * theirs to protect. Someone else's file stays refused. Answers for the
+	 * create door (VideoCreator) and the on-save move (protect()); editing a
+	 * video stays edit_post on the video.
+	 *
+	 * @since 1.4.4
+	 *
+	 * @param int $attachment Attachment ID.
+	 */
+	public static function may_use( int $attachment ): bool {
+		if ( current_user_can( 'edit_post', $attachment ) ) {
+			return true;
+		}
+		$user = get_current_user_id();
+		return $user > 0 && current_user_can( 'upload_files' ) && (int) get_post_field( 'post_author', $attachment ) === $user;
+	}
+
+	/**
 	 * Check a video left 'in_use' again (inside while_replacing(), once the
 	 * reference that kept it is the one being switched).
 	 *
@@ -406,7 +428,7 @@ class LibraryFiles {
 			return self::mark( $video_id, self::NOT_IN_LIBRARY );
 		}
 
-		if ( $on_save && ! current_user_can( 'edit_post', $attachment ) ) {
+		if ( $on_save && ! self::may_use( $attachment ) ) {
 			self::report( $video_id, self::NOT_EDITABLE );
 			return self::mark( $video_id, 'in_use' );
 		}

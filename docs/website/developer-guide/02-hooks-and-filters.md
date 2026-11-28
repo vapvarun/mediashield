@@ -699,7 +699,7 @@ if ( is_wp_error( $video_id ) ) {
 
 | Code | Status | When |
 |------|--------|------|
-| `mediashield_cannot_create_video` | 403 | The current user may not add videos (needs `edit_posts`), or may not edit that Media Library file. |
+| `mediashield_cannot_create_video` | 403 | The current user may not add videos (needs `edit_posts`) and the file is not their own upload, or the Media Library file is not theirs to use. Someone with `upload_files` but no `edit_posts` (a Learnomy Instructor) may add a video file they uploaded, given as `attachment_id` or as its address, but not a platform link. |
 | `mediashield_unplayable_source` | 400 | The link is not a video MediaShield can play. The message says what to use instead, in the same words as the Add video screen. |
 | `mediashield_not_a_video_file` | 404 | `attachment_id` is not a video in the Media Library. |
 | (WordPress's code) | 500 | The video could not be saved. |
