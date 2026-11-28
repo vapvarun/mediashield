@@ -49,8 +49,9 @@ const STAT_CARDS = [
 		format: ( v ) => v ?? '0',
 	},
 	{
-		key: 'total_sessions',
-		label: __( 'Viewings', 'mediashield' ),
+		// One per member per video in the period, however often they play it (Basecamp 10551679560).
+		key: 'total_views',
+		label: __( 'Views', 'mediashield' ),
 		icon: 'visibility',
 		iconClass: 'sessions',
 		format: ( v ) => ( v != null ? v.toLocaleString() : '0' ),
@@ -200,7 +201,7 @@ const Dashboard = () => {
 				labels,
 				datasets: [
 					{
-						label: __( 'Viewings', 'mediashield' ),
+						label: __( 'Views', 'mediashield' ),
 						data: sessions,
 						borderColor: '#3858e9',
 						backgroundColor: gradient1,
@@ -372,9 +373,9 @@ const Dashboard = () => {
 											<span>{ v.title || `Video #${ v.video_id }` }</span>
 											<strong>
 												{ sprintf(
-													/* translators: %d: number of viewings. */
-													_n( '%d viewing', '%d viewings', v.session_count || 0, 'mediashield' ),
-													v.session_count || 0
+													/* translators: %d: number of views (one per member). */
+													_n( '%d view', '%d views', v.view_count || 0, 'mediashield' ),
+													v.view_count || 0
 												) }
 											</strong>
 										</li>

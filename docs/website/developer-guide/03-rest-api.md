@@ -105,7 +105,7 @@ The `upload_mediashield` capability is separate from `manage_options` so instruc
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/analytics/overview` | manage_options | Dashboard summary. Arg: `period` = `today` \| `7d` (default) \| `30d` \| `90d`. Returns total videos, sessions, avg completion, active viewers, activity chart, top videos, recent milestones, and the site timezone. Daily counts use `CONVERT_TZ()` to respect the WP site timezone. |
+| GET | `/analytics/overview` | manage_options | Dashboard summary. Arg: `period` = `today` \| `7d` (default) \| `30d` \| `90d`. Returns total videos, `total_views` (one per member per video in the period, however often they play it; a guest counts once per session), `total_sessions` (plays), avg completion, active viewers, a views chart (each view on the day of its first play, so the days add up to `total_views`), top videos (`view_count`, then `session_count`), recent milestones, and the site timezone. Daily counts use `CONVERT_TZ()` to respect the WP site timezone. |
 | GET | `/videos/{id}/stats` | manage_options | Per-video statistics. |
 | GET | `/analytics/milestones` | manage_options | Milestone log. Args: `page`, `per_page` (default 20), `video_id`. Total counts come back in the `X-WP-Total` and `X-WP-TotalPages` headers. |
 | GET | `/analytics/users` | manage_options | Viewer list. Args: `page`, `per_page` (default 20), `search`. |
