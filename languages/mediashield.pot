@@ -3800,3 +3800,7 @@ msgstr ""
 msgctxt "block keyword"
 msgid "watermark"
 msgstr ""
+
+#: includes/CPT/VideoCreator.php:145
+msgid "You can add only videos made from your own uploads."
+msgstr ""
